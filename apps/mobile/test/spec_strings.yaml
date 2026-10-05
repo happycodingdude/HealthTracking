@@ -55,6 +55,68 @@ understood: "Đã hiểu"
 # 04 S-02
 disclaimerTitle: "Trước khi bắt đầu"
 
+# Thiết lập lần đầu S-02, S-03, S-04; nhãn "tham khảo"; S-52 dùng chung; Q-2
+iUnderstand: "Tôi đã hiểu" # 03 F10-R1, 04 S-02
+disclaimerPoint1: "App theo dõi và gợi ý tham khảo, không chẩn đoán, không điều trị." # 03 F10-R1
+disclaimerPoint2: "Gợi ý dành cho người khỏe mạnh." # 03 F10-R1
+disclaimerPoint3: "Không thay thế huấn luyện viên, bác sĩ hay chuyên gia dinh dưỡng." # 03 F10-R1
+disclaimerPoint4: "Gợi ý AI có thể chưa chính xác." # 03 F10-R1
+continueLabel: "Tiếp tục" # 04 OB-5, S-03
+profileTitle: "Thông tin của Bạn" # 04 S-03
+profileSubtitle: "Dùng để ước tính mức calo tham khảo." # 04 S-03
+fieldHeight: "Chiều cao" # 04 S-03 (đơn vị đứng sau ô, 04 §6.13.5)
+fieldBirthYear: "Năm sinh" # 04 S-03
+fieldSex: "Giới tính" # 04 S-03
+sexMale: "Nam" # 04 S-03
+sexFemale: "Nữ" # 04 S-03
+fieldActivityLevel: "Mức vận động" # 04 S-03
+activitySedentary: "Ít vận động" # 03 F-01 bảng 5 mức
+activitySedentaryHint: "Ngồi nhiều, gần như không tập" # 03 F-01
+activityLight: "Vận động nhẹ" # 03 F-01
+activityLightHint: "Tập 1–3 buổi/tuần" # 03 F-01
+activityModerate: "Vận động vừa" # 03 F-01
+activityModerateHint: "Tập 3–5 buổi/tuần" # 03 F-01
+activityActive: "Vận động nhiều" # 03 F-01
+activityActiveHint: "Tập 6–7 buổi/tuần" # 03 F-01
+activityVeryActive: "Vận động rất nhiều" # 03 F-01
+activityVeryActiveHint: "Lao động nặng, hoặc tập 2 lần/ngày" # 03 F-01
+fieldInitialWeight: "Cân nặng ban đầu" # 04 S-03
+goalLabel: "Mục tiêu" # 04 S-03 "Mục tiêu: Giảm mỡ" (mock tách 2 phần)
+goalFatLoss: "Giảm mỡ" # 04 S-03, 03 FR-07
+unitCm: "cm" # 04 S-03
+unitKg: "kg" # 04 S-03
+unitKcal: "kcal" # 04 S-52
+done: "Xong" # nút đóng bánh xe chọn năm sinh (kiểu iOS)
+invalidHeight: "Chiều cao cần từ 120 đến 230 cm" # 03 F01-V1
+invalidBirthYear: "App dành cho người từ 18 đến 80 tuổi" # 03 F01-V2
+missingSex: "Vui lòng chọn giới tính" # 03 F01-V3
+missingActivityLevel: "Vui lòng chọn mức vận động" # 03 F01-V4
+invalidWeight: "Cân nặng cần từ 30 đến 250 kg" # 03 F01-V5, F07-V1
+calorieTitle: "Mức calo mỗi ngày" # 04 S-04 (mock S-04-1)
+calorieSubtitle: "Dùng làm mốc cho thực đơn gợi ý." # 04 S-04 (mock S-04-1)
+calorieAuto: "Tự động" # 03 F-02, 04 S-52
+calorieManual: "Bạn tự đặt" # 03 F-02, 04 S-52
+referenceTag: "tham khảo" # 03 F10-R2, 04 §6.13.2
+howEstimated: "Cách app ước tính" # 04 S-52 mục 7
+howEstimatedBody: "App ước tính dựa trên chiều cao, cân nặng mới nhất, tuổi, giới tính và mức vận động của Bạn, rồi trừ 500 kcal để giảm mỡ. Mức ước tính không bao giờ thấp hơn ngưỡng an toàn." # 04 S-52 mục 7 (diễn đạt thành câu)
+keepThisLevel: "Giữ mức này" # 04 S-04
+setOtherLevel: "Đặt mức khác" # 04 S-04, S-52
+belowSafetyFloor: "Dưới ngưỡng an toàn" # 03 F02-R5, 04 S-52
+lowCalorieTitle: "Mức calo thấp" # 04 S-52 (mock S-52-2)
+saveAnyway: "Vẫn lưu" # 04 S-52
+editAgain: "Sửa lại" # 04 S-52
+noteRaisedToFloor: "Đã điều chỉnh lên ngưỡng an toàn tối thiểu." # 03 F02-E1
+noteMaintenanceBelowFloor: "Với thông số của Bạn, mức ăn an toàn tối thiểu đã gần hoặc cao hơn nhu cầu duy trì. Việc giảm mỡ nên dựa thêm vào vận động." # 03 F02-E2
+setCalorieTitle: "Đặt mức calo" # 04 S-52 (mock S-52-2)
+fieldDailyCalorie: "Mức calo mỗi ngày" # 04 S-52 (mock S-52-2)
+invalidManualKcal: "Mức calo cần từ 800 đến 5.000 kcal" # 03 F02-V1
+discardChangesTitle: "Bỏ các thay đổi chưa lưu?" # 04 S-22; Q-2
+discard: "Bỏ" # Q-2
+keepEditing: "Tiếp tục sửa" # Q-2
+aboutReferenceTitle: "Về gợi ý tham khảo" # 04 S-55
+seeFull: "Xem đầy đủ" # 04 §6.13.2
+scheduleStepTitle: "Lịch tuần" # 04 S-05 (giữ chỗ đến VS-04)
+
 # 04 S-10 đầu trang, §6.14 "Chưa đồng bộ"; S-50 dòng "Tài khoản và dữ liệu"; S-56
 syncPending: "Chưa đồng bộ"
 syncDone: "Đã đồng bộ"

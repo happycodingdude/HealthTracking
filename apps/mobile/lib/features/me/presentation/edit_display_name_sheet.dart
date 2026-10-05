@@ -5,12 +5,15 @@ import '../../../app/strings_vi.dart';
 import '../../../core/widgets/app_sheet.dart';
 import '../../../core/widgets/labeled_field.dart';
 import '../../../core/widgets/primary_button.dart';
+import '../../../core/widgets/unsaved_changes.dart';
 import '../application/update_display_name.dart';
 
-/// Sửa tên hiển thị (S-56, UA-21): bảng trượt (NAV-5).
+/// Sửa tên hiển thị (S-56, UA-21): bảng trượt (NAV-5). Đóng khi tên đã sửa
+/// mà chưa lưu → hỏi "Bỏ các thay đổi chưa lưu?" (Q-2).
 Future<void> showEditDisplayNameSheet(BuildContext context, String current) =>
     showAppSheet<void>(
       context,
+      enableDrag: false,
       builder: (_) => EditDisplayNameSheet(current: current),
     );
 
@@ -44,28 +47,31 @@ class _EditDisplayNameSheetState extends ConsumerState<EditDisplayNameSheet> {
     }
   }
 
+  bool get _dirty => _controller.text != widget.current;
+
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          LabeledField(
-            label: S.fieldDisplayName,
-            controller: _controller,
-            error: _error,
-            textCapitalization: TextCapitalization.words,
-            textInputAction: TextInputAction.done,
-            onChanged: (_) {
-              if (_error != null) setState(() => _error = null);
-            },
-            onSubmitted: (_) => _save(),
-          ),
-          const SizedBox(height: 24),
-          PrimaryButton(label: S.save, onPressed: _save),
-        ],
+    return UnsavedChangesGuard(
+      dirty: _dirty,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            LabeledField(
+              label: S.fieldDisplayName,
+              controller: _controller,
+              error: _error,
+              textCapitalization: TextCapitalization.words,
+              textInputAction: TextInputAction.done,
+              onChanged: (_) => setState(() => _error = null),
+              onSubmitted: (_) => _save(),
+            ),
+            const SizedBox(height: 24),
+            PrimaryButton(label: S.save, onPressed: _save),
+          ],
+        ),
       ),
     );
   }

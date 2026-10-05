@@ -17,6 +17,10 @@ import 'package:mobile/data/sync/sync_engine.dart';
 import 'package:mobile/data/sync/sync_status.dart';
 import 'package:mobile/features/me/application/update_display_name.dart';
 import 'package:mobile/features/me/data/account_repository.dart';
+import 'package:mobile/features/me/data/profile_repository.dart';
+import 'package:mobile/features/onboarding/application/onboarding_steps.dart';
+import 'package:mobile/features/onboarding/data/onboarding_draft_repository.dart';
+import 'package:mobile/features/weight/data/weight_repository.dart';
 import 'package:server/server.dart';
 import 'package:server/testing.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
@@ -75,10 +79,24 @@ final class E2eDevice {
     api.dio.interceptors.add(AuthInterceptor(api.dio, tokens));
     auth = AuthRepository(api: api, tokens: tokens, store: store);
     accounts = AccountRepository(db);
+    profiles = ProfileRepository(db);
+    weights = WeightRepository(db);
+    onboarding = OnboardingSteps(
+      db: db,
+      profiles: profiles,
+      weights: weights,
+      drafts: OnboardingDraftRepository(db),
+      outbox: OutboxWriter(db, clock),
+      clock: clock,
+    );
     engine = SyncEngine(
       db: db,
       api: HttpSyncApi(api),
-      stores: {SyncEntities.account: AccountStore(accounts)},
+      stores: {
+        SyncEntities.account: AccountStore(accounts),
+        SyncEntities.profile: ProfileStore(profiles),
+        SyncEntities.weight: WeightStore(weights),
+      },
       clock: clock,
       reporter: reporter,
       scheduler: FakeScheduler(),
@@ -94,6 +112,11 @@ final class E2eDevice {
   late final ApiClient api;
   late final AuthRepository auth;
   late final AccountRepository accounts;
+  late final ProfileRepository profiles;
+  late final WeightRepository weights;
+
+  /// Các bước thiết lập lần đầu qua use case thật (VS-03).
+  late final OnboardingSteps onboarding;
   late final SyncEngine engine;
 
   Future<void> register({
@@ -106,11 +129,12 @@ final class E2eDevice {
     await accounts.put(me.displayName);
   }
 
-  Future<void> login({String phone = '0912345678'}) async {
+  Future<MeResponse> login({String phone = '0912345678'}) async {
     final me = await auth.login(
       LoginRequest(phone: phone, password: '***REMOVED***'),
     );
     await accounts.put(me.displayName);
+    return me;
   }
 
   /// Đổi tên qua use case thật (bản ghi + outbox).

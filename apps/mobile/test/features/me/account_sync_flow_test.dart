@@ -98,6 +98,42 @@ void main() {
     },
   );
 
+  testWidgets(
+    'Q-2: sửa tên chưa lưu → chạm vùng mờ hỏi "Bỏ các thay đổi chưa lưu?"; '
+    'chưa sửa gì thì đóng ngay',
+    (tester) async {
+      await pump(tester);
+      await openAccount(tester);
+      await tester.tap(find.byKey(const ValueKey('row-display-name')));
+      await tester.pumpAndSettle();
+      await tester.tapAt(const Offset(195, 60));
+      await tester.pumpAndSettle();
+      expect(find.text(S.discardChangesTitle), findsNothing);
+      expect(find.widgetWithText(FilledButton, S.save), findsNothing);
+
+      await tester.tap(find.byKey(const ValueKey('row-display-name')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.descendant(
+          of: find.byWidgetPredicate(
+            (w) => w is LabeledField && w.label == S.fieldDisplayName,
+          ),
+          matching: find.byType(TextField),
+        ),
+        'Minh Anh',
+      );
+      await tester.pump();
+      await tester.tapAt(const Offset(195, 60));
+      await tester.pumpAndSettle();
+      expect(find.text(S.discardChangesTitle), findsOneWidget);
+      await tester.tap(find.text(S.discard));
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(FilledButton, S.save), findsNothing);
+      expect(await db.select(db.outbox).get(), isEmpty);
+      expect(find.text('Minh'), findsOneWidget);
+    },
+  );
+
   testWidgets('UA-21: tên sai → báo lỗi dưới ô, không lưu', (tester) async {
     await pump(tester);
     await openAccount(tester);

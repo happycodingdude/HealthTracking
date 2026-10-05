@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/providers.dart';
 import '../../../data/auth/session_store.dart';
 import '../../../data/sync/sync_providers.dart';
+import '../../onboarding/application/setup_state.dart';
 
 enum AuthStatus {
   /// Chưa đăng nhập trên máy này → S-01.
@@ -20,7 +21,13 @@ enum AuthStatus {
 
 /// Trạng thái đăng nhập của app.
 final class AuthState {
-  const AuthState(this.status, {this.userId, this.phone, this.landing});
+  const AuthState(
+    this.status, {
+    this.userId,
+    this.phone,
+    this.landing,
+    this.serverSetupCompleted = false,
+  });
 
   const AuthState.signedOut() : this(AuthStatus.signedOut);
 
@@ -31,6 +38,10 @@ final class AuthState {
   /// Màn hình cần mở ngay sau khi vừa đăng ký/đăng nhập (OB-6). null khi mở
   /// lại app với phiên sẵn có (NAV-1).
   final String? landing;
+
+  /// Server báo tài khoản đã thiết lập xong lúc đăng nhập (`/v1/me`): không
+  /// đưa vào thiết lập lại dù dữ liệu chưa kịp về máy (khôi phục ở VS-14).
+  final bool serverSetupCompleted;
 }
 
 /// Phiên đọc từ Keychain lúc khởi động (override trong `main.dart`).
@@ -77,11 +88,11 @@ class AuthController extends Notifier<AuthState> {
             password: password,
           ),
         );
-    await _signedIn(me, landing: '/onboarding');
+    await _signedIn(me, landing: SetupState.notStarted.path);
     return me;
   }
 
-  /// S-01b. Thành công → theo OB-6: thiết lập tiếp hoặc vào app.
+  /// S-01b. Thành công → theo OB-6: thiết lập tiếp đúng bước hoặc vào app.
   Future<MeResponse> login({
     required String phone,
     required String password,
@@ -89,11 +100,16 @@ class AuthController extends Notifier<AuthState> {
     final me = await ref
         .read(authRepositoryProvider)
         .login(LoginRequest(phone: phone, password: password));
+    if (me.onboardingState != OnboardingState.notStarted) {
+      // Lấy hồ sơ về máy trước để mở đúng bước, thông tin đã nhập còn nguyên
+      // (OB-6). Lỗi mạng thì vào với dữ liệu đang có, đồng bộ tự chạy lại.
+      await ref.read(syncEngineProvider).syncNow();
+    }
     await _signedIn(
       me,
       landing: switch (me.onboardingState) {
-        OnboardingState.notStarted ||
-        OnboardingState.inProgress => '/onboarding',
+        OnboardingState.notStarted || OnboardingState.inProgress =>
+          SetupState.of(await ref.read(profileRepositoryProvider).get()).path,
         // Khôi phục dữ liệu (S-07) được thêm ở VS-14.
         OnboardingState.completed => '/today',
       },
@@ -109,6 +125,7 @@ class AuthController extends Notifier<AuthState> {
       userId: me.userId,
       phone: me.phone,
       landing: landing,
+      serverSetupCompleted: me.onboardingState == OnboardingState.completed,
     );
   }
 }

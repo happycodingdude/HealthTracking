@@ -1,4 +1,5 @@
 import 'json_reader.dart';
+import 'profile_codecs.dart';
 
 /// Codec `data` của một entity đồng bộ (06 §6.5.1). App và server cùng dùng để
 /// đọc/ghi đúng hợp đồng.
@@ -44,8 +45,12 @@ final class AccountCodec implements EntityCodec<AccountData> {
 /// Danh sách entity đồng bộ (06 §6.5.1). Slice sau thêm entity mới vào đây.
 abstract final class SyncEntities {
   static const account = 'account';
+  static const profile = 'profile';
+  static const weight = 'weight';
 
   static const Map<String, EntityCodec<Object>> codecs = {
     account: AccountCodec(),
+    profile: ProfileCodec(),
+    weight: WeightCodec(),
   };
 }

@@ -52,14 +52,80 @@ class Account extends Table {
   Set<Column<Object>> get primaryKey => {key};
 }
 
+/// Bản sao entity `profile` (key `me`, VS-03). Cột giống bảng `profiles` của
+/// server (05 §6.5, §6.7.3); enum lưu đúng giá trị trong API.
+@DataClassName('ProfileRow')
+class Profiles extends Table {
+  @override
+  String get tableName => 'profiles';
+
+  TextColumn get key => text()();
+  IntColumn get onboardingStep => integer()();
+  IntColumn get heightCm => integer().nullable()();
+  IntColumn get birthYear => integer().nullable()();
+  TextColumn get sex => text().nullable()();
+  TextColumn get activityLevel => text().nullable()();
+
+  /// `YYYY-MM-DD`.
+  TextColumn get setupDate => text().nullable()();
+  DateTimeColumn get disclaimerAcceptedAt => dateTime().nullable()();
+  DateTimeColumn get onboardingCompletedAt => dateTime().nullable()();
+  TextColumn get calorieMode => text().nullable()();
+  IntColumn get calorieKcal => integer().nullable()();
+  IntColumn get caloriePendingKcal => integer().nullable()();
+  TextColumn get caloriePendingReason => text().nullable()();
+  BoolColumn get remindersEnabled =>
+      boolean().withDefault(const Constant(false))();
+  TextColumn get timezone => text().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {key};
+}
+
+/// Bản sao entity `weight`: một số cân mỗi tuần (FR-11), khóa = thứ 2.
+@DataClassName('WeightRow')
+class Weights extends Table {
+  @override
+  String get tableName => 'weights';
+
+  /// `YYYY-MM-DD` của thứ 2.
+  TextColumn get weekStart => text()();
+  IntColumn get weightKgX10 => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {weekStart};
+}
+
+/// Thông tin đang nhập dở ở S-03 (OB-3). Chỉ nằm trên máy, không đồng bộ.
+/// Một dòng duy nhất, `id = 1`.
+@DataClassName('OnboardingDraftRow')
+class OnboardingDraft extends Table {
+  @override
+  String get tableName => 'onboarding_draft';
+
+  IntColumn get id => integer().check(const CustomExpression<bool>('id = 1'))();
+
+  /// Chuỗi Bạn gõ, giữ nguyên kể cả khi sai (04 §6.13.5).
+  TextColumn get height => text().withDefault(const Constant(''))();
+  IntColumn get birthYear => integer().nullable()();
+  TextColumn get sex => text().nullable()();
+  TextColumn get activityLevel => text().nullable()();
+  TextColumn get weight => text().withDefault(const Constant(''))();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
 /// SQLite trên máy (TD-04). Mỗi slice tăng `schemaVersion` tối đa 1 bước
 /// (ED-05, 06 §6.5.2).
-@DriftDatabase(tables: [SyncState, Outbox, Account])
+@DriftDatabase(
+  tables: [SyncState, Outbox, Account, Profiles, Weights, OnboardingDraft],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -74,6 +140,12 @@ class AppDatabase extends _$AppDatabase {
         // VS-02: outbox và account.
         await m.createTable(outbox);
         await m.createTable(account);
+      }
+      if (from < 3) {
+        // VS-03: hồ sơ, cân nặng, nháp thiết lập.
+        await m.createTable(profiles);
+        await m.createTable(weights);
+        await m.createTable(onboardingDraft);
       }
     },
     beforeOpen: (details) async {

@@ -12,6 +12,7 @@ import 'package:mobile/data/connectivity.dart';
 import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/data/sync/sync_providers.dart';
 import 'package:mobile/features/auth/application/auth_controller.dart';
+import 'package:mobile/features/onboarding/application/setup_state.dart';
 
 import 'fake_server.dart';
 import 'fake_sync.dart';
@@ -32,6 +33,8 @@ List<Override> appOverrides({
   FakeScheduler? scheduler,
   FakeConnectivity? connectivity,
   Clock? clock,
+  bool onboarded = true,
+  SetupState? initialSetup,
 }) {
   final store = MemorySessionStore(session);
   final database = db ?? AppDatabase(NativeDatabase.memory());
@@ -86,6 +89,17 @@ List<Override> appOverrides({
     ),
     sessionStoreProvider.overrideWithValue(store),
     initialSessionProvider.overrideWithValue(session),
+    // Đã đăng nhập: mặc định coi như đã thiết lập xong (test các tab). Test
+    // thiết lập lần đầu truyền `onboarded: false` để đọc trạng thái thật từ
+    // database.
+    if (initialSetup != null)
+      initialSetupProvider.overrideWithValue(initialSetup),
+    if (onboarded && session != null) ...[
+      initialSetupProvider.overrideWithValue(SetupState.completed),
+      setupStateProvider.overrideWith(
+        (ref) => Stream.value(SetupState.completed),
+      ),
+    ],
     databaseProvider.overrideWithValue(database),
     syncSchedulerProvider.overrideWithValue(scheduler ?? FakeScheduler()),
     connectivityProvider.overrideWithValue(connectivity ?? FakeConnectivity()),

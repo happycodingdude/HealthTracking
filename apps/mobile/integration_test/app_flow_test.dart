@@ -1,54 +1,25 @@
 // Integration test trên iOS simulator (ED-10): chạy bằng tool/integration_test.sh
 // với server và PostgreSQL thật, app cài mới và Keychain trống.
+//
+// `flutter test` gỡ app sau mỗi file, nên "mở lại app" (UX-AC3) được làm trong
+// cùng file: test sau gọi lại `app.main()`, đọc database và Keychain đã lưu.
+import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:mobile/app/shell/app_tab_bar.dart';
 import 'package:mobile/app/strings_vi.dart';
-import 'package:mobile/core/widgets/labeled_field.dart';
+import 'package:mobile/core/formatters.dart';
 import 'package:mobile/main.dart' as app;
+
+import 'flow_helpers.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  Finder tabLabel(String label) =>
-      find.descendant(of: find.byType(AppTabBar), matching: find.text(label));
-  Finder input(String label) => find.descendant(
-    of: find.byWidgetPredicate((w) => w is LabeledField && w.label == label),
-    matching: find.byType(TextField),
-  );
-
-  /// Cuộn tới [finder] như người dùng (danh sách chỉ dựng phần đang thấy, bàn
-  /// phím che bớt màn hình).
-  Future<void> reveal(WidgetTester tester, Finder finder) =>
-      tester.scrollUntilVisible(
-        finder,
-        80,
-        scrollable: find.byType(Scrollable).first,
-      );
-
-  Future<void> enter(WidgetTester tester, String label, String text) async {
-    await reveal(tester, input(label));
-    await tester.enterText(input(label), text);
-  }
-
-  /// Chờ [finder] xuất hiện (khởi động app, gọi mạng thật) và hiệu ứng chuyển
-  /// màn hình chạy xong.
-  Future<void> pumpUntil(WidgetTester tester, Finder finder) async {
-    for (var i = 0; i < 200; i++) {
-      await tester.pump(const Duration(milliseconds: 100));
-      if (finder.evaluate().isNotEmpty) {
-        await tester.pumpAndSettle();
-        return;
-      }
-    }
-    fail('Không thấy $finder sau 20 giây');
-  }
-
   testWidgets(
-    'TAC-15, VS01-T10, UX-AC1: đăng nhập sai 6 lần → câu chung; đăng ký → '
-    'S-02 → khung 5 tab; tab Tôi (dev) gọi được /healthz; VS-02: đổi tên → '
-    'đồng bộ với server, Hôm nay chào tên mới',
+    'TAC-15, VS01-T10: đăng nhập sai 6 lần → câu chung; đăng ký → S-02. '
+    'VS-03: S-02 → S-03 → S-04, thoát app ở bước 3',
     (tester) async {
       await app.main();
       await pumpUntil(tester, find.widgetWithText(OutlinedButton, S.login));
@@ -69,7 +40,7 @@ void main() {
         );
       }
 
-      // VS01-T10: đăng ký thành công → S-02.
+      // VS01-T10: đăng ký thành công → S-02 (Bước 1/5), không có thanh tab.
       await tester.tap(find.text(S.back));
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(FilledButton, S.register));
@@ -81,10 +52,52 @@ void main() {
       await reveal(tester, find.widgetWithText(FilledButton, S.register));
       await tester.tap(find.widgetWithText(FilledButton, S.register));
       await pumpUntil(tester, find.text(S.disclaimerTitle));
+      expect(find.text(S.stepOf(1)), findsOneWidget);
+      expect(find.byType(AppTabBar), findsNothing);
 
-      // Bản dev: bỏ qua S-02 để vào khung tab (gỡ ở VS-03).
+      // VS-03: S-02 → S-03 (hồ sơ F02-AC1) → S-04.
+      await tester.tap(find.text(S.iUnderstand));
+      await pumpUntil(tester, find.text(S.profileTitle));
+      await enter(tester, S.fieldHeight, '175');
+      await tapVisible(tester, find.byKey(const ValueKey('birth-year-field')));
+      await tester.tap(find.text(S.done)); // mặc định 30 tuổi
+      await tester.pumpAndSettle();
+      await tapVisible(tester, find.byKey(const ValueKey('sex-male')));
+      await tapVisible(tester, find.byKey(const ValueKey('activity-moderate')));
+      await enter(tester, S.fieldInitialWeight, '80');
+      await tester.tap(find.widgetWithText(FilledButton, S.continueLabel));
+      await pumpUntil(tester, find.text(S.calorieTitle));
+      expect(find.text(S.stepOf(3)), findsOneWidget);
+      expect(find.text(S.calorieAuto), findsOneWidget);
+      // Thoát app ở bước 3; test sau mở lại.
+    },
+  );
+
+  testWidgets(
+    'UX-AC3: mở lại app → đúng bước 3, thông tin còn nguyên. Giữ mức → bước 4 '
+    '(giữ chỗ) → khung 5 tab (UX-AC1); tab Tôi gọi được /healthz; VS-02: đổi '
+    'tên → đồng bộ với server, Hôm nay chào tên mới',
+    (tester) async {
+      // Mở lại app: dựng từ đầu, đọc trạng thái đã lưu trên máy.
+      await tester.pumpWidget(const SizedBox());
+      await app.main();
+      await pumpUntil(tester, find.text(S.calorieTitle));
+      expect(find.text(S.stepOf(3)), findsOneWidget);
+      final kcal = CalorieRules.estimate(
+        heightCm: 175,
+        weightKgX10: 800,
+        age: ProfileRules.age(1996, DateTime.now().year),
+        sex: Sex.male,
+        activity: ActivityLevel.moderate,
+      ).kcal;
+      expect(find.text(Fmt.kcal(kcal), findRichText: true), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(FilledButton, S.keepThisLevel));
+      await pumpUntil(tester, find.text(S.stepOf(4)));
+
+      // Bản dev: bỏ qua bước giữ chỗ để vào khung tab (gỡ ở VS-05).
       await tester.tap(find.byKey(const ValueKey('dev-skip-onboarding')));
-      await pumpUntil(tester, find.byType(AppTabBar));
+      await pumpUntil(tester, tabLabel(S.tabToday));
       for (final label in [
         S.tabSchedule,
         S.tabMenu,
