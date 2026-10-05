@@ -30,22 +30,26 @@ final sessionStoreProvider = Provider<SessionStore>(
   (ref) => SecureSessionStore(),
 );
 
-final Provider<TokenManager> tokenManagerProvider = Provider<TokenManager>((
-  ref,
-) {
+/// ApiClient không gắn access token, chỉ dùng để làm mới token. Tách riêng để
+/// [tokenManagerProvider] không phụ thuộc vòng vào [apiClientProvider].
+final publicApiClientProvider = Provider<ApiClient>(
+  (ref) => ApiClient.create(ref.watch(envProvider).apiBaseUrl),
+);
+
+final tokenManagerProvider = Provider<TokenManager>((ref) {
+  final api = ref.watch(publicApiClientProvider);
   final tokens = TokenManager(
     store: ref.watch(sessionStoreProvider),
     clock: ref.watch(clockProvider),
-    // Đọc ApiClient lúc gọi để tránh phụ thuộc vòng khi khởi tạo.
     refreshCall: (refreshToken) =>
-        AuthRepository.refreshWith(ref.read(apiClientProvider), refreshToken),
+        AuthRepository.refreshWith(api, refreshToken),
   );
   ref.onDispose(tokens.dispose);
   return tokens;
 });
 
 /// ApiClient có interceptor gắn access token và tự làm mới token (VS01-T08).
-final Provider<ApiClient> apiClientProvider = Provider<ApiClient>((ref) {
+final apiClientProvider = Provider<ApiClient>((ref) {
   final api = ApiClient.create(ref.watch(envProvider).apiBaseUrl);
   api.dio.interceptors.add(
     AuthInterceptor(api.dio, ref.watch(tokenManagerProvider)),

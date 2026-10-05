@@ -3,10 +3,9 @@ import 'dart:convert';
 import 'package:api_contract/api_contract.dart';
 import 'package:domain/domain.dart';
 import 'package:server/server.dart';
+import 'package:server/testing.dart';
 import 'package:shelf/shelf.dart';
 import 'package:test/test.dart';
-
-import 'support/test_database.dart';
 
 void main() {
   late CapturingLogger log;

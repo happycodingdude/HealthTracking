@@ -11,6 +11,10 @@ import 'db/database.dart';
 import 'health/health_routes.dart';
 import 'http/middleware.dart';
 import 'logging/logger.dart';
+import 'sync/account_handler.dart';
+import 'sync/sync_entity_handler.dart';
+import 'sync/sync_routes.dart';
+import 'sync/sync_service.dart';
 
 /// Các thành phần dùng chung của API, tạo một lần khi khởi động.
 final class AppDeps {
@@ -21,6 +25,7 @@ final class AppDeps {
     required String jwtSecret,
     this.bcryptCost = 12,
     this.trustProxy = false,
+    List<SyncEntityHandler> syncHandlers = const [AccountHandler()],
   }) : tokens = TokenService(secret: jwtSecret, clock: clock),
        limiter = LoginRateLimiter(clock) {
     auth = AuthService(
@@ -28,6 +33,12 @@ final class AppDeps {
       tokens: tokens,
       limiter: limiter,
       bcryptCost: bcryptCost,
+    );
+    sync = SyncService(
+      pool: db.pool,
+      clock: clock,
+      handlers: syncHandlers,
+      logger: logger,
     );
   }
 
@@ -39,6 +50,7 @@ final class AppDeps {
   final TokenService tokens;
   final LoginRateLimiter limiter;
   late final AuthService auth;
+  late final SyncService sync;
 }
 
 /// Ghép toàn bộ route và middleware của API.
@@ -47,6 +59,7 @@ Handler buildApp(AppDeps deps) {
     ..get('/healthz', healthHandler(deps.db));
   addAuthRoutes(router, deps.auth, trustProxy: deps.trustProxy);
   addMeRoutes(router, deps.db.pool, deps.tokens);
+  addSyncRoutes(router, deps.sync, deps.tokens);
   return const Pipeline()
       .addMiddleware(coreMiddleware(deps.logger))
       .addHandler(router.call);

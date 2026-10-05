@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'router.dart';
+import 'sync_coordinator.dart';
 import 'theme.dart';
 
 /// Gốc của app: theme sáng/tối theo iPhone (UR-05), tiếng Việt.
@@ -20,6 +21,8 @@ class HealthApp extends ConsumerWidget {
       supportedLocales: const [Locale('vi')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
       routerConfig: ref.watch(routerProvider),
+      builder: (context, child) =>
+          SyncCoordinator(child: child ?? const SizedBox.shrink()),
     );
   }
 }

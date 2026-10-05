@@ -39,8 +39,8 @@ final class AuthService {
       return await _pool.runTx((tx) async {
         final rows = await tx.execute(
           Sql.named('''
-            INSERT INTO users (phone, password_hash, display_name)
-            VALUES (@phone, crypt(@password, gen_salt('bf', @cost::int)), @name)
+            INSERT INTO users (phone, password_hash, display_name, client_updated_at)
+            VALUES (@phone, crypt(@password, gen_salt('bf', @cost::int)), @name, 'epoch')
             RETURNING id'''),
           parameters: {
             'phone': AccountValidators.normalizePhone(req.phone),

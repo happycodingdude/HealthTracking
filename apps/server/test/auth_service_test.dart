@@ -6,9 +6,8 @@ import 'package:server/server.dart';
 import 'package:server/src/auth/auth_service.dart';
 import 'package:server/src/auth/login_rate_limiter.dart';
 import 'package:server/src/auth/token_service.dart';
+import 'package:server/testing.dart';
 import 'package:test/test.dart';
-
-import 'support/test_database.dart';
 
 const secret = 'test-secret-test-secret-test-secret-123';
 

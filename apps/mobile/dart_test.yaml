@@ -1,3 +1,5 @@
 tags:
   # Golden test chỉ so sánh trên Linux (ED-09). Trên macOS: tool/golden.sh.
   golden:
+  # Test E2E đồng bộ: cần PostgreSQL (tool/test_db.sh ensure, hoặc service của CI).
+  e2e:

@@ -2,9 +2,8 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import 'package:server/server.dart';
+import 'package:server/testing.dart';
 import 'package:test/test.dart';
-
-import 'support/test_database.dart';
 
 void main() {
   test(

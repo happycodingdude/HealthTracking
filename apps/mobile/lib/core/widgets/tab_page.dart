@@ -50,15 +50,18 @@ class TabPage extends ConsumerWidget {
                   color: context.palette.textSecondary,
                 ),
               ),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
+            // Tiêu đề và thành phần bên phải; không đủ chỗ (cỡ chữ lớn) thì
+            // thành phần bên phải xuống dòng, không ép tiêu đề (UX-AC18).
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.end,
+              spacing: 12,
+              runSpacing: 8,
               children: [
-                Expanded(
-                  child: Heading(
-                    title,
-                    style: context.text.displaySmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                Heading(
+                  title,
+                  style: context.text.displaySmall?.copyWith(
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 ?trailing,

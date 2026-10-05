@@ -47,7 +47,8 @@ void main() {
 
   testWidgets(
     'TAC-15, VS01-T10, UX-AC1: đăng nhập sai 6 lần → câu chung; đăng ký → '
-    'S-02 → khung 5 tab; tab Tôi (dev) gọi được /healthz',
+    'S-02 → khung 5 tab; tab Tôi (dev) gọi được /healthz; VS-02: đổi tên → '
+    'đồng bộ với server, Hôm nay chào tên mới',
     (tester) async {
       await app.main();
       await pumpUntil(tester, find.widgetWithText(OutlinedButton, S.login));
@@ -98,6 +99,26 @@ void main() {
       await tester.tap(tabLabel(S.tabMe));
       await tester.pumpAndSettle();
       await pumpUntil(tester, find.textContaining('Dev server: OK'));
+
+      // VS-02: đổi tên ở S-56 → hiện ngay, đồng bộ với server thật; Hôm nay
+      // chào bằng tên mới (UA-21, UX-AC22).
+      await tester.tap(find.byKey(const ValueKey('row-account-data')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('row-display-name')));
+      await tester.pumpAndSettle();
+      await tester.enterText(input(S.fieldDisplayName), 'Minh Anh');
+      await tester.tap(find.widgetWithText(FilledButton, S.save));
+      await tester.pumpAndSettle();
+      expect(find.text('Minh Anh'), findsOneWidget);
+      await pumpUntil(tester, find.textContaining(S.syncedAt('')));
+      expect(find.text(S.syncLossWarning), findsNothing);
+
+      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('tab-today-button')));
+      await tester.pumpAndSettle();
+      expect(find.textContaining(S.greeting('Minh Anh')), findsOneWidget);
+      expect(find.byKey(const ValueKey('sync-indicator')), findsNothing);
     },
   );
 }

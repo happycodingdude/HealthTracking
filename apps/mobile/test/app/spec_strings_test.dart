@@ -25,6 +25,11 @@ void main() {
     },
   );
 
+  test('UR-14, S-56: câu có tham số', () {
+    expect(S.greeting('Minh'), 'Chào Minh');
+    expect(S.syncedAt('18:42'), 'Đã đồng bộ lúc 18:42');
+  });
+
   test('F08-E2: câu chạm trần ngân sách', () {
     expect(
       S.budgetPaused(11),

@@ -3,9 +3,12 @@ import 'dart:convert';
 import 'package:api_contract/api_contract.dart';
 import 'package:domain/domain.dart';
 import 'package:server/server.dart';
+import 'package:server/src/sync/account_handler.dart';
+import 'package:server/testing.dart';
 import 'package:shelf/shelf.dart';
+import 'package:uuid/uuid.dart';
 
-import 'test_database.dart';
+import 'test_item_handler.dart';
 
 const testJwtSecret = 'test-secret-test-secret-test-secret-123';
 
@@ -28,8 +31,14 @@ final class TestApp {
   TestApp._(this.tdb, this.clock, this.deps, this.log)
     : handler = buildApp(deps);
 
-  static Future<TestApp> create({DateTime? now}) async {
+  /// [withTestItems] = true: thêm entity `test_item` (upsert/ensure/delete)
+  /// để kiểm lớp đồng bộ chung.
+  static Future<TestApp> create({
+    DateTime? now,
+    bool withTestItems = false,
+  }) async {
     final tdb = await TestDatabase.create();
+    if (withTestItems) await TestItemHandler.createTable(tdb.pool);
     final clock = FixedClock(now ?? DateTime.utc(2026, 10, 7, 10));
     final log = CapturingLogger();
     final deps = AppDeps(
@@ -39,6 +48,10 @@ final class TestApp {
       jwtSecret: testJwtSecret,
       bcryptCost: 4,
       trustProxy: true,
+      syncHandlers: [
+        const AccountHandler(),
+        if (withTestItems) const TestItemHandler(),
+      ],
     );
     return TestApp._(tdb, clock, deps, log);
   }
@@ -105,4 +118,42 @@ final class TestApp {
   }
 
   Future<void> dispose() => tdb.dispose();
+}
+
+/// Tạo mutation thử.
+SyncMutation mutation(
+  String entity,
+  String key,
+  SyncOp op, {
+  required DateTime at,
+  Map<String, Object?>? data,
+  String? id,
+}) => SyncMutation(
+  mutationId: id ?? const Uuid().v4(),
+  entity: entity,
+  key: key,
+  op: op,
+  clientUpdatedAt: at,
+  data: data,
+);
+
+extension SyncCalls on TestApp {
+  Future<PushResponse> push(String token, List<SyncMutation> mutations) async {
+    final res = await post(
+      '/v1/sync/push',
+      PushRequest(mutations).toJson(),
+      token: token,
+    );
+    if (res.status != 200) throw StateError('push ${res.status} ${res.json}');
+    return PushResponse.fromJson(res.json);
+  }
+
+  Future<PullResponse> pull(String token, {int cursor = 0, int? limit}) async {
+    final res = await get(
+      '/v1/sync/pull?cursor=$cursor${limit == null ? '' : '&limit=$limit'}',
+      token: token,
+    );
+    if (res.status != 200) throw StateError('pull ${res.status} ${res.json}');
+    return PullResponse.fromJson(res.json);
+  }
 }
