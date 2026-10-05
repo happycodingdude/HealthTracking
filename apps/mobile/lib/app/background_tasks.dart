@@ -6,11 +6,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/sync/sync_providers.dart';
 import '../data/sync/sync_scheduler.dart';
+import '../features/me/application/reminders.dart';
 import '../features/schedule/application/month_materializer.dart';
 import 'providers.dart';
+import 'router.dart';
 
 /// Chạy các thành phần nền của app (05 §6.4.4) khi khởi động, khi quay lại
-/// foreground và khi qua 00:00 lúc app đang mở: [MonthMaterializer] (F03-R6).
+/// foreground và khi qua 00:00 lúc app đang mở: [MonthMaterializer] (F03-R6)
+/// rồi [ReminderScheduler] (TR-10). Chạm vào nhắc → Hôm nay (NAV-2).
 class BackgroundTasks extends ConsumerStatefulWidget {
   const BackgroundTasks({super.key, required this.child});
 
@@ -34,23 +37,40 @@ class _BackgroundTasksState extends ConsumerState<BackgroundTasks> {
         _midnight = null;
       },
     );
-    WidgetsBinding.instance.addPostFrameCallback((_) => _run());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        await ref
+            .read(notificationGatewayProvider)
+            .init(
+              onTap: (payload) => ref
+                  .read(routerProvider)
+                  .go(payload.isEmpty ? reminderPayload : payload),
+            );
+      } catch (e, st) {
+        await ref
+            .read(errorReporterProvider)
+            .report(e, st, reason: 'notifications_init');
+      }
+      _run();
+    });
   }
 
   void _run() {
     if (!mounted) return;
-    unawaited(
-      ref
-          .read(monthMaterializerProvider)
-          .run()
-          .catchError(
-            (Object e, StackTrace st) => ref
-                .read(errorReporterProvider)
-                .report(e, st, reason: 'month_materializer')
-                .then((_) => false),
-          ),
-    );
+    unawaited(_tasks());
     _scheduleMidnight();
+  }
+
+  Future<void> _tasks() async {
+    try {
+      await ref.read(monthMaterializerProvider).run();
+      await ref.read(notificationPermissionProvider.notifier).refresh();
+      await ref.read(reminderSchedulerProvider).reschedule();
+    } catch (e, st) {
+      await ref
+          .read(errorReporterProvider)
+          .report(e, st, reason: 'background_tasks');
+    }
   }
 
   /// Hẹn lần chạy kế tiếp ngay sau 00:00 theo giờ trên máy.

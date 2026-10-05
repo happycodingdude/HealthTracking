@@ -12,8 +12,10 @@ import 'package:mobile/data/connectivity.dart';
 import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/data/sync/sync_providers.dart';
 import 'package:mobile/features/auth/application/auth_controller.dart';
+import 'package:mobile/features/me/application/reminders.dart';
 import 'package:mobile/features/onboarding/application/setup_state.dart';
 
+import 'fake_notifications.dart';
 import 'fake_server.dart';
 import 'fake_sync.dart';
 
@@ -35,6 +37,7 @@ List<Override> appOverrides({
   Clock? clock,
   bool onboarded = true,
   SetupState? initialSetup,
+  FakeNotificationGateway? notifications,
 }) {
   final store = MemorySessionStore(session);
   final database = db ?? AppDatabase(NativeDatabase.memory());
@@ -101,6 +104,9 @@ List<Override> appOverrides({
       initialSetupProvider.overrideWithValue(initialSetup),
     databaseProvider.overrideWithValue(database),
     syncSchedulerProvider.overrideWithValue(scheduler ?? FakeScheduler()),
+    notificationGatewayProvider.overrideWithValue(
+      notifications ?? FakeNotificationGateway(),
+    ),
     connectivityProvider.overrideWithValue(connectivity ?? FakeConnectivity()),
     clockProvider.overrideWithValue(
       clock ?? FixedClock(DateTime(2026, 10, 7, 18, 42)),

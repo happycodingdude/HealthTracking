@@ -22,8 +22,8 @@ void main() {
   const fresh = SetupState.notStarted;
   final atStep3 = SetupState.of(const Profile(onboardingStep: 3));
 
-  String? go(AuthState a, SetupState s, String location, {bool skip = false}) =>
-      appRedirect(a, s, location, devSkipSetup: skip);
+  String? go(AuthState a, SetupState s, String location) =>
+      appRedirect(a, s, location);
 
   test(
     'VS01-T10: chưa đăng nhập → S-01; được ở trong luồng S-01/S-01a/S-01b',
@@ -86,11 +86,6 @@ void main() {
     );
     expect(go(loggedIn, fresh, '/welcome/login'), '/today');
     expect(go(loggedIn, fresh, '/today'), isNull);
-  });
-
-  test('bản dev: bỏ qua bước giữ chỗ → vào được các tab', () {
-    expect(go(reopened, atStep3, '/today', skip: true), isNull);
-    expect(go(reopened, atStep3, '/onboarding/3', skip: true), '/today');
   });
 
   test('TA-10: phiên hết hạn → S-01b', () {

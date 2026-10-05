@@ -75,7 +75,7 @@ void main() {
 
   testWidgets(
     'UX-AC3: mở lại app → đúng bước 3, thông tin còn nguyên. Giữ mức → VS-04: '
-    'xếp lịch tuần → bước 5 (giữ chỗ) → khung 5 tab (UX-AC1), lịch tháng; tab '
+    'xếp lịch tuần → VS-05: bước 5 "Để sau" → khung 5 tab (UX-AC1), lịch tháng; tab '
     'Tôi gọi được /healthz; VS-02: đổi tên → đồng bộ với server, Hôm nay chào '
     'tên mới',
     (tester) async {
@@ -109,8 +109,10 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, S.saveSchedule));
       await pumpUntil(tester, find.text(S.stepOf(5)));
 
-      // Bản dev: bỏ qua bước giữ chỗ để vào khung tab (gỡ ở VS-05).
-      await tester.tap(find.byKey(const ValueKey('dev-skip-onboarding')));
+      // VS-05: S-06 có ví dụ thật từ lịch; "Để sau" (simulator không bấm được
+      // hộp xin quyền của iOS) → hoàn tất thiết lập → Hôm nay (OB-4, NAV-1).
+      expect(find.byKey(const ValueKey('reminder-preview')), findsOneWidget);
+      await tester.tap(find.widgetWithText(OutlinedButton, S.later));
       await pumpUntil(tester, tabLabel(S.tabToday));
       for (final label in [
         S.tabSchedule,

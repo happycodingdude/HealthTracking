@@ -4,13 +4,16 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/shell/app_tab.dart';
 import '../../../app/strings_vi.dart';
+import '../../../app/theme.dart';
 import '../../../core/widgets/settings_card.dart';
 import '../../../core/widgets/tab_page.dart';
+import '../../../core/widgets/toast.dart';
 import '../../../data/sync/sync_providers.dart';
+import '../application/reminders.dart';
 import 'dev_server_status.dart';
 
-/// S-50 — Tôi. VS-02 có dòng "Tài khoản và dữ liệu"; các dòng hồ sơ, mức calo,
-/// nhắc, ngân sách được thêm ở VS-05, VS-11, VS-13.
+/// S-50 — Tôi. Có dòng "Nhắc đi tập" (VS-05) và "Tài khoản và dữ liệu"
+/// (VS-02); các dòng hồ sơ, mức calo, ngân sách được thêm ở VS-11, VS-13.
 class MeScreen extends ConsumerWidget {
   const MeScreen({super.key});
 
@@ -23,6 +26,7 @@ class MeScreen extends ConsumerWidget {
       children: [
         SettingsCard(
           children: [
+            const _RemindersRow(),
             SettingsRow(
               key: const ValueKey('row-account-data'),
               label: S.accountAndData,
@@ -36,6 +40,94 @@ class MeScreen extends ConsumerWidget {
         const SizedBox(height: 24),
         const DevServerStatus(),
       ],
+    );
+  }
+}
+
+/// Công tắc nhắc ngay trên dòng (04 S-50, F-04). Chưa có quyền → cảnh báo kèm
+/// "Mở Cài đặt" (F04-E2, UX-AC14).
+class _RemindersRow extends ConsumerWidget {
+  const _RemindersRow();
+
+  Future<void> _toggle(BuildContext context, WidgetRef ref, bool on) async {
+    if (on) {
+      // Lần đầu iPhone hỏi quyền; đã từ chối thì công tắc vẫn bật kèm cảnh báo.
+      await ref.read(notificationPermissionProvider.notifier).request();
+    }
+    await ref.read(setRemindersProvider).call(on);
+    if (context.mounted) {
+      showToast(context, on ? S.remindersTurnedOn : S.remindersTurnedOff);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final enabled = ref.watch(remindersEnabledProvider).value ?? false;
+    final blocked = ref.watch(remindersBlockedProvider);
+    final palette = context.palette;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(S.remindersRow, style: context.text.bodyLarge),
+                    Text(
+                      S.remindersHint,
+                      style: context.text.bodyMedium?.copyWith(
+                        color: palette.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                key: const ValueKey('reminders-switch'),
+                value: enabled,
+                onChanged: (on) => _toggle(context, ref, on),
+              ),
+            ],
+          ),
+          if (blocked)
+            Container(
+              key: const ValueKey('notifications-blocked'),
+              margin: const EdgeInsets.only(top: 8, right: 8, bottom: 8),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              decoration: BoxDecoration(
+                color: palette.attentionContainer,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Semantics(
+                    liveRegion: true,
+                    child: Text(
+                      S.notificationsBlocked,
+                      style: context.text.bodyLarge?.copyWith(
+                        color: palette.attention,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      foregroundColor: palette.attention,
+                    ),
+                    onPressed: () =>
+                        ref.read(notificationGatewayProvider).openSettings(),
+                    child: const Text(S.openSettings),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

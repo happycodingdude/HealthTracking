@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../features/me/application/reminders.dart';
 import 'app_tab.dart';
 
 /// Mỗi tab có một [ScrollController] riêng để chạm lại tab đang mở thì cuộn
@@ -37,5 +38,8 @@ final tabScrollControllersProvider = Provider<TabScrollControllers>((ref) {
   return controllers;
 });
 
-/// Tab đang có chấm báo hiệu (04 §6.3.1). Các slice sau bổ sung điều kiện.
-final tabDotsProvider = Provider<Set<AppTab>>((ref) => const {});
+/// Tab đang có chấm báo hiệu (04 §6.3.1). Tôi: nhắc đang bật nhưng iPhone
+/// chặn thông báo (F04-E2). Các slice sau bổ sung điều kiện.
+final tabDotsProvider = Provider<Set<AppTab>>(
+  (ref) => {if (ref.watch(remindersBlockedProvider)) AppTab.me},
+);

@@ -10,7 +10,9 @@ environment:
 dependencies:
   api_contract:
     path: ../../packages/api_contract
-  connectivity_plus: ^7.3.2
+  # 7.3.2 kéo nm 0.6 → dbus 0.8, xung đột với flutter_local_notifications 20
+  # (gói Linux cần dbus 0.7). App chỉ chạy iOS; bỏ ghim khi hai bên cùng dbus.
+  connectivity_plus: ">=7.3.0 <7.3.2"
   dio: ^5.11.1
   domain:
     path: ../../packages/domain
@@ -18,12 +20,16 @@ dependencies:
   drift_flutter: ^0.2.4
   flutter:
     sdk: flutter
+  flutter_local_notifications: ^20.1.0
   flutter_localizations:
     sdk: flutter
   flutter_riverpod: ^3.3.2
   flutter_secure_storage: ^10.3.4
+  flutter_timezone: ^5.1.1
   go_router: ^17.0.0
   sentry_flutter: ^9.30.1
+  timezone: ^0.10.1
+  url_launcher: ^6.3.2
   uuid: ^4.6.0
 
 dev_dependencies:

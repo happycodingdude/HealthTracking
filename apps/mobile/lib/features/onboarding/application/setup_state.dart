@@ -46,16 +46,3 @@ final initialSetupProvider = Provider<SetupState>(
 final setupStateProvider = StreamProvider<SetupState>(
   (ref) => ref.watch(profileRepositoryProvider).watch().map(SetupState.of),
 );
-
-/// Bản dev: bỏ qua các bước còn giữ chỗ để vào thử các tab (chỉ trong bộ nhớ,
-/// gỡ khi đủ 5 bước ở VS-05).
-final devSkipSetupProvider = NotifierProvider<DevSkipSetup, bool>(
-  DevSkipSetup.new,
-);
-
-class DevSkipSetup extends Notifier<bool> {
-  @override
-  bool build() => false;
-
-  void skip() => state = true;
-}

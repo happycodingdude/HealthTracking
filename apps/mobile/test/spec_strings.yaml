@@ -145,3 +145,13 @@ timeNotSet: "--:--" # ô giờ tập khi chưa chọn giờ (F03-V2)
 previousMonth: "Tháng trước" # nhãn VoiceOver nút "‹" ở S-20 (04 §6.17)
 nextMonth: "Tháng sau" # nhãn VoiceOver nút "›" ở S-20 (04 §6.17)
 reminderStepTitle: "Nhắc Bạn trước giờ tập?" # 04 S-06 (giữ chỗ đến VS-05)
+
+# Nhắc đi tập: S-06, S-50
+turnOnReminders: "Bật nhắc" # 04 S-06
+later: "Để sau" # 04 S-06, OB-4
+remindersRow: "Nhắc đi tập" # 04 S-50
+remindersHint: "1 giờ trước giờ tập" # 04 S-50
+notificationsBlocked: "iPhone đang chặn thông báo của app. Mở Cài đặt để cho phép." # 04 S-50, 03 F04-E2
+openSettings: "Mở Cài đặt" # 04 S-50
+remindersTurnedOff: "Đã tắt nhắc đi tập" # 04 S-50
+remindersTurnedOn: "Đã bật nhắc đi tập" # 04 S-50

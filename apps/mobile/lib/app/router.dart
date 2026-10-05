@@ -15,7 +15,7 @@ import '../features/onboarding/application/setup_state.dart';
 import '../features/onboarding/presentation/calorie_step_screen.dart';
 import '../features/onboarding/presentation/disclaimer_screen.dart';
 import '../features/onboarding/presentation/profile_step_screen.dart';
-import '../features/onboarding/presentation/reminder_step_placeholder.dart';
+import '../features/onboarding/presentation/reminder_step_screen.dart';
 import '../features/onboarding/presentation/schedule_step_screen.dart';
 import '../features/schedule/presentation/schedule_screen.dart';
 import '../features/today/presentation/today_screen.dart';
@@ -34,12 +34,7 @@ import 'shell/app_tab.dart';
 ///   lại thì vào đúng bước đang dở. Trang "Về gợi ý tham khảo" xem được mọi
 ///   lúc (F10-R4).
 @visibleForTesting
-String? appRedirect(
-  AuthState auth,
-  SetupState setup,
-  String location, {
-  bool devSkipSetup = false,
-}) {
+String? appRedirect(AuthState auth, SetupState setup, String location) {
   final inWelcome = location == '/welcome' || location.startsWith('/welcome/');
   switch (auth.status) {
     case AuthStatus.signedOut:
@@ -66,7 +61,7 @@ String? appRedirect(
   if (location == aboutReferencePath) return null;
   final inOnboarding =
       location == '/onboarding' || location.startsWith('/onboarding/');
-  if (completed || devSkipSetup) {
+  if (completed) {
     return inOnboarding ? AppTab.today.path : null;
   }
   if (!inOnboarding) return setup.path;
@@ -75,7 +70,7 @@ String? appRedirect(
   return onboardingSteps.contains(location) ? null : setup.path;
 }
 
-/// Các bước thiết lập (bước 5 giữ chỗ đến VS-05).
+/// Các bước thiết lập lần đầu (04 §6.5).
 @visibleForTesting
 const onboardingSteps = {
   '/onboarding/1',
@@ -89,27 +84,20 @@ const onboardingSteps = {
 final routerProvider = Provider<GoRouter>((ref) {
   final auth = ValueNotifier<AuthState>(ref.read(authControllerProvider));
   final setup = ValueNotifier<SetupState>(ref.read(initialSetupProvider));
-  final devSkip = ValueNotifier<bool>(ref.read(devSkipSetupProvider));
   ref
     ..listen(authControllerProvider, (_, next) => auth.value = next)
     ..listen(setupStateProvider, (_, next) {
       final value = next.value;
       if (value != null) setup.value = value;
     })
-    ..listen(devSkipSetupProvider, (_, next) => devSkip.value = next)
     ..onDispose(auth.dispose)
-    ..onDispose(setup.dispose)
-    ..onDispose(devSkip.dispose);
+    ..onDispose(setup.dispose);
 
   final router = GoRouter(
     initialLocation: AppTab.today.path,
-    refreshListenable: Listenable.merge([auth, setup, devSkip]),
-    redirect: (context, state) => appRedirect(
-      auth.value,
-      setup.value,
-      state.matchedLocation,
-      devSkipSetup: devSkip.value,
-    ),
+    refreshListenable: Listenable.merge([auth, setup]),
+    redirect: (context, state) =>
+        appRedirect(auth.value, setup.value, state.matchedLocation),
     routes: [
       GoRoute(
         path: '/welcome',
@@ -140,7 +128,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/onboarding/5',
-        builder: (_, _) => const ReminderStepPlaceholder(),
+        builder: (_, _) => const ReminderStepScreen(),
       ),
       GoRoute(
         path: aboutReferencePath,

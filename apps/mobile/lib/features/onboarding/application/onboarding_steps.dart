@@ -190,6 +190,46 @@ final class OnboardingSteps {
     return const [];
   }
 
+  /// Bước 5 (S-06): hoàn tất thiết lập lần đầu (VS05-T05). Ghi công tắc nhắc
+  /// (F04-R1), ngày thiết lập, thời điểm hoàn tất và múi giờ của iPhone. Cân
+  /// ban đầu ghi ở bước 2; nếu đã sang tuần khác thì chuyển sang tuần thiết
+  /// lập (ED-06, F01-R3).
+  Future<void> complete({
+    required bool remindersEnabled,
+    required String? timezone,
+  }) => _db.transaction(() async {
+    final now = _clock.now();
+    final today = LocalDate.fromDateTime(now);
+    final setupWeek = WeightRules.weekKey(today);
+    for (final w in await _weights.all()) {
+      if (w.week == setupWeek) continue;
+      await _weights.delete(w.week);
+      await _outbox.enqueue(
+        SyncEntities.weight,
+        w.week.toKey(),
+        SyncOp.delete,
+        null,
+      );
+      await _weights.put(setupWeek, w.kgX10);
+      await _outbox.enqueue(
+        SyncEntities.weight,
+        setupWeek.toKey(),
+        SyncOp.upsert,
+        _weightCodec.encode(WeightData(weightKgX10: w.kgX10)),
+      );
+    }
+    final profile = (await _profiles.get())!;
+    await _saveProfile(
+      profile.copyWith(
+        onboardingStep: ProfileRules.onboardingSteps,
+        remindersEnabled: remindersEnabled,
+        setupDate: today,
+        onboardingCompletedAt: now,
+        timezone: timezone,
+      ),
+    );
+  });
+
   CalorieEstimate? _estimate(Profile p, int? weightKgX10) =>
       CalorieRules.forProfile(
         p,
