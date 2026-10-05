@@ -15,7 +15,8 @@ import '../features/onboarding/application/setup_state.dart';
 import '../features/onboarding/presentation/calorie_step_screen.dart';
 import '../features/onboarding/presentation/disclaimer_screen.dart';
 import '../features/onboarding/presentation/profile_step_screen.dart';
-import '../features/onboarding/presentation/schedule_step_placeholder.dart';
+import '../features/onboarding/presentation/reminder_step_placeholder.dart';
+import '../features/onboarding/presentation/schedule_step_screen.dart';
 import '../features/schedule/presentation/schedule_screen.dart';
 import '../features/today/presentation/today_screen.dart';
 import '../features/weight/presentation/weight_screen.dart';
@@ -74,13 +75,14 @@ String? appRedirect(
   return onboardingSteps.contains(location) ? null : setup.path;
 }
 
-/// Các bước thiết lập đã có màn hình (VS-03; bước 4 giữ chỗ đến VS-04).
+/// Các bước thiết lập (bước 5 giữ chỗ đến VS-05).
 @visibleForTesting
 const onboardingSteps = {
   '/onboarding/1',
   '/onboarding/2',
   '/onboarding/3',
   '/onboarding/4',
+  '/onboarding/5',
 };
 
 /// Router của app (TD-03). Mở app vào Hôm nay (NAV-1).
@@ -134,7 +136,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/onboarding/4',
-        builder: (_, _) => const ScheduleStepPlaceholder(),
+        builder: (_, _) => const ScheduleStepScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding/5',
+        builder: (_, _) => const ReminderStepPlaceholder(),
       ),
       GoRoute(
         path: aboutReferencePath,

@@ -112,20 +112,90 @@ class OnboardingDraft extends Table {
   TextColumn get activityLevel => text().nullable()();
   TextColumn get weight => text().withDefault(const Constant(''))();
 
+  /// Lịch tuần đang xếp dở ở S-05 (JSON như `WeeklyTemplate.toJson`, VS-04).
+  TextColumn get template => text().nullable()();
+
   @override
   Set<Column<Object>> get primaryKey => {id};
+}
+
+/// Bản sao entity `weekly_template` (key `me`, VS-04): `days` là JSON chuẩn
+/// hóa của lịch tuần.
+@DataClassName('WeeklyTemplateRow')
+class WeeklyTemplates extends Table {
+  @override
+  String get tableName => 'weekly_templates';
+
+  TextColumn get key => text()();
+  TextColumn get days => text()();
+  TextColumn get contentHash => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {key};
+}
+
+/// Bản sao entity `month_plan` (key `YYYY-MM`).
+@DataClassName('MonthPlanRow')
+class MonthPlans extends Table {
+  @override
+  String get tableName => 'month_plans';
+
+  TextColumn get month => text()();
+
+  /// `YYYY-MM-DD`.
+  TextColumn get startDate => text()();
+  TextColumn get templateHash => text()();
+  DateTimeColumn get generatedAt => dateTime()();
+  DateTimeColumn get redistributedAt => dateTime().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {month};
+}
+
+/// Bản sao entity `day` (key `YYYY-MM-DD`, thứ 2 → thứ 7). Danh sách nhóm cơ
+/// lưu dạng JSON (`["chest","triceps"]`).
+@DataClassName('DayRow')
+class Days extends Table {
+  @override
+  String get tableName => 'days';
+
+  TextColumn get date => text()();
+  TextColumn get kind => text()();
+
+  /// `HH:mm`.
+  TextColumn get time => text().nullable()();
+  TextColumn get muscles => text().nullable()();
+  TextColumn get source => text()();
+  TextColumn get mark => text().nullable()();
+  TextColumn get actualMuscles => text().nullable()();
+  DateTimeColumn get markedAt => dateTime().nullable()();
+  TextColumn get extraMuscles => text().nullable()();
+  DateTimeColumn get extraLoggedAt => dateTime().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {date};
 }
 
 /// SQLite trên máy (TD-04). Mỗi slice tăng `schemaVersion` tối đa 1 bước
 /// (ED-05, 06 §6.5.2).
 @DriftDatabase(
-  tables: [SyncState, Outbox, Account, Profiles, Weights, OnboardingDraft],
+  tables: [
+    SyncState,
+    Outbox,
+    Account,
+    Profiles,
+    Weights,
+    OnboardingDraft,
+    WeeklyTemplates,
+    MonthPlans,
+    Days,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -146,6 +216,16 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(profiles);
         await m.createTable(weights);
         await m.createTable(onboardingDraft);
+      }
+      if (from == 3) {
+        // VS-04: nháp lịch tuần (bảng nháp tạo mới ở v4 đã có cột này).
+        await m.addColumn(onboardingDraft, onboardingDraft.template);
+      }
+      if (from < 4) {
+        // VS-04: lịch tuần, lịch tháng, ngày trong lịch.
+        await m.createTable(weeklyTemplates);
+        await m.createTable(monthPlans);
+        await m.createTable(days);
       }
     },
     beforeOpen: (details) async {

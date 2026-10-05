@@ -84,6 +84,13 @@ final class FakeScheduler implements SyncScheduler {
 
   /// Chạy các hẹn giờ một lần còn hiệu lực có thời gian chờ [delay] (hoặc tất cả).
   Future<void> fire({Duration? delay}) async {
+    fireSync(delay: delay);
+    await pumpEventQueue();
+  }
+
+  /// Như [fire] nhưng không chờ hàng đợi sự kiện: dùng trong `testWidgets`
+  /// (thời gian giả), sau đó gọi `tester.pumpAndSettle()`.
+  void fireSync({Duration? delay}) {
     final due = [
       for (final t in timers)
         if (!t.cancelled && !t.periodic && (delay == null || t.delay == delay))
@@ -93,7 +100,6 @@ final class FakeScheduler implements SyncScheduler {
       t.cancelled = true;
       t.callback();
     }
-    await pumpEventQueue();
   }
 
   Future<void> firePeriodic() async {

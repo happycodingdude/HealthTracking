@@ -3,6 +3,7 @@ import 'package:domain/domain.dart';
 
 import '../../features/me/data/account_repository.dart';
 import '../../features/me/data/profile_repository.dart';
+import '../../features/schedule/data/schedule_repository.dart';
 import '../../features/weight/data/weight_repository.dart';
 
 /// Ghi bản ghi từ server vào bảng trên máy của một entity.
@@ -70,5 +71,65 @@ final class WeightStore implements LocalEntityStore {
       return;
     }
     await _repo.put(week, _codec.decode(data).weightKgX10);
+  }
+}
+
+final class WeeklyTemplateStore implements LocalEntityStore {
+  WeeklyTemplateStore(this._repo);
+
+  final ScheduleRepository _repo;
+  static const _codec = WeeklyTemplateCodec();
+
+  @override
+  String get entity => SyncEntities.weeklyTemplate;
+
+  @override
+  Future<void> apply(String key, SyncChange? change) async {
+    final data = change?.data;
+    if (change == null || change.deleted || data == null) {
+      await _repo.deleteTemplate();
+      return;
+    }
+    await _repo.putTemplate(_codec.decode(data));
+  }
+}
+
+final class MonthPlanStore implements LocalEntityStore {
+  MonthPlanStore(this._repo);
+
+  final ScheduleRepository _repo;
+  static const _codec = MonthPlanCodec();
+
+  @override
+  String get entity => SyncEntities.monthPlan;
+
+  @override
+  Future<void> apply(String key, SyncChange? change) async {
+    final data = change?.data;
+    if (change == null || change.deleted || data == null) {
+      await _repo.deletePlan(YearMonth.parse(key));
+      return;
+    }
+    await _repo.putPlan(_codec.decode(key, data));
+  }
+}
+
+final class DayStore implements LocalEntityStore {
+  DayStore(this._repo);
+
+  final ScheduleRepository _repo;
+  static const _codec = DayCodec();
+
+  @override
+  String get entity => SyncEntities.day;
+
+  @override
+  Future<void> apply(String key, SyncChange? change) async {
+    final data = change?.data;
+    if (change == null || change.deleted || data == null) {
+      await _repo.deleteDay(LocalDate.parse(key));
+      return;
+    }
+    await _repo.putDay(_codec.decode(key, data));
   }
 }

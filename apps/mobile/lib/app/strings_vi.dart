@@ -129,7 +129,7 @@ abstract final class S {
   static const keepEditing = 'Tiếp tục sửa';
   static const aboutReferenceTitle = 'Về gợi ý tham khảo';
   static const seeFull = 'Xem đầy đủ';
-  static const scheduleStepTitle = 'Lịch tuần';
+  static const scheduleStepTitle = 'Lịch tập trong tuần';
 
   // S-10 Hôm nay (đầu trang), S-50, S-56 — đồng bộ (F09-E1).
   /// "Chào {tên hiển thị}" (UR-14).
@@ -145,6 +145,44 @@ abstract final class S {
   static const accountAndData = 'Tài khoản và dữ liệu';
   static const syncLabel = 'Đồng bộ';
   static const save = 'Lưu';
+
+  // Lịch tuần, lịch tháng: S-05, S-22 (trình sửa), S-20 (04 §6.8, §6.13.4).
+  /// F03-V2: "Vui lòng chọn giờ tập cho {thứ}".
+  static String missingTimeFor(String weekday) =>
+      'Vui lòng chọn giờ tập cho $weekday';
+
+  /// F03-V3: "Vui lòng chọn nhóm cơ cho {thứ}".
+  static String missingMusclesFor(String weekday) =>
+      'Vui lòng chọn nhóm cơ cho $weekday';
+
+  /// "Tháng {m}/{yyyy}" (mock S-20).
+  static String monthTitle(int month, int year) => 'Tháng $month/$year';
+
+  /// S-20, F03-R13: "Lịch tháng {tháng sau} sẽ có từ 01/{tháng sau}".
+  static String nextMonthNotice(int month) =>
+      'Lịch tháng $month sẽ có từ 01/${month.toString().padLeft(2, '0')}';
+
+  /// Thứ viết tắt ở S-20 (mock S-20-1).
+  static const weekdaysShort = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+
+  static const scheduleStepSubtitle = 'Chủ nhật luôn là ngày nghỉ.';
+  static const saveSchedule = 'Lưu lịch tập';
+  static const workoutTime = 'Giờ tập';
+  static const alwaysRest = 'Luôn nghỉ';
+  static const muscleChest = 'Ngực';
+  static const muscleTriceps = 'Tay sau';
+  static const muscleShoulders = 'Vai';
+  static const muscleAbs = 'Bụng';
+  static const muscleBack = 'Lưng';
+  static const muscleBiceps = 'Tay trước';
+  static const and = 'và';
+  static const noWorkoutDay = 'Lịch tập cần ít nhất 1 ngày';
+  static const rest = 'Nghỉ';
+  static const overridden = 'Đã sửa riêng';
+  static const timeNotSet = '--:--';
+  static const previousMonth = 'Tháng trước';
+  static const nextMonth = 'Tháng sau';
+  static const reminderStepTitle = 'Nhắc Bạn trước giờ tập?';
 
   // Định dạng (UR-10).
   static const currencySuffix = 'đ';
@@ -205,6 +243,24 @@ abstract final class S {
     'forgotPasswordNote': forgotPasswordNote,
     'disclaimerTitle': disclaimerTitle,
     'syncPending': syncPending,
+    'scheduleStepSubtitle': scheduleStepSubtitle,
+    'saveSchedule': saveSchedule,
+    'workoutTime': workoutTime,
+    'alwaysRest': alwaysRest,
+    'muscleChest': muscleChest,
+    'muscleTriceps': muscleTriceps,
+    'muscleShoulders': muscleShoulders,
+    'muscleAbs': muscleAbs,
+    'muscleBack': muscleBack,
+    'muscleBiceps': muscleBiceps,
+    'and': and,
+    'noWorkoutDay': noWorkoutDay,
+    'rest': rest,
+    'overridden': overridden,
+    'timeNotSet': timeNotSet,
+    'previousMonth': previousMonth,
+    'nextMonth': nextMonth,
+    'reminderStepTitle': reminderStepTitle,
     'iUnderstand': iUnderstand,
     'disclaimerPoint1': disclaimerPoint1,
     'disclaimerPoint2': disclaimerPoint2,

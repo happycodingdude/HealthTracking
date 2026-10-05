@@ -5,6 +5,8 @@ export 'src/account/account_validators.dart';
 export 'src/calorie/calorie.dart';
 export 'src/profile/profile.dart';
 export 'src/profile/profile_rules.dart';
+export 'src/schedule/month_plan.dart';
+export 'src/schedule/weekly_template.dart';
 export 'src/time/clock.dart';
 export 'src/time/local_date.dart';
 export 'src/time/local_time.dart';

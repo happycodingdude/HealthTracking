@@ -13,6 +13,7 @@ import 'http/middleware.dart';
 import 'logging/logger.dart';
 import 'sync/account_handler.dart';
 import 'sync/profile_handler.dart';
+import 'sync/schedule_handlers.dart';
 import 'sync/sync_entity_handler.dart';
 import 'sync/sync_routes.dart';
 import 'sync/sync_service.dart';
@@ -23,6 +24,9 @@ const defaultSyncHandlers = <SyncEntityHandler>[
   AccountHandler(),
   ProfileHandler(),
   WeightHandler(),
+  WeeklyTemplateHandler(),
+  MonthPlanHandler(),
+  DayHandler(),
 ];
 
 /// Các thành phần dùng chung của API, tạo một lần khi khởi động.

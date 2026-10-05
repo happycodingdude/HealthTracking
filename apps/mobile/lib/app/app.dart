@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'background_tasks.dart';
 import 'router.dart';
 import 'sync_coordinator.dart';
 import 'theme.dart';
@@ -21,8 +22,9 @@ class HealthApp extends ConsumerWidget {
       supportedLocales: const [Locale('vi')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
       routerConfig: ref.watch(routerProvider),
-      builder: (context, child) =>
-          SyncCoordinator(child: child ?? const SizedBox.shrink()),
+      builder: (context, child) => SyncCoordinator(
+        child: BackgroundTasks(child: child ?? const SizedBox.shrink()),
+      ),
     );
   }
 }

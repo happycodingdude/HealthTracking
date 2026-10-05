@@ -92,14 +92,13 @@ List<Override> appOverrides({
     // Đã đăng nhập: mặc định coi như đã thiết lập xong (test các tab). Test
     // thiết lập lần đầu truyền `onboarded: false` để đọc trạng thái thật từ
     // database.
-    if (initialSetup != null)
-      initialSetupProvider.overrideWithValue(initialSetup),
     if (onboarded && session != null) ...[
       initialSetupProvider.overrideWithValue(SetupState.completed),
       setupStateProvider.overrideWith(
         (ref) => Stream.value(SetupState.completed),
       ),
-    ],
+    ] else if (initialSetup != null)
+      initialSetupProvider.overrideWithValue(initialSetup),
     databaseProvider.overrideWithValue(database),
     syncSchedulerProvider.overrideWithValue(scheduler ?? FakeScheduler()),
     connectivityProvider.overrideWithValue(connectivity ?? FakeConnectivity()),

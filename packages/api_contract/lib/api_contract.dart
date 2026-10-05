@@ -7,5 +7,6 @@ export 'src/codecs.dart';
 export 'src/error_code.dart';
 export 'src/json_reader.dart';
 export 'src/profile_codecs.dart';
+export 'src/schedule_codecs.dart';
 export 'src/sync_dtos.dart';
 export 'src/sync_entities.dart';

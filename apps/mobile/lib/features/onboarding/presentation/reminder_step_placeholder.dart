@@ -7,17 +7,17 @@ import '../../../app/strings_vi.dart';
 import '../application/setup_state.dart';
 import 'onboarding_scaffold.dart';
 
-/// S-05 giữ chỗ đến VS-04 (Bước 4/5). Bản dev có nút tạm để vào app thử các
+/// S-06 giữ chỗ đến VS-05 (Bước 5/5). Bản dev có nút tạm để vào app thử các
 /// tab; nút này không có ở flavor prod và bị gỡ khi đủ 5 bước.
-class ScheduleStepPlaceholder extends ConsumerWidget {
-  const ScheduleStepPlaceholder({super.key});
+class ReminderStepPlaceholder extends ConsumerWidget {
+  const ReminderStepPlaceholder({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDev = ref.watch(envProvider).isDev;
     return OnboardingScaffold(
-      step: 4,
-      title: S.scheduleStepTitle,
+      step: 5,
+      title: S.reminderStepTitle,
       bottom: [
         if (isDev)
           OutlinedButton(

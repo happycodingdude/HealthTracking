@@ -1,5 +1,6 @@
 import 'json_reader.dart';
 import 'profile_codecs.dart';
+import 'schedule_codecs.dart';
 
 /// Codec `data` của một entity đồng bộ (06 §6.5.1). App và server cùng dùng để
 /// đọc/ghi đúng hợp đồng.
@@ -43,14 +44,20 @@ final class AccountCodec implements EntityCodec<AccountData> {
 }
 
 /// Danh sách entity đồng bộ (06 §6.5.1). Slice sau thêm entity mới vào đây.
+/// `month_plan`, `day` có khóa là ngày/tháng nên dùng [MonthPlanCodec],
+/// [DayCodec] (giải mã cần cả `key`).
 abstract final class SyncEntities {
   static const account = 'account';
   static const profile = 'profile';
   static const weight = 'weight';
+  static const weeklyTemplate = 'weekly_template';
+  static const monthPlan = 'month_plan';
+  static const day = 'day';
 
   static const Map<String, EntityCodec<Object>> codecs = {
     account: AccountCodec(),
     profile: ProfileCodec(),
     weight: WeightCodec(),
+    weeklyTemplate: WeeklyTemplateCodec(),
   };
 }
