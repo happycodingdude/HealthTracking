@@ -1,0 +1,65 @@
+# CI cho mọi PR và main (06 §6.11.2, VS00-T09).
+# format → analyze → lint → test domain + contract → test server (PostgreSQL 16)
+# → test mobile (unit, widget, golden trên Linux ED-09, câu chữ) → báo cáo AC (ED-02).
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: health
+          POSTGRES_PASSWORD: ***REMOVED***
+          POSTGRES_DB: health
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U health -d health"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+
+    env:
+      CI: "true"
+      TEST_DATABASE_URL: postgres://health:***REMOVED***@localhost:5432/postgres
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.32.6
+          channel: stable
+          cache: true
+
+      # Drift dùng SQLite của hệ điều hành khi chạy test (NativeDatabase).
+      - name: Cài libsqlite3
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+
+      - name: tool/check.sh
+        run: tool/check.sh
+
+      - name: Báo cáo AC → test (ED-02)
+        if: always()
+        run: dart run tool/ac_report.dart >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Lưu ảnh golden lỗi
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: golden-failures
+          path: apps/mobile/test/**/failures/
+          if-no-files-found: ignore

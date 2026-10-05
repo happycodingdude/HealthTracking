@@ -1,0 +1,11 @@
+# Cảnh báo cập nhật thư viện (05 §6.12.1).
+version: 2
+updates:
+  - package-ecosystem: pub
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

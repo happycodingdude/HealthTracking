@@ -1,0 +1,8 @@
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+          # Lưu DateTime dạng ISO 8601 (giữ mili giây và múi giờ).
+          store_date_time_values_as_text: true
+          named_parameters: true

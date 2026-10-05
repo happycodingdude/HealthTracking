@@ -1,0 +1,22 @@
+name: server
+description: Backend Dart (shelf + PostgreSQL) — Auth, Sync, AI Gateway, Account.
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.8.0
+
+dependencies:
+  api_contract:
+    path: ../../packages/api_contract
+  crypto: ^3.0.7
+  domain:
+    path: ../../packages/domain
+  postgres: ^3.5.7
+  shelf: ^1.4.2
+  shelf_router: ^1.1.4
+  uuid: ^4.6.0
+
+dev_dependencies:
+  http: ^1.6.0
+  test: ^1.25.15

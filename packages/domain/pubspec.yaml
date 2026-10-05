@@ -1,0 +1,10 @@
+name: domain
+description: Business rules thuần Dart, dùng chung app và server (AP-4). Không import Flutter, Drift, postgres, dart:io.
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.8.0
+
+dev_dependencies:
+  test: ^1.25.15

@@ -1,0 +1,4 @@
+// Flavor dev (ED-15): bundle ID .dev, tên "… Dev", Info-Dev.plist có ngoại lệ mạng cục bộ (ED-17).
+#include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.release-dev.xcconfig"
+#include "Generated.xcconfig"
+#include? "Signing.xcconfig"
