@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:api_contract/api_contract.dart';
 import 'package:domain/domain.dart';
 import 'package:server/server.dart';
-import 'package:server/src/sync/account_handler.dart';
 import 'package:server/testing.dart';
 import 'package:shelf/shelf.dart';
 import 'package:uuid/uuid.dart';
@@ -49,7 +48,7 @@ final class TestApp {
       bcryptCost: 4,
       trustProxy: true,
       syncHandlers: [
-        const AccountHandler(),
+        ...defaultSyncHandlers,
         if (withTestItems) const TestItemHandler(),
       ],
     );

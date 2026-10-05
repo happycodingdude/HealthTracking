@@ -2,48 +2,112 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/widgets/reference_tag.dart';
 import '../features/auth/application/auth_controller.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/register_screen.dart';
 import '../features/auth/presentation/welcome_screen.dart';
+import '../features/me/presentation/about_reference_screen.dart';
 import '../features/me/presentation/account_data_screen.dart';
 import '../features/me/presentation/me_screen.dart';
 import '../features/menu/presentation/menu_screen.dart';
-import '../features/onboarding/presentation/onboarding_placeholder_screen.dart';
+import '../features/onboarding/application/setup_state.dart';
+import '../features/onboarding/presentation/calorie_step_screen.dart';
+import '../features/onboarding/presentation/disclaimer_screen.dart';
+import '../features/onboarding/presentation/profile_step_screen.dart';
+import '../features/onboarding/presentation/schedule_step_placeholder.dart';
 import '../features/schedule/presentation/schedule_screen.dart';
 import '../features/today/presentation/today_screen.dart';
 import '../features/weight/presentation/weight_screen.dart';
 import 'shell/app_shell.dart';
 import 'shell/app_tab.dart';
 
-/// Quy tắc chuyển hướng theo trạng thái đăng nhập (VS01-T10, OB-6, NAV-1).
+/// Quy tắc chuyển hướng theo trạng thái đăng nhập và thiết lập lần đầu
+/// (VS01-T10, VS03-T07, VS03-T11, OB-3, OB-6, NAV-1, NAV-7).
 ///
 /// - Chưa đăng nhập → S-01 (`/welcome`).
 /// - Phiên hết hạn → S-01b (`/welcome/login`), dữ liệu trên máy được giữ.
-/// - Vừa đăng nhập/đăng ký → [AuthState.landing] (S-02 hoặc Hôm nay).
+/// - Vừa đăng nhập/đăng ký → bước thiết lập đang dở, hoặc [AuthState.landing]
+///   khi đã thiết lập xong.
+/// - Chưa hoàn tất thiết lập → chỉ ở trong luồng thiết lập (F01-R1); mở app
+///   lại thì vào đúng bước đang dở. Trang "Về gợi ý tham khảo" xem được mọi
+///   lúc (F10-R4).
 @visibleForTesting
-String? authRedirect(AuthState auth, String location) {
+String? appRedirect(
+  AuthState auth,
+  SetupState setup,
+  String location, {
+  bool devSkipSetup = false,
+}) {
   final inWelcome = location == '/welcome' || location.startsWith('/welcome/');
-  return switch (auth.status) {
-    AuthStatus.signedOut => inWelcome ? null : '/welcome',
-    AuthStatus.expired => inWelcome ? null : '/welcome/login',
-    AuthStatus.signedIn =>
-      inWelcome ? (auth.landing ?? AppTab.today.path) : null,
-  };
+  switch (auth.status) {
+    case AuthStatus.signedOut:
+      return inWelcome ? null : '/welcome';
+    case AuthStatus.expired:
+      return inWelcome ? null : '/welcome/login';
+    case AuthStatus.signedIn:
+      break;
+  }
+  final completed = setup.isCompleted || auth.serverSetupCompleted;
+  // Trả thẳng đích cuối cùng: go_router không chạy lại redirect cho đích của
+  // một lần redirect do trạng thái đổi.
+  if (inWelcome) {
+    final landing = auth.landing;
+    if (!completed) {
+      // [AuthState.landing] đã tính từ hồ sơ vừa lấy về (OB-6), không chờ
+      // trạng thái trên máy cập nhật.
+      return onboardingSteps.contains(landing) ? landing : setup.path;
+    }
+    return landing == null || landing.startsWith('/onboarding')
+        ? AppTab.today.path
+        : landing;
+  }
+  if (location == aboutReferencePath) return null;
+  final inOnboarding =
+      location == '/onboarding' || location.startsWith('/onboarding/');
+  if (completed || devSkipSetup) {
+    return inOnboarding ? AppTab.today.path : null;
+  }
+  if (!inOnboarding) return setup.path;
+  // Các bước chuyển tiếp ngay sau khi lưu, không chờ trạng thái trên máy cập
+  // nhật; giao diện không có lối nhảy cóc bước.
+  return onboardingSteps.contains(location) ? null : setup.path;
 }
+
+/// Các bước thiết lập đã có màn hình (VS-03; bước 4 giữ chỗ đến VS-04).
+@visibleForTesting
+const onboardingSteps = {
+  '/onboarding/1',
+  '/onboarding/2',
+  '/onboarding/3',
+  '/onboarding/4',
+};
 
 /// Router của app (TD-03). Mở app vào Hôm nay (NAV-1).
 final routerProvider = Provider<GoRouter>((ref) {
   final auth = ValueNotifier<AuthState>(ref.read(authControllerProvider));
+  final setup = ValueNotifier<SetupState>(ref.read(initialSetupProvider));
+  final devSkip = ValueNotifier<bool>(ref.read(devSkipSetupProvider));
   ref
     ..listen(authControllerProvider, (_, next) => auth.value = next)
-    ..onDispose(auth.dispose);
+    ..listen(setupStateProvider, (_, next) {
+      final value = next.value;
+      if (value != null) setup.value = value;
+    })
+    ..listen(devSkipSetupProvider, (_, next) => devSkip.value = next)
+    ..onDispose(auth.dispose)
+    ..onDispose(setup.dispose)
+    ..onDispose(devSkip.dispose);
 
   final router = GoRouter(
     initialLocation: AppTab.today.path,
-    refreshListenable: auth,
-    redirect: (context, state) =>
-        authRedirect(auth.value, state.matchedLocation),
+    refreshListenable: Listenable.merge([auth, setup, devSkip]),
+    redirect: (context, state) => appRedirect(
+      auth.value,
+      setup.value,
+      state.matchedLocation,
+      devSkipSetup: devSkip.value,
+    ),
     routes: [
       GoRoute(
         path: '/welcome',
@@ -53,9 +117,28 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: 'login', builder: (_, _) => const LoginScreen()),
         ],
       ),
+      // Thiết lập lần đầu (04 §6.5): ngoài khung tab nên thanh tab bị ẩn (NAV-7).
+      // `/onboarding` luôn được chuyển tới bước đang dở.
+      GoRoute(path: '/onboarding', builder: (_, _) => const SizedBox.shrink()),
       GoRoute(
-        path: '/onboarding',
-        builder: (_, _) => const OnboardingPlaceholderScreen(),
+        path: '/onboarding/1',
+        builder: (_, _) => const DisclaimerScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding/2',
+        builder: (_, _) => const ProfileStepScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding/3',
+        builder: (_, _) => const CalorieStepScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding/4',
+        builder: (_, _) => const ScheduleStepPlaceholder(),
+      ),
+      GoRoute(
+        path: aboutReferencePath,
+        builder: (_, _) => const AboutReferenceScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) => AppShell(navigationShell: shell),

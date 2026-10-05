@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
 import '../../features/me/data/account_repository.dart';
+import '../../features/me/data/profile_repository.dart';
+import '../../features/weight/data/weight_repository.dart';
 import 'local_stores.dart';
 import 'outbox_writer.dart';
 import 'sync_api.dart';
@@ -12,6 +14,14 @@ import 'sync_status.dart';
 
 final accountRepositoryProvider = Provider<AccountRepository>(
   (ref) => AccountRepository(ref.watch(databaseProvider)),
+);
+
+final profileRepositoryProvider = Provider<ProfileRepository>(
+  (ref) => ProfileRepository(ref.watch(databaseProvider)),
+);
+
+final weightRepositoryProvider = Provider<WeightRepository>(
+  (ref) => WeightRepository(ref.watch(databaseProvider)),
 );
 
 final outboxWriterProvider = Provider<OutboxWriter>(
@@ -29,6 +39,8 @@ final syncEngineProvider = Provider<SyncEngine>((ref) {
     api: HttpSyncApi(ref.watch(apiClientProvider)),
     stores: {
       SyncEntities.account: AccountStore(ref.watch(accountRepositoryProvider)),
+      SyncEntities.profile: ProfileStore(ref.watch(profileRepositoryProvider)),
+      SyncEntities.weight: WeightStore(ref.watch(weightRepositoryProvider)),
     },
     clock: ref.watch(clockProvider),
     reporter: ref.watch(errorReporterProvider),

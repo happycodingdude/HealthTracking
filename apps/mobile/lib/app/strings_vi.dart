@@ -46,8 +46,90 @@ abstract final class S {
   static const forgotPasswordNote =
       'Dữ liệu của Bạn vẫn được giữ nguyên trong lúc chờ.';
 
-  // S-02 (giữ chỗ đến VS-03).
+  // S-02 Thông báo tham khảo (Bước 1/5).
   static const disclaimerTitle = 'Trước khi bắt đầu';
+
+  // Thiết lập lần đầu: S-02, S-03, S-04 (04 §6.5, §6.6), nhãn "tham khảo"
+  // (04 §6.13.2), hộp bỏ thay đổi (Q-2).
+  /// "Bước {n}/5" (OB-1).
+  static String stepOf(int step) => 'Bước $step/5';
+
+  /// "{n} tuổi" (mock S-03).
+  static String ageYears(int age) => '$age tuổi';
+
+  /// "Thấp hơn mức duy trì khoảng {N} kcal" (S-04, S-52); [kcal] đã định dạng.
+  static String belowMaintenance(String kcal) =>
+      'Thấp hơn mức duy trì khoảng $kcal kcal';
+
+  /// F02-R5; [floor] là ngưỡng an toàn đã định dạng.
+  static String lowCalorieWarning(String floor) =>
+      'Mức này thấp hơn ngưỡng an toàn tham khảo ($floor kcal). Thực đơn gợi ý vẫn sẽ dùng tối thiểu $floor kcal.';
+
+  static const iUnderstand = 'Tôi đã hiểu';
+  static const disclaimerPoint1 =
+      'App theo dõi và gợi ý tham khảo, không chẩn đoán, không điều trị.';
+  static const disclaimerPoint2 = 'Gợi ý dành cho người khỏe mạnh.';
+  static const disclaimerPoint3 =
+      'Không thay thế huấn luyện viên, bác sĩ hay chuyên gia dinh dưỡng.';
+  static const disclaimerPoint4 = 'Gợi ý AI có thể chưa chính xác.';
+  static const continueLabel = 'Tiếp tục';
+  static const profileTitle = 'Thông tin của Bạn';
+  static const profileSubtitle = 'Dùng để ước tính mức calo tham khảo.';
+  static const fieldHeight = 'Chiều cao';
+  static const fieldBirthYear = 'Năm sinh';
+  static const fieldSex = 'Giới tính';
+  static const sexMale = 'Nam';
+  static const sexFemale = 'Nữ';
+  static const fieldActivityLevel = 'Mức vận động';
+  static const activitySedentary = 'Ít vận động';
+  static const activitySedentaryHint = 'Ngồi nhiều, gần như không tập';
+  static const activityLight = 'Vận động nhẹ';
+  static const activityLightHint = 'Tập 1–3 buổi/tuần';
+  static const activityModerate = 'Vận động vừa';
+  static const activityModerateHint = 'Tập 3–5 buổi/tuần';
+  static const activityActive = 'Vận động nhiều';
+  static const activityActiveHint = 'Tập 6–7 buổi/tuần';
+  static const activityVeryActive = 'Vận động rất nhiều';
+  static const activityVeryActiveHint = 'Lao động nặng, hoặc tập 2 lần/ngày';
+  static const fieldInitialWeight = 'Cân nặng ban đầu';
+  static const goalLabel = 'Mục tiêu';
+  static const goalFatLoss = 'Giảm mỡ';
+  static const unitCm = 'cm';
+  static const unitKg = 'kg';
+  static const unitKcal = 'kcal';
+  static const done = 'Xong';
+  static const invalidHeight = 'Chiều cao cần từ 120 đến 230 cm';
+  static const invalidBirthYear = 'App dành cho người từ 18 đến 80 tuổi';
+  static const missingSex = 'Vui lòng chọn giới tính';
+  static const missingActivityLevel = 'Vui lòng chọn mức vận động';
+  static const invalidWeight = 'Cân nặng cần từ 30 đến 250 kg';
+  static const calorieTitle = 'Mức calo mỗi ngày';
+  static const calorieSubtitle = 'Dùng làm mốc cho thực đơn gợi ý.';
+  static const calorieAuto = 'Tự động';
+  static const calorieManual = 'Bạn tự đặt';
+  static const referenceTag = 'tham khảo';
+  static const howEstimated = 'Cách app ước tính';
+  static const howEstimatedBody =
+      'App ước tính dựa trên chiều cao, cân nặng mới nhất, tuổi, giới tính và mức vận động của Bạn, rồi trừ 500 kcal để giảm mỡ. Mức ước tính không bao giờ thấp hơn ngưỡng an toàn.';
+  static const keepThisLevel = 'Giữ mức này';
+  static const setOtherLevel = 'Đặt mức khác';
+  static const belowSafetyFloor = 'Dưới ngưỡng an toàn';
+  static const lowCalorieTitle = 'Mức calo thấp';
+  static const saveAnyway = 'Vẫn lưu';
+  static const editAgain = 'Sửa lại';
+  static const noteRaisedToFloor =
+      'Đã điều chỉnh lên ngưỡng an toàn tối thiểu.';
+  static const noteMaintenanceBelowFloor =
+      'Với thông số của Bạn, mức ăn an toàn tối thiểu đã gần hoặc cao hơn nhu cầu duy trì. Việc giảm mỡ nên dựa thêm vào vận động.';
+  static const setCalorieTitle = 'Đặt mức calo';
+  static const fieldDailyCalorie = 'Mức calo mỗi ngày';
+  static const invalidManualKcal = 'Mức calo cần từ 800 đến 5.000 kcal';
+  static const discardChangesTitle = 'Bỏ các thay đổi chưa lưu?';
+  static const discard = 'Bỏ';
+  static const keepEditing = 'Tiếp tục sửa';
+  static const aboutReferenceTitle = 'Về gợi ý tham khảo';
+  static const seeFull = 'Xem đầy đủ';
+  static const scheduleStepTitle = 'Lịch tuần';
 
   // S-10 Hôm nay (đầu trang), S-50, S-56 — đồng bộ (F09-E1).
   /// "Chào {tên hiển thị}" (UR-14).
@@ -123,6 +205,66 @@ abstract final class S {
     'forgotPasswordNote': forgotPasswordNote,
     'disclaimerTitle': disclaimerTitle,
     'syncPending': syncPending,
+    'iUnderstand': iUnderstand,
+    'disclaimerPoint1': disclaimerPoint1,
+    'disclaimerPoint2': disclaimerPoint2,
+    'disclaimerPoint3': disclaimerPoint3,
+    'disclaimerPoint4': disclaimerPoint4,
+    'continueLabel': continueLabel,
+    'profileTitle': profileTitle,
+    'profileSubtitle': profileSubtitle,
+    'fieldHeight': fieldHeight,
+    'fieldBirthYear': fieldBirthYear,
+    'fieldSex': fieldSex,
+    'sexMale': sexMale,
+    'sexFemale': sexFemale,
+    'fieldActivityLevel': fieldActivityLevel,
+    'activitySedentary': activitySedentary,
+    'activitySedentaryHint': activitySedentaryHint,
+    'activityLight': activityLight,
+    'activityLightHint': activityLightHint,
+    'activityModerate': activityModerate,
+    'activityModerateHint': activityModerateHint,
+    'activityActive': activityActive,
+    'activityActiveHint': activityActiveHint,
+    'activityVeryActive': activityVeryActive,
+    'activityVeryActiveHint': activityVeryActiveHint,
+    'fieldInitialWeight': fieldInitialWeight,
+    'goalLabel': goalLabel,
+    'goalFatLoss': goalFatLoss,
+    'unitCm': unitCm,
+    'unitKg': unitKg,
+    'unitKcal': unitKcal,
+    'done': done,
+    'invalidHeight': invalidHeight,
+    'invalidBirthYear': invalidBirthYear,
+    'missingSex': missingSex,
+    'missingActivityLevel': missingActivityLevel,
+    'invalidWeight': invalidWeight,
+    'calorieTitle': calorieTitle,
+    'calorieSubtitle': calorieSubtitle,
+    'calorieAuto': calorieAuto,
+    'calorieManual': calorieManual,
+    'referenceTag': referenceTag,
+    'howEstimated': howEstimated,
+    'howEstimatedBody': howEstimatedBody,
+    'keepThisLevel': keepThisLevel,
+    'setOtherLevel': setOtherLevel,
+    'belowSafetyFloor': belowSafetyFloor,
+    'lowCalorieTitle': lowCalorieTitle,
+    'saveAnyway': saveAnyway,
+    'editAgain': editAgain,
+    'noteRaisedToFloor': noteRaisedToFloor,
+    'noteMaintenanceBelowFloor': noteMaintenanceBelowFloor,
+    'setCalorieTitle': setCalorieTitle,
+    'fieldDailyCalorie': fieldDailyCalorie,
+    'invalidManualKcal': invalidManualKcal,
+    'discardChangesTitle': discardChangesTitle,
+    'discard': discard,
+    'keepEditing': keepEditing,
+    'aboutReferenceTitle': aboutReferenceTitle,
+    'seeFull': seeFull,
+    'scheduleStepTitle': scheduleStepTitle,
     'syncDone': syncDone,
     'syncPendingDetail': syncPendingDetail,
     'syncLossWarning': syncLossWarning,

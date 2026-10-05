@@ -12,9 +12,18 @@ import 'health/health_routes.dart';
 import 'http/middleware.dart';
 import 'logging/logger.dart';
 import 'sync/account_handler.dart';
+import 'sync/profile_handler.dart';
 import 'sync/sync_entity_handler.dart';
 import 'sync/sync_routes.dart';
 import 'sync/sync_service.dart';
+import 'sync/weight_handler.dart';
+
+/// Entity đồng bộ của Bản 1 (06 §6.5.1). Slice sau thêm handler vào đây.
+const defaultSyncHandlers = <SyncEntityHandler>[
+  AccountHandler(),
+  ProfileHandler(),
+  WeightHandler(),
+];
 
 /// Các thành phần dùng chung của API, tạo một lần khi khởi động.
 final class AppDeps {
@@ -25,7 +34,7 @@ final class AppDeps {
     required String jwtSecret,
     this.bcryptCost = 12,
     this.trustProxy = false,
-    List<SyncEntityHandler> syncHandlers = const [AccountHandler()],
+    List<SyncEntityHandler> syncHandlers = defaultSyncHandlers,
   }) : tokens = TokenService(secret: jwtSecret, clock: clock),
        limiter = LoginRateLimiter(clock) {
     auth = AuthService(

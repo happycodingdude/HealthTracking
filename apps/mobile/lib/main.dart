@@ -8,6 +8,8 @@ import 'core/error_reporting.dart';
 import 'data/auth/session_store.dart';
 import 'data/db/open_database.dart';
 import 'features/auth/application/auth_controller.dart';
+import 'features/me/data/profile_repository.dart';
+import 'features/onboarding/application/setup_state.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,6 +19,8 @@ Future<void> main() async {
     final sessionStore = SecureSessionStore();
     // Đọc phiên trước khi vẽ màn hình đầu: có phiên thì vào thẳng app (UA-23).
     final session = await sessionStore.read();
+    // Thiết lập dở thì mở đúng bước còn dở (OB-3).
+    final setup = SetupState.of(await ProfileRepository(db).get());
     runApp(
       ProviderScope(
         // Không tự thử lại provider lỗi; lỗi được xử lý tường minh.
@@ -26,6 +30,7 @@ Future<void> main() async {
           databaseProvider.overrideWithValue(db),
           sessionStoreProvider.overrideWithValue(sessionStore),
           initialSessionProvider.overrideWithValue(session),
+          initialSetupProvider.overrideWithValue(setup),
           errorReporterProvider.overrideWithValue(
             env.sentryDsn.isEmpty
                 ? const DebugErrorReporter()
