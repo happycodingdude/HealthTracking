@@ -184,6 +184,29 @@ abstract final class S {
   static const nextMonth = 'Tháng sau';
   static const reminderStepTitle = 'Nhắc Bạn trước giờ tập?';
 
+  // Nhắc đi tập: S-06, S-50 (F-04).
+  /// F04-R3: "Hôm nay tập {nhóm cơ} lúc {giờ}".
+  static String reminderToday(String muscles, String time) =>
+      'Hôm nay tập $muscles lúc $time';
+
+  /// F04-E1: "Ngày mai tập {nhóm cơ} lúc {giờ}".
+  static String reminderTomorrow(String muscles, String time) =>
+      'Ngày mai tập $muscles lúc $time';
+
+  /// Mock S-06: ví dụ lấy từ lịch Bạn vừa xếp.
+  static String reminderExample(String time, String weekday) =>
+      'Ví dụ từ lịch của Bạn: nhắc lúc $time $weekday. App nhắc 1 giờ trước mỗi buổi theo lịch. Bạn bật hoặc tắt được bất cứ lúc nào ở mục Tôi.';
+
+  static const turnOnReminders = 'Bật nhắc';
+  static const later = 'Để sau';
+  static const remindersRow = 'Nhắc đi tập';
+  static const remindersHint = '1 giờ trước giờ tập';
+  static const notificationsBlocked =
+      'iPhone đang chặn thông báo của app. Mở Cài đặt để cho phép.';
+  static const openSettings = 'Mở Cài đặt';
+  static const remindersTurnedOff = 'Đã tắt nhắc đi tập';
+  static const remindersTurnedOn = 'Đã bật nhắc đi tập';
+
   // Định dạng (UR-10).
   static const currencySuffix = 'đ';
   static const weekdays = [
@@ -243,6 +266,14 @@ abstract final class S {
     'forgotPasswordNote': forgotPasswordNote,
     'disclaimerTitle': disclaimerTitle,
     'syncPending': syncPending,
+    'turnOnReminders': turnOnReminders,
+    'later': later,
+    'remindersRow': remindersRow,
+    'remindersHint': remindersHint,
+    'notificationsBlocked': notificationsBlocked,
+    'openSettings': openSettings,
+    'remindersTurnedOff': remindersTurnedOff,
+    'remindersTurnedOn': remindersTurnedOn,
     'scheduleStepSubtitle': scheduleStepSubtitle,
     'saveSchedule': saveSchedule,
     'workoutTime': workoutTime,
