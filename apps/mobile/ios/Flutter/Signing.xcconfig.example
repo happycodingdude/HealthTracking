@@ -1,0 +1,5 @@
+// Chép thành Signing.xcconfig (không commit) và điền Team ID để ký app.
+// Personal Team (miễn phí) dùng được cho bản dev; profile hết hạn sau 7 ngày.
+// Xem Team ID: Xcode → Settings → Accounts → chọn Apple ID → Team.
+DEVELOPMENT_TEAM = XXXXXXXXXX
+CODE_SIGN_STYLE = Automatic

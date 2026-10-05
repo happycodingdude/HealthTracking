@@ -1,0 +1,14 @@
+name: api_contract
+description: DTO, mã lỗi và codec dùng chung app–server (06 §6.4.1).
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.8.0
+
+dependencies:
+  domain:
+    path: ../domain
+
+dev_dependencies:
+  test: ^1.25.15

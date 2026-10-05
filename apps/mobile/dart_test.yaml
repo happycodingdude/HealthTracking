@@ -1,0 +1,3 @@
+tags:
+  # Golden test chỉ so sánh trên Linux (ED-09). Trên macOS: tool/golden.sh.
+  golden:

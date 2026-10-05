@@ -1,0 +1,26 @@
+# Câu chữ chép NGUYÊN VĂN từ 03/04 (ED-12, UR-12).
+# Khóa = tên hằng trong S.catalog (lib/app/strings_vi.dart).
+# Test: test/app/spec_strings_test.dart.
+
+# 04 §6.3.1, UR-01
+tabSchedule: "Lịch tập"
+tabMenu: "Thực đơn"
+tabToday: "Hôm nay"
+tabWeight: "Cân nặng"
+tabMe: "Tôi"
+
+# 05 §6.8.3 / 04 S-01a, S-01b
+errorPhoneTaken: "Số điện thoại này đã có tài khoản."
+errorInvalidCredentials: "Số điện thoại hoặc mật khẩu chưa đúng."
+offlineRegister: "Cần kết nối internet để đăng ký."
+offlineLogin: "Cần kết nối internet để đăng nhập."
+invalidDisplayName: "Tên cần từ 1 đến 30 ký tự"
+invalidPhone: "Số điện thoại chưa đúng"
+invalidPassword: "Mật khẩu cần ít nhất 8 ký tự"
+
+# 03 F08-E1, F08-E3; 04 S-30; 05 §6.8.3
+offlineMenu: "Cần kết nối internet để gợi ý thực đơn."
+menuQuotaExhausted: "Bạn đã dùng hết 3 lượt hôm nay."
+menuInvalidOutput: "Thực đơn vừa tạo chưa đạt yêu cầu. Thử lại."
+menuProviderError: "Chưa tạo được thực đơn. Thử lại."
+menuGenerating: "Đang lên thực đơn…"
