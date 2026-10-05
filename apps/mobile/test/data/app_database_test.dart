@@ -12,7 +12,7 @@ void main() {
   test(
     'schemaVersion 1: tạo sync_state một dòng, cursor 0, chưa đồng bộ',
     () async {
-      expect(db.schemaVersion, 3);
+      expect(db.schemaVersion, 4);
       final rows = await db.select(db.syncState).get();
       expect(rows, hasLength(1));
       expect(rows.single.id, 1);

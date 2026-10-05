@@ -179,6 +179,8 @@ final class SyncService {
         await handler.apply(conn, ctx.userId, m, version);
         return PushResult(mutationId: m.mutationId, status: PushStatus.applied);
       });
+    } on SyncRejection catch (e) {
+      return _rejected(m, e.field);
     } on ServerException catch (e) {
       // CHECK của database chặn dữ liệu sai mà validate chưa bắt được.
       _log.warn('sync_mutation_rejected', {

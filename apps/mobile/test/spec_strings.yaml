@@ -115,7 +115,7 @@ discard: "Bỏ" # Q-2
 keepEditing: "Tiếp tục sửa" # Q-2
 aboutReferenceTitle: "Về gợi ý tham khảo" # 04 S-55
 seeFull: "Xem đầy đủ" # 04 §6.13.2
-scheduleStepTitle: "Lịch tuần" # 04 S-05 (giữ chỗ đến VS-04)
+scheduleStepTitle: "Lịch tập trong tuần" # 04 S-05 (mock S-05-1)
 
 # 04 S-10 đầu trang, §6.14 "Chưa đồng bộ"; S-50 dòng "Tài khoản và dữ liệu"; S-56
 syncPending: "Chưa đồng bộ"
@@ -125,3 +125,23 @@ syncLossWarning: "Dữ liệu chưa đồng bộ có thể mất nếu Bạn m�
 accountAndData: "Tài khoản và dữ liệu"
 syncLabel: "Đồng bộ" # nhãn dòng ở mock S-56
 save: "Lưu" # 04 §6.15 ví dụ nút
+
+# Lịch tuần, lịch tháng: S-05, S-22, S-20
+scheduleStepSubtitle: "Chủ nhật luôn là ngày nghỉ." # 04 S-05 (mock S-05-1)
+saveSchedule: "Lưu lịch tập" # 04 S-05, S-22
+workoutTime: "Giờ tập" # mock S-05-1, S-22-1
+alwaysRest: "Luôn nghỉ" # 04 S-22 "Chủ nhật · Luôn nghỉ" (mock tách 2 phần)
+muscleChest: "Ngực" # 03 §6.1, 04 §6.13.4 (PR-02)
+muscleTriceps: "Tay sau" # 03 §6.1, 04 §6.13.4
+muscleShoulders: "Vai" # 03 §6.1, 04 §6.13.4
+muscleAbs: "Bụng" # 03 §6.1, 04 §6.13.4
+muscleBack: "Lưng" # 03 §6.1, 04 §6.13.4
+muscleBiceps: "Tay trước" # 03 §6.1, 04 §6.13.4
+and: "và" # 04 §6.13.4 nối nhóm cơ bằng "và"
+noWorkoutDay: "Lịch tập cần ít nhất 1 ngày" # 03 F03-V1
+rest: "Nghỉ" # 04 §6.13.3, S-20
+overridden: "Đã sửa riêng" # 03 F-03, 04 S-20
+timeNotSet: "--:--" # ô giờ tập khi chưa chọn giờ (F03-V2)
+previousMonth: "Tháng trước" # nhãn VoiceOver nút "‹" ở S-20 (04 §6.17)
+nextMonth: "Tháng sau" # nhãn VoiceOver nút "›" ở S-20 (04 §6.17)
+reminderStepTitle: "Nhắc Bạn trước giờ tập?" # 04 S-06 (giữ chỗ đến VS-05)

@@ -53,5 +53,35 @@ abstract final class Fmt {
   static String weekdayDate(LocalDate date) =>
       '${weekday(date)}, ${dayMonth(date)}';
 
+  /// Tên nhóm cơ (PR-02).
+  static String muscle(MuscleGroup m) => switch (m) {
+    MuscleGroup.chest => S.muscleChest,
+    MuscleGroup.triceps => S.muscleTriceps,
+    MuscleGroup.shoulders => S.muscleShoulders,
+    MuscleGroup.abs => S.muscleAbs,
+    MuscleGroup.back => S.muscleBack,
+    MuscleGroup.biceps => S.muscleBiceps,
+  };
+
+  /// Nhiều nhóm cơ thành chữ (04 §6.13.4): `Ngực và tay sau`,
+  /// `Ngực, vai và tay sau`. [capitalize] = false khi đứng giữa câu
+  /// (`Hôm nay tập ngực và tay sau`, F04-R3).
+  static String muscles(List<MuscleGroup> groups, {bool capitalize = true}) {
+    final names = [
+      for (final (i, m) in MuscleGroup.ordered(groups).indexed)
+        i == 0 && capitalize ? muscle(m) : muscle(m).toLowerCase(),
+    ];
+    if (names.length <= 1) return names.join();
+    return '${names.sublist(0, names.length - 1).join(', ')} ${S.and} ${names.last}';
+  }
+
+  /// `T4 07/10` (S-20).
+  static String shortWeekdayDate(LocalDate date) =>
+      '${S.weekdaysShort[date.weekday - 1]} ${dayMonth(date)}';
+
+  /// `05/10 – 11/10` (tiêu đề tuần ở S-20).
+  static String weekRange(LocalDate start, LocalDate end) =>
+      '${dayMonth(start)} – ${dayMonth(end)}';
+
   static String _two(int v) => v.toString().padLeft(2, '0');
 }

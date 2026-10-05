@@ -12,6 +12,18 @@ final class SyncContext {
   final DateTime serverNow;
 }
 
+/// Handler từ chối mutation ở bước cần đọc database (ví dụ ngày thuộc tháng
+/// chưa có `month_plan`). Ném trong [SyncEntityHandler.apply]: phần đã ghi của
+/// mutation được hoàn tác, kết quả là `rejected` kèm [field].
+final class SyncRejection implements Exception {
+  const SyncRejection(this.field);
+
+  final String field;
+
+  @override
+  String toString() => 'SyncRejection($field)';
+}
+
 /// Trạng thái dòng hiện có, đọc khi đã khóa (`FOR UPDATE`).
 final class RowState {
   const RowState({required this.clientUpdatedAt, required this.deleted});

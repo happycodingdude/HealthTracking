@@ -40,6 +40,14 @@ void main() {
     );
   });
 
+  test('F03-V2, F03-V3, S-20: câu có tham số', () {
+    expect(S.missingTimeFor('Thứ 6'), 'Vui lòng chọn giờ tập cho Thứ 6');
+    expect(S.missingMusclesFor('Thứ 6'), 'Vui lòng chọn nhóm cơ cho Thứ 6');
+    expect(S.monthTitle(10, 2026), 'Tháng 10/2026');
+    expect(S.nextMonthNotice(11), 'Lịch tháng 11 sẽ có từ 01/11');
+    expect(S.nextMonthNotice(1), 'Lịch tháng 1 sẽ có từ 01/01');
+  });
+
   test('F08-E2: câu chạm trần ngân sách', () {
     expect(
       S.budgetPaused(11),

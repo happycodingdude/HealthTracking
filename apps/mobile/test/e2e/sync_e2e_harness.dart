@@ -20,6 +20,7 @@ import 'package:mobile/features/me/data/account_repository.dart';
 import 'package:mobile/features/me/data/profile_repository.dart';
 import 'package:mobile/features/onboarding/application/onboarding_steps.dart';
 import 'package:mobile/features/onboarding/data/onboarding_draft_repository.dart';
+import 'package:mobile/features/schedule/data/schedule_repository.dart';
 import 'package:mobile/features/weight/data/weight_repository.dart';
 import 'package:server/server.dart';
 import 'package:server/testing.dart';
@@ -86,6 +87,7 @@ final class E2eDevice {
       profiles: profiles,
       weights: weights,
       drafts: OnboardingDraftRepository(db),
+      schedule: ScheduleRepository(db),
       outbox: OutboxWriter(db, clock),
       clock: clock,
     );

@@ -74,9 +74,10 @@ void main() {
   );
 
   testWidgets(
-    'UX-AC3: mở lại app → đúng bước 3, thông tin còn nguyên. Giữ mức → bước 4 '
-    '(giữ chỗ) → khung 5 tab (UX-AC1); tab Tôi gọi được /healthz; VS-02: đổi '
-    'tên → đồng bộ với server, Hôm nay chào tên mới',
+    'UX-AC3: mở lại app → đúng bước 3, thông tin còn nguyên. Giữ mức → VS-04: '
+    'xếp lịch tuần → bước 5 (giữ chỗ) → khung 5 tab (UX-AC1), lịch tháng; tab '
+    'Tôi gọi được /healthz; VS-02: đổi tên → đồng bộ với server, Hôm nay chào '
+    'tên mới',
     (tester) async {
       // Mở lại app: dựng từ đầu, đọc trạng thái đã lưu trên máy.
       await tester.pumpWidget(const SizedBox());
@@ -95,6 +96,19 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, S.keepThisLevel));
       await pumpUntil(tester, find.text(S.stepOf(4)));
 
+      // VS-04: S-05 xếp lịch thứ 2 → thứ 7 đều tập Ngực (giờ mặc định 18:00),
+      // lưu → app chia lịch tháng → bước 5.
+      expect(find.byKey(const ValueKey('day-switch-7')), findsNothing);
+      for (var w = DateTime.monday; w <= DateTime.saturday; w++) {
+        await tapVisible(tester, find.byKey(ValueKey('day-switch-$w')));
+        await tapVisible(tester, find.byKey(ValueKey('day-time-$w')));
+        await tester.tap(find.text(S.done));
+        await tester.pumpAndSettle();
+        await tapVisible(tester, find.byKey(const ValueKey('muscle-chest')));
+      }
+      await tester.tap(find.widgetWithText(FilledButton, S.saveSchedule));
+      await pumpUntil(tester, find.text(S.stepOf(5)));
+
       // Bản dev: bỏ qua bước giữ chỗ để vào khung tab (gỡ ở VS-05).
       await tester.tap(find.byKey(const ValueKey('dev-skip-onboarding')));
       await pumpUntil(tester, tabLabel(S.tabToday));
@@ -108,6 +122,16 @@ void main() {
         expect(tabLabel(label), findsOneWidget, reason: label);
       }
       expect(find.byKey(const ValueKey('tab-today-button')), findsOneWidget);
+
+      // S-20: tháng hiện tại, bắt đầu từ hôm nay (F03-R5).
+      final now = DateTime.now();
+      await tester.tap(tabLabel(S.tabSchedule));
+      await tester.pumpAndSettle();
+      expect(find.text(S.monthTitle(now.month, now.year)), findsOneWidget);
+      expect(
+        find.text(Fmt.shortWeekdayDate(LocalDate.fromDateTime(now))),
+        findsOneWidget,
+      );
 
       await tester.tap(tabLabel(S.tabMe));
       await tester.pumpAndSettle();

@@ -27,8 +27,9 @@ Future<T> inTransaction<T>(
   });
 }
 
-/// Chạy [fn] trong savepoint [name]: lỗi SQL chỉ hoàn tác phần của [fn], phần
-/// trước đó của transaction vẫn giữ. Lỗi được ném lại cho nơi gọi xử lý.
+/// Chạy [fn] trong savepoint [name]: lỗi (SQL hoặc từ chối của handler) chỉ
+/// hoàn tác phần của [fn], phần trước đó của transaction vẫn giữ. Lỗi được ném
+/// lại cho nơi gọi xử lý.
 Future<T> inSavepoint<T>(
   Connection conn,
   String name,
@@ -39,7 +40,7 @@ Future<T> inSavepoint<T>(
     final result = await fn();
     await conn.execute('RELEASE SAVEPOINT $name');
     return result;
-  } on ServerException {
+  } catch (_) {
     await conn.execute('ROLLBACK TO SAVEPOINT $name');
     await conn.execute('RELEASE SAVEPOINT $name');
     rethrow;

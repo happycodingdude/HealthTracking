@@ -9,6 +9,7 @@ import '../../../data/db/app_database.dart';
 import '../../../data/sync/outbox_writer.dart';
 import '../../../data/sync/sync_providers.dart';
 import '../../me/data/profile_repository.dart';
+import '../../schedule/data/schedule_repository.dart';
 import '../../weight/data/weight_repository.dart';
 import '../data/onboarding_draft_repository.dart';
 
@@ -20,12 +21,14 @@ final class OnboardingSteps {
     required ProfileRepository profiles,
     required WeightRepository weights,
     required OnboardingDraftRepository drafts,
+    required ScheduleRepository schedule,
     required OutboxWriter outbox,
     required Clock clock,
   }) : _db = db,
        _profiles = profiles,
        _weights = weights,
        _drafts = drafts,
+       _schedule = schedule,
        _outbox = outbox,
        _clock = clock;
 
@@ -33,11 +36,15 @@ final class OnboardingSteps {
   final ProfileRepository _profiles;
   final WeightRepository _weights;
   final OnboardingDraftRepository _drafts;
+  final ScheduleRepository _schedule;
   final OutboxWriter _outbox;
   final Clock _clock;
 
   static const _profileCodec = ProfileCodec();
   static const _weightCodec = WeightCodec();
+  static const _templateCodec = WeeklyTemplateCodec();
+  static const _planCodec = MonthPlanCodec();
+  static const _dayCodec = DayCodec();
 
   /// Bước 1 (S-02): "Tôi đã hiểu" (F10-R1). Tạo hồ sơ, chuyển sang bước 2.
   Future<void> acceptDisclaimer() => _db.transaction(() async {
@@ -98,7 +105,7 @@ final class OnboardingSteps {
         next = next.copyWith(calorieKcal: _estimate(next, kgX10)!.kcal);
       }
       await _saveProfile(next);
-      await _drafts.clear();
+      await _drafts.clearProfile();
     });
     return const [];
   }
@@ -126,6 +133,61 @@ final class OnboardingSteps {
       );
     });
     return true;
+  }
+
+  /// Bước 4 (S-05): kiểm tra F03-V1 → V3, lưu lịch tuần và chia lịch tháng từ
+  /// lúc lưu đến cuối tháng (F03-R5), rồi chuyển sang bước 5. Trả lỗi; rỗng =
+  /// đã lưu.
+  ///
+  /// Lần đầu tạo lịch bằng `ensure`. Quay lại bước này và lưu lại (chưa xong
+  /// thiết lập nên chưa có buổi nào được đánh dấu) thì chia lại bằng `upsert`.
+  Future<List<TemplateError>> saveSchedule(WeeklyTemplate template) async {
+    final errors = template.validate();
+    if (errors.isNotEmpty) return errors;
+    await _db.transaction(() async {
+      await _schedule.putTemplate(template);
+      await _outbox.enqueue(
+        SyncEntities.weeklyTemplate,
+        WeeklyTemplateCodec.key,
+        SyncOp.upsert,
+        _templateCodec.encode(template),
+      );
+      final generated = MonthGenerator.first(template, _clock.now());
+      final existing = await _schedule.plan(generated.plan.month);
+      final op = existing == null ? SyncOp.ensure : SyncOp.upsert;
+      final plan = existing == null
+          ? generated.plan
+          : MonthPlan(
+              month: existing.month,
+              startDate: existing.startDate.isBefore(generated.plan.startDate)
+                  ? existing.startDate
+                  : generated.plan.startDate,
+              templateHash: generated.plan.templateHash,
+              generatedAt: generated.plan.generatedAt,
+            );
+      await _schedule.putPlan(plan);
+      await _outbox.enqueue(
+        SyncEntities.monthPlan,
+        MonthPlanCodec.keyOf(plan.month),
+        op,
+        _planCodec.encode(plan),
+      );
+      for (final day in generated.days) {
+        await _schedule.putDay(day);
+        await _outbox.enqueue(
+          SyncEntities.day,
+          day.date.toKey(),
+          op,
+          _dayCodec.encode(day),
+        );
+      }
+      final profile = (await _profiles.get())!;
+      await _saveProfile(
+        profile.copyWith(onboardingStep: math.max(profile.onboardingStep, 5)),
+      );
+      await _drafts.saveTemplate(null);
+    });
+    return const [];
   }
 
   CalorieEstimate? _estimate(Profile p, int? weightKgX10) =>
@@ -156,6 +218,7 @@ final onboardingStepsProvider = Provider<OnboardingSteps>(
     profiles: ref.watch(profileRepositoryProvider),
     weights: ref.watch(weightRepositoryProvider),
     drafts: ref.watch(onboardingDraftRepositoryProvider),
+    schedule: ref.watch(scheduleRepositoryProvider),
     outbox: ref.watch(outboxWriterProvider),
     clock: ref.watch(clockProvider),
   ),

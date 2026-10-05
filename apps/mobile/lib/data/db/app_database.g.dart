@@ -2257,6 +2257,17 @@ class $OnboardingDraftTable extends OnboardingDraft
     requiredDuringInsert: false,
     defaultValue: const Constant(''),
   );
+  static const VerificationMeta _templateMeta = const VerificationMeta(
+    'template',
+  );
+  @override
+  late final GeneratedColumn<String> template = GeneratedColumn<String>(
+    'template',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2265,6 +2276,7 @@ class $OnboardingDraftTable extends OnboardingDraft
     sex,
     activityLevel,
     weight,
+    template,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2314,6 +2326,12 @@ class $OnboardingDraftTable extends OnboardingDraft
         weight.isAcceptableOrUnknown(data['weight']!, _weightMeta),
       );
     }
+    if (data.containsKey('template')) {
+      context.handle(
+        _templateMeta,
+        template.isAcceptableOrUnknown(data['template']!, _templateMeta),
+      );
+    }
     return context;
   }
 
@@ -2347,6 +2365,10 @@ class $OnboardingDraftTable extends OnboardingDraft
         DriftSqlType.string,
         data['${effectivePrefix}weight'],
       )!,
+      template: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}template'],
+      ),
     );
   }
 
@@ -2366,6 +2388,9 @@ class OnboardingDraftRow extends DataClass
   final String? sex;
   final String? activityLevel;
   final String weight;
+
+  /// Lịch tuần đang xếp dở ở S-05 (JSON như `WeeklyTemplate.toJson`, VS-04).
+  final String? template;
   const OnboardingDraftRow({
     required this.id,
     required this.height,
@@ -2373,6 +2398,7 @@ class OnboardingDraftRow extends DataClass
     this.sex,
     this.activityLevel,
     required this.weight,
+    this.template,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2389,6 +2415,9 @@ class OnboardingDraftRow extends DataClass
       map['activity_level'] = Variable<String>(activityLevel);
     }
     map['weight'] = Variable<String>(weight);
+    if (!nullToAbsent || template != null) {
+      map['template'] = Variable<String>(template);
+    }
     return map;
   }
 
@@ -2404,6 +2433,9 @@ class OnboardingDraftRow extends DataClass
           ? const Value.absent()
           : Value(activityLevel),
       weight: Value(weight),
+      template: template == null && nullToAbsent
+          ? const Value.absent()
+          : Value(template),
     );
   }
 
@@ -2419,6 +2451,7 @@ class OnboardingDraftRow extends DataClass
       sex: serializer.fromJson<String?>(json['sex']),
       activityLevel: serializer.fromJson<String?>(json['activityLevel']),
       weight: serializer.fromJson<String>(json['weight']),
+      template: serializer.fromJson<String?>(json['template']),
     );
   }
   @override
@@ -2431,6 +2464,7 @@ class OnboardingDraftRow extends DataClass
       'sex': serializer.toJson<String?>(sex),
       'activityLevel': serializer.toJson<String?>(activityLevel),
       'weight': serializer.toJson<String>(weight),
+      'template': serializer.toJson<String?>(template),
     };
   }
 
@@ -2441,6 +2475,7 @@ class OnboardingDraftRow extends DataClass
     Value<String?> sex = const Value.absent(),
     Value<String?> activityLevel = const Value.absent(),
     String? weight,
+    Value<String?> template = const Value.absent(),
   }) => OnboardingDraftRow(
     id: id ?? this.id,
     height: height ?? this.height,
@@ -2450,6 +2485,7 @@ class OnboardingDraftRow extends DataClass
         ? activityLevel.value
         : this.activityLevel,
     weight: weight ?? this.weight,
+    template: template.present ? template.value : this.template,
   );
   OnboardingDraftRow copyWithCompanion(OnboardingDraftCompanion data) {
     return OnboardingDraftRow(
@@ -2461,6 +2497,7 @@ class OnboardingDraftRow extends DataClass
           ? data.activityLevel.value
           : this.activityLevel,
       weight: data.weight.present ? data.weight.value : this.weight,
+      template: data.template.present ? data.template.value : this.template,
     );
   }
 
@@ -2472,14 +2509,15 @@ class OnboardingDraftRow extends DataClass
           ..write('birthYear: $birthYear, ')
           ..write('sex: $sex, ')
           ..write('activityLevel: $activityLevel, ')
-          ..write('weight: $weight')
+          ..write('weight: $weight, ')
+          ..write('template: $template')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode =>
-      Object.hash(id, height, birthYear, sex, activityLevel, weight);
+      Object.hash(id, height, birthYear, sex, activityLevel, weight, template);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2489,7 +2527,8 @@ class OnboardingDraftRow extends DataClass
           other.birthYear == this.birthYear &&
           other.sex == this.sex &&
           other.activityLevel == this.activityLevel &&
-          other.weight == this.weight);
+          other.weight == this.weight &&
+          other.template == this.template);
 }
 
 class OnboardingDraftCompanion extends UpdateCompanion<OnboardingDraftRow> {
@@ -2499,6 +2538,7 @@ class OnboardingDraftCompanion extends UpdateCompanion<OnboardingDraftRow> {
   final Value<String?> sex;
   final Value<String?> activityLevel;
   final Value<String> weight;
+  final Value<String?> template;
   const OnboardingDraftCompanion({
     this.id = const Value.absent(),
     this.height = const Value.absent(),
@@ -2506,6 +2546,7 @@ class OnboardingDraftCompanion extends UpdateCompanion<OnboardingDraftRow> {
     this.sex = const Value.absent(),
     this.activityLevel = const Value.absent(),
     this.weight = const Value.absent(),
+    this.template = const Value.absent(),
   });
   OnboardingDraftCompanion.insert({
     this.id = const Value.absent(),
@@ -2514,6 +2555,7 @@ class OnboardingDraftCompanion extends UpdateCompanion<OnboardingDraftRow> {
     this.sex = const Value.absent(),
     this.activityLevel = const Value.absent(),
     this.weight = const Value.absent(),
+    this.template = const Value.absent(),
   });
   static Insertable<OnboardingDraftRow> custom({
     Expression<int>? id,
@@ -2522,6 +2564,7 @@ class OnboardingDraftCompanion extends UpdateCompanion<OnboardingDraftRow> {
     Expression<String>? sex,
     Expression<String>? activityLevel,
     Expression<String>? weight,
+    Expression<String>? template,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2530,6 +2573,7 @@ class OnboardingDraftCompanion extends UpdateCompanion<OnboardingDraftRow> {
       if (sex != null) 'sex': sex,
       if (activityLevel != null) 'activity_level': activityLevel,
       if (weight != null) 'weight': weight,
+      if (template != null) 'template': template,
     });
   }
 
@@ -2540,6 +2584,7 @@ class OnboardingDraftCompanion extends UpdateCompanion<OnboardingDraftRow> {
     Value<String?>? sex,
     Value<String?>? activityLevel,
     Value<String>? weight,
+    Value<String?>? template,
   }) {
     return OnboardingDraftCompanion(
       id: id ?? this.id,
@@ -2548,6 +2593,7 @@ class OnboardingDraftCompanion extends UpdateCompanion<OnboardingDraftRow> {
       sex: sex ?? this.sex,
       activityLevel: activityLevel ?? this.activityLevel,
       weight: weight ?? this.weight,
+      template: template ?? this.template,
     );
   }
 
@@ -2572,6 +2618,9 @@ class OnboardingDraftCompanion extends UpdateCompanion<OnboardingDraftRow> {
     if (weight.present) {
       map['weight'] = Variable<String>(weight.value);
     }
+    if (template.present) {
+      map['template'] = Variable<String>(template.value);
+    }
     return map;
   }
 
@@ -2583,7 +2632,1293 @@ class OnboardingDraftCompanion extends UpdateCompanion<OnboardingDraftRow> {
           ..write('birthYear: $birthYear, ')
           ..write('sex: $sex, ')
           ..write('activityLevel: $activityLevel, ')
-          ..write('weight: $weight')
+          ..write('weight: $weight, ')
+          ..write('template: $template')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $WeeklyTemplatesTable extends WeeklyTemplates
+    with TableInfo<$WeeklyTemplatesTable, WeeklyTemplateRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $WeeklyTemplatesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _keyMeta = const VerificationMeta('key');
+  @override
+  late final GeneratedColumn<String> key = GeneratedColumn<String>(
+    'key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _daysMeta = const VerificationMeta('days');
+  @override
+  late final GeneratedColumn<String> days = GeneratedColumn<String>(
+    'days',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _contentHashMeta = const VerificationMeta(
+    'contentHash',
+  );
+  @override
+  late final GeneratedColumn<String> contentHash = GeneratedColumn<String>(
+    'content_hash',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [key, days, contentHash];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'weekly_templates';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<WeeklyTemplateRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('key')) {
+      context.handle(
+        _keyMeta,
+        key.isAcceptableOrUnknown(data['key']!, _keyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_keyMeta);
+    }
+    if (data.containsKey('days')) {
+      context.handle(
+        _daysMeta,
+        days.isAcceptableOrUnknown(data['days']!, _daysMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_daysMeta);
+    }
+    if (data.containsKey('content_hash')) {
+      context.handle(
+        _contentHashMeta,
+        contentHash.isAcceptableOrUnknown(
+          data['content_hash']!,
+          _contentHashMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_contentHashMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {key};
+  @override
+  WeeklyTemplateRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return WeeklyTemplateRow(
+      key: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}key'],
+      )!,
+      days: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}days'],
+      )!,
+      contentHash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content_hash'],
+      )!,
+    );
+  }
+
+  @override
+  $WeeklyTemplatesTable createAlias(String alias) {
+    return $WeeklyTemplatesTable(attachedDatabase, alias);
+  }
+}
+
+class WeeklyTemplateRow extends DataClass
+    implements Insertable<WeeklyTemplateRow> {
+  final String key;
+  final String days;
+  final String contentHash;
+  const WeeklyTemplateRow({
+    required this.key,
+    required this.days,
+    required this.contentHash,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['key'] = Variable<String>(key);
+    map['days'] = Variable<String>(days);
+    map['content_hash'] = Variable<String>(contentHash);
+    return map;
+  }
+
+  WeeklyTemplatesCompanion toCompanion(bool nullToAbsent) {
+    return WeeklyTemplatesCompanion(
+      key: Value(key),
+      days: Value(days),
+      contentHash: Value(contentHash),
+    );
+  }
+
+  factory WeeklyTemplateRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return WeeklyTemplateRow(
+      key: serializer.fromJson<String>(json['key']),
+      days: serializer.fromJson<String>(json['days']),
+      contentHash: serializer.fromJson<String>(json['contentHash']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'key': serializer.toJson<String>(key),
+      'days': serializer.toJson<String>(days),
+      'contentHash': serializer.toJson<String>(contentHash),
+    };
+  }
+
+  WeeklyTemplateRow copyWith({
+    String? key,
+    String? days,
+    String? contentHash,
+  }) => WeeklyTemplateRow(
+    key: key ?? this.key,
+    days: days ?? this.days,
+    contentHash: contentHash ?? this.contentHash,
+  );
+  WeeklyTemplateRow copyWithCompanion(WeeklyTemplatesCompanion data) {
+    return WeeklyTemplateRow(
+      key: data.key.present ? data.key.value : this.key,
+      days: data.days.present ? data.days.value : this.days,
+      contentHash: data.contentHash.present
+          ? data.contentHash.value
+          : this.contentHash,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WeeklyTemplateRow(')
+          ..write('key: $key, ')
+          ..write('days: $days, ')
+          ..write('contentHash: $contentHash')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(key, days, contentHash);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is WeeklyTemplateRow &&
+          other.key == this.key &&
+          other.days == this.days &&
+          other.contentHash == this.contentHash);
+}
+
+class WeeklyTemplatesCompanion extends UpdateCompanion<WeeklyTemplateRow> {
+  final Value<String> key;
+  final Value<String> days;
+  final Value<String> contentHash;
+  final Value<int> rowid;
+  const WeeklyTemplatesCompanion({
+    this.key = const Value.absent(),
+    this.days = const Value.absent(),
+    this.contentHash = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  WeeklyTemplatesCompanion.insert({
+    required String key,
+    required String days,
+    required String contentHash,
+    this.rowid = const Value.absent(),
+  }) : key = Value(key),
+       days = Value(days),
+       contentHash = Value(contentHash);
+  static Insertable<WeeklyTemplateRow> custom({
+    Expression<String>? key,
+    Expression<String>? days,
+    Expression<String>? contentHash,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (key != null) 'key': key,
+      if (days != null) 'days': days,
+      if (contentHash != null) 'content_hash': contentHash,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  WeeklyTemplatesCompanion copyWith({
+    Value<String>? key,
+    Value<String>? days,
+    Value<String>? contentHash,
+    Value<int>? rowid,
+  }) {
+    return WeeklyTemplatesCompanion(
+      key: key ?? this.key,
+      days: days ?? this.days,
+      contentHash: contentHash ?? this.contentHash,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (key.present) {
+      map['key'] = Variable<String>(key.value);
+    }
+    if (days.present) {
+      map['days'] = Variable<String>(days.value);
+    }
+    if (contentHash.present) {
+      map['content_hash'] = Variable<String>(contentHash.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WeeklyTemplatesCompanion(')
+          ..write('key: $key, ')
+          ..write('days: $days, ')
+          ..write('contentHash: $contentHash, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $MonthPlansTable extends MonthPlans
+    with TableInfo<$MonthPlansTable, MonthPlanRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MonthPlansTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _monthMeta = const VerificationMeta('month');
+  @override
+  late final GeneratedColumn<String> month = GeneratedColumn<String>(
+    'month',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _startDateMeta = const VerificationMeta(
+    'startDate',
+  );
+  @override
+  late final GeneratedColumn<String> startDate = GeneratedColumn<String>(
+    'start_date',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _templateHashMeta = const VerificationMeta(
+    'templateHash',
+  );
+  @override
+  late final GeneratedColumn<String> templateHash = GeneratedColumn<String>(
+    'template_hash',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _generatedAtMeta = const VerificationMeta(
+    'generatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> generatedAt = GeneratedColumn<DateTime>(
+    'generated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _redistributedAtMeta = const VerificationMeta(
+    'redistributedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> redistributedAt =
+      GeneratedColumn<DateTime>(
+        'redistributed_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    month,
+    startDate,
+    templateHash,
+    generatedAt,
+    redistributedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'month_plans';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MonthPlanRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('month')) {
+      context.handle(
+        _monthMeta,
+        month.isAcceptableOrUnknown(data['month']!, _monthMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_monthMeta);
+    }
+    if (data.containsKey('start_date')) {
+      context.handle(
+        _startDateMeta,
+        startDate.isAcceptableOrUnknown(data['start_date']!, _startDateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startDateMeta);
+    }
+    if (data.containsKey('template_hash')) {
+      context.handle(
+        _templateHashMeta,
+        templateHash.isAcceptableOrUnknown(
+          data['template_hash']!,
+          _templateHashMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_templateHashMeta);
+    }
+    if (data.containsKey('generated_at')) {
+      context.handle(
+        _generatedAtMeta,
+        generatedAt.isAcceptableOrUnknown(
+          data['generated_at']!,
+          _generatedAtMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_generatedAtMeta);
+    }
+    if (data.containsKey('redistributed_at')) {
+      context.handle(
+        _redistributedAtMeta,
+        redistributedAt.isAcceptableOrUnknown(
+          data['redistributed_at']!,
+          _redistributedAtMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {month};
+  @override
+  MonthPlanRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MonthPlanRow(
+      month: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}month'],
+      )!,
+      startDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}start_date'],
+      )!,
+      templateHash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}template_hash'],
+      )!,
+      generatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}generated_at'],
+      )!,
+      redistributedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}redistributed_at'],
+      ),
+    );
+  }
+
+  @override
+  $MonthPlansTable createAlias(String alias) {
+    return $MonthPlansTable(attachedDatabase, alias);
+  }
+}
+
+class MonthPlanRow extends DataClass implements Insertable<MonthPlanRow> {
+  final String month;
+
+  /// `YYYY-MM-DD`.
+  final String startDate;
+  final String templateHash;
+  final DateTime generatedAt;
+  final DateTime? redistributedAt;
+  const MonthPlanRow({
+    required this.month,
+    required this.startDate,
+    required this.templateHash,
+    required this.generatedAt,
+    this.redistributedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['month'] = Variable<String>(month);
+    map['start_date'] = Variable<String>(startDate);
+    map['template_hash'] = Variable<String>(templateHash);
+    map['generated_at'] = Variable<DateTime>(generatedAt);
+    if (!nullToAbsent || redistributedAt != null) {
+      map['redistributed_at'] = Variable<DateTime>(redistributedAt);
+    }
+    return map;
+  }
+
+  MonthPlansCompanion toCompanion(bool nullToAbsent) {
+    return MonthPlansCompanion(
+      month: Value(month),
+      startDate: Value(startDate),
+      templateHash: Value(templateHash),
+      generatedAt: Value(generatedAt),
+      redistributedAt: redistributedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(redistributedAt),
+    );
+  }
+
+  factory MonthPlanRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MonthPlanRow(
+      month: serializer.fromJson<String>(json['month']),
+      startDate: serializer.fromJson<String>(json['startDate']),
+      templateHash: serializer.fromJson<String>(json['templateHash']),
+      generatedAt: serializer.fromJson<DateTime>(json['generatedAt']),
+      redistributedAt: serializer.fromJson<DateTime?>(json['redistributedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'month': serializer.toJson<String>(month),
+      'startDate': serializer.toJson<String>(startDate),
+      'templateHash': serializer.toJson<String>(templateHash),
+      'generatedAt': serializer.toJson<DateTime>(generatedAt),
+      'redistributedAt': serializer.toJson<DateTime?>(redistributedAt),
+    };
+  }
+
+  MonthPlanRow copyWith({
+    String? month,
+    String? startDate,
+    String? templateHash,
+    DateTime? generatedAt,
+    Value<DateTime?> redistributedAt = const Value.absent(),
+  }) => MonthPlanRow(
+    month: month ?? this.month,
+    startDate: startDate ?? this.startDate,
+    templateHash: templateHash ?? this.templateHash,
+    generatedAt: generatedAt ?? this.generatedAt,
+    redistributedAt: redistributedAt.present
+        ? redistributedAt.value
+        : this.redistributedAt,
+  );
+  MonthPlanRow copyWithCompanion(MonthPlansCompanion data) {
+    return MonthPlanRow(
+      month: data.month.present ? data.month.value : this.month,
+      startDate: data.startDate.present ? data.startDate.value : this.startDate,
+      templateHash: data.templateHash.present
+          ? data.templateHash.value
+          : this.templateHash,
+      generatedAt: data.generatedAt.present
+          ? data.generatedAt.value
+          : this.generatedAt,
+      redistributedAt: data.redistributedAt.present
+          ? data.redistributedAt.value
+          : this.redistributedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MonthPlanRow(')
+          ..write('month: $month, ')
+          ..write('startDate: $startDate, ')
+          ..write('templateHash: $templateHash, ')
+          ..write('generatedAt: $generatedAt, ')
+          ..write('redistributedAt: $redistributedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(month, startDate, templateHash, generatedAt, redistributedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MonthPlanRow &&
+          other.month == this.month &&
+          other.startDate == this.startDate &&
+          other.templateHash == this.templateHash &&
+          other.generatedAt == this.generatedAt &&
+          other.redistributedAt == this.redistributedAt);
+}
+
+class MonthPlansCompanion extends UpdateCompanion<MonthPlanRow> {
+  final Value<String> month;
+  final Value<String> startDate;
+  final Value<String> templateHash;
+  final Value<DateTime> generatedAt;
+  final Value<DateTime?> redistributedAt;
+  final Value<int> rowid;
+  const MonthPlansCompanion({
+    this.month = const Value.absent(),
+    this.startDate = const Value.absent(),
+    this.templateHash = const Value.absent(),
+    this.generatedAt = const Value.absent(),
+    this.redistributedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MonthPlansCompanion.insert({
+    required String month,
+    required String startDate,
+    required String templateHash,
+    required DateTime generatedAt,
+    this.redistributedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : month = Value(month),
+       startDate = Value(startDate),
+       templateHash = Value(templateHash),
+       generatedAt = Value(generatedAt);
+  static Insertable<MonthPlanRow> custom({
+    Expression<String>? month,
+    Expression<String>? startDate,
+    Expression<String>? templateHash,
+    Expression<DateTime>? generatedAt,
+    Expression<DateTime>? redistributedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (month != null) 'month': month,
+      if (startDate != null) 'start_date': startDate,
+      if (templateHash != null) 'template_hash': templateHash,
+      if (generatedAt != null) 'generated_at': generatedAt,
+      if (redistributedAt != null) 'redistributed_at': redistributedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MonthPlansCompanion copyWith({
+    Value<String>? month,
+    Value<String>? startDate,
+    Value<String>? templateHash,
+    Value<DateTime>? generatedAt,
+    Value<DateTime?>? redistributedAt,
+    Value<int>? rowid,
+  }) {
+    return MonthPlansCompanion(
+      month: month ?? this.month,
+      startDate: startDate ?? this.startDate,
+      templateHash: templateHash ?? this.templateHash,
+      generatedAt: generatedAt ?? this.generatedAt,
+      redistributedAt: redistributedAt ?? this.redistributedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (month.present) {
+      map['month'] = Variable<String>(month.value);
+    }
+    if (startDate.present) {
+      map['start_date'] = Variable<String>(startDate.value);
+    }
+    if (templateHash.present) {
+      map['template_hash'] = Variable<String>(templateHash.value);
+    }
+    if (generatedAt.present) {
+      map['generated_at'] = Variable<DateTime>(generatedAt.value);
+    }
+    if (redistributedAt.present) {
+      map['redistributed_at'] = Variable<DateTime>(redistributedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MonthPlansCompanion(')
+          ..write('month: $month, ')
+          ..write('startDate: $startDate, ')
+          ..write('templateHash: $templateHash, ')
+          ..write('generatedAt: $generatedAt, ')
+          ..write('redistributedAt: $redistributedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $DaysTable extends Days with TableInfo<$DaysTable, DayRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DaysTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _dateMeta = const VerificationMeta('date');
+  @override
+  late final GeneratedColumn<String> date = GeneratedColumn<String>(
+    'date',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _timeMeta = const VerificationMeta('time');
+  @override
+  late final GeneratedColumn<String> time = GeneratedColumn<String>(
+    'time',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _musclesMeta = const VerificationMeta(
+    'muscles',
+  );
+  @override
+  late final GeneratedColumn<String> muscles = GeneratedColumn<String>(
+    'muscles',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _markMeta = const VerificationMeta('mark');
+  @override
+  late final GeneratedColumn<String> mark = GeneratedColumn<String>(
+    'mark',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _actualMusclesMeta = const VerificationMeta(
+    'actualMuscles',
+  );
+  @override
+  late final GeneratedColumn<String> actualMuscles = GeneratedColumn<String>(
+    'actual_muscles',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _markedAtMeta = const VerificationMeta(
+    'markedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> markedAt = GeneratedColumn<DateTime>(
+    'marked_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _extraMusclesMeta = const VerificationMeta(
+    'extraMuscles',
+  );
+  @override
+  late final GeneratedColumn<String> extraMuscles = GeneratedColumn<String>(
+    'extra_muscles',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _extraLoggedAtMeta = const VerificationMeta(
+    'extraLoggedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> extraLoggedAt =
+      GeneratedColumn<DateTime>(
+        'extra_logged_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    date,
+    kind,
+    time,
+    muscles,
+    source,
+    mark,
+    actualMuscles,
+    markedAt,
+    extraMuscles,
+    extraLoggedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'days';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DayRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('date')) {
+      context.handle(
+        _dateMeta,
+        date.isAcceptableOrUnknown(data['date']!, _dateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dateMeta);
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('time')) {
+      context.handle(
+        _timeMeta,
+        time.isAcceptableOrUnknown(data['time']!, _timeMeta),
+      );
+    }
+    if (data.containsKey('muscles')) {
+      context.handle(
+        _musclesMeta,
+        muscles.isAcceptableOrUnknown(data['muscles']!, _musclesMeta),
+      );
+    }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceMeta);
+    }
+    if (data.containsKey('mark')) {
+      context.handle(
+        _markMeta,
+        mark.isAcceptableOrUnknown(data['mark']!, _markMeta),
+      );
+    }
+    if (data.containsKey('actual_muscles')) {
+      context.handle(
+        _actualMusclesMeta,
+        actualMuscles.isAcceptableOrUnknown(
+          data['actual_muscles']!,
+          _actualMusclesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('marked_at')) {
+      context.handle(
+        _markedAtMeta,
+        markedAt.isAcceptableOrUnknown(data['marked_at']!, _markedAtMeta),
+      );
+    }
+    if (data.containsKey('extra_muscles')) {
+      context.handle(
+        _extraMusclesMeta,
+        extraMuscles.isAcceptableOrUnknown(
+          data['extra_muscles']!,
+          _extraMusclesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('extra_logged_at')) {
+      context.handle(
+        _extraLoggedAtMeta,
+        extraLoggedAt.isAcceptableOrUnknown(
+          data['extra_logged_at']!,
+          _extraLoggedAtMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {date};
+  @override
+  DayRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DayRow(
+      date: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}date'],
+      )!,
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      time: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}time'],
+      ),
+      muscles: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}muscles'],
+      ),
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
+      mark: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}mark'],
+      ),
+      actualMuscles: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actual_muscles'],
+      ),
+      markedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}marked_at'],
+      ),
+      extraMuscles: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}extra_muscles'],
+      ),
+      extraLoggedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}extra_logged_at'],
+      ),
+    );
+  }
+
+  @override
+  $DaysTable createAlias(String alias) {
+    return $DaysTable(attachedDatabase, alias);
+  }
+}
+
+class DayRow extends DataClass implements Insertable<DayRow> {
+  final String date;
+  final String kind;
+
+  /// `HH:mm`.
+  final String? time;
+  final String? muscles;
+  final String source;
+  final String? mark;
+  final String? actualMuscles;
+  final DateTime? markedAt;
+  final String? extraMuscles;
+  final DateTime? extraLoggedAt;
+  const DayRow({
+    required this.date,
+    required this.kind,
+    this.time,
+    this.muscles,
+    required this.source,
+    this.mark,
+    this.actualMuscles,
+    this.markedAt,
+    this.extraMuscles,
+    this.extraLoggedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['date'] = Variable<String>(date);
+    map['kind'] = Variable<String>(kind);
+    if (!nullToAbsent || time != null) {
+      map['time'] = Variable<String>(time);
+    }
+    if (!nullToAbsent || muscles != null) {
+      map['muscles'] = Variable<String>(muscles);
+    }
+    map['source'] = Variable<String>(source);
+    if (!nullToAbsent || mark != null) {
+      map['mark'] = Variable<String>(mark);
+    }
+    if (!nullToAbsent || actualMuscles != null) {
+      map['actual_muscles'] = Variable<String>(actualMuscles);
+    }
+    if (!nullToAbsent || markedAt != null) {
+      map['marked_at'] = Variable<DateTime>(markedAt);
+    }
+    if (!nullToAbsent || extraMuscles != null) {
+      map['extra_muscles'] = Variable<String>(extraMuscles);
+    }
+    if (!nullToAbsent || extraLoggedAt != null) {
+      map['extra_logged_at'] = Variable<DateTime>(extraLoggedAt);
+    }
+    return map;
+  }
+
+  DaysCompanion toCompanion(bool nullToAbsent) {
+    return DaysCompanion(
+      date: Value(date),
+      kind: Value(kind),
+      time: time == null && nullToAbsent ? const Value.absent() : Value(time),
+      muscles: muscles == null && nullToAbsent
+          ? const Value.absent()
+          : Value(muscles),
+      source: Value(source),
+      mark: mark == null && nullToAbsent ? const Value.absent() : Value(mark),
+      actualMuscles: actualMuscles == null && nullToAbsent
+          ? const Value.absent()
+          : Value(actualMuscles),
+      markedAt: markedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(markedAt),
+      extraMuscles: extraMuscles == null && nullToAbsent
+          ? const Value.absent()
+          : Value(extraMuscles),
+      extraLoggedAt: extraLoggedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(extraLoggedAt),
+    );
+  }
+
+  factory DayRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DayRow(
+      date: serializer.fromJson<String>(json['date']),
+      kind: serializer.fromJson<String>(json['kind']),
+      time: serializer.fromJson<String?>(json['time']),
+      muscles: serializer.fromJson<String?>(json['muscles']),
+      source: serializer.fromJson<String>(json['source']),
+      mark: serializer.fromJson<String?>(json['mark']),
+      actualMuscles: serializer.fromJson<String?>(json['actualMuscles']),
+      markedAt: serializer.fromJson<DateTime?>(json['markedAt']),
+      extraMuscles: serializer.fromJson<String?>(json['extraMuscles']),
+      extraLoggedAt: serializer.fromJson<DateTime?>(json['extraLoggedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'date': serializer.toJson<String>(date),
+      'kind': serializer.toJson<String>(kind),
+      'time': serializer.toJson<String?>(time),
+      'muscles': serializer.toJson<String?>(muscles),
+      'source': serializer.toJson<String>(source),
+      'mark': serializer.toJson<String?>(mark),
+      'actualMuscles': serializer.toJson<String?>(actualMuscles),
+      'markedAt': serializer.toJson<DateTime?>(markedAt),
+      'extraMuscles': serializer.toJson<String?>(extraMuscles),
+      'extraLoggedAt': serializer.toJson<DateTime?>(extraLoggedAt),
+    };
+  }
+
+  DayRow copyWith({
+    String? date,
+    String? kind,
+    Value<String?> time = const Value.absent(),
+    Value<String?> muscles = const Value.absent(),
+    String? source,
+    Value<String?> mark = const Value.absent(),
+    Value<String?> actualMuscles = const Value.absent(),
+    Value<DateTime?> markedAt = const Value.absent(),
+    Value<String?> extraMuscles = const Value.absent(),
+    Value<DateTime?> extraLoggedAt = const Value.absent(),
+  }) => DayRow(
+    date: date ?? this.date,
+    kind: kind ?? this.kind,
+    time: time.present ? time.value : this.time,
+    muscles: muscles.present ? muscles.value : this.muscles,
+    source: source ?? this.source,
+    mark: mark.present ? mark.value : this.mark,
+    actualMuscles: actualMuscles.present
+        ? actualMuscles.value
+        : this.actualMuscles,
+    markedAt: markedAt.present ? markedAt.value : this.markedAt,
+    extraMuscles: extraMuscles.present ? extraMuscles.value : this.extraMuscles,
+    extraLoggedAt: extraLoggedAt.present
+        ? extraLoggedAt.value
+        : this.extraLoggedAt,
+  );
+  DayRow copyWithCompanion(DaysCompanion data) {
+    return DayRow(
+      date: data.date.present ? data.date.value : this.date,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      time: data.time.present ? data.time.value : this.time,
+      muscles: data.muscles.present ? data.muscles.value : this.muscles,
+      source: data.source.present ? data.source.value : this.source,
+      mark: data.mark.present ? data.mark.value : this.mark,
+      actualMuscles: data.actualMuscles.present
+          ? data.actualMuscles.value
+          : this.actualMuscles,
+      markedAt: data.markedAt.present ? data.markedAt.value : this.markedAt,
+      extraMuscles: data.extraMuscles.present
+          ? data.extraMuscles.value
+          : this.extraMuscles,
+      extraLoggedAt: data.extraLoggedAt.present
+          ? data.extraLoggedAt.value
+          : this.extraLoggedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DayRow(')
+          ..write('date: $date, ')
+          ..write('kind: $kind, ')
+          ..write('time: $time, ')
+          ..write('muscles: $muscles, ')
+          ..write('source: $source, ')
+          ..write('mark: $mark, ')
+          ..write('actualMuscles: $actualMuscles, ')
+          ..write('markedAt: $markedAt, ')
+          ..write('extraMuscles: $extraMuscles, ')
+          ..write('extraLoggedAt: $extraLoggedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    date,
+    kind,
+    time,
+    muscles,
+    source,
+    mark,
+    actualMuscles,
+    markedAt,
+    extraMuscles,
+    extraLoggedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DayRow &&
+          other.date == this.date &&
+          other.kind == this.kind &&
+          other.time == this.time &&
+          other.muscles == this.muscles &&
+          other.source == this.source &&
+          other.mark == this.mark &&
+          other.actualMuscles == this.actualMuscles &&
+          other.markedAt == this.markedAt &&
+          other.extraMuscles == this.extraMuscles &&
+          other.extraLoggedAt == this.extraLoggedAt);
+}
+
+class DaysCompanion extends UpdateCompanion<DayRow> {
+  final Value<String> date;
+  final Value<String> kind;
+  final Value<String?> time;
+  final Value<String?> muscles;
+  final Value<String> source;
+  final Value<String?> mark;
+  final Value<String?> actualMuscles;
+  final Value<DateTime?> markedAt;
+  final Value<String?> extraMuscles;
+  final Value<DateTime?> extraLoggedAt;
+  final Value<int> rowid;
+  const DaysCompanion({
+    this.date = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.time = const Value.absent(),
+    this.muscles = const Value.absent(),
+    this.source = const Value.absent(),
+    this.mark = const Value.absent(),
+    this.actualMuscles = const Value.absent(),
+    this.markedAt = const Value.absent(),
+    this.extraMuscles = const Value.absent(),
+    this.extraLoggedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DaysCompanion.insert({
+    required String date,
+    required String kind,
+    this.time = const Value.absent(),
+    this.muscles = const Value.absent(),
+    required String source,
+    this.mark = const Value.absent(),
+    this.actualMuscles = const Value.absent(),
+    this.markedAt = const Value.absent(),
+    this.extraMuscles = const Value.absent(),
+    this.extraLoggedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : date = Value(date),
+       kind = Value(kind),
+       source = Value(source);
+  static Insertable<DayRow> custom({
+    Expression<String>? date,
+    Expression<String>? kind,
+    Expression<String>? time,
+    Expression<String>? muscles,
+    Expression<String>? source,
+    Expression<String>? mark,
+    Expression<String>? actualMuscles,
+    Expression<DateTime>? markedAt,
+    Expression<String>? extraMuscles,
+    Expression<DateTime>? extraLoggedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (date != null) 'date': date,
+      if (kind != null) 'kind': kind,
+      if (time != null) 'time': time,
+      if (muscles != null) 'muscles': muscles,
+      if (source != null) 'source': source,
+      if (mark != null) 'mark': mark,
+      if (actualMuscles != null) 'actual_muscles': actualMuscles,
+      if (markedAt != null) 'marked_at': markedAt,
+      if (extraMuscles != null) 'extra_muscles': extraMuscles,
+      if (extraLoggedAt != null) 'extra_logged_at': extraLoggedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DaysCompanion copyWith({
+    Value<String>? date,
+    Value<String>? kind,
+    Value<String?>? time,
+    Value<String?>? muscles,
+    Value<String>? source,
+    Value<String?>? mark,
+    Value<String?>? actualMuscles,
+    Value<DateTime?>? markedAt,
+    Value<String?>? extraMuscles,
+    Value<DateTime?>? extraLoggedAt,
+    Value<int>? rowid,
+  }) {
+    return DaysCompanion(
+      date: date ?? this.date,
+      kind: kind ?? this.kind,
+      time: time ?? this.time,
+      muscles: muscles ?? this.muscles,
+      source: source ?? this.source,
+      mark: mark ?? this.mark,
+      actualMuscles: actualMuscles ?? this.actualMuscles,
+      markedAt: markedAt ?? this.markedAt,
+      extraMuscles: extraMuscles ?? this.extraMuscles,
+      extraLoggedAt: extraLoggedAt ?? this.extraLoggedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (date.present) {
+      map['date'] = Variable<String>(date.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (time.present) {
+      map['time'] = Variable<String>(time.value);
+    }
+    if (muscles.present) {
+      map['muscles'] = Variable<String>(muscles.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (mark.present) {
+      map['mark'] = Variable<String>(mark.value);
+    }
+    if (actualMuscles.present) {
+      map['actual_muscles'] = Variable<String>(actualMuscles.value);
+    }
+    if (markedAt.present) {
+      map['marked_at'] = Variable<DateTime>(markedAt.value);
+    }
+    if (extraMuscles.present) {
+      map['extra_muscles'] = Variable<String>(extraMuscles.value);
+    }
+    if (extraLoggedAt.present) {
+      map['extra_logged_at'] = Variable<DateTime>(extraLoggedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DaysCompanion(')
+          ..write('date: $date, ')
+          ..write('kind: $kind, ')
+          ..write('time: $time, ')
+          ..write('muscles: $muscles, ')
+          ..write('source: $source, ')
+          ..write('mark: $mark, ')
+          ..write('actualMuscles: $actualMuscles, ')
+          ..write('markedAt: $markedAt, ')
+          ..write('extraMuscles: $extraMuscles, ')
+          ..write('extraLoggedAt: $extraLoggedAt, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -2600,6 +3935,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $OnboardingDraftTable onboardingDraft = $OnboardingDraftTable(
     this,
   );
+  late final $WeeklyTemplatesTable weeklyTemplates = $WeeklyTemplatesTable(
+    this,
+  );
+  late final $MonthPlansTable monthPlans = $MonthPlansTable(this);
+  late final $DaysTable days = $DaysTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2611,6 +3951,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     profiles,
     weights,
     onboardingDraft,
+    weeklyTemplates,
+    monthPlans,
+    days,
   ];
   @override
   DriftDatabaseOptions get options =>
@@ -3737,6 +5080,7 @@ typedef $$OnboardingDraftTableCreateCompanionBuilder =
       Value<String?> sex,
       Value<String?> activityLevel,
       Value<String> weight,
+      Value<String?> template,
     });
 typedef $$OnboardingDraftTableUpdateCompanionBuilder =
     OnboardingDraftCompanion Function({
@@ -3746,6 +5090,7 @@ typedef $$OnboardingDraftTableUpdateCompanionBuilder =
       Value<String?> sex,
       Value<String?> activityLevel,
       Value<String> weight,
+      Value<String?> template,
     });
 
 class $$OnboardingDraftTableFilterComposer
@@ -3784,6 +5129,11 @@ class $$OnboardingDraftTableFilterComposer
 
   ColumnFilters<String> get weight => $composableBuilder(
     column: $table.weight,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get template => $composableBuilder(
+    column: $table.template,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -3826,6 +5176,11 @@ class $$OnboardingDraftTableOrderingComposer
     column: $table.weight,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get template => $composableBuilder(
+    column: $table.template,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$OnboardingDraftTableAnnotationComposer
@@ -3856,6 +5211,9 @@ class $$OnboardingDraftTableAnnotationComposer
 
   GeneratedColumn<String> get weight =>
       $composableBuilder(column: $table.weight, builder: (column) => column);
+
+  GeneratedColumn<String> get template =>
+      $composableBuilder(column: $table.template, builder: (column) => column);
 }
 
 class $$OnboardingDraftTableTableManager
@@ -3901,6 +5259,7 @@ class $$OnboardingDraftTableTableManager
                 Value<String?> sex = const Value.absent(),
                 Value<String?> activityLevel = const Value.absent(),
                 Value<String> weight = const Value.absent(),
+                Value<String?> template = const Value.absent(),
               }) => OnboardingDraftCompanion(
                 id: id,
                 height: height,
@@ -3908,6 +5267,7 @@ class $$OnboardingDraftTableTableManager
                 sex: sex,
                 activityLevel: activityLevel,
                 weight: weight,
+                template: template,
               ),
           createCompanionCallback:
               ({
@@ -3917,6 +5277,7 @@ class $$OnboardingDraftTableTableManager
                 Value<String?> sex = const Value.absent(),
                 Value<String?> activityLevel = const Value.absent(),
                 Value<String> weight = const Value.absent(),
+                Value<String?> template = const Value.absent(),
               }) => OnboardingDraftCompanion.insert(
                 id: id,
                 height: height,
@@ -3924,6 +5285,7 @@ class $$OnboardingDraftTableTableManager
                 sex: sex,
                 activityLevel: activityLevel,
                 weight: weight,
+                template: template,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -3954,6 +5316,675 @@ typedef $$OnboardingDraftTableProcessedTableManager =
       OnboardingDraftRow,
       PrefetchHooks Function()
     >;
+typedef $$WeeklyTemplatesTableCreateCompanionBuilder =
+    WeeklyTemplatesCompanion Function({
+      required String key,
+      required String days,
+      required String contentHash,
+      Value<int> rowid,
+    });
+typedef $$WeeklyTemplatesTableUpdateCompanionBuilder =
+    WeeklyTemplatesCompanion Function({
+      Value<String> key,
+      Value<String> days,
+      Value<String> contentHash,
+      Value<int> rowid,
+    });
+
+class $$WeeklyTemplatesTableFilterComposer
+    extends Composer<_$AppDatabase, $WeeklyTemplatesTable> {
+  $$WeeklyTemplatesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get key => $composableBuilder(
+    column: $table.key,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get days => $composableBuilder(
+    column: $table.days,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get contentHash => $composableBuilder(
+    column: $table.contentHash,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$WeeklyTemplatesTableOrderingComposer
+    extends Composer<_$AppDatabase, $WeeklyTemplatesTable> {
+  $$WeeklyTemplatesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get key => $composableBuilder(
+    column: $table.key,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get days => $composableBuilder(
+    column: $table.days,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get contentHash => $composableBuilder(
+    column: $table.contentHash,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$WeeklyTemplatesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $WeeklyTemplatesTable> {
+  $$WeeklyTemplatesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get key =>
+      $composableBuilder(column: $table.key, builder: (column) => column);
+
+  GeneratedColumn<String> get days =>
+      $composableBuilder(column: $table.days, builder: (column) => column);
+
+  GeneratedColumn<String> get contentHash => $composableBuilder(
+    column: $table.contentHash,
+    builder: (column) => column,
+  );
+}
+
+class $$WeeklyTemplatesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $WeeklyTemplatesTable,
+          WeeklyTemplateRow,
+          $$WeeklyTemplatesTableFilterComposer,
+          $$WeeklyTemplatesTableOrderingComposer,
+          $$WeeklyTemplatesTableAnnotationComposer,
+          $$WeeklyTemplatesTableCreateCompanionBuilder,
+          $$WeeklyTemplatesTableUpdateCompanionBuilder,
+          (
+            WeeklyTemplateRow,
+            BaseReferences<
+              _$AppDatabase,
+              $WeeklyTemplatesTable,
+              WeeklyTemplateRow
+            >,
+          ),
+          WeeklyTemplateRow,
+          PrefetchHooks Function()
+        > {
+  $$WeeklyTemplatesTableTableManager(
+    _$AppDatabase db,
+    $WeeklyTemplatesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$WeeklyTemplatesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$WeeklyTemplatesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$WeeklyTemplatesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> key = const Value.absent(),
+                Value<String> days = const Value.absent(),
+                Value<String> contentHash = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => WeeklyTemplatesCompanion(
+                key: key,
+                days: days,
+                contentHash: contentHash,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String key,
+                required String days,
+                required String contentHash,
+                Value<int> rowid = const Value.absent(),
+              }) => WeeklyTemplatesCompanion.insert(
+                key: key,
+                days: days,
+                contentHash: contentHash,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$WeeklyTemplatesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $WeeklyTemplatesTable,
+      WeeklyTemplateRow,
+      $$WeeklyTemplatesTableFilterComposer,
+      $$WeeklyTemplatesTableOrderingComposer,
+      $$WeeklyTemplatesTableAnnotationComposer,
+      $$WeeklyTemplatesTableCreateCompanionBuilder,
+      $$WeeklyTemplatesTableUpdateCompanionBuilder,
+      (
+        WeeklyTemplateRow,
+        BaseReferences<_$AppDatabase, $WeeklyTemplatesTable, WeeklyTemplateRow>,
+      ),
+      WeeklyTemplateRow,
+      PrefetchHooks Function()
+    >;
+typedef $$MonthPlansTableCreateCompanionBuilder =
+    MonthPlansCompanion Function({
+      required String month,
+      required String startDate,
+      required String templateHash,
+      required DateTime generatedAt,
+      Value<DateTime?> redistributedAt,
+      Value<int> rowid,
+    });
+typedef $$MonthPlansTableUpdateCompanionBuilder =
+    MonthPlansCompanion Function({
+      Value<String> month,
+      Value<String> startDate,
+      Value<String> templateHash,
+      Value<DateTime> generatedAt,
+      Value<DateTime?> redistributedAt,
+      Value<int> rowid,
+    });
+
+class $$MonthPlansTableFilterComposer
+    extends Composer<_$AppDatabase, $MonthPlansTable> {
+  $$MonthPlansTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get month => $composableBuilder(
+    column: $table.month,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get startDate => $composableBuilder(
+    column: $table.startDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get templateHash => $composableBuilder(
+    column: $table.templateHash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get generatedAt => $composableBuilder(
+    column: $table.generatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get redistributedAt => $composableBuilder(
+    column: $table.redistributedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$MonthPlansTableOrderingComposer
+    extends Composer<_$AppDatabase, $MonthPlansTable> {
+  $$MonthPlansTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get month => $composableBuilder(
+    column: $table.month,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get startDate => $composableBuilder(
+    column: $table.startDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get templateHash => $composableBuilder(
+    column: $table.templateHash,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get generatedAt => $composableBuilder(
+    column: $table.generatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get redistributedAt => $composableBuilder(
+    column: $table.redistributedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$MonthPlansTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MonthPlansTable> {
+  $$MonthPlansTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get month =>
+      $composableBuilder(column: $table.month, builder: (column) => column);
+
+  GeneratedColumn<String> get startDate =>
+      $composableBuilder(column: $table.startDate, builder: (column) => column);
+
+  GeneratedColumn<String> get templateHash => $composableBuilder(
+    column: $table.templateHash,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get generatedAt => $composableBuilder(
+    column: $table.generatedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get redistributedAt => $composableBuilder(
+    column: $table.redistributedAt,
+    builder: (column) => column,
+  );
+}
+
+class $$MonthPlansTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MonthPlansTable,
+          MonthPlanRow,
+          $$MonthPlansTableFilterComposer,
+          $$MonthPlansTableOrderingComposer,
+          $$MonthPlansTableAnnotationComposer,
+          $$MonthPlansTableCreateCompanionBuilder,
+          $$MonthPlansTableUpdateCompanionBuilder,
+          (
+            MonthPlanRow,
+            BaseReferences<_$AppDatabase, $MonthPlansTable, MonthPlanRow>,
+          ),
+          MonthPlanRow,
+          PrefetchHooks Function()
+        > {
+  $$MonthPlansTableTableManager(_$AppDatabase db, $MonthPlansTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MonthPlansTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MonthPlansTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MonthPlansTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> month = const Value.absent(),
+                Value<String> startDate = const Value.absent(),
+                Value<String> templateHash = const Value.absent(),
+                Value<DateTime> generatedAt = const Value.absent(),
+                Value<DateTime?> redistributedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MonthPlansCompanion(
+                month: month,
+                startDate: startDate,
+                templateHash: templateHash,
+                generatedAt: generatedAt,
+                redistributedAt: redistributedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String month,
+                required String startDate,
+                required String templateHash,
+                required DateTime generatedAt,
+                Value<DateTime?> redistributedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MonthPlansCompanion.insert(
+                month: month,
+                startDate: startDate,
+                templateHash: templateHash,
+                generatedAt: generatedAt,
+                redistributedAt: redistributedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$MonthPlansTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $MonthPlansTable,
+      MonthPlanRow,
+      $$MonthPlansTableFilterComposer,
+      $$MonthPlansTableOrderingComposer,
+      $$MonthPlansTableAnnotationComposer,
+      $$MonthPlansTableCreateCompanionBuilder,
+      $$MonthPlansTableUpdateCompanionBuilder,
+      (
+        MonthPlanRow,
+        BaseReferences<_$AppDatabase, $MonthPlansTable, MonthPlanRow>,
+      ),
+      MonthPlanRow,
+      PrefetchHooks Function()
+    >;
+typedef $$DaysTableCreateCompanionBuilder =
+    DaysCompanion Function({
+      required String date,
+      required String kind,
+      Value<String?> time,
+      Value<String?> muscles,
+      required String source,
+      Value<String?> mark,
+      Value<String?> actualMuscles,
+      Value<DateTime?> markedAt,
+      Value<String?> extraMuscles,
+      Value<DateTime?> extraLoggedAt,
+      Value<int> rowid,
+    });
+typedef $$DaysTableUpdateCompanionBuilder =
+    DaysCompanion Function({
+      Value<String> date,
+      Value<String> kind,
+      Value<String?> time,
+      Value<String?> muscles,
+      Value<String> source,
+      Value<String?> mark,
+      Value<String?> actualMuscles,
+      Value<DateTime?> markedAt,
+      Value<String?> extraMuscles,
+      Value<DateTime?> extraLoggedAt,
+      Value<int> rowid,
+    });
+
+class $$DaysTableFilterComposer extends Composer<_$AppDatabase, $DaysTable> {
+  $$DaysTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get time => $composableBuilder(
+    column: $table.time,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get muscles => $composableBuilder(
+    column: $table.muscles,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mark => $composableBuilder(
+    column: $table.mark,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get actualMuscles => $composableBuilder(
+    column: $table.actualMuscles,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get markedAt => $composableBuilder(
+    column: $table.markedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get extraMuscles => $composableBuilder(
+    column: $table.extraMuscles,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get extraLoggedAt => $composableBuilder(
+    column: $table.extraLoggedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$DaysTableOrderingComposer extends Composer<_$AppDatabase, $DaysTable> {
+  $$DaysTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get time => $composableBuilder(
+    column: $table.time,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get muscles => $composableBuilder(
+    column: $table.muscles,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get mark => $composableBuilder(
+    column: $table.mark,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get actualMuscles => $composableBuilder(
+    column: $table.actualMuscles,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get markedAt => $composableBuilder(
+    column: $table.markedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get extraMuscles => $composableBuilder(
+    column: $table.extraMuscles,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get extraLoggedAt => $composableBuilder(
+    column: $table.extraLoggedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$DaysTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DaysTable> {
+  $$DaysTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get date =>
+      $composableBuilder(column: $table.date, builder: (column) => column);
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<String> get time =>
+      $composableBuilder(column: $table.time, builder: (column) => column);
+
+  GeneratedColumn<String> get muscles =>
+      $composableBuilder(column: $table.muscles, builder: (column) => column);
+
+  GeneratedColumn<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
+
+  GeneratedColumn<String> get mark =>
+      $composableBuilder(column: $table.mark, builder: (column) => column);
+
+  GeneratedColumn<String> get actualMuscles => $composableBuilder(
+    column: $table.actualMuscles,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get markedAt =>
+      $composableBuilder(column: $table.markedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get extraMuscles => $composableBuilder(
+    column: $table.extraMuscles,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get extraLoggedAt => $composableBuilder(
+    column: $table.extraLoggedAt,
+    builder: (column) => column,
+  );
+}
+
+class $$DaysTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DaysTable,
+          DayRow,
+          $$DaysTableFilterComposer,
+          $$DaysTableOrderingComposer,
+          $$DaysTableAnnotationComposer,
+          $$DaysTableCreateCompanionBuilder,
+          $$DaysTableUpdateCompanionBuilder,
+          (DayRow, BaseReferences<_$AppDatabase, $DaysTable, DayRow>),
+          DayRow,
+          PrefetchHooks Function()
+        > {
+  $$DaysTableTableManager(_$AppDatabase db, $DaysTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DaysTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DaysTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DaysTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> date = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<String?> time = const Value.absent(),
+                Value<String?> muscles = const Value.absent(),
+                Value<String> source = const Value.absent(),
+                Value<String?> mark = const Value.absent(),
+                Value<String?> actualMuscles = const Value.absent(),
+                Value<DateTime?> markedAt = const Value.absent(),
+                Value<String?> extraMuscles = const Value.absent(),
+                Value<DateTime?> extraLoggedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DaysCompanion(
+                date: date,
+                kind: kind,
+                time: time,
+                muscles: muscles,
+                source: source,
+                mark: mark,
+                actualMuscles: actualMuscles,
+                markedAt: markedAt,
+                extraMuscles: extraMuscles,
+                extraLoggedAt: extraLoggedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String date,
+                required String kind,
+                Value<String?> time = const Value.absent(),
+                Value<String?> muscles = const Value.absent(),
+                required String source,
+                Value<String?> mark = const Value.absent(),
+                Value<String?> actualMuscles = const Value.absent(),
+                Value<DateTime?> markedAt = const Value.absent(),
+                Value<String?> extraMuscles = const Value.absent(),
+                Value<DateTime?> extraLoggedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DaysCompanion.insert(
+                date: date,
+                kind: kind,
+                time: time,
+                muscles: muscles,
+                source: source,
+                mark: mark,
+                actualMuscles: actualMuscles,
+                markedAt: markedAt,
+                extraMuscles: extraMuscles,
+                extraLoggedAt: extraLoggedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$DaysTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DaysTable,
+      DayRow,
+      $$DaysTableFilterComposer,
+      $$DaysTableOrderingComposer,
+      $$DaysTableAnnotationComposer,
+      $$DaysTableCreateCompanionBuilder,
+      $$DaysTableUpdateCompanionBuilder,
+      (DayRow, BaseReferences<_$AppDatabase, $DaysTable, DayRow>),
+      DayRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3970,4 +6001,9 @@ class $AppDatabaseManager {
       $$WeightsTableTableManager(_db, _db.weights);
   $$OnboardingDraftTableTableManager get onboardingDraft =>
       $$OnboardingDraftTableTableManager(_db, _db.onboardingDraft);
+  $$WeeklyTemplatesTableTableManager get weeklyTemplates =>
+      $$WeeklyTemplatesTableTableManager(_db, _db.weeklyTemplates);
+  $$MonthPlansTableTableManager get monthPlans =>
+      $$MonthPlansTableTableManager(_db, _db.monthPlans);
+  $$DaysTableTableManager get days => $$DaysTableTableManager(_db, _db.days);
 }

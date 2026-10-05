@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:api_contract/api_contract.dart';
 import 'package:domain/domain.dart';
 import 'package:drift/drift.dart';
@@ -21,15 +23,24 @@ final class ProfileDraft {
   final String weight;
 }
 
-/// Nháp của bước 2 (OB-3): lưu mỗi lần Bạn đổi một ô, chỉ nằm trên máy.
+/// Nháp của bước 2 và bước 4 (OB-3): lưu mỗi lần Bạn đổi một ô, chỉ nằm trên
+/// máy.
 final class OnboardingDraftRepository {
   OnboardingDraftRepository(this._db);
 
   final AppDatabase _db;
 
+  /// Nháp của bước 2; null khi chưa nhập ô nào (hoặc đã lưu thành hồ sơ).
   Future<ProfileDraft?> get() async {
     final r = await _db.select(_db.onboardingDraft).getSingleOrNull();
-    if (r == null) return null;
+    if (r == null ||
+        (r.height.isEmpty &&
+            r.birthYear == null &&
+            r.sex == null &&
+            r.activityLevel == null &&
+            r.weight.isEmpty)) {
+      return null;
+    }
     return ProfileDraft(
       height: r.height,
       birthYear: r.birthYear,
@@ -56,5 +67,36 @@ final class OnboardingDraftRepository {
         ),
       );
 
-  Future<void> clear() => _db.delete(_db.onboardingDraft).go();
+  /// Bỏ nháp của bước 2 (đã lưu thành hồ sơ), giữ nháp lịch tuần.
+  Future<void> clearProfile() => _db
+      .update(_db.onboardingDraft)
+      .write(
+        const OnboardingDraftCompanion(
+          height: Value(''),
+          birthYear: Value(null),
+          sex: Value(null),
+          activityLevel: Value(null),
+          weight: Value(''),
+        ),
+      );
+
+  /// Lịch tuần đang xếp dở ở S-05 (có thể chưa hợp lệ).
+  Future<WeeklyTemplate?> template() async {
+    final r = await _db.select(_db.onboardingDraft).getSingleOrNull();
+    final json = r?.template;
+    return json == null
+        ? null
+        : WeeklyTemplate.fromJson(
+            (jsonDecode(json) as Map).cast<String, Object?>(),
+          );
+  }
+
+  Future<void> saveTemplate(WeeklyTemplate? t) => _db
+      .into(_db.onboardingDraft)
+      .insertOnConflictUpdate(
+        OnboardingDraftCompanion.insert(
+          id: const Value(1),
+          template: Value(t == null ? null : jsonEncode(t.toJson())),
+        ),
+      );
 }
