@@ -54,3 +54,12 @@ understood: "Đã hiểu"
 
 # 04 S-02
 disclaimerTitle: "Trước khi bắt đầu"
+
+# 04 S-10 đầu trang, §6.14 "Chưa đồng bộ"; S-50 dòng "Tài khoản và dữ liệu"; S-56
+syncPending: "Chưa đồng bộ"
+syncDone: "Đã đồng bộ"
+syncPendingDetail: "Chưa đồng bộ · Sẽ tự đồng bộ khi có mạng"
+syncLossWarning: "Dữ liệu chưa đồng bộ có thể mất nếu Bạn mất điện thoại."
+accountAndData: "Tài khoản và dữ liệu"
+syncLabel: "Đồng bộ" # nhãn dòng ở mock S-56
+save: "Lưu" # 04 §6.15 ví dụ nút

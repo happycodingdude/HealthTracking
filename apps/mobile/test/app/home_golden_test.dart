@@ -20,10 +20,14 @@ void main() {
         ..platformBrightnessTestValue = variant.brightness
         ..textScaleFactorTestValue = variant.textScale;
       addTearDown(tester.platformDispatcher.clearAllTestValues);
+      final container = ProviderContainer(
+        retry: (_, _) => null,
+        overrides: appOverrides(),
+      );
+      addTearDown(container.dispose);
       await tester.pumpWidget(
-        ProviderScope(
-          retry: (_, _) => null,
-          overrides: appOverrides(),
+        UncontrolledProviderScope(
+          container: container,
           child: const HealthApp(),
         ),
       );

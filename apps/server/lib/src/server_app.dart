@@ -10,6 +10,7 @@ import 'config.dart';
 import 'db/database.dart';
 import 'db/migrator.dart';
 import 'jobs/job_scheduler.dart';
+import 'jobs/maintenance.dart';
 import 'logging/logger.dart';
 
 /// Vòng đời server: migration → mở HTTP → job định kỳ → tắt an toàn.
@@ -40,6 +41,18 @@ final class ServerApp {
       const Duration(minutes: 15),
       () async => deps.limiter.sweep(),
     );
+    final maintenance = Maintenance(db.pool, deps.clock);
+    Future<void> cleanup() async {
+      final removed = await maintenance.dailyCleanup();
+      log.info('daily_cleanup', {
+        'mutations': removed.mutations,
+        'refreshTokens': removed.refreshTokens,
+      });
+    }
+
+    jobs.every('daily_cleanup', const Duration(days: 1), cleanup);
+    // Chạy một lần khi khởi động để không phụ thuộc server chạy liền 24 giờ.
+    unawaited(jobs.runNow('daily_cleanup', cleanup));
     final handler = buildApp(deps);
     final http = await shelf_io.serve(handler, config.host, config.port);
     http.autoCompress = false;

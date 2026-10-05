@@ -1,14 +1,31 @@
 import 'dart:io';
 
 import 'package:postgres/postgres.dart';
-import 'package:server/server.dart';
 import 'package:uuid/uuid.dart';
+
+import '../server.dart';
 
 /// URL quản trị PostgreSQL cho test (CI: service container; local:
 /// deploy/docker-compose.dev.yml).
 String get testAdminUrl =>
     Platform.environment['TEST_DATABASE_URL'] ??
     'postgres://health:***REMOVED***@localhost:55432/postgres';
+
+/// Thư mục `apps/server/migrations`, dùng được khi chạy test từ
+/// `apps/server` lẫn từ `apps/mobile` (sync_e2e).
+Directory serverMigrationsDir() {
+  for (final path in [
+    'migrations',
+    '../server/migrations',
+    'apps/server/migrations',
+  ]) {
+    final dir = Directory(path);
+    if (File('${dir.path}/0001_auth.sql').existsSync()) return dir;
+  }
+  throw StateError(
+    'Không tìm thấy apps/server/migrations từ ${Directory.current.path}',
+  );
+}
 
 /// Database tạm, riêng cho một nhóm test. Tạo bằng [create], xóa bằng [dispose].
 final class TestDatabase {
@@ -22,11 +39,7 @@ final class TestDatabase {
     final url = admin.replace(path: '/$name').toString();
     final db = Database.open(url);
     if (migrate) {
-      await Migrator(
-        db.pool,
-        Directory('migrations'),
-        Logger((_) {}),
-      ).migrate();
+      await Migrator(db.pool, serverMigrationsDir(), Logger((_) {})).migrate();
     }
     return TestDatabase._(name, url, db);
   }

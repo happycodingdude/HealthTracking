@@ -6,6 +6,7 @@ import '../features/auth/application/auth_controller.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/register_screen.dart';
 import '../features/auth/presentation/welcome_screen.dart';
+import '../features/me/presentation/account_data_screen.dart';
 import '../features/me/presentation/me_screen.dart';
 import '../features/menu/presentation/menu_screen.dart';
 import '../features/onboarding/presentation/onboarding_placeholder_screen.dart';
@@ -65,6 +66,14 @@ final routerProvider = Provider<GoRouter>((ref) {
                 GoRoute(
                   path: tab.path,
                   builder: (context, state) => _tabScreen(tab),
+                  routes: [
+                    // S-56 nằm trong tab Tôi, thanh tab vẫn hiện.
+                    if (tab == AppTab.me)
+                      GoRoute(
+                        path: 'account',
+                        builder: (_, _) => const AccountDataScreen(),
+                      ),
+                  ],
                 ),
               ],
             ),

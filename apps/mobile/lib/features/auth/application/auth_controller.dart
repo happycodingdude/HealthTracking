@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
 import '../../../data/auth/session_store.dart';
+import '../../../data/sync/sync_providers.dart';
 
 enum AuthStatus {
   /// Chưa đăng nhập trên máy này → S-01.
@@ -76,7 +77,7 @@ class AuthController extends Notifier<AuthState> {
             password: password,
           ),
         );
-    _signedIn(me, landing: '/onboarding');
+    await _signedIn(me, landing: '/onboarding');
     return me;
   }
 
@@ -88,7 +89,7 @@ class AuthController extends Notifier<AuthState> {
     final me = await ref
         .read(authRepositoryProvider)
         .login(LoginRequest(phone: phone, password: password));
-    _signedIn(
+    await _signedIn(
       me,
       landing: switch (me.onboardingState) {
         OnboardingState.notStarted ||
@@ -100,7 +101,9 @@ class AuthController extends Notifier<AuthState> {
     return me;
   }
 
-  void _signedIn(MeResponse me, {required String landing}) {
+  Future<void> _signedIn(MeResponse me, {required String landing}) async {
+    // Có tên ngay cho lời chào ở Hôm nay, không chờ lần đồng bộ đầu (UR-14).
+    await ref.read(accountRepositoryProvider).put(me.displayName);
     state = AuthState(
       AuthStatus.signedIn,
       userId: me.userId,

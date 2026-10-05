@@ -49,6 +49,21 @@ abstract final class S {
   // S-02 (giữ chỗ đến VS-03).
   static const disclaimerTitle = 'Trước khi bắt đầu';
 
+  // S-10 Hôm nay (đầu trang), S-50, S-56 — đồng bộ (F09-E1).
+  /// "Chào {tên hiển thị}" (UR-14).
+  static String greeting(String displayName) => 'Chào $displayName';
+  static const syncPending = 'Chưa đồng bộ';
+  static const syncDone = 'Đã đồng bộ';
+
+  /// "Đã đồng bộ lúc {hh:mm}" (S-56).
+  static String syncedAt(String time) => 'Đã đồng bộ lúc $time';
+  static const syncPendingDetail = 'Chưa đồng bộ · Sẽ tự đồng bộ khi có mạng';
+  static const syncLossWarning =
+      'Dữ liệu chưa đồng bộ có thể mất nếu Bạn mất điện thoại.';
+  static const accountAndData = 'Tài khoản và dữ liệu';
+  static const syncLabel = 'Đồng bộ';
+  static const save = 'Lưu';
+
   // Định dạng (UR-10).
   static const currencySuffix = 'đ';
   static const weekdays = [
@@ -107,6 +122,13 @@ abstract final class S {
     'forgotPasswordBody': forgotPasswordBody,
     'forgotPasswordNote': forgotPasswordNote,
     'disclaimerTitle': disclaimerTitle,
+    'syncPending': syncPending,
+    'syncDone': syncDone,
+    'syncPendingDetail': syncPendingDetail,
+    'syncLossWarning': syncLossWarning,
+    'accountAndData': accountAndData,
+    'syncLabel': syncLabel,
+    'save': save,
     'tabSchedule': tabSchedule,
     'tabMenu': tabMenu,
     'tabToday': tabToday,

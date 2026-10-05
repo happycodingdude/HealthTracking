@@ -6,16 +6,42 @@ import 'package:postgres/postgres.dart';
 final class Database {
   Database(this.pool);
 
-  /// Mở pool từ URL. Mặc định `sslmode=disable` vì PostgreSQL chỉ nằm trong
-  /// mạng nội bộ Docker (05 §6.12.1).
-  factory Database.open(String url) {
+  /// Mở pool từ URL `postgres://user:pass@host:port/db?sslmode=…&connect_timeout=…`.
+  ///
+  /// - Mặc định `sslmode=disable` vì PostgreSQL chỉ nằm trong mạng nội bộ
+  ///   Docker (05 §6.12.1).
+  /// - Tối đa [maxConnections] kết nối. `Pool.withUrl` của package mặc định
+  ///   chỉ 1 kết nối, khiến mọi request phải xếp hàng.
+  factory Database.open(String url, {int maxConnections = 10}) {
     final uri = Uri.parse(url);
-    final withSsl = uri.queryParameters.containsKey('sslmode')
-        ? uri
-        : uri.replace(
-            queryParameters: {...uri.queryParameters, 'sslmode': 'disable'},
-          );
-    return Database(Pool<void>.withUrl(withSsl.toString()));
+    final userInfo = uri.userInfo.split(':');
+    final query = uri.queryParameters;
+    final endpoint = Endpoint(
+      host: uri.host,
+      port: uri.hasPort ? uri.port : 5432,
+      database: uri.pathSegments.isEmpty ? 'postgres' : uri.pathSegments.first,
+      username: userInfo.first.isEmpty
+          ? null
+          : Uri.decodeComponent(userInfo.first),
+      password: userInfo.length > 1
+          ? Uri.decodeComponent(userInfo.sublist(1).join(':'))
+          : null,
+    );
+    final timeout = int.tryParse(query['connect_timeout'] ?? '');
+    return Database(
+      Pool<void>.withEndpoints(
+        [endpoint],
+        settings: PoolSettings(
+          maxConnectionCount: maxConnections,
+          sslMode: switch (query['sslmode']) {
+            'require' => SslMode.require,
+            'verify-ca' || 'verify-full' => SslMode.verifyFull,
+            _ => SslMode.disable,
+          },
+          connectTimeout: timeout == null ? null : Duration(seconds: timeout),
+        ),
+      ),
+    );
   }
 
   final Pool<void> pool;

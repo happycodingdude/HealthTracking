@@ -9,6 +9,9 @@ cd "$ROOT"
 step() { printf '\n\033[1;36m==> %s\033[0m\n' "$*"; }
 has_tests() { [ -n "$(find "$1/test" -name '*_test.dart' 2>/dev/null | head -1)" ]; }
 
+# PostgreSQL cho test server và test E2E đồng bộ của app (sync_e2e).
+export TEST_DATABASE_URL="${TEST_DATABASE_URL:-postgres://health:***REMOVED***@localhost:55432/postgres}"
+
 step "pub get"
 flutter pub get >/dev/null
 
@@ -31,11 +34,12 @@ done
 if has_tests apps/server; then
   step "test apps/server (PostgreSQL)"
   "$ROOT/tool/test_db.sh" ensure
-  (cd apps/server && TEST_DATABASE_URL="${TEST_DATABASE_URL:-postgres://health:***REMOVED***@localhost:55432/postgres}" dart test -r failures-only --concurrency=1)
+  (cd apps/server && dart test -r failures-only --concurrency=1)
 fi
 
 if has_tests apps/mobile; then
-  step "test apps/mobile"
+  step "test apps/mobile (unit, widget, câu chữ, sync_e2e$([ "$(uname -s)" = "Linux" ] && echo ', golden'))"
+  "$ROOT/tool/test_db.sh" ensure
   if [ "$(uname -s)" = "Linux" ]; then
     (cd apps/mobile && flutter test -r failures-only)
   else

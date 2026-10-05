@@ -2,9 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:server/server.dart';
+import 'package:server/testing.dart';
 import 'package:test/test.dart';
-
-import 'support/test_database.dart';
 
 void main() {
   test('chạy định kỳ theo chu kỳ', () async {

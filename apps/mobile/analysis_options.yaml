@@ -8,6 +8,8 @@ analyzer:
   exclude:
     - "**/*.g.dart"
     - "build/**"
+    # Sinh bởi `drift_dev schema generate` (test migration Drift).
+    - "test/generated_migrations/**"
 
 linter:
   rules:
