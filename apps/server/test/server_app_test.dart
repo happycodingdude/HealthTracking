@@ -14,7 +14,11 @@ void main() {
       addTearDown(tdb.dispose);
       final log = CapturingLogger();
       final app = await ServerApp.start(
-        ServerConfig(databaseUrl: tdb.url, port: 0),
+        ServerConfig(
+          databaseUrl: tdb.url,
+          jwtSecret: 'test-secret-test-secret-test-secret-123',
+          port: 0,
+        ),
         logger: log.logger,
       );
       final res = await http.get(

@@ -11,6 +11,8 @@ final class ConfigException implements Exception {
 final class ServerConfig {
   const ServerConfig({
     required this.databaseUrl,
+    required this.jwtSecret,
+    this.bcryptCost = 12,
     this.host = '127.0.0.1',
     this.port = 8080,
     this.trustProxy = false,
@@ -30,8 +32,19 @@ final class ServerConfig {
     if (port == null || port < 0 || port > 65535) {
       throw ConfigException('PORT không hợp lệ');
     }
+    final jwtSecret = require('JWT_SECRET');
+    if (jwtSecret.length < 32) {
+      throw ConfigException('JWT_SECRET cần tối thiểu 32 ký tự');
+    }
+    // TD-09: bcrypt cost 12. Chỉ hạ khi chạy integration test cho nhanh.
+    final bcryptCost = int.tryParse(env['BCRYPT_COST'] ?? '12');
+    if (bcryptCost == null || bcryptCost < 4 || bcryptCost > 15) {
+      throw ConfigException('BCRYPT_COST không hợp lệ');
+    }
     return ServerConfig(
       databaseUrl: require('DATABASE_URL'),
+      jwtSecret: jwtSecret,
+      bcryptCost: bcryptCost,
       host: env['HOST']?.isNotEmpty == true ? env['HOST']! : '127.0.0.1',
       port: port,
       trustProxy: env['TRUST_PROXY'] == 'true',
@@ -42,6 +55,8 @@ final class ServerConfig {
   }
 
   final String databaseUrl;
+  final String jwtSecret;
+  final int bcryptCost;
   final String host;
   final int port;
   final bool trustProxy;

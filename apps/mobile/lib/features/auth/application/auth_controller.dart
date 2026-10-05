@@ -1,0 +1,111 @@
+import 'dart:async';
+
+import 'package:api_contract/api_contract.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../app/providers.dart';
+import '../../../data/auth/session_store.dart';
+
+enum AuthStatus {
+  /// Chưa đăng nhập trên máy này → S-01.
+  signedOut,
+
+  /// Có phiên (refresh token) → vào app, không phải đăng nhập lại (UA-23).
+  signedIn,
+
+  /// Phiên hết hạn (TA-10) → S-01b, dữ liệu trên máy được giữ.
+  expired,
+}
+
+/// Trạng thái đăng nhập của app.
+final class AuthState {
+  const AuthState(this.status, {this.userId, this.phone, this.landing});
+
+  const AuthState.signedOut() : this(AuthStatus.signedOut);
+
+  final AuthStatus status;
+  final String? userId;
+  final String? phone;
+
+  /// Màn hình cần mở ngay sau khi vừa đăng ký/đăng nhập (OB-6). null khi mở
+  /// lại app với phiên sẵn có (NAV-1).
+  final String? landing;
+}
+
+/// Phiên đọc từ Keychain lúc khởi động (override trong `main.dart`).
+final initialSessionProvider = Provider<StoredSession?>((ref) => null);
+
+final authControllerProvider = NotifierProvider<AuthController, AuthState>(
+  AuthController.new,
+);
+
+/// Đăng ký, đăng nhập và trạng thái phiên (F-09). UI chỉ gọi các hàm này.
+class AuthController extends Notifier<AuthState> {
+  @override
+  AuthState build() {
+    final sub = ref.watch(tokenManagerProvider).onExpired.listen((_) {
+      state = AuthState(
+        AuthStatus.expired,
+        userId: state.userId,
+        phone: state.phone,
+      );
+    });
+    ref.onDispose(sub.cancel);
+
+    final session = ref.watch(initialSessionProvider);
+    if (session == null) return const AuthState.signedOut();
+    return AuthState(
+      session.refreshToken == null ? AuthStatus.expired : AuthStatus.signedIn,
+      userId: session.userId,
+      phone: session.phone,
+    );
+  }
+
+  /// S-01a. Thành công → Bước 1/5 (S-02).
+  Future<MeResponse> register({
+    required String displayName,
+    required String phone,
+    required String password,
+  }) async {
+    final me = await ref
+        .read(authRepositoryProvider)
+        .register(
+          RegisterRequest(
+            displayName: displayName,
+            phone: phone,
+            password: password,
+          ),
+        );
+    _signedIn(me, landing: '/onboarding');
+    return me;
+  }
+
+  /// S-01b. Thành công → theo OB-6: thiết lập tiếp hoặc vào app.
+  Future<MeResponse> login({
+    required String phone,
+    required String password,
+  }) async {
+    final me = await ref
+        .read(authRepositoryProvider)
+        .login(LoginRequest(phone: phone, password: password));
+    _signedIn(
+      me,
+      landing: switch (me.onboardingState) {
+        OnboardingState.notStarted ||
+        OnboardingState.inProgress => '/onboarding',
+        // Khôi phục dữ liệu (S-07) được thêm ở VS-14.
+        OnboardingState.completed => '/today',
+      },
+    );
+    return me;
+  }
+
+  void _signedIn(MeResponse me, {required String landing}) {
+    state = AuthState(
+      AuthStatus.signedIn,
+      userId: me.userId,
+      phone: me.phone,
+      landing: landing,
+    );
+  }
+}

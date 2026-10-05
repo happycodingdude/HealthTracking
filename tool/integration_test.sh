@@ -33,6 +33,11 @@ if [ -z "$DEVICE" ]; then
   fi
 fi
 
+# Trạng thái sạch mỗi lần chạy: gỡ app (xóa database trên máy) và xóa Keychain
+# của simulator (phiên đăng nhập của lần chạy trước trỏ tới database đã xóa).
+xcrun simctl uninstall "$DEVICE" com.happycodingdude.healthtracking.dev 2>/dev/null || true
+xcrun simctl keychain "$DEVICE" reset
+
 cd "$ROOT/apps/mobile"
 flutter test integration_test --flavor dev -d "$DEVICE" \
   --dart-define=FLAVOR=dev --dart-define=API_BASE_URL="http://localhost:$PORT"

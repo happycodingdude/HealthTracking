@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/shell/app_tab.dart';
 import '../../app/shell/tab_scroll.dart';
 import '../../app/theme.dart';
+import 'heading.dart';
 
 /// Bố cục chung của một tab: tiêu đề lớn, một cột, cuộn dọc, có
 /// [ScrollController] riêng của tab (NAV-3, NAV-8).
@@ -53,13 +54,10 @@ class TabPage extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Expanded(
-                  child: Semantics(
-                    header: true,
-                    child: Text(
-                      title,
-                      style: context.text.displaySmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                  child: Heading(
+                    title,
+                    style: context.text.displaySmall?.copyWith(
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),

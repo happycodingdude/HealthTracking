@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:api_contract/api_contract.dart';
+import 'package:domain/domain.dart';
 import 'package:server/server.dart';
 import 'package:shelf/shelf.dart';
 import 'package:test/test.dart';
@@ -86,7 +87,7 @@ void main() {
     test('đường dẫn không tồn tại → 404 not_found', () async {
       final tdb = await TestDatabase.create(migrate: false);
       addTearDown(tdb.dispose);
-      final app = buildApp(db: tdb.db, logger: log.logger);
+      final app = buildApp(_deps(tdb.db, log));
       final res = await call(app, '/khong-co');
       expect(res.statusCode, 404);
       expect(jsonDecode(await res.readAsString()), {
@@ -115,10 +116,7 @@ void main() {
     test('200 khi database trả lời', () async {
       final tdb = await TestDatabase.create(migrate: false);
       addTearDown(tdb.dispose);
-      final res = await call(
-        buildApp(db: tdb.db, logger: log.logger),
-        '/healthz',
-      );
+      final res = await call(buildApp(_deps(tdb.db, log)), '/healthz');
       expect(res.statusCode, 200);
       expect(jsonDecode(await res.readAsString()), {'status': 'ok'});
     });
@@ -128,7 +126,7 @@ void main() {
         'postgres://health:***REMOVED***@localhost:1/none?connect_timeout=1',
       );
       addTearDown(db.close);
-      final res = await call(buildApp(db: db, logger: log.logger), '/healthz');
+      final res = await call(buildApp(_deps(db, log)), '/healthz');
       expect(res.statusCode, 503);
     });
   });
@@ -156,3 +154,10 @@ void main() {
     expect(jsonDecode(await ok.readAsString()), {'a': 1});
   });
 }
+
+AppDeps _deps(Database db, CapturingLogger log) => AppDeps(
+  db: db,
+  logger: log.logger,
+  clock: const SystemClock(),
+  jwtSecret: 'test-secret-test-secret-test-secret-123',
+);

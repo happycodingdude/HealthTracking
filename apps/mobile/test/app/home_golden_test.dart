@@ -5,10 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/app.dart';
-import 'package:mobile/app/env.dart';
-import 'package:mobile/app/providers.dart';
 import 'package:mobile/app/theme.dart';
 
+import '../support/app_harness.dart';
 import '../support/golden.dart';
 
 void main() {
@@ -24,11 +23,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           retry: (_, _) => null,
-          overrides: [
-            envProvider.overrideWithValue(
-              const AppEnv(flavor: 'prod', apiBaseUrl: 'http://x'),
-            ),
-          ],
+          overrides: appOverrides(),
           child: const HealthApp(),
         ),
       );

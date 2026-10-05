@@ -12,6 +12,8 @@ import 'package:mobile/app/shell/tab_scroll.dart';
 import 'package:mobile/app/strings_vi.dart';
 import 'package:mobile/core/widgets/tab_page.dart';
 
+import '../support/app_harness.dart';
+
 void main() {
   Future<ProviderContainer> pumpApp(
     WidgetTester tester, {
@@ -19,7 +21,7 @@ void main() {
   }) async {
     final container = ProviderContainer(
       retry: (_, _) => null,
-      overrides: overrides,
+      overrides: [...appOverrides(), ...overrides],
     );
     addTearDown(container.dispose);
     await tester.pumpWidget(

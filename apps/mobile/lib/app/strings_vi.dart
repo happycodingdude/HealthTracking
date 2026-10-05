@@ -11,6 +11,44 @@ abstract final class S {
   static const tabWeight = 'Cân nặng';
   static const tabMe = 'Tôi';
 
+  // Chung.
+  static const back = 'Quay lại';
+  static const understood = 'Đã hiểu';
+
+  // S-01 Chào mừng.
+  /// Tên app chưa được chốt (Q-1 trong docs/progress.md); mock S-01 ghi "[Tên app]".
+  static const appName = 'Health Tracking';
+  static const welcomeTagline =
+      'Nhắc Bạn tập đúng lịch, gợi ý ăn gì mỗi ngày, cho Bạn thấy mình tiến bộ.';
+  static const welcomeFootnote =
+      'Tài khoản giúp giữ dữ liệu khi Bạn đổi điện thoại.';
+  static const register = 'Đăng ký';
+  static const login = 'Đăng nhập';
+
+  // S-01a Đăng ký.
+  static const registerSubtitle =
+      'Tài khoản giúp Bạn lấy lại dữ liệu trên điện thoại mới.';
+  static const fieldDisplayName = 'Tên hiển thị';
+  static const fieldPhone = 'Số điện thoại';
+  static const fieldPassword = 'Mật khẩu';
+  static const fieldPasswordConfirm = 'Nhập lại mật khẩu';
+  static const passwordHint = 'Ít nhất 8 ký tự';
+  static const invalidPasswordConfirm = 'Mật khẩu nhập lại chưa khớp';
+  static const haveAccount = 'Đã có tài khoản?';
+  static const showPassword = 'Hiện mật khẩu';
+  static const hidePassword = 'Ẩn mật khẩu';
+
+  // S-01b Đăng nhập, S-01c Quên mật khẩu.
+  static const noAccount = 'Chưa có tài khoản?';
+  static const forgotPassword = 'Quên mật khẩu?';
+  static const forgotPasswordBody =
+      'Hiện app chưa hỗ trợ tự lấy lại mật khẩu. Liên hệ người quản trị app để được đặt lại mật khẩu.';
+  static const forgotPasswordNote =
+      'Dữ liệu của Bạn vẫn được giữ nguyên trong lúc chờ.';
+
+  // S-02 (giữ chỗ đến VS-03).
+  static const disclaimerTitle = 'Trước khi bắt đầu';
+
   // Định dạng (UR-10).
   static const currencySuffix = 'đ';
   static const weekdays = [
@@ -47,6 +85,28 @@ abstract final class S {
 
   /// Mọi câu hằng, dùng cho test so khớp nguyên văn (ED-12).
   static const Map<String, String> catalog = {
+    'back': back,
+    'understood': understood,
+    'appName': appName,
+    'welcomeTagline': welcomeTagline,
+    'welcomeFootnote': welcomeFootnote,
+    'register': register,
+    'login': login,
+    'registerSubtitle': registerSubtitle,
+    'fieldDisplayName': fieldDisplayName,
+    'fieldPhone': fieldPhone,
+    'fieldPassword': fieldPassword,
+    'fieldPasswordConfirm': fieldPasswordConfirm,
+    'passwordHint': passwordHint,
+    'invalidPasswordConfirm': invalidPasswordConfirm,
+    'haveAccount': haveAccount,
+    'showPassword': showPassword,
+    'hidePassword': hidePassword,
+    'noAccount': noAccount,
+    'forgotPassword': forgotPassword,
+    'forgotPasswordBody': forgotPasswordBody,
+    'forgotPasswordNote': forgotPasswordNote,
+    'disclaimerTitle': disclaimerTitle,
     'tabSchedule': tabSchedule,
     'tabMenu': tabMenu,
     'tabToday': tabToday,

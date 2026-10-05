@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:domain/domain.dart';
+
 import 'package:shelf/shelf_io.dart' as shelf_io;
 
 import 'app.dart';
@@ -25,7 +27,20 @@ final class ServerApp {
       rethrow;
     }
     final jobs = JobScheduler(log);
-    final handler = buildApp(db: db, logger: log);
+    final deps = AppDeps(
+      db: db,
+      logger: log,
+      clock: const SystemClock(),
+      jwtSecret: config.jwtSecret,
+      bcryptCost: config.bcryptCost,
+      trustProxy: config.trustProxy,
+    );
+    jobs.every(
+      'login_limiter_sweep',
+      const Duration(minutes: 15),
+      () async => deps.limiter.sweep(),
+    );
+    final handler = buildApp(deps);
     final http = await shelf_io.serve(handler, config.host, config.port);
     http.autoCompress = false;
     log.info('server_started', {'host': config.host, 'port': http.port});
