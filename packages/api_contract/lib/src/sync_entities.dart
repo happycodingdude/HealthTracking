@@ -1,4 +1,5 @@
 import 'json_reader.dart';
+import 'menu_dtos.dart';
 import 'profile_codecs.dart';
 import 'schedule_codecs.dart';
 
@@ -54,10 +55,16 @@ abstract final class SyncEntities {
   static const monthPlan = 'month_plan';
   static const day = 'day';
 
+  /// Chỉ pull, do server ghi (05 §6.6.1, VS-12).
+  static const menu = 'menu';
+  static const aiDailyUsage = 'ai_daily_usage';
+
   static const Map<String, EntityCodec<Object>> codecs = {
     account: AccountCodec(),
     profile: ProfileCodec(),
     weight: WeightCodec(),
     weeklyTemplate: WeeklyTemplateCodec(),
+    menu: MenuCodec(),
+    aiDailyUsage: AiDailyUsageCodec(),
   };
 }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:api_contract/api_contract.dart';
 import 'package:domain/domain.dart';
@@ -221,8 +222,15 @@ final class SyncEngine {
           if (await _hasPending(change.entity, change.key)) continue;
           await _stores[change.entity]?.apply(change.key, change);
         }
+        final budget = page.meta.aiBudget;
         await (_db.update(_db.syncState)..where((s) => s.id.equals(1))).write(
-          SyncStateCompanion(cursor: Value(page.nextCursor)),
+          SyncStateCompanion(
+            cursor: Value(page.nextCursor),
+            // ED-04: ngân sách AI của tháng chỉ đi qua meta.
+            aiBudget: budget == null
+                ? const Value.absent()
+                : Value(jsonEncode(budget)),
+          ),
         );
       });
       if (!page.hasMore) return;

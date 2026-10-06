@@ -131,4 +131,25 @@ void main() {
       'Dùng lại ước tính của app (2.090 kcal)',
     );
   });
+
+  test('F08-R9, 04 S-30, UA-10: câu thực đơn có tham số', () {
+    expect(S.remainingToday(3), 'Còn 3 lượt hôm nay');
+    expect(S.regenerateWithRemaining(2), 'Gợi ý lại (còn 2 lượt)');
+    expect(
+      S.regenerateBody(2),
+      'Thực đơn hiện tại sẽ được thay bằng thực đơn mới. Còn 2 lượt hôm nay.',
+    );
+    expect(
+      S.menuSafetyFloor('1.500 kcal'),
+      'Thực đơn dùng mức an toàn tối thiểu 1.500 kcal.',
+    );
+    expect(
+      S.menuDateLine('Thứ 4, 07/10', '2.090 kcal'),
+      'Thứ 4, 07/10 · Theo mức 2.090 kcal',
+    );
+    expect(
+      S.budgetPaused(11),
+      'Gợi ý AI tạm dừng đến ngày 1/11 vì đã dùng hết ngân sách tháng này.',
+    );
+  });
 }

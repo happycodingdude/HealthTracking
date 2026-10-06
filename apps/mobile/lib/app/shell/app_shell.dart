@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/me/application/calorie_view.dart';
 import '../../features/today/application/today_view.dart';
 import 'app_tab.dart';
 import 'app_tab_bar.dart';
@@ -18,10 +19,13 @@ class AppShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final current = AppTab.values[navigationShell.currentIndex];
     // Riverpod 3 tạm dừng provider khi mọi widget dùng nó đang ẩn (tab khác).
-    // Giữ "hôm nay" luôn cập nhật ở khung luôn hiện: không thì tab mở lần đầu
-    // sau khi sang ngày mới làm nó tính lại ngay lúc dựng giao diện và báo
-    // các provider phụ thuộc giữa chừng ("setState() during build").
-    ref.listen(todayProvider, (_, _) {});
+    // Provider tính toán có provider khác phụ thuộc phải luôn cập nhật ở khung
+    // luôn hiện: không thì tab mở lần đầu sau khi dữ liệu đổi (sang ngày mới,
+    // ghi cân, sửa hồ sơ) làm nó tính lại ngay lúc dựng giao diện và báo các
+    // provider phụ thuộc giữa chừng ("setState() during build").
+    ref
+      ..listen(todayProvider, (_, _) {})
+      ..listen(calorieViewProvider, (_, _) {});
     return Scaffold(
       extendBody: true,
       body: navigationShell,

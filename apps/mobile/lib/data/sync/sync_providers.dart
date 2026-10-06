@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../features/me/data/account_repository.dart';
 import '../../features/me/data/profile_repository.dart';
+import '../../features/menu/data/menu_repository.dart';
 import '../../features/schedule/data/schedule_repository.dart';
 import '../../features/weight/data/weight_repository.dart';
 import 'local_stores.dart';
@@ -27,6 +28,10 @@ final weightRepositoryProvider = Provider<WeightRepository>(
 
 final scheduleRepositoryProvider = Provider<ScheduleRepository>(
   (ref) => ScheduleRepository(ref.watch(databaseProvider)),
+);
+
+final menuRepositoryProvider = Provider<MenuRepository>(
+  (ref) => MenuRepository(ref.watch(databaseProvider)),
 );
 
 final outboxWriterProvider = Provider<OutboxWriter>(
@@ -53,6 +58,10 @@ final syncEngineProvider = Provider<SyncEngine>((ref) {
         ref.watch(scheduleRepositoryProvider),
       ),
       SyncEntities.day: DayStore(ref.watch(scheduleRepositoryProvider)),
+      SyncEntities.menu: MenuStore(ref.watch(menuRepositoryProvider)),
+      SyncEntities.aiDailyUsage: AiDailyUsageStore(
+        ref.watch(menuRepositoryProvider),
+      ),
     },
     clock: ref.watch(clockProvider),
     reporter: ref.watch(errorReporterProvider),

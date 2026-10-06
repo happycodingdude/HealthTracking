@@ -415,6 +415,43 @@ abstract final class S {
   static String useAppEstimate(String kcal) =>
       'Dùng lại ước tính của app ($kcal)';
 
+  // Thực đơn AI S-30, thẻ thực đơn ở Hôm nay (VS-12), F-08.
+  static const menuEmptyTitle = 'Hôm nay ăn gì?';
+  static const menuEmptyBody =
+      'App gợi ý thực đơn cả ngày theo mức calo của Bạn, ưu tiên món Việt dễ nấu.';
+  static const generateMenu = 'Gợi ý thực đơn hôm nay';
+  static const retry = 'Thử lại';
+  static const menuEstimateNote = 'Calo món ăn là ước lượng.';
+  static const menuTotal = 'Tổng';
+  static const calorieChangedRegenerate =
+      'Mức calo đã thay đổi. Bạn có thể gợi ý lại.';
+  static const regenerateTitle = 'Gợi ý thực đơn mới?';
+  static const regenerate = 'Gợi ý lại';
+  static const mealBreakfast = 'Sáng';
+  static const mealLunch = 'Trưa';
+  static const mealDinner = 'Tối';
+  static const mealMorningSnack = 'Bữa phụ sáng';
+  static const mealAfternoonSnack = 'Bữa phụ chiều';
+
+  /// 04 S-30: "Còn {N} lượt hôm nay".
+  static String remainingToday(int n) => 'Còn $n lượt hôm nay';
+
+  /// 04 S-30: "Gợi ý lại (còn {N} lượt)".
+  static String regenerateWithRemaining(int n) => 'Gợi ý lại (còn $n lượt)';
+
+  /// UA-10: "Thực đơn hiện tại sẽ được thay bằng thực đơn mới. Còn {N} lượt
+  /// hôm nay."
+  static String regenerateBody(int n) =>
+      'Thực đơn hiện tại sẽ được thay bằng thực đơn mới. Còn $n lượt hôm nay.';
+
+  /// F08-R9: "Thực đơn dùng mức an toàn tối thiểu {X} kcal."
+  static String menuSafetyFloor(String kcal) =>
+      'Thực đơn dùng mức an toàn tối thiểu $kcal.';
+
+  /// Mock S-30-1: "Thứ 4, 07/10 · Theo mức 2.090 kcal".
+  static String menuDateLine(String date, String kcal) =>
+      '$date · $menuTargetPrefix $kcal';
+
   // Định dạng (UR-10).
   static const currencySuffix = 'đ';
   static const weekdays = [
@@ -657,5 +694,19 @@ abstract final class S {
     'logInWeightTab': logInWeightTab,
     'updateCalorieTitle': updateCalorieTitle,
     'keepCurrent': keepCurrent,
+    'menuEmptyTitle': menuEmptyTitle,
+    'menuEmptyBody': menuEmptyBody,
+    'generateMenu': generateMenu,
+    'retry': retry,
+    'menuEstimateNote': menuEstimateNote,
+    'menuTotal': menuTotal,
+    'calorieChangedRegenerate': calorieChangedRegenerate,
+    'regenerateTitle': regenerateTitle,
+    'regenerate': regenerate,
+    'mealBreakfast': mealBreakfast,
+    'mealLunch': mealLunch,
+    'mealDinner': mealDinner,
+    'mealMorningSnack': mealMorningSnack,
+    'mealAfternoonSnack': mealAfternoonSnack,
   };
 }
