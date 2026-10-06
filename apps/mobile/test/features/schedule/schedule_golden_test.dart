@@ -133,5 +133,103 @@ void main() {
         await snap('s20_${v.name}');
       },
     );
+
+    /// Lịch tháng 10 chia từ [template] lúc 08:00 thứ 5 01/10; thứ 2 05/10
+    /// đã tập; hôm nay thứ 5 08/10. [changed] = lịch tuần đã đổi thứ 4 sang
+    /// Vai nhưng chưa chia lại (mock S-20-1).
+    Future<void> seedOctober(
+      WidgetTester tester,
+      GoldenVariant v, {
+      bool changed = false,
+    }) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      final schedule = ScheduleRepository(db);
+      final g = MonthGenerator.first(template, DateTime(2026, 10, 1, 8));
+      await schedule.putPlan(g.plan);
+      for (final d in g.days) {
+        await schedule.putDay(
+          d.date.day == 5
+              ? d.withMark(
+                  DayMark.done,
+                  actual: d.muscles,
+                  markedAt: DateTime(2026, 10, 5, 19),
+                )
+              : d,
+        );
+      }
+      await schedule.putTemplate(
+        changed
+            ? WeeklyTemplate({
+                ...template.days,
+                3: TemplateDay(
+                  enabled: true,
+                  time: LocalTime(18, 0),
+                  muscles: const [MuscleGroup.shoulders],
+                ),
+              })
+            : template,
+      );
+      await pump(
+        tester,
+        v,
+        db,
+        now: DateTime(2026, 10, 8, 10),
+        onboarded: true,
+      );
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AppTabBar),
+          matching: find.text(S.tabSchedule),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> tapRow(WidgetTester tester, String text) async {
+      final f = find.text(text);
+      await tester.ensureVisible(f);
+      await tester.pumpAndSettle();
+      await tester.tap(f);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('S-20 lịch tuần đã đổi: banner Chia lại (mock S-20-1) '
+        '${v.name}', (tester) async {
+      await seedOctober(tester, v, changed: true);
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, 2000));
+      await tester.pumpAndSettle();
+      await snap('s20_banner_${v.name}');
+    });
+
+    testWidgets('S-21 ngày tập sắp tới (mock S-21-1) ${v.name}', (
+      tester,
+    ) async {
+      await seedOctober(tester, v);
+      await tapRow(tester, 'T4 14/10');
+      await snap('s21_workout_${v.name}');
+    });
+
+    testWidgets('S-21 hôm nay nghỉ (mock S-21-2) ${v.name}', (tester) async {
+      await seedOctober(tester, v);
+      await tapRow(tester, 'T5 08/10');
+      await snap('s21_today_rest_${v.name}');
+    });
+
+    testWidgets('S-22 lịch tuần, chế độ sửa (mock S-22-1) ${v.name}', (
+      tester,
+    ) async {
+      await seedOctober(tester, v, changed: true);
+      final open = find.byKey(const ValueKey('open-weekly'));
+      await tester.scrollUntilVisible(
+        open,
+        -300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(open);
+      await tester.pumpAndSettle();
+      await snap('s22_${v.name}');
+    });
   }
 }

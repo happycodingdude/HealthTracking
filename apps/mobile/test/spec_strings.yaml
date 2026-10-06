@@ -191,3 +191,32 @@ weekProgressTitle: "Tiến độ tuần" # 04 S-25, mock S-25-1
 noPlannedSessions: "Tuần này không có buổi tập theo lịch" # 03 F06-E1, 04 §6.7.3
 previousWeek: "Tuần trước" # nhãn VoiceOver nút "‹" ở S-25 (04 §6.17)
 nextWeek: "Tuần sau" # nhãn VoiceOver nút "›" ở S-25 (04 §6.17)
+
+# Sửa riêng S-21, lịch tuần S-22, chia lại (VS-09)
+weeklySchedule: "Lịch tuần" # 04 S-20 (nút), S-22 (tiêu đề)
+weeklyEditHint: "Thay đổi áp dụng từ tháng sau, hoặc bấm Chia lại để áp dụng ngay." # mock S-22-1
+templateSaved: "Đã lưu lịch tuần" # 04 S-22
+templateChangedBanner: "Lịch tuần đã thay đổi. Bấm Chia lại để áp dụng cho tháng này." # 03 F03-R7, 04 S-20
+redistribute: "Chia lại" # 04 S-20
+redistributeTitle: "Chia lại lịch?" # 04 S-20
+redistributeBody: "Áp dụng lịch mới từ hôm nay đến cuối tháng?" # 03 Luồng 4, 04 S-20
+redistributeNote: "Các ngày Bạn đã sửa riêng được giữ nguyên." # 04 S-20
+fromTemplate: "Theo lịch tuần" # 03 §6.4 (nguồn), mock S-21-1
+changeTime: "Đổi giờ" # 04 S-21
+changeMuscles: "Đổi nhóm cơ" # 04 S-21
+restThisDay: "Cho nghỉ ngày này" # 04 S-21
+scheduleThisDay: "Lên lịch tập ngày này" # 04 S-21
+scheduleToday: "Lên lịch tập hôm nay" # 04 S-21, mock S-21-2
+countsInPlan: "Tính vào kế hoạch tuần." # mock S-21-2
+revertToTemplate: "Trả về theo lịch tuần" # 03 F03-R10, 04 S-21
+revertConfirmTitle: "Trả về theo lịch tuần?" # 04 S-21 (hộp xác nhận; spec chưa ghi câu — giả định)
+revert: "Trả về" # 04 S-21 (nút của hộp xác nhận — giả định)
+giveRest: "Cho nghỉ" # 04 S-21 (nút của hộp xác nhận — giả định)
+onlyThisDay: "Chỉ thay đổi ngày này. Lịch tuần giữ nguyên." # mock S-21-1
+noReminderUnderHour: "Còn chưa đến 1 giờ nên sẽ không có nhắc cho buổi này." # 03 F03-E2, 04 S-21
+extraBlocksSchedule: "Hôm nay đã có buổi tập thêm nên không lên lịch tập được." # 03 F03-E4, 04 S-21
+editExtraSession: "Sửa buổi tập thêm" # 04 S-21
+markSession: "Đánh dấu buổi tập" # 04 §6.4 (tên S-23)
+editTodaySession: "Sửa buổi hôm nay" # 04 §6.7.1
+missingTimeOrMuscles: "Vui lòng chọn giờ tập và nhóm cơ" # 03 F03-V4
+muscleGroups: "Nhóm cơ" # 03 §6.4 (thông tin của mỗi thứ), nhãn ở S-21 "Lên lịch tập"

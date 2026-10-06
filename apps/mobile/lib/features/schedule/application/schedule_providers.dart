@@ -1,6 +1,7 @@
 import 'package:domain/domain.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/time_ticker.dart';
 import '../../../data/sync/sync_providers.dart';
 
 /// Các tháng đã có lịch, cũ → mới.
@@ -30,3 +31,17 @@ final progressWeekDaysProvider =
 final weeklyTemplateProvider = StreamProvider<WeeklyTemplate?>(
   (ref) => ref.watch(scheduleRepositoryProvider).watchTemplate(),
 );
+
+/// "Lịch tuần đã đổi" (F03-R7, UX-AC9): lịch tháng hiện tại được chia từ
+/// lịch tuần khác lịch tuần đang lưu. Hiện banner Chia lại và chấm ở tab Lịch
+/// tập cho đến khi chia lại hoặc sang tháng mới (F03-E5).
+final templateChangedProvider = Provider<bool>((ref) {
+  final template = ref.watch(weeklyTemplateProvider).value;
+  final plans = ref.watch(monthPlansProvider).value;
+  if (template == null || plans == null) return false;
+  final month = LocalDate.fromDateTime(ref.watch(nowProvider)).yearMonth;
+  for (final p in plans) {
+    if (p.month == month) return p.templateHash != template.contentHash;
+  }
+  return false;
+});

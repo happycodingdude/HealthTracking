@@ -410,6 +410,86 @@ void main() {
       expect(rows.single[0], ['abs']);
     });
 
+    // Sửa riêng, chia lại (VS09-T04). 14/10 10:00 giờ Việt Nam = 03:00 UTC.
+    Future<PushResult> overrideAt(PlanDay after, DateTime atUtc) async {
+      await setNow(atUtc);
+      return (await push([
+        dayMutation(after, op: SyncOp.upsert, at: atUtc),
+      ])).single;
+    }
+
+    PlanDay restOverride(LocalDate date) =>
+        PlanDay(date: date, kind: DayKind.rest, source: DaySource.override);
+
+    test('F03-AC9: sửa riêng ngày đã qua → rejected; F03-R9: hôm nay sau '
+        'giờ tập → rejected; ngày tới trong tháng → applied', () async {
+      await setUpSchedule();
+      final at = DateTime.utc(2026, 10, 14, 3);
+      final past = await overrideAt(restOverride(LocalDate(2026, 10, 7)), at);
+      expect((past.status, past.field), (PushStatus.rejected, 'key'));
+      final ok = await overrideAt(restOverride(LocalDate(2026, 10, 21)), at);
+      expect(ok.status, PushStatus.applied);
+      // 18:30 giờ Việt Nam ngày 14/10: buổi thứ 4 đã đến giờ.
+      final started = await overrideAt(
+        restOverride(LocalDate(2026, 10, 14)),
+        DateTime.utc(2026, 10, 14, 11, 30),
+      );
+      expect((started.status, started.field), (PushStatus.rejected, 'key'));
+      final rows = await app.tdb.pool.execute(
+        "SELECT to_char(date, 'DD'), kind::text, source::text FROM days "
+        "WHERE date IN ('2026-10-07', '2026-10-14', '2026-10-21') ORDER BY date",
+      );
+      expect(rows.map((r) => r.toList()), [
+        ['07', 'workout', 'template'],
+        ['14', 'workout', 'template'],
+        ['21', 'rest', 'override'],
+      ]);
+    });
+
+    test('F03-R8: chia lại → month_plan upsert (templateHash, redistributedAt) '
+        'và các ngày từ hôm nay → applied', () async {
+      await setUpSchedule();
+      final at = DateTime.utc(2026, 10, 14, 3);
+      await setNow(at);
+      final shoulders = WeeklyTemplate({
+        ...template.days,
+        3: TemplateDay(
+          enabled: true,
+          time: LocalTime(18, 0),
+          muscles: const [MuscleGroup.shoulders],
+        ),
+      });
+      final r = Redistributor.apply(
+        days: generated.days,
+        template: shoulders,
+        now: DateTime(2026, 10, 14, 10),
+      );
+      final plan = MonthPlan(
+        month: generated.plan.month,
+        startDate: generated.plan.startDate,
+        templateHash: shoulders.contentHash,
+        generatedAt: generated.plan.generatedAt,
+        redistributedAt: at,
+      );
+      final results = await push([
+        templateUpsert(shoulders, at: at),
+        mutation(
+          'month_plan',
+          '2026-10',
+          SyncOp.upsert,
+          at: at,
+          data: const MonthPlanCodec().encode(plan),
+        ),
+        for (final d in r.changed) dayMutation(d, op: SyncOp.upsert, at: at),
+      ]);
+      expect(results.map((x) => x.status).toSet(), {PushStatus.applied});
+      final rows = await app.tdb.pool.execute(
+        "SELECT count(*) FROM days WHERE muscles = '{shoulders}' "
+        'AND extract(isodow FROM date) = 3',
+      );
+      expect(rows.single[0], 3, reason: '14/10, 21/10, 28/10');
+    });
+
     test('F05-R11, ED-08: xóa = extraMuscles null trong hạn → applied; sửa '
         'sau 7 ngày giờ iPhone → rejected', () async {
       await setUpSchedule();

@@ -193,8 +193,7 @@ void main() {
       await pumpUntil(tester, done);
       expect(find.text(S.statusAwaiting), findsOneWidget);
       await tester.tap(done);
-      await tester.pump();
-      expect(find.text(S.markedDone('Ngực')), findsOneWidget);
+      await pumpUntil(tester, find.text(S.markedDone('Ngực')));
       await pumpUntilGone(tester, find.byKey(const ValueKey('sync-indicator')));
       // Server nhận (không trả về bản cũ chưa đánh dấu).
       await tester.pumpAndSettle(const Duration(seconds: 2));

@@ -15,6 +15,7 @@ class DayLine extends StatelessWidget {
     required this.day,
     required this.now,
     this.highlightToday = true,
+    this.onTap,
   });
 
   final LocalDate date;
@@ -25,6 +26,9 @@ class DayLine extends StatelessWidget {
 
   /// Tô nổi bật dòng hôm nay (S-20).
   final bool highlightToday;
+
+  /// Chạm dòng → S-21.
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -76,7 +80,7 @@ class DayLine extends StatelessWidget {
     ];
     // Cỡ chữ lớn: ngày, nội dung và nhãn xếp dọc, không cắt chữ (UX-AC18).
     final stacked = MediaQuery.textScalerOf(context).scale(1) >= 1.6;
-    return Container(
+    final line = Container(
       color: isToday ? context.colors.primaryContainer : null,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: stacked
@@ -121,5 +125,6 @@ class DayLine extends StatelessWidget {
               ],
             ),
     );
+    return onTap == null ? line : InkWell(onTap: onTap, child: line);
   }
 }

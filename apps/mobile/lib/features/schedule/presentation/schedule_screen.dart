@@ -8,17 +8,22 @@ import '../../../app/strings_vi.dart';
 import '../../../app/theme.dart';
 import '../../../app/time_ticker.dart';
 import '../../../core/formatters.dart';
+import '../../../core/widgets/app_sheet.dart';
 import '../../../core/widgets/tab_page.dart';
+import '../../../core/widgets/toast.dart';
 import '../../today/application/progress_view.dart';
 import '../../today/presentation/week_progress_screen.dart';
+import '../application/schedule_edits.dart';
 import '../application/schedule_providers.dart';
 import 'day_line.dart';
+import 'day_sheet.dart';
+import 'weekly_schedule_screen.dart';
 
 /// S-20 — Lịch tháng, chế độ xem (VS04-T11). Danh sách ngày nhóm theo tuần,
 /// hôm nay được làm nổi bật và tự cuộn tới khi mở tab; xem được các tháng
 /// trước, không có tháng sau trước ngày 1 (F03-R13). Mỗi buổi tập có nhãn
-/// trạng thái (04 §6.13.3, VS06-T08). Banner Chia lại, nút "Lịch tuần" và S-21
-/// (VS-09) thêm sau.
+/// trạng thái (04 §6.13.3, VS06-T08). Nút "Lịch tuần" → S-22; banner Chia lại
+/// khi lịch tuần đã đổi; chạm một ngày → S-21 (VS-09).
 class ScheduleScreen extends ConsumerStatefulWidget {
   const ScheduleScreen({super.key});
 
@@ -61,9 +66,16 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     final days = ref.watch(monthDaysProvider(month)).value ?? const [];
     if (month == current && plan != null) _scrollToToday();
 
+    final changed = month == current && ref.watch(templateChangedProvider);
+
     return TabPage(
       tab: AppTab.schedule,
       title: S.tabSchedule,
+      trailing: OutlinedButton(
+        key: const ValueKey('open-weekly'),
+        onPressed: () => context.push(weeklySchedulePath),
+        child: const Text(S.weeklySchedule),
+      ),
       // Một khối duy nhất: dựng đủ mọi dòng để tự cuộn tới hôm nay.
       children: [
         Column(
@@ -82,6 +94,10 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                   : null,
             ),
             const SizedBox(height: 12),
+            if (changed) ...[
+              const _RedistributeBanner(),
+              const SizedBox(height: 16),
+            ],
             if (plan != null)
               _MonthList(plan: plan, days: days, now: now, todayKey: _todayKey),
             if (month == current && plan != null)
@@ -195,6 +211,7 @@ class _MonthList extends StatelessWidget {
                 date: date,
                 day: byDate[date],
                 now: now,
+                onTap: () => showDaySheet(context, date),
               ),
           ],
         ],
@@ -256,6 +273,87 @@ class _WeekHeader extends ConsumerWidget {
             ?count,
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Banner "Lịch tuần đã thay đổi…" kèm "Chia lại" (F03-R7, F03-R8, mock
+/// S-20-1, S-20-2). Hiện cho đến khi chia lại hoặc sang tháng mới.
+class _RedistributeBanner extends ConsumerWidget {
+  const _RedistributeBanner();
+
+  Future<void> _redistribute(BuildContext context, WidgetRef ref) async {
+    final ok =
+        await showAppDialog<bool>(
+          context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text(S.redistributeTitle),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(S.redistributeBody),
+                const SizedBox(height: 12),
+                Text(
+                  S.redistributeNote,
+                  style: dialogContext.text.bodyMedium?.copyWith(
+                    color: dialogContext.palette.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              OutlinedButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text(S.cancel),
+              ),
+              FilledButton(
+                key: const ValueKey('confirm-redistribute'),
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: const Text(S.redistribute),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!ok) return;
+    final r = await ref.read(scheduleEditsProvider).redistribute();
+    if (r == null || !context.mounted) return;
+    showToast(
+      context,
+      S.redistributed(
+        Fmt.dayMonth(r.from),
+        Fmt.dayMonth(r.to),
+        r.keptOverrides,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final palette = context.palette;
+    return Container(
+      key: const ValueKey('redistribute-banner'),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+      decoration: BoxDecoration(
+        color: palette.attentionContainer,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            S.templateChangedBanner,
+            style: context.text.bodyLarge?.copyWith(color: palette.attention),
+          ),
+          const SizedBox(height: 12),
+          FilledButton(
+            key: const ValueKey('redistribute'),
+            onPressed: () => _redistribute(context, ref),
+            child: const Text(S.redistribute),
+          ),
+        ],
       ),
     );
   }

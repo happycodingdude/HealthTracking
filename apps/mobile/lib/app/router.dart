@@ -19,6 +19,7 @@ import '../features/onboarding/presentation/profile_step_screen.dart';
 import '../features/onboarding/presentation/reminder_step_screen.dart';
 import '../features/onboarding/presentation/schedule_step_screen.dart';
 import '../features/schedule/presentation/schedule_screen.dart';
+import '../features/schedule/presentation/weekly_schedule_screen.dart';
 import '../features/today/presentation/today_screen.dart';
 import '../features/today/presentation/week_progress_screen.dart';
 import '../features/weight/presentation/weight_screen.dart';
@@ -157,6 +158,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                           ),
                           tab: tab,
                         ),
+                      ),
+                    // S-22 (chế độ sửa) mở từ nút "Lịch tuần" ở S-20.
+                    if (tab == AppTab.schedule)
+                      GoRoute(
+                        path: 'weekly',
+                        builder: (_, _) => const WeeklyScheduleScreen(),
                       ),
                     // S-56 nằm trong tab Tôi, thanh tab vẫn hiện.
                     if (tab == AppTab.me)

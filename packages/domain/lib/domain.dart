@@ -8,6 +8,7 @@ export 'src/profile/profile_rules.dart';
 export 'src/progress/weekly_progress.dart';
 export 'src/reminder/reminder_planner.dart';
 export 'src/schedule/day_change_rules.dart';
+export 'src/schedule/day_edit.dart';
 export 'src/schedule/month_plan.dart';
 export 'src/schedule/weekly_template.dart';
 export 'src/session/extra_session.dart';

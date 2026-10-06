@@ -282,6 +282,57 @@ abstract final class S {
   /// 04 S-20: tiêu đề tuần "… · Đã tập 2/3".
   static String weekDone(int done, int planned) => 'Đã tập $done/$planned';
 
+  // Sửa riêng S-21, lịch tuần S-22, chia lại (04 S-20 → S-22), F03-R7 → R10.
+  static const weeklySchedule = 'Lịch tuần';
+  static const weeklyEditHint =
+      'Thay đổi áp dụng từ tháng sau, hoặc bấm Chia lại để áp dụng ngay.';
+  static const templateSaved = 'Đã lưu lịch tuần';
+  static const templateChangedBanner =
+      'Lịch tuần đã thay đổi. Bấm Chia lại để áp dụng cho tháng này.';
+  static const redistribute = 'Chia lại';
+  static const redistributeTitle = 'Chia lại lịch?';
+  static const redistributeBody = 'Áp dụng lịch mới từ hôm nay đến cuối tháng?';
+  static const redistributeNote = 'Các ngày Bạn đã sửa riêng được giữ nguyên.';
+  static const fromTemplate = 'Theo lịch tuần';
+  static const changeTime = 'Đổi giờ';
+  static const changeMuscles = 'Đổi nhóm cơ';
+  static const restThisDay = 'Cho nghỉ ngày này';
+  static const scheduleThisDay = 'Lên lịch tập ngày này';
+  static const scheduleToday = 'Lên lịch tập hôm nay';
+  static const countsInPlan = 'Tính vào kế hoạch tuần.';
+  static const revertToTemplate = 'Trả về theo lịch tuần';
+  static const revertConfirmTitle = 'Trả về theo lịch tuần?';
+  static const revert = 'Trả về';
+  static const giveRest = 'Cho nghỉ';
+  static const onlyThisDay = 'Chỉ thay đổi ngày này. Lịch tuần giữ nguyên.';
+  static const noReminderUnderHour =
+      'Còn chưa đến 1 giờ nên sẽ không có nhắc cho buổi này.';
+  static const extraBlocksSchedule =
+      'Hôm nay đã có buổi tập thêm nên không lên lịch tập được.';
+  static const editExtraSession = 'Sửa buổi tập thêm';
+  static const markSession = 'Đánh dấu buổi tập';
+  static const editTodaySession = 'Sửa buổi hôm nay';
+  static const missingTimeOrMuscles = 'Vui lòng chọn giờ tập và nhóm cơ';
+  static const muscleGroups = 'Nhóm cơ';
+
+  /// 04 S-21: "Cho nghỉ {thứ}, {dd/mm}? Nhắc của ngày này sẽ được hủy."
+  static String restConfirm(String weekdayDate) =>
+      'Cho nghỉ $weekdayDate? Nhắc của ngày này sẽ được hủy.';
+
+  /// 04 S-21: "Đã sửa riêng {thứ} {dd/mm}".
+  static String overriddenToast(String weekday, String dayMonth) =>
+      'Đã sửa riêng $weekday $dayMonth';
+
+  /// 03 F03-R8: "Đã chia lại lịch từ {ngày} đến {ngày}. Giữ nguyên {N} ngày
+  /// Bạn đã sửa riêng." Không có ngày sửa riêng thì bỏ câu sau.
+  static String redistributed(String from, String to, int kept) =>
+      'Đã chia lại lịch từ $from đến $to.'
+      '${kept > 0 ? ' Giữ nguyên $kept ngày Bạn đã sửa riêng.' : ''}';
+
+  /// Mock S-21-2: "Thứ 5, 08/10 · Hôm nay".
+  static String dayTitle(String weekdayDate, {required bool today}) =>
+      '$weekdayDate${today ? ' · $tabToday' : ''}';
+
   // Định dạng (UR-10).
   static const currencySuffix = 'đ';
   static const weekdays = [
@@ -480,5 +531,32 @@ abstract final class S {
     'noPlannedSessions': noPlannedSessions,
     'previousWeek': previousWeek,
     'nextWeek': nextWeek,
+    'weeklySchedule': weeklySchedule,
+    'weeklyEditHint': weeklyEditHint,
+    'templateSaved': templateSaved,
+    'templateChangedBanner': templateChangedBanner,
+    'redistribute': redistribute,
+    'redistributeTitle': redistributeTitle,
+    'redistributeBody': redistributeBody,
+    'redistributeNote': redistributeNote,
+    'fromTemplate': fromTemplate,
+    'changeTime': changeTime,
+    'changeMuscles': changeMuscles,
+    'restThisDay': restThisDay,
+    'scheduleThisDay': scheduleThisDay,
+    'scheduleToday': scheduleToday,
+    'countsInPlan': countsInPlan,
+    'revertToTemplate': revertToTemplate,
+    'revertConfirmTitle': revertConfirmTitle,
+    'revert': revert,
+    'giveRest': giveRest,
+    'onlyThisDay': onlyThisDay,
+    'noReminderUnderHour': noReminderUnderHour,
+    'extraBlocksSchedule': extraBlocksSchedule,
+    'editExtraSession': editExtraSession,
+    'markSession': markSession,
+    'editTodaySession': editTodaySession,
+    'missingTimeOrMuscles': missingTimeOrMuscles,
+    'muscleGroups': muscleGroups,
   };
 }

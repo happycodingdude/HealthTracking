@@ -13,6 +13,7 @@ import '../../../core/widgets/reference_tag.dart';
 import '../../../core/widgets/session_tag.dart';
 import '../../me/application/calorie_view.dart';
 import '../../schedule/application/schedule_providers.dart';
+import '../../schedule/presentation/day_sheet.dart';
 import '../../schedule/presentation/extra_session_sheet.dart';
 import '../../schedule/presentation/mark_session_sheet.dart';
 import '../application/progress_view.dart';
@@ -237,6 +238,13 @@ class SessionCard extends ConsumerWidget {
           Heading(planned, style: title),
           const SizedBox(height: 8),
           Text(S.markableFrom(Fmt.time(day.time!)), style: secondary),
+          // 04 §6.7.1: "Sửa buổi hôm nay" → S-21.
+          const SizedBox(height: 4),
+          _Link(
+            id: const ValueKey('session-edit-today'),
+            label: S.editTodaySession,
+            onTap: () => showDaySheet(context, day.date),
+          ),
         ],
         SessionState.awaitingMark => [
           Heading(planned, style: title),

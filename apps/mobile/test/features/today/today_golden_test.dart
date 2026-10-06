@@ -152,7 +152,11 @@ void main() {
       await seedExtra(db, LocalDate(2026, 10, 8), const [MuscleGroup.abs]);
       await pump(tester, v, db, DateTime(2026, 10, 9, 12));
       final card = find.byKey(const ValueKey('progress-card'));
-      await tester.ensureVisible(card);
+      await tester.scrollUntilVisible(
+        card,
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
       await tester.pumpAndSettle();
       await tester.tap(card);
       await tester.pumpAndSettle();
