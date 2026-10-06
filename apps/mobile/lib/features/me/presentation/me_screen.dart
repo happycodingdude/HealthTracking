@@ -1,31 +1,67 @@
+import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/providers.dart';
 import '../../../app/shell/app_tab.dart';
 import '../../../app/strings_vi.dart';
 import '../../../app/theme.dart';
+import '../../../core/formatters.dart';
 import '../../../core/widgets/settings_card.dart';
 import '../../../core/widgets/tab_page.dart';
 import '../../../core/widgets/toast.dart';
 import '../../../data/sync/sync_providers.dart';
+import '../application/calorie_view.dart';
 import '../application/reminders.dart';
 import 'dev_server_status.dart';
 
-/// S-50 — Tôi. Có dòng "Nhắc đi tập" (VS-05) và "Tài khoản và dữ liệu"
-/// (VS-02); các dòng hồ sơ, mức calo, ngân sách được thêm ở VS-11, VS-13.
+/// S-50 — Tôi: "Hồ sơ cơ thể", "Mức calo" (VS-11), "Nhắc đi tập" (VS-05),
+/// "Tài khoản và dữ liệu" (VS-02); dòng ngân sách AI thêm ở VS-13.
 class MeScreen extends ConsumerWidget {
   const MeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final pending = ref.watch(syncStatusProvider).value?.hasPending;
+    final profile = ref.watch(profileProvider).value;
+    final view = ref.watch(calorieViewProvider);
+    final year = ref.watch(clockProvider).now().year;
     return TabPage(
       tab: AppTab.me,
       title: S.tabMe,
       children: [
         SettingsCard(
           children: [
+            SettingsRow(
+              key: const ValueKey('row-profile'),
+              label: S.bodyProfile,
+              value: profile == null || !profile.hasBody
+                  ? null
+                  : S.profileSummary(
+                      profile.heightCm!,
+                      ProfileRules.age(profile.birthYear!, year),
+                      profile.sex == Sex.male ? S.sexMale : S.sexFemale,
+                    ),
+              onTap: () => context.go('/me/profile'),
+            ),
+            SettingsRow(
+              key: const ValueKey('row-calorie'),
+              label: S.calorieLevel,
+              value: view == null
+                  ? null
+                  : S.calorieSummary(
+                      Fmt.kcal(view.kcal),
+                      view.belowSafetyFloor
+                          ? S.belowSafetyFloor
+                          : view.mode == CalorieMode.auto
+                          ? S.calorieAuto
+                          : S.calorieManual,
+                    ),
+              // F02-E3: có chấm khi đang chờ đề xuất.
+              dot: profile?.caloriePendingKcal != null,
+              onTap: () => context.go('/me/calorie'),
+            ),
             const _RemindersRow(),
             SettingsRow(
               key: const ValueKey('row-account-data'),

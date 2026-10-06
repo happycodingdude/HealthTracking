@@ -2,7 +2,9 @@ import 'package:domain/domain.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/data/db/app_database.dart';
+import 'package:mobile/data/local_marks.dart';
 import 'package:mobile/data/sync/outbox_writer.dart';
+import 'package:mobile/features/me/application/calorie_updates.dart';
 import 'package:mobile/features/me/data/profile_repository.dart';
 import 'package:mobile/features/weight/application/weight_edits.dart';
 import 'package:mobile/features/weight/data/weight_repository.dart';
@@ -24,11 +26,20 @@ void main() {
     addTearDown(db.close);
     clock = FixedClock(DateTime(2026, 10, 14, 9));
     weights = WeightRepository(db);
+    final outbox = OutboxWriter(db, clock);
     edits = WeightEdits(
       db: db,
       weights: weights,
       profiles: ProfileRepository(db),
-      outbox: OutboxWriter(db, clock),
+      outbox: outbox,
+      calorie: CalorieUpdates(
+        db: db,
+        profiles: ProfileRepository(db),
+        weights: weights,
+        outbox: outbox,
+        marks: MemoryLocalMarks(),
+        clock: clock,
+      ),
       clock: clock,
     );
     await seedSetUp(db);
@@ -48,10 +59,15 @@ void main() {
     expect(older.latestChanged, isFalse);
     final same = await edits.log(w1210, 790);
     expect(same.latestChanged, isFalse, reason: 'ghi lại đúng số cũ');
-    expect(await outbox(), [
-      'weight:2026-10-12:upsert',
-      'weight:2026-10-05:upsert',
-    ]);
+    expect(
+      await outbox(),
+      [
+        'weight:2026-10-12:upsert',
+        'profile:me:upsert',
+        'weight:2026-10-05:upsert',
+      ],
+      reason: 'Tự động: mức calo cập nhật theo số cân mới nhất (F07-AC6)',
+    );
   });
 
   test(
@@ -61,7 +77,8 @@ void main() {
       final deleted = await edits.delete(w1210);
       expect(deleted.latestChanged, isTrue);
       expect(deleted.latest, (week: w0510, kgX10: 800));
-      expect(await outbox(), ['weight:2026-10-12:delete']);
+      expect(deleted.calorie, isA<CalorieAutoUpdated>());
+      expect(await outbox(), ['weight:2026-10-12:delete', 'profile:me:upsert']);
     },
   );
 

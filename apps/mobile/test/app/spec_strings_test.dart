@@ -103,4 +103,32 @@ void main() {
     expect(S.deleteWeightConfirm('05/10'), 'Xóa số cân tuần 05/10?');
     expect(S.weightSaved('72,5 kg'), 'Đã lưu 72,5 kg');
   });
+
+  test('F02-R8, F02-R9, 04 S-50, S-52, S-53: câu mức calo có tham số', () {
+    expect(S.profileSummary(175, 30, 'Nam'), '175 cm · 30 tuổi · Nam');
+    expect(S.calorieSummary('2.210 kcal', 'Tự động'), '2.210 kcal · Tự động');
+    expect(
+      S.calorieUpdated('2.210', '2.090'),
+      'Mức calo đã cập nhật từ 2.210 thành 2.090 kcal.',
+    );
+    expect(
+      S.calorieProposal('2.090 kcal', byWeight: true),
+      'Theo cân nặng mới, mức ước tính là 2.090 kcal. Bạn muốn dùng con số này '
+      'không?',
+    );
+    expect(
+      S.calorieProposal('2.090 kcal', byWeight: false),
+      'Theo thông tin mới, mức ước tính là 2.090 kcal. Bạn muốn dùng con số '
+      'này không?',
+    );
+    expect(
+      S.currentlyUsing('1.900 kcal'),
+      'Hiện tại Bạn đang dùng 1.900 kcal.',
+    );
+    expect(S.useKcal('2.090 kcal'), 'Dùng 2.090 kcal');
+    expect(
+      S.useAppEstimate('2.090 kcal'),
+      'Dùng lại ước tính của app (2.090 kcal)',
+    );
+  });
 }

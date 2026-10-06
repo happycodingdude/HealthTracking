@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/sync/sync_providers.dart';
 import '../data/sync/sync_scheduler.dart';
+import '../features/me/application/calorie_updates.dart';
 import '../features/me/application/reminders.dart';
 import '../features/schedule/application/month_materializer.dart';
 import 'providers.dart';
@@ -13,8 +14,9 @@ import 'router.dart';
 import 'time_ticker.dart';
 
 /// Chạy các thành phần nền của app (05 §6.4.4) khi khởi động, khi quay lại
-/// foreground và khi qua 00:00 lúc app đang mở: [MonthMaterializer] (F03-R6)
-/// rồi [ReminderScheduler] (TR-10). Chạm vào nhắc → Hôm nay (NAV-2).
+/// foreground và khi qua 00:00 lúc app đang mở: [MonthMaterializer] (F03-R6),
+/// kiểm tra sang năm mới cho mức calo (F01-E2), rồi [ReminderScheduler]
+/// (TR-10). Chạm vào nhắc → Hôm nay (NAV-2).
 class BackgroundTasks extends ConsumerStatefulWidget {
   const BackgroundTasks({super.key, required this.child});
 
@@ -67,6 +69,8 @@ class _BackgroundTasksState extends ConsumerState<BackgroundTasks> {
   Future<void> _tasks() async {
     try {
       await ref.read(monthMaterializerProvider).run();
+      // F01-E2, ED-07: sang năm mới → tính lại mức calo (đề xuất ở S-52).
+      await ref.read(calorieUpdatesProvider).checkNewYear();
       await ref.read(notificationPermissionProvider.notifier).refresh();
       await ref.read(reminderSchedulerProvider).reschedule();
     } catch (e, st) {

@@ -201,4 +201,100 @@ void main() {
       expect(done, findsNothing, reason: 'server không trả bản chưa đánh dấu');
     },
   );
+
+  testWidgets(
+    'VS-11: S-52 đặt mức 1.900 → ghi cân → S-53, vuốt đóng → chấm ở tab Tôi; '
+    'banner "Dùng {Y} kcal" → Tự động; S-51 đổi mức vận động → "Mức calo đã '
+    'cập nhật…" → đồng bộ, server giữ hồ sơ mới (F02-AC4 → AC6, UX-AC13)',
+    (tester) async {
+      await tester.pumpWidget(const SizedBox());
+      await launch();
+      await pumpUntil(tester, tabLabel(S.tabMe));
+      final year = clock.now().year;
+      int kcalFor(int kgX10, ActivityLevel a) => CalorieRules.estimate(
+        heightCm: 175,
+        weightKgX10: kgX10,
+        age: ProfileRules.age(1996, year),
+        sex: Sex.male,
+        activity: a,
+      ).kcal;
+
+      // S-52 "Đặt mức khác" 1.900 kcal → Bạn tự đặt.
+      await tester.tap(tabLabel(S.tabMe));
+      await tester.pumpAndSettle();
+      await tapVisible(tester, find.byKey(const ValueKey('row-calorie')));
+      await tapVisible(tester, find.byKey(const ValueKey('set-other-level')));
+      await tester.enterText(input(S.fieldDailyCalorie), '1900');
+      await tester.tap(find.widgetWithText(FilledButton, S.save).last);
+      await pumpUntil(tester, find.text(S.calorieManual));
+      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.pumpAndSettle();
+
+      // Ghi 76 kg tuần này (thay 80 kg lúc thiết lập) → S-53; vuốt đóng →
+      // đề xuất nằm lại, tab Tôi có chấm.
+      final proposed = kcalFor(760, ActivityLevel.moderate);
+      await tester.tap(tabLabel(S.tabWeight));
+      await tester.pumpAndSettle();
+      await tapVisible(
+        tester,
+        find.widgetWithText(FilledButton, S.logThisWeek),
+      );
+      await tester.enterText(
+        find.descendant(
+          of: find.byKey(const ValueKey('weight-input')),
+          matching: find.byType(TextField),
+        ),
+        '76',
+      );
+      await tester.tap(find.widgetWithText(FilledButton, S.save).last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(S.replace).last);
+      await pumpUntil(tester, find.text(S.updateCalorieTitle));
+      expect(find.text(S.useKcal(Fmt.kcal(proposed))), findsOneWidget);
+      await tester.fling(
+        find.text(S.updateCalorieTitle),
+        const Offset(0, 600),
+        2000,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text(S.updateCalorieTitle), findsNothing);
+      await tester.tap(tabLabel(S.tabMe));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('row-dot')), findsOneWidget);
+
+      // S-52: banner "Dùng {Y} kcal" → Tự động, hết chấm.
+      await tapVisible(tester, find.byKey(const ValueKey('row-calorie')));
+      await tapVisible(tester, find.byKey(const ValueKey('banner-accept')));
+      expect(find.text(S.calorieAuto), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('row-dot')), findsNothing);
+
+      // S-51: đổi sang "Vận động nhẹ" → "Đã lưu hồ sơ" rồi mức calo cập nhật.
+      final light = kcalFor(760, ActivityLevel.light);
+      await tapVisible(tester, find.byKey(const ValueKey('row-profile')));
+      await tapVisible(tester, find.byKey(const ValueKey('activity-light')));
+      // Thông báo nhanh "Đã lưu 76 kg" (4 giây) còn nổi trên nút "Lưu" ở cuối
+      // trang: chờ nó tắt rồi mới chạm.
+      await pumpUntilGone(tester, find.byType(SnackBar));
+      await tapVisible(tester, find.widgetWithText(FilledButton, S.save));
+      await pumpUntil(tester, find.text(S.profileSaved));
+      await pumpUntil(
+        tester,
+        find.text(S.calorieUpdated(Fmt.integer(proposed), Fmt.integer(light))),
+      );
+
+      // Đồng bộ xong, server nhận hồ sơ (không trả bản cũ về).
+      await tester.tap(find.byKey(const ValueKey('tab-today-button')));
+      await tester.pumpAndSettle();
+      await pumpUntilGone(tester, find.byKey(const ValueKey('sync-indicator')));
+      await tester.pumpAndSettle(const Duration(seconds: 2));
+      await tester.tap(tabLabel(S.tabMe));
+      await tester.pumpAndSettle();
+      expect(
+        find.text(S.calorieSummary(Fmt.kcal(light), S.calorieAuto)),
+        findsOneWidget,
+      );
+    },
+  );
 }

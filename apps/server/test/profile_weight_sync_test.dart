@@ -101,6 +101,39 @@ void main() {
     expect(const ProfileCodec().decode(change.data!), p);
   });
 
+  test('F02-E3, VS11-T04: đề xuất đang chờ khứ hồi qua pull; bỏ đề xuất '
+      '(Giữ nguyên) xóa cả số và lý do', () async {
+    final p = body(step: 4)
+        .copyWith(calorieMode: CalorieMode.manual, calorieKcal: 1900)
+        .withPending(2090, CaloriePendingReason.weight);
+    expect((await pushOne(profile(p))).status, PushStatus.applied);
+    Future<Profile> pulled() async => const ProfileCodec().decode(
+      (await app.pull(
+        token,
+      )).changes.firstWhere((c) => c.entity == 'profile').data!,
+    );
+    expect(
+      (
+        (await pulled()).caloriePendingKcal,
+        (await pulled()).caloriePendingReason,
+      ),
+      (2090, CaloriePendingReason.weight),
+    );
+    final kept = await pushOne(
+      profile(
+        CalorieRecalc.keepManual(p),
+        at: t0.add(const Duration(seconds: 1)),
+      ),
+    );
+    expect(kept.status, PushStatus.applied);
+    final after = await pulled();
+    expect(
+      (after.caloriePendingKcal, after.caloriePendingReason),
+      (null, null),
+    );
+    expect(after.calorieKcal, 1900);
+  });
+
   group('giá trị ngoài khoảng bị rejected (VS03-T12)', () {
     for (final (name, p, field) in [
       ('chiều cao 231', body().copyWith(heightCm: 231), 'heightCm'),
@@ -123,6 +156,20 @@ void main() {
           step: 4,
         ).copyWith(calorieMode: CalorieMode.auto, calorieKcal: 1400),
         'calorieKcal',
+      ),
+      (
+        'VS11-T04: đề xuất có số nhưng thiếu lý do',
+        body(step: 4)
+            .copyWith(calorieMode: CalorieMode.manual, calorieKcal: 1900)
+            .withPending(2090, null),
+        'caloriePendingKcal',
+      ),
+      (
+        'VS11-T04: đề xuất ở chế độ Tự động (F02-R8 không đề xuất)',
+        body(step: 4)
+            .copyWith(calorieMode: CalorieMode.auto, calorieKcal: 2210)
+            .withPending(2090, CaloriePendingReason.weight),
+        'caloriePendingKcal',
       ),
     ]) {
       test(name, () async {

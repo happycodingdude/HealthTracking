@@ -10,7 +10,9 @@ import '../features/auth/presentation/register_screen.dart';
 import '../features/auth/presentation/welcome_screen.dart';
 import '../features/me/presentation/about_reference_screen.dart';
 import '../features/me/presentation/account_data_screen.dart';
+import '../features/me/presentation/calorie_screen.dart';
 import '../features/me/presentation/me_screen.dart';
+import '../features/me/presentation/profile_screen.dart';
 import '../features/menu/presentation/menu_screen.dart';
 import '../features/onboarding/application/setup_state.dart';
 import '../features/onboarding/presentation/calorie_step_screen.dart';
@@ -166,11 +168,20 @@ final routerProvider = Provider<GoRouter>((ref) {
                         builder: (_, _) => const WeeklyScheduleScreen(),
                       ),
                     // S-56 nằm trong tab Tôi, thanh tab vẫn hiện.
-                    if (tab == AppTab.me)
+                    if (tab == AppTab.me) ...[
                       GoRoute(
                         path: 'account',
                         builder: (_, _) => const AccountDataScreen(),
                       ),
+                      GoRoute(
+                        path: 'profile',
+                        builder: (_, _) => const ProfileScreen(),
+                      ),
+                      GoRoute(
+                        path: 'calorie',
+                        builder: (_, _) => const CalorieScreen(),
+                      ),
+                    ],
                   ],
                 ),
               ],

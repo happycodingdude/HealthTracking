@@ -27,11 +27,20 @@ class SettingsCard extends StatelessWidget {
 /// Một dòng: nhãn bên trái, giá trị tóm tắt căn phải, mũi tên nếu chạm được.
 /// Cỡ chữ lớn: nhãn và giá trị xếp dọc để không bị cắt (UX-AC18).
 class SettingsRow extends StatelessWidget {
-  const SettingsRow({super.key, required this.label, this.value, this.onTap});
+  const SettingsRow({
+    super.key,
+    required this.label,
+    this.value,
+    this.onTap,
+    this.dot = false,
+  });
 
   final String label;
   final String? value;
   final VoidCallback? onTap;
+
+  /// Chấm báo hiệu cạnh nhãn, ví dụ "Mức calo" khi có đề xuất (04 S-50).
+  final bool dot;
 
   /// Từ mức phóng chữ này trở lên thì xếp dọc.
   static const stackedScale = 1.6;
@@ -42,7 +51,25 @@ class SettingsRow extends StatelessWidget {
       color: context.palette.textSecondary,
     );
     final stacked = MediaQuery.textScalerOf(context).scale(1) >= stackedScale;
-    final labelText = Text(label, style: context.text.bodyLarge);
+    final text = Text(label, style: context.text.bodyLarge);
+    final labelText = !dot
+        ? text
+        : Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(child: text),
+              const SizedBox(width: 8),
+              Container(
+                key: const ValueKey('row-dot'),
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: context.palette.attention,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ],
+          );
     final valueText = value == null
         ? null
         : Text(
