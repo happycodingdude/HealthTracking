@@ -16,6 +16,20 @@ RowState? _rowState(Result rows) => rows.isEmpty
         deleted: rows.first[1]! as bool,
       );
 
+/// Giờ trên iPhone (theo múi giờ IANA trong hồ sơ, VS-05) ở thời điểm [at].
+/// null khi hồ sơ chưa có múi giờ hoặc PostgreSQL không biết múi giờ đó.
+Future<DateTime?> deviceNow(Session s, String userId, DateTime at) async {
+  final rows = await s.execute(
+    Sql.named('''
+      SELECT to_char(@at::timestamptz AT TIME ZONE p.timezone, 'YYYY-MM-DD HH24:MI:SS.MS')
+      FROM profiles p
+      WHERE p.user_id = @user AND NOT p.deleted
+        AND p.timezone IN (SELECT name FROM pg_timezone_names)'''),
+    parameters: {'user': userId, 'at': at},
+  );
+  return rows.isEmpty ? null : DateTime.parse(rows.first[0]! as String);
+}
+
 /// Thời điểm ISO 8601 UTC, độ chính xác mili giây (05 §6.8.1).
 String _instant(String column) =>
     '''to_char($column AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')''';
@@ -210,8 +224,9 @@ final class MonthPlanHandler implements SyncEntityHandler {
 }
 
 /// Entity `day` (key `YYYY-MM-DD`) = bảng `days`: kiểm tra cấu trúc, không có
-/// chủ nhật, phải thuộc tháng đã có `month_plan`. `ensure` khi chia tháng;
-/// `upsert` cho mọi thay đổi sau đó (06 §6.5.1).
+/// chủ nhật, phải thuộc tháng đã có `month_plan`, quy tắc theo thời gian của
+/// [DayChangeRules]. `ensure` khi chia tháng; `upsert` cho mọi thay đổi sau đó
+/// (06 §6.5.1).
 final class DayHandler implements SyncEntityHandler {
   const DayHandler();
 
@@ -268,6 +283,18 @@ final class DayHandler implements SyncEntityHandler {
       parameters: {'user': userId, 'month': m.key.substring(0, 7)},
     );
     if (plan.isEmpty) throw const SyncRejection('key');
+    // Quy tắc theo thời gian (đánh dấu, ...) so với bản đang có, theo giờ
+    // trên iPhone lúc ghi (05 §6.6.2).
+    final current = await read(s, userId, m.key);
+    final before = current == null || current.deleted
+        ? null
+        : _codec.decode(m.key, current.data!);
+    final field = DayChangeRules.check(
+      before,
+      d,
+      await deviceNow(s, userId, m.clientUpdatedAt),
+    );
+    if (field != null) throw SyncRejection(field);
     List<String>? names(List<MuscleGroup>? g) =>
         g == null ? null : [for (final m in g) m.name];
     await s.execute(

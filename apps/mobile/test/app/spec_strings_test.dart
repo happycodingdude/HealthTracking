@@ -66,4 +66,17 @@ void main() {
       'Gợi ý AI tạm dừng đến ngày 1/11 vì đã dùng hết ngân sách tháng này.',
     );
   });
+
+  test('F05-E1, 04 §6.7.1, UA-08, mock S-23: câu có tham số', () {
+    expect(S.markableFrom('18:00'), 'Đánh dấu được từ 18:00');
+    expect(
+      S.nextSession('Thứ 6', 'Vai', '18:00'),
+      'Buổi tới: Thứ 6 · Vai · 18:00',
+    );
+    expect(S.markedDone('Lưng'), 'Đã ghi: tập Lưng');
+    expect(
+      S.plannedLine('Ngực và tay sau', '18:00'),
+      'Lịch: Ngực và tay sau · 18:00',
+    );
+  });
 }

@@ -254,4 +254,41 @@ void main() {
       expect(find.text(S.monthTitle(11, 2026)), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'S-20: hôm nay ở cuối danh sách → mở tab tự cuộn tới, dòng hôm nay không '
+    'bị thanh tab che',
+    (tester) async {
+      final schedule = ScheduleRepository(db);
+      final template = WeeklyTemplate({
+        1: TemplateDay(
+          enabled: true,
+          time: LocalTime(18, 0),
+          muscles: const [MuscleGroup.chest],
+        ),
+      });
+      await schedule.putTemplate(template);
+      final g = MonthGenerator.first(template, DateTime(2026, 10, 1, 12));
+      await schedule.putPlan(g.plan);
+      for (final d in g.days) {
+        await schedule.putDay(d);
+      }
+      clock.set(DateTime(2026, 10, 27, 8));
+      await pump(tester, onboarded: true);
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AppTabBar),
+          matching: find.text(S.tabSchedule),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final row = tester.getRect(find.text('T3 27/10'));
+      expect(row.top, greaterThan(0));
+      expect(
+        row.bottom,
+        lessThanOrEqualTo(tester.getRect(find.byType(AppTabBar)).top),
+      );
+    },
+  );
 }

@@ -53,15 +53,40 @@ final class PlanDay {
 
   bool get isWorkout => kind == DayKind.workout;
 
+  /// Bản ghi với đánh dấu mới; các trường khác giữ nguyên.
+  PlanDay withMark(
+    DayMark? mark, {
+    List<MuscleGroup>? actual,
+    DateTime? markedAt,
+  }) => PlanDay(
+    date: date,
+    kind: kind,
+    time: time,
+    muscles: muscles,
+    source: source,
+    mark: mark,
+    actualMuscles: actual,
+    markedAt: markedAt,
+    extraMuscles: extraMuscles,
+    extraLoggedAt: extraLoggedAt,
+  );
+
   /// Ràng buộc của bản ghi (05 §6.7.3): không có chủ nhật; ngày tập có giờ và
   /// ≥ 1 nhóm cơ, ngày nghỉ không có; buổi tập thêm chỉ ở ngày nghỉ; đánh dấu
-  /// chỉ ở ngày tập. Trả tên trường sai, null = hợp lệ.
+  /// chỉ ở ngày tập, "Đã tập" có ≥ 1 nhóm cơ thực tế (F05-R4, F05-R5), có
+  /// đánh dấu thì có thời điểm đánh dấu. Trả tên trường sai, null = hợp lệ.
   String? get invalidField {
     if (date.isSunday) return 'key';
     if (isWorkout) {
       if (time == null) return 'time';
       if (muscles.isEmpty) return 'muscles';
       if (extraMuscles != null || extraLoggedAt != null) return 'extraMuscles';
+      final actual = actualMuscles;
+      if ((mark == DayMark.done) != (actual != null && actual.isNotEmpty) ||
+          (mark != DayMark.done && actual != null)) {
+        return 'actualMuscles';
+      }
+      if ((mark == null) != (markedAt == null)) return 'markedAt';
     } else {
       if (time != null) return 'time';
       if (muscles.isNotEmpty) return 'muscles';

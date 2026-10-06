@@ -12,6 +12,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     required this.border,
     required this.card,
     required this.success,
+    required this.successContainer,
     required this.attention,
     required this.attentionContainer,
     required this.neutral,
@@ -27,6 +28,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
 
   /// Đã tập.
   final Color success;
+  final Color successContainer;
 
   /// Cần hành động (Chờ đánh dấu, chấm báo hiệu).
   final Color attention;
@@ -48,6 +50,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     border: Color(0xFFD3DBD8),
     card: Color(0xFFFFFFFF),
     success: Color(0xFF2E6B30),
+    successContainer: Color(0xFFE2F0E1),
     attention: Color(0xFF8A4B00),
     attentionContainer: Color(0xFFFCEBD5),
     neutral: Color(0xFF5F6967),
@@ -62,6 +65,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     border: Color(0xFF34403D),
     card: Color(0xFF1A2220),
     success: Color(0xFF8FD18F),
+    successContainer: Color(0xFF1E3A1F),
     attention: Color(0xFFFFB86B),
     attentionContainer: Color(0xFF4A3014),
     neutral: Color(0xFFA9B3B0),

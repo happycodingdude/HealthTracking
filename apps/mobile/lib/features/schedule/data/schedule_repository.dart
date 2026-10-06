@@ -94,6 +94,24 @@ final class ScheduleRepository {
     return r == null ? null : _toDay(r);
   }
 
+  Stream<PlanDay?> watchDay(LocalDate date) =>
+      (_db.select(_db.days)..where((d) => d.date.equals(date.toKey())))
+          .watchSingleOrNull()
+          .map((r) => r == null ? null : _toDay(r));
+
+  /// Các ngày từ [from] đến [to] (gồm cả hai đầu), theo thứ tự ngày. Có thể vắt
+  /// qua hai tháng (F06-E4).
+  Stream<List<PlanDay>> watchRange(LocalDate from, LocalDate to) =>
+      (_db.select(_db.days)
+            ..where(
+              (d) =>
+                  d.date.isBiggerOrEqualValue(from.toKey()) &
+                  d.date.isSmallerOrEqualValue(to.toKey()),
+            )
+            ..orderBy([(d) => OrderingTerm.asc(d.date)]))
+          .watch()
+          .map((rows) => [for (final r in rows) _toDay(r)]);
+
   /// Các ngày (thứ 2 → thứ 7) của [month], theo thứ tự ngày.
   Stream<List<PlanDay>> watchMonth(YearMonth month) =>
       _month(month).watch().map((rows) => [for (final r in rows) _toDay(r)]);

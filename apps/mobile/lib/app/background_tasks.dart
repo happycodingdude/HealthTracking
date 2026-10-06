@@ -10,6 +10,7 @@ import '../features/me/application/reminders.dart';
 import '../features/schedule/application/month_materializer.dart';
 import 'providers.dart';
 import 'router.dart';
+import 'time_ticker.dart';
 
 /// Chạy các thành phần nền của app (05 §6.4.4) khi khởi động, khi quay lại
 /// foreground và khi qua 00:00 lúc app đang mở: [MonthMaterializer] (F03-R6)
@@ -57,6 +58,8 @@ class _BackgroundTasksState extends ConsumerState<BackgroundTasks> {
 
   void _run() {
     if (!mounted) return;
+    // Đồng hồ giao diện đọc lại giờ (VS06-T05): có thể vừa qua giờ tập, 00:00.
+    ref.invalidate(nowProvider);
     unawaited(_tasks());
     _scheduleMidnight();
   }

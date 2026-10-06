@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 
 import 'app/app.dart';
 import 'app/env.dart';
@@ -11,7 +12,10 @@ import 'features/auth/application/auth_controller.dart';
 import 'features/me/data/profile_repository.dart';
 import 'features/onboarding/application/setup_state.dart';
 
-Future<void> main() async {
+Future<void> main() => runHealthApp();
+
+/// Khởi động app. [overrides] chỉ dùng cho integration test (ví dụ đồng hồ).
+Future<void> runHealthApp({List<Override> overrides = const []}) async {
   WidgetsFlutterBinding.ensureInitialized();
   final env = AppEnv.fromEnvironment();
   await runWithErrorReporting(env, () async {
@@ -36,6 +40,7 @@ Future<void> main() async {
                 ? const DebugErrorReporter()
                 : const SentryErrorReporter(),
           ),
+          ...overrides,
         ],
         child: const HealthApp(),
       ),

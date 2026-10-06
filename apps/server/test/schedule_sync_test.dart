@@ -214,4 +214,157 @@ void main() {
     );
     expect(count.single[0], 2);
   });
+
+  group('đánh dấu buổi tập (VS06-T03)', () {
+    // Giờ Việt Nam = UTC+7. Buổi thứ 4 07/10 Lưng 18:00 = 11:00 UTC.
+    final wed = generated.days.firstWhere(
+      (d) => d.date == LocalDate(2026, 10, 7),
+    );
+
+    Future<void> setUpSchedule({String? timezone = 'Asia/Ho_Chi_Minh'}) async {
+      final profile = Profile(
+        onboardingStep: 5,
+        disclaimerAcceptedAt: DateTime.utc(2026, 10, 7, 4),
+        heightCm: 175,
+        birthYear: 1996,
+        sex: Sex.male,
+        activityLevel: ActivityLevel.moderate,
+        calorieMode: CalorieMode.auto,
+        calorieKcal: 2210,
+        setupDate: LocalDate(2026, 10, 7),
+        onboardingCompletedAt: DateTime.utc(2026, 10, 7, 5),
+        timezone: timezone,
+      );
+      final results = await push([
+        mutation(
+          'profile',
+          'me',
+          SyncOp.upsert,
+          at: t0,
+          data: const ProfileCodec().encode(profile),
+        ),
+        templateUpsert(template),
+        planEnsure(generated.plan),
+        for (final d in generated.days) dayMutation(d),
+      ]);
+      expect(results.every((r) => r.status == PushStatus.applied), isTrue);
+    }
+
+    PlanDay marked(DayMark mark, DateTime at) => wed.withMark(
+      mark,
+      actual: mark == DayMark.done ? const [MuscleGroup.back] : null,
+      markedAt: at,
+    );
+
+    /// Đặt giờ server và đăng nhập lại (access token sống 15 phút).
+    Future<void> setNow(DateTime atUtc) async {
+      app.clock.set(atUtc);
+      final res = await app.post('/v1/auth/login', {
+        'phone': '0912345678',
+        'password': '***REMOVED***',
+      });
+      token = TokenPair.fromJson(res.json).accessToken;
+    }
+
+    Future<PushResult> markAt(DayMark mark, DateTime atUtc) async {
+      await setNow(atUtc);
+      return (await push([
+        dayMutation(marked(mark, atUtc), op: SyncOp.upsert, at: atUtc),
+      ])).single;
+    }
+
+    test('F05-AC1: 17:59 giờ iPhone → rejected, kèm bản trên server; 18:00 '
+        '→ applied', () async {
+      await setUpSchedule();
+      final early = await markAt(
+        DayMark.done,
+        DateTime.utc(2026, 10, 7, 10, 59),
+      );
+      expect((early.status, early.field), (PushStatus.rejected, 'mark'));
+      expect(
+        const DayCodec().decode(wed.date.toKey(), early.current!.data!).mark,
+        isNull,
+      );
+      final ok = await markAt(DayMark.done, DateTime.utc(2026, 10, 7, 11));
+      expect(ok.status, PushStatus.applied);
+      final pulled = (await app.pull(
+        token,
+      )).changes.lastWhere((c) => c.key == wed.date.toKey());
+      final day = const DayCodec().decode(pulled.key, pulled.data!);
+      expect(day.mark, DayMark.done);
+      expect(day.actualMuscles, [MuscleGroup.back]);
+    });
+
+    test('F05-AC4: sửa được đến hết 14/10, 00:00 15/10 giờ iPhone → '
+        'rejected', () async {
+      await setUpSchedule();
+      // 23:59 14/10 giờ Việt Nam = 16:59 UTC.
+      expect(
+        (await markAt(
+          DayMark.skipped,
+          DateTime.utc(2026, 10, 14, 16, 59),
+        )).status,
+        PushStatus.applied,
+      );
+      final late = await markAt(DayMark.done, DateTime.utc(2026, 10, 14, 17));
+      expect((late.status, late.field), (PushStatus.rejected, 'mark'));
+    });
+
+    test('đánh dấu ngày nghỉ, "Đã tập" thiếu nhóm cơ → rejected', () async {
+      await setUpSchedule();
+      final at = DateTime.utc(2026, 10, 8, 12);
+      await setNow(at);
+      final rest = generated.days.firstWhere((d) => !d.isWorkout);
+      final restMarked = mutation(
+        'day',
+        rest.date.toKey(),
+        SyncOp.upsert,
+        at: at,
+        data: {
+          ...const DayCodec().encode(rest),
+          'mark': 'skipped',
+          'markedAt': '2026-10-08T12:00:00.000Z',
+        },
+      );
+      expect((await push([restMarked])).single.field, 'mark');
+      final noMuscles = mutation(
+        'day',
+        wed.date.toKey(),
+        SyncOp.upsert,
+        at: at,
+        data: {
+          ...const DayCodec().encode(wed),
+          'mark': 'done',
+          'markedAt': '2026-10-08T12:00:00.000Z',
+        },
+      );
+      expect((await push([noMuscles])).single.field, 'actualMuscles');
+    });
+
+    test('hồ sơ chưa có múi giờ → không áp quy tắc thời gian', () async {
+      await setUpSchedule(timezone: null);
+      expect(
+        (await markAt(DayMark.done, DateTime.utc(2026, 10, 7, 10))).status,
+        PushStatus.applied,
+      );
+    });
+
+    test('TAC-07: B không đánh dấu được ngày của A', () async {
+      await setUpSchedule();
+      final at = DateTime.utc(2026, 10, 7, 12);
+      await setNow(at);
+      final b = (await app.register(
+        phone: '0933333333',
+        name: 'Bình',
+      )).accessToken;
+      final r = (await push([
+        dayMutation(marked(DayMark.done, at), op: SyncOp.upsert, at: at),
+      ], as: b)).single;
+      expect((r.status, r.field), (PushStatus.rejected, 'key'));
+      final rows = await app.tdb.pool.execute(
+        "SELECT mark FROM days WHERE date = '2026-10-07'",
+      );
+      expect(rows.single[0], isNull);
+    });
+  });
 }
