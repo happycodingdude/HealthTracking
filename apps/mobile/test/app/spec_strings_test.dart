@@ -79,4 +79,10 @@ void main() {
       'Lịch: Ngực và tay sau · 18:00',
     );
   });
+
+  test('F-06, 04 §6.7.3, S-20: câu tiến độ tuần', () {
+    expect(S.progressLine(2, 3), 'Đã tập 2/3 buổi theo lịch');
+    expect(S.extraCount(1), '+1 buổi thêm');
+    expect(S.weekDone(1, 3), 'Đã tập 1/3');
+  });
 }

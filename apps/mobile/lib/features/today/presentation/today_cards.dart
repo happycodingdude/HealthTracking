@@ -1,7 +1,9 @@
 import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../app/shell/app_tab.dart';
 import '../../../app/strings_vi.dart';
 import '../../../app/theme.dart';
 import '../../../app/time_ticker.dart';
@@ -13,8 +15,10 @@ import '../../me/application/calorie_view.dart';
 import '../../schedule/application/schedule_providers.dart';
 import '../../schedule/presentation/extra_session_sheet.dart';
 import '../../schedule/presentation/mark_session_sheet.dart';
+import '../application/progress_view.dart';
 import '../application/today_view.dart';
 import 'quick_mark.dart';
+import 'week_progress_screen.dart';
 
 /// Từ mức phóng chữ này trở lên, các nút và cột xếp dọc (UX-AC18).
 const _stackedScale = 1.6;
@@ -29,41 +33,48 @@ class TodayCard extends StatelessWidget {
     super.key,
     required this.title,
     this.trailing,
+    this.onTap,
     required this.children,
   });
 
   final String title;
   final Widget? trailing;
+
+  /// Chạm cả thẻ (ví dụ thẻ tiến độ → S-25).
+  final VoidCallback? onTap;
   final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Wrap(
-              alignment: WrapAlignment.spaceBetween,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 12,
-              runSpacing: 8,
-              children: [
-                Text(
-                  title,
-                  style: context.text.titleMedium?.copyWith(
-                    color: context.palette.textSecondary,
-                  ),
+    final content = Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 12,
+            runSpacing: 8,
+            children: [
+              Text(
+                title,
+                style: context.text.titleMedium?.copyWith(
+                  color: context.palette.textSecondary,
                 ),
-                ?trailing,
-              ],
-            ),
-            const SizedBox(height: 12),
-            ...children,
-          ],
-        ),
+              ),
+              ?trailing,
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...children,
+        ],
       ),
+    );
+    if (onTap == null) return Card(child: content);
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(onTap: onTap, child: content),
     );
   }
 }
@@ -329,28 +340,63 @@ class _UnmarkedRow extends ConsumerWidget {
   }
 }
 
-/// Thẻ tiến độ tuần (04 §6.7.3): dải 6 ô thứ 2 → thứ 7 tô theo trạng thái
-/// (04 §6.13.3). Ở cỡ chữ lớn nhất dải chuyển thành 2 hàng (04 §6.17).
-class WeekStripCard extends ConsumerWidget {
-  const WeekStripCard({super.key});
+/// Thẻ tiến độ tuần (04 §6.7.3): "Đã tập X/Y buổi theo lịch", "+Z buổi
+/// thêm" (chỉ khi Z > 0), Y = 0 → "Tuần này không có buổi tập theo lịch"
+/// (F06-E1); dải 6 ô thứ 2 → thứ 7 tô theo trạng thái (04 §6.13.3). Chạm →
+/// S-25. Ở cỡ chữ lớn nhất dải chuyển thành 2 hàng (04 §6.17).
+class ProgressCard extends ConsumerWidget {
+  const ProgressCard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final now = ref.watch(nowProvider);
     final week = ProgressWeek.containing(LocalDate.fromDateTime(now));
-    final byDate = {
-      for (final d in ref.watch(currentWeekDaysProvider)) d.date: d,
-    };
-    final cells = [
-      for (final date in week.days)
-        _DayCell(date: date, day: byDate[date], now: now),
-    ];
+    final progress = ref.watch(weekProgressProvider(week));
+    if (progress == null) return const SizedBox.shrink();
+    final cells = [for (final d in progress.days) _DayCell(day: d)];
+    final main = progress.planned == 0
+        ? S.noPlannedSessions
+        : S.progressLine(progress.done, progress.planned);
     return Padding(
       padding: const EdgeInsets.only(top: 16),
       child: TodayCard(
-        key: const ValueKey('week-strip-card'),
+        key: const ValueKey('progress-card'),
         title: S.progressCardTitle,
+        trailing: ExcludeSemantics(
+          child: Icon(
+            Icons.chevron_right,
+            color: context.palette.textSecondary,
+          ),
+        ),
+        onTap: () => context.push(weekProgressPath(AppTab.today, week)),
         children: [
+          // Con số đổi có hiệu ứng chuyển nhẹ khi đánh dấu (04 §6.7.1).
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 250),
+            layoutBuilder: (current, previous) => Stack(
+              alignment: Alignment.centerLeft,
+              children: [...previous, ?current],
+            ),
+            child: Text(
+              main,
+              key: ValueKey(main),
+              style: context.text.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          if (progress.extra > 0) ...[
+            const SizedBox(height: 4),
+            Text(
+              S.extraCount(progress.extra),
+              key: const ValueKey('extra-count'),
+              style: context.text.bodyLarge?.copyWith(
+                color: context.colors.primary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
           if (_stacked(context))
             Column(
               children: [
@@ -368,17 +414,16 @@ class WeekStripCard extends ConsumerWidget {
 }
 
 class _DayCell extends StatelessWidget {
-  const _DayCell({required this.date, required this.day, required this.now});
+  const _DayCell({required this.day});
 
-  final LocalDate date;
-  final PlanDay? day;
-  final DateTime now;
+  final ProgressDay day;
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    final d = day;
-    final status = d == null ? null : SessionStatus.derive(d, now);
+    final date = day.date;
+    final d = day.day;
+    final status = day.status;
     final (Color? fill, Color? border) = switch (status?.state) {
       SessionState.done => (palette.success, null),
       SessionState.awaitingMark => (palette.attention, null),
