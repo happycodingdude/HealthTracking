@@ -7,12 +7,27 @@ import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:mobile/app/providers.dart';
 import 'package:mobile/app/shell/app_tab_bar.dart';
 import 'package:mobile/app/strings_vi.dart';
 import 'package:mobile/core/formatters.dart';
 import 'package:mobile/main.dart' as app;
 
 import 'flow_helpers.dart';
+
+/// Ngày thử: ngày gần nhất trước hôm nay không phải chủ nhật. Cả luồng chạy
+/// với giờ của ngày đó, bắt đầu lúc 16:50 (trước buổi tập 18:00).
+final LocalDate testDay = () {
+  var d = LocalDate.fromDateTime(DateTime.now()).addDays(-1);
+  if (d.isSunday) d = d.addDays(-1);
+  return d;
+}();
+final clock = ShiftedClock(
+  DateTime.now().difference(testDay.atTime(LocalTime(16, 50))),
+);
+
+Future<void> launch() =>
+    app.runHealthApp(overrides: [clockProvider.overrideWithValue(clock)]);
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -21,7 +36,7 @@ void main() {
     'TAC-15, VS01-T10: đăng nhập sai 6 lần → câu chung; đăng ký → S-02. '
     'VS-03: S-02 → S-03 → S-04, thoát app ở bước 3',
     (tester) async {
-      await app.main();
+      await launch();
       await pumpUntil(tester, find.widgetWithText(OutlinedButton, S.login));
 
       // TAC-15: lần sai thứ 6 bị server chặn nhưng vẫn là câu chung.
@@ -77,17 +92,17 @@ void main() {
     'UX-AC3: mở lại app → đúng bước 3, thông tin còn nguyên. Giữ mức → VS-04: '
     'xếp lịch tuần → VS-05: bước 5 "Để sau" → khung 5 tab (UX-AC1), lịch tháng; tab '
     'Tôi gọi được /healthz; VS-02: đổi tên → đồng bộ với server, Hôm nay chào '
-    'tên mới',
+    'tên mới. VS-06: chưa đến giờ → 18:05 mở lại → 1 chạm "Đã tập" → đồng bộ',
     (tester) async {
       // Mở lại app: dựng từ đầu, đọc trạng thái đã lưu trên máy.
       await tester.pumpWidget(const SizedBox());
-      await app.main();
+      await launch();
       await pumpUntil(tester, find.text(S.calorieTitle));
       expect(find.text(S.stepOf(3)), findsOneWidget);
       final kcal = CalorieRules.estimate(
         heightCm: 175,
         weightKgX10: 800,
-        age: ProfileRules.age(1996, DateTime.now().year),
+        age: ProfileRules.age(1996, clock.now().year),
         sex: Sex.male,
         activity: ActivityLevel.moderate,
       ).kcal;
@@ -126,7 +141,7 @@ void main() {
       expect(find.byKey(const ValueKey('tab-today-button')), findsOneWidget);
 
       // S-20: tháng hiện tại, bắt đầu từ hôm nay (F03-R5).
-      final now = DateTime.now();
+      final now = clock.now();
       await tester.tap(tabLabel(S.tabSchedule));
       await tester.pumpAndSettle();
       expect(find.text(S.monthTitle(now.month, now.year)), findsOneWidget);
@@ -158,6 +173,33 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.textContaining(S.greeting('Minh Anh')), findsOneWidget);
       expect(find.byKey(const ValueKey('sync-indicator')), findsNothing);
+
+      // VS-06: 16:5x chưa đến giờ → "Đánh dấu được từ 18:00" (UX-AC6). Bạn
+      // rời app, 18:05 mở lại → "Chờ đánh dấu"; 1 chạm "Đã tập" → thẻ đổi
+      // ngay, đồng bộ với server thật (server kiểm tra giờ tập theo múi giờ
+      // của iPhone), chỉ báo "Chưa đồng bộ" biến mất (UX-AC5, TAC-01).
+      expect(find.text(S.markableFrom('18:00')), findsOneWidget);
+      clock.setNow(testDay.atTime(LocalTime(18, 5)));
+      // Không `pump` khi đang `paused`: Flutter tắt vẽ khung hình nên `pump`
+      // chờ mãi.
+      final binding = tester.binding;
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      final done = find.byKey(ValueKey('mark-done-${testDay.toKey()}'));
+      await pumpUntil(tester, done);
+      expect(find.text(S.statusAwaiting), findsOneWidget);
+      await tester.tap(done);
+      await tester.pump();
+      expect(find.text(S.markedDone('Ngực')), findsOneWidget);
+      await pumpUntilGone(tester, find.byKey(const ValueKey('sync-indicator')));
+      // Server nhận (không trả về bản cũ chưa đánh dấu).
+      await tester.pumpAndSettle(const Duration(seconds: 2));
+      expect(find.text(S.sessionDone), findsWidgets);
+      expect(done, findsNothing, reason: 'server không trả bản chưa đánh dấu');
     },
   );
 }

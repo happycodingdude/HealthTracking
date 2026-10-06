@@ -155,3 +155,25 @@ notificationsBlocked: "iPhone đang chặn thông báo của app. Mở Cài đ�
 openSettings: "Mở Cài đặt" # 04 S-50
 remindersTurnedOff: "Đã tắt nhắc đi tập" # 04 S-50
 remindersTurnedOn: "Đã bật nhắc đi tập" # 04 S-50
+
+# Hôm nay S-10, đánh dấu S-23, nhãn trạng thái buổi tập (VS-06)
+todaySessionTitle: "Buổi tập hôm nay" # mock S-10-1
+statusUpcoming: "Sắp tới" # 03 §6.1, 04 §6.13.3
+statusAwaiting: "Chờ đánh dấu" # 03 §6.1, 04 §6.13.3
+sessionDone: "Đã tập" # 03 §6.1, 04 §6.7.1 (nút và nhãn)
+sessionSkipped: "Không tập" # 03 §6.1, 04 §6.7.1 (nút và nhãn)
+statusAutoSkipped: "Không tập · tự động" # 04 §6.13.3
+statusLocked: "Đã khóa" # 03 §6.1 (nhãn VoiceOver của ổ khóa nhỏ, 04 §6.17)
+todayRest: "Hôm nay nghỉ" # 04 §6.7.1
+sundayRest: "Chủ nhật luôn nghỉ" # 04 §6.7.1, UX-AC7
+markedSkipped: "Đã ghi: không tập" # 04 §6.7.1
+editMuscles: "Sửa nhóm cơ" # 04 §6.7.1, UA-08
+undo: "Hoàn tác" # 04 §6.7.1, UA-09
+edit: "Sửa" # 04 §6.7.1
+unmarkedTitle: "Buổi chưa đánh dấu" # mock S-10-3 (04 §6.7.2)
+progressCardTitle: "Tiến độ tuần · T2–T7" # mock S-10-1
+menuCardTitle: "Thực đơn hôm nay" # mock S-10-1
+menuTargetPrefix: "Theo mức" # mock S-10-1 "Theo mức 2.090 kcal"
+actualMusclesLabel: "Nhóm cơ đã tập" # mock S-23-1
+missingActualMuscles: "Vui lòng chọn ít nhất 1 nhóm cơ" # 03 F05-V1, F05-V2
+lockedNote: "Chỉ sửa được trong 7 ngày" # 03 F05-E3

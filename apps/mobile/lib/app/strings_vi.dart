@@ -207,6 +207,43 @@ abstract final class S {
   static const remindersTurnedOff = 'Đã tắt nhắc đi tập';
   static const remindersTurnedOn = 'Đã bật nhắc đi tập';
 
+  // Hôm nay S-10 (04 §6.7), đánh dấu S-23, nhãn trạng thái buổi tập
+  // (04 §6.13.3), F-05.
+  static const todaySessionTitle = 'Buổi tập hôm nay';
+  static const statusUpcoming = 'Sắp tới';
+  static const statusAwaiting = 'Chờ đánh dấu';
+  static const sessionDone = 'Đã tập';
+  static const sessionSkipped = 'Không tập';
+  static const statusAutoSkipped = 'Không tập · tự động';
+  static const statusLocked = 'Đã khóa';
+  static const todayRest = 'Hôm nay nghỉ';
+  static const sundayRest = 'Chủ nhật luôn nghỉ';
+  static const markedSkipped = 'Đã ghi: không tập';
+  static const editMuscles = 'Sửa nhóm cơ';
+  static const undo = 'Hoàn tác';
+  static const edit = 'Sửa';
+  static const unmarkedTitle = 'Buổi chưa đánh dấu';
+  static const progressCardTitle = 'Tiến độ tuần · T2–T7';
+  static const menuCardTitle = 'Thực đơn hôm nay';
+  static const menuTargetPrefix = 'Theo mức';
+  static const actualMusclesLabel = 'Nhóm cơ đã tập';
+  static const missingActualMuscles = 'Vui lòng chọn ít nhất 1 nhóm cơ';
+  static const lockedNote = 'Chỉ sửa được trong 7 ngày';
+
+  /// F05-E1, UX-AC6: "Đánh dấu được từ {giờ tập}".
+  static String markableFrom(String time) => 'Đánh dấu được từ $time';
+
+  /// 04 §6.7.1: "Buổi tới: {thứ} · {nhóm cơ} · {giờ}".
+  static String nextSession(String weekday, String muscles, String time) =>
+      'Buổi tới: $weekday · $muscles · $time';
+
+  /// UA-08: "Đã ghi: tập {nhóm cơ}".
+  static String markedDone(String muscles) => 'Đã ghi: tập $muscles';
+
+  /// Mock S-23: "Lịch: {nhóm cơ} · {giờ}".
+  static String plannedLine(String muscles, String time) =>
+      'Lịch: $muscles · $time';
+
   // Định dạng (UR-10).
   static const currencySuffix = 'đ';
   static const weekdays = [
@@ -375,5 +412,25 @@ abstract final class S {
     'invalidDisplayName': invalidDisplayName,
     'invalidPhone': invalidPhone,
     'invalidPassword': invalidPassword,
+    'todaySessionTitle': todaySessionTitle,
+    'statusUpcoming': statusUpcoming,
+    'statusAwaiting': statusAwaiting,
+    'sessionDone': sessionDone,
+    'sessionSkipped': sessionSkipped,
+    'statusAutoSkipped': statusAutoSkipped,
+    'statusLocked': statusLocked,
+    'todayRest': todayRest,
+    'sundayRest': sundayRest,
+    'markedSkipped': markedSkipped,
+    'editMuscles': editMuscles,
+    'undo': undo,
+    'edit': edit,
+    'unmarkedTitle': unmarkedTitle,
+    'progressCardTitle': progressCardTitle,
+    'menuCardTitle': menuCardTitle,
+    'menuTargetPrefix': menuTargetPrefix,
+    'actualMusclesLabel': actualMusclesLabel,
+    'missingActualMuscles': missingActualMuscles,
+    'lockedNote': lockedNote,
   };
 }

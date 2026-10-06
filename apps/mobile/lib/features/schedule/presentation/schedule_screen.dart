@@ -2,28 +2,20 @@ import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../app/providers.dart';
 import '../../../app/shell/app_tab.dart';
 import '../../../app/strings_vi.dart';
 import '../../../app/theme.dart';
+import '../../../app/time_ticker.dart';
 import '../../../core/formatters.dart';
+import '../../../core/widgets/session_tag.dart';
 import '../../../core/widgets/tab_page.dart';
-import '../../../data/sync/sync_providers.dart';
-
-/// Các tháng đã có lịch, cũ → mới.
-final monthPlansProvider = StreamProvider<List<MonthPlan>>(
-  (ref) => ref.watch(scheduleRepositoryProvider).watchPlans(),
-);
-
-/// Các ngày (thứ 2 → thứ 7) của một tháng.
-final monthDaysProvider = StreamProvider.family<List<PlanDay>, YearMonth>(
-  (ref, month) => ref.watch(scheduleRepositoryProvider).watchMonth(month),
-);
+import '../application/schedule_providers.dart';
 
 /// S-20 — Lịch tháng, chế độ xem (VS04-T11). Danh sách ngày nhóm theo tuần,
 /// hôm nay được làm nổi bật và tự cuộn tới khi mở tab; xem được các tháng
-/// trước, không có tháng sau trước ngày 1 (F03-R13). Nhãn trạng thái buổi
-/// (VS-06), banner Chia lại, nút "Lịch tuần" và S-21 (VS-09) thêm sau.
+/// trước, không có tháng sau trước ngày 1 (F03-R13). Mỗi buổi tập có nhãn
+/// trạng thái (04 §6.13.3, VS06-T08). Banner Chia lại, nút "Lịch tuần" và S-21
+/// (VS-09) thêm sau.
 class ScheduleScreen extends ConsumerStatefulWidget {
   const ScheduleScreen({super.key});
 
@@ -43,17 +35,21 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
       final target = _todayKey.currentContext;
       if (target == null || !target.mounted || _scrolledToToday) return;
       _scrolledToToday = true;
-      // Chỉ cuộn khi hôm nay còn khuất phía dưới.
-      Scrollable.ensureVisible(
-        target,
-        alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
-      );
+      // Chỉ cuộn khi hôm nay còn khuất phía dưới. Nội dung trang kéo dài dưới
+      // thanh tab (padding đáy) nên mép thấy được là phía trên thanh tab.
+      final row = target.findRenderObject();
+      if (row is! RenderBox) return;
+      final bottom = row.localToGlobal(Offset(0, row.size.height)).dy;
+      final media = MediaQuery.of(target);
+      if (bottom <= media.size.height - media.padding.bottom) return;
+      Scrollable.ensureVisible(target, alignment: 0.5);
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final today = ref.watch(clockProvider).today();
+    final now = ref.watch(nowProvider);
+    final today = LocalDate.fromDateTime(now);
     final current = today.yearMonth;
     final month = _shown ?? current;
     final plans = ref.watch(monthPlansProvider).value ?? const [];
@@ -84,12 +80,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
             ),
             const SizedBox(height: 12),
             if (plan != null)
-              _MonthList(
-                plan: plan,
-                days: days,
-                today: today,
-                todayKey: _todayKey,
-              ),
+              _MonthList(plan: plan, days: days, now: now, todayKey: _todayKey),
             if (month == current && plan != null)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16),
@@ -164,18 +155,19 @@ class _MonthList extends StatelessWidget {
   const _MonthList({
     required this.plan,
     required this.days,
-    required this.today,
+    required this.now,
     required this.todayKey,
   });
 
   final MonthPlan plan;
   final List<PlanDay> days;
-  final LocalDate today;
+  final DateTime now;
   final GlobalKey todayKey;
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final today = LocalDate.fromDateTime(now);
     final byDate = {for (final d in days) d.date: d};
     final weeks = <List<LocalDate>>[];
     for (var d = plan.startDate; d <= plan.month.lastDay; d = d.addDays(1)) {
@@ -211,7 +203,7 @@ class _MonthList extends StatelessWidget {
                 key: date == today ? todayKey : ValueKey('day-${date.toKey()}'),
                 date: date,
                 day: byDate[date],
-                today: today,
+                now: now,
               ),
           ],
         ],
@@ -225,67 +217,104 @@ class _DayLine extends StatelessWidget {
     super.key,
     required this.date,
     required this.day,
-    required this.today,
+    required this.now,
   });
 
   final LocalDate date;
 
   /// null với chủ nhật (luôn nghỉ, không có bản ghi).
   final PlanDay? day;
-  final LocalDate today;
+  final DateTime now;
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final today = LocalDate.fromDateTime(now);
     final d = day;
+    final status = d == null ? null : SessionStatus.derive(d, now);
     final past = date.isBefore(today);
     final isToday = date == today;
     final info = d != null && d.isWorkout
         ? '${Fmt.muscles(d.muscles)} · ${Fmt.time(d.time!)}'
         : S.rest;
     final color = past ? palette.textSecondary : null;
+    final dateText = Text(
+      Fmt.shortWeekdayDate(date),
+      style: context.text.bodyLarge?.copyWith(
+        fontWeight: FontWeight.w700,
+        color: color,
+      ),
+    );
+    final infoText = Text(
+      info,
+      style: context.text.bodyLarge?.copyWith(
+        color: d != null && d.isWorkout ? color : palette.textSecondary,
+      ),
+    );
+    final tags = [
+      if (status != null) SessionTag(status),
+      if (d?.source == DaySource.override)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: context.colors.primaryContainer,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            S.overridden,
+            style: context.text.labelLarge?.copyWith(
+              color: context.colors.onPrimaryContainer,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+    ];
+    // Cỡ chữ lớn: ngày, nội dung và nhãn xếp dọc, không cắt chữ (UX-AC18).
+    final stacked = MediaQuery.textScalerOf(context).scale(1) >= 1.6;
     return Container(
       color: isToday ? context.colors.primaryContainer : null,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Wrap(
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: 12,
-        runSpacing: 4,
-        children: [
-          // Cỡ chữ lớn: cột ngày tự giãn, phần còn lại xuống dòng (UX-AC18).
-          ConstrainedBox(
-            constraints: const BoxConstraints(minWidth: 84),
-            child: Text(
-              Fmt.shortWeekdayDate(date),
-              style: context.text.bodyLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: color,
-              ),
-            ),
-          ),
-          Text(
-            info,
-            style: context.text.bodyLarge?.copyWith(
-              color: d != null && d.isWorkout ? color : palette.textSecondary,
-            ),
-          ),
-          if (d?.source == DaySource.override)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: context.colors.primaryContainer,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                S.overridden,
-                style: context.text.labelLarge?.copyWith(
-                  color: context.colors.onPrimaryContainer,
-                  fontWeight: FontWeight.w700,
+      child: stacked
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                dateText,
+                infoText,
+                if (tags.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Wrap(spacing: 8, runSpacing: 6, children: tags),
+                ],
+              ],
+            )
+          : Row(
+              children: [
+                SizedBox(width: 96, child: dateText),
+                // Nội dung và nhãn không đủ một hàng thì nhãn xuống dưới,
+                // không ép nội dung thành cột hẹp (nhãn "Không tập · tự động").
+                Expanded(
+                  child: Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: [
+                      infoText,
+                      if (tags.isNotEmpty)
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            for (final (i, t) in tags.indexed) ...[
+                              if (i > 0) const SizedBox(height: 4),
+                              t,
+                            ],
+                          ],
+                        ),
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ),
-        ],
-      ),
     );
   }
 }

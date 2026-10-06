@@ -92,25 +92,46 @@ void main() {
       await snap('s05_${v.name}');
     });
 
-    testWidgets('S-20 Lịch tháng 10 (hôm nay 09/10) ${v.name}', (tester) async {
-      final db = AppDatabase(NativeDatabase.memory());
-      addTearDown(db.close);
-      final schedule = ScheduleRepository(db);
-      await schedule.putTemplate(template);
-      final g = MonthGenerator.first(template, DateTime(2026, 10, 7, 12));
-      await schedule.putPlan(g.plan);
-      for (final d in g.days) {
-        await schedule.putDay(d);
-      }
-      await pump(tester, v, db, now: DateTime(2026, 10, 9, 8), onboarded: true);
-      await tester.tap(
-        find.descendant(
-          of: find.byType(AppTabBar),
-          matching: find.text(S.tabSchedule),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await snap('s20_${v.name}');
-    });
+    testWidgets(
+      'S-20 Lịch tháng 10 (hôm nay 13/10): nhãn Không tập · tự động (đã '
+      'khóa), Đã tập, Không tập, Chờ đánh dấu, Sắp tới ${v.name}',
+      (tester) async {
+        final db = AppDatabase(NativeDatabase.memory());
+        addTearDown(db.close);
+        final schedule = ScheduleRepository(db);
+        await schedule.putTemplate(template);
+        final g = MonthGenerator.first(template, DateTime(2026, 10, 1, 12));
+        await schedule.putPlan(g.plan);
+        for (final d in g.days) {
+          await schedule.putDay(switch (d.date.day) {
+            7 => d.withMark(
+              DayMark.done,
+              actual: const [MuscleGroup.back],
+              markedAt: DateTime(2026, 10, 7, 19),
+            ),
+            9 => d.withMark(
+              DayMark.skipped,
+              markedAt: DateTime(2026, 10, 9, 19),
+            ),
+            _ => d,
+          });
+        }
+        await pump(
+          tester,
+          v,
+          db,
+          now: DateTime(2026, 10, 13, 8),
+          onboarded: true,
+        );
+        await tester.tap(
+          find.descendant(
+            of: find.byType(AppTabBar),
+            matching: find.text(S.tabSchedule),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await snap('s20_${v.name}');
+      },
+    );
   }
 }
