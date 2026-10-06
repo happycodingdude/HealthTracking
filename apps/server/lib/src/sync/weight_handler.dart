@@ -4,7 +4,9 @@ import 'package:postgres/postgres.dart';
 
 import 'sync_entity_handler.dart';
 
-/// Entity `weight` (key = thứ 2 của tuần) = bảng `weights` (06 VS03-T05).
+/// Entity `weight` (key = thứ 2 của tuần) = bảng `weights` (06 VS03-T05,
+/// VS10-T02): không tuần tương lai, không trước tuần thiết lập, không xóa số
+/// cân duy nhất còn lại.
 final class WeightHandler implements SyncEntityHandler {
   const WeightHandler();
 
@@ -76,7 +78,26 @@ final class WeightHandler implements SyncEntityHandler {
       'version': serverVersion,
       'clientUpdatedAt': m.clientUpdatedAt,
     };
+    // F07-R2: không trước tuần thiết lập (hồ sơ đã hoàn tất thiết lập; lúc
+    // đang thiết lập cân ban đầu ghi theo tuần hiện tại, ED-06).
+    final setup = await s.execute(
+      Sql.named('''
+        SELECT 1 FROM profiles
+        WHERE user_id = @user AND NOT deleted AND setup_date IS NOT NULL
+          AND @week::date < date_trunc('week', setup_date)::date'''),
+      parameters: {'user': userId, 'week': m.key},
+    );
+    if (setup.isNotEmpty) throw const SyncRejection('key');
     if (m.op == SyncOp.delete) {
+      // F07-R3: không xóa số cân duy nhất còn lại.
+      final others = await s.execute(
+        Sql.named('''
+          SELECT 1 FROM weights
+          WHERE user_id = @user AND NOT deleted AND week_start <> @week::date
+          LIMIT 1'''),
+        parameters: {'user': userId, 'week': m.key},
+      );
+      if (others.isEmpty) throw const SyncRejection('key');
       await s.execute(
         Sql.named('''
           UPDATE weights

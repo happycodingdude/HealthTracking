@@ -85,4 +85,22 @@ void main() {
     expect(S.extraCount(1), '+1 buổi thêm');
     expect(S.weekDone(1, 3), 'Đã tập 1/3');
   });
+
+  test('F-07, 04 S-40, S-41: câu cân nặng có tham số', () {
+    expect(S.latestWeek('05/10 – 11/10'), 'Mới nhất · Tuần 05/10 – 11/10');
+    expect(S.vsPrevious('↓ 0,4 kg'), '↓ 0,4 kg so với lần trước');
+    expect(S.vsInitial('↓ 2,5 kg'), '↓ 2,5 kg so với ban đầu');
+    expect(S.weightSheetTitle('05/10 – 11/10'), 'Cân nặng tuần 05/10 – 11/10');
+    expect(S.weekAlreadyLogged('72,5 kg'), 'Tuần này đã ghi 72,5 kg');
+    expect(
+      S.replaceWeight('75 kg'),
+      'Tuần này đã ghi 75 kg. Thay bằng số mới?',
+    );
+    expect(
+      S.bigWeightChange('8 kg'),
+      'Số này chênh 8 kg so với lần trước. Bạn chắc chắn chứ?',
+    );
+    expect(S.deleteWeightConfirm('05/10'), 'Xóa số cân tuần 05/10?');
+    expect(S.weightSaved('72,5 kg'), 'Đã lưu 72,5 kg');
+  });
 }
