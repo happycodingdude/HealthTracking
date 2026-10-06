@@ -3,6 +3,11 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
 import 'account/me_routes.dart';
+import 'ai/ai_config.dart';
+import 'ai/ai_provider.dart';
+import 'ai/fake_ai_provider.dart';
+import 'ai/menu_routes.dart';
+import 'ai/menu_service.dart';
 import 'auth/auth_routes.dart';
 import 'auth/auth_service.dart';
 import 'auth/login_rate_limiter.dart';
@@ -12,6 +17,7 @@ import 'health/health_routes.dart';
 import 'http/middleware.dart';
 import 'logging/logger.dart';
 import 'sync/account_handler.dart';
+import 'sync/menu_handlers.dart';
 import 'sync/profile_handler.dart';
 import 'sync/schedule_handlers.dart';
 import 'sync/sync_entity_handler.dart';
@@ -27,6 +33,8 @@ const defaultSyncHandlers = <SyncEntityHandler>[
   WeeklyTemplateHandler(),
   MonthPlanHandler(),
   DayHandler(),
+  MenuHandler(),
+  AiDailyUsageHandler(),
 ];
 
 /// Các thành phần dùng chung của API, tạo một lần khi khởi động.
@@ -39,6 +47,8 @@ final class AppDeps {
     this.bcryptCost = 12,
     this.trustProxy = false,
     List<SyncEntityHandler> syncHandlers = defaultSyncHandlers,
+    this.aiConfig = const AiConfig(),
+    AiProvider? aiProvider,
   }) : tokens = TokenService(secret: jwtSecret, clock: clock),
        limiter = LoginRateLimiter(clock) {
     auth = AuthService(
@@ -52,6 +62,15 @@ final class AppDeps {
       clock: clock,
       handlers: syncHandlers,
       logger: logger,
+      budgetCapVnd: aiConfig.capVnd,
+    );
+    // ED-11: mặc định dùng nhà cung cấp giả.
+    menus = MenuService(
+      pool: db.pool,
+      clock: clock,
+      provider: aiProvider ?? FakeAiProvider(),
+      config: aiConfig,
+      logger: logger,
     );
   }
 
@@ -62,8 +81,10 @@ final class AppDeps {
   final bool trustProxy;
   final TokenService tokens;
   final LoginRateLimiter limiter;
+  final AiConfig aiConfig;
   late final AuthService auth;
   late final SyncService sync;
+  late final MenuService menus;
 }
 
 /// Ghép toàn bộ route và middleware của API.
@@ -73,6 +94,7 @@ Handler buildApp(AppDeps deps) {
   addAuthRoutes(router, deps.auth, trustProxy: deps.trustProxy);
   addMeRoutes(router, deps.db.pool, deps.tokens);
   addSyncRoutes(router, deps.sync, deps.tokens);
+  addMenuRoutes(router, deps.menus, deps.tokens);
   return const Pipeline()
       .addMiddleware(coreMiddleware(deps.logger))
       .addHandler(router.call);

@@ -1,6 +1,7 @@
 import 'codecs.dart';
 import 'error_code.dart';
 import 'json_reader.dart';
+import 'menu_dtos.dart';
 
 /// Thao tác của một mutation (05 §6.6.2).
 enum SyncOp {
@@ -229,6 +230,10 @@ final class SyncMeta {
 
   final DateTime serverTime;
   final Map<String, Object?>? aiBudget;
+
+  /// [aiBudget] đã giải mã; null khi server không gửi.
+  AiBudgetMeta? get budget =>
+      aiBudget == null ? null : AiBudgetMeta.fromJson(aiBudget);
 
   Map<String, Object?> toJson() => {
     'serverTime': InstantCodec.encode(serverTime),

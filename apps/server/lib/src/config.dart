@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'ai/ai_config.dart';
+
 final class ConfigException implements Exception {
   ConfigException(this.message);
   final String message;
@@ -17,6 +19,7 @@ final class ServerConfig {
     this.port = 8080,
     this.trustProxy = false,
     this.migrationsDir = 'migrations',
+    this.ai = const AiConfig(),
   });
 
   factory ServerConfig.fromEnvironment(Map<String, String> env) {
@@ -51,6 +54,7 @@ final class ServerConfig {
       migrationsDir: env['MIGRATIONS_DIR']?.isNotEmpty == true
           ? env['MIGRATIONS_DIR']!
           : 'migrations',
+      ai: AiConfig.fromEnvironment(env),
     );
   }
 
@@ -61,6 +65,9 @@ final class ServerConfig {
   final int port;
   final bool trustProxy;
   final String migrationsDir;
+
+  /// AI Gateway (05 §6.9.1).
+  final AiConfig ai;
 
   /// Biến môi trường của tiến trình, bổ sung bằng file `.env` nếu có
   /// (biến của tiến trình được ưu tiên).

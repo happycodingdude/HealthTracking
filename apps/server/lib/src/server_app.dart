@@ -5,6 +5,9 @@ import 'package:domain/domain.dart';
 
 import 'package:shelf/shelf_io.dart' as shelf_io;
 
+import 'ai/ai_cleanup.dart';
+import 'ai/anthropic_provider.dart';
+import 'ai/fake_ai_provider.dart';
 import 'app.dart';
 import 'config.dart';
 import 'db/database.dart';
@@ -35,6 +38,14 @@ final class ServerApp {
       jwtSecret: config.jwtSecret,
       bcryptCost: config.bcryptCost,
       trustProxy: config.trustProxy,
+      aiConfig: config.ai,
+      aiProvider: config.ai.provider == 'anthropic'
+          ? AnthropicProvider(
+              apiKey: config.ai.apiKey!,
+              model: config.ai.model,
+              timeout: config.ai.timeout,
+            )
+          : FakeAiProvider(delay: config.ai.fakeDelay),
     );
     jobs.every(
       'login_limiter_sweep',
@@ -51,12 +62,24 @@ final class ServerApp {
     }
 
     jobs.every('daily_cleanup', const Duration(days: 1), cleanup);
+    // 06 VS12-T08: dọn yêu cầu AI treo.
+    final aiCleanup = AiCleanup(db.pool, deps.clock);
+    jobs.every('ai_cleanup', const Duration(minutes: 5), () async {
+      final r = await aiCleanup.run();
+      if (r.requests > 0 || r.menus > 0) {
+        log.info('ai_cleanup', {'requests': r.requests, 'menus': r.menus});
+      }
+    });
     // Chạy một lần khi khởi động để không phụ thuộc server chạy liền 24 giờ.
     unawaited(jobs.runNow('daily_cleanup', cleanup));
     final handler = buildApp(deps);
     final http = await shelf_io.serve(handler, config.host, config.port);
     http.autoCompress = false;
-    log.info('server_started', {'host': config.host, 'port': http.port});
+    log.info('server_started', {
+      'host': config.host,
+      'port': http.port,
+      'aiProvider': config.ai.provider,
+    });
     return ServerApp._(http, db, jobs, log);
   }
 

@@ -241,3 +241,20 @@ currentWeight: "Cân nặng hiện tại" # 04 S-51 "Cân nặng hiện tại: {
 logInWeightTab: "Ghi ở tab Cân nặng" # 04 S-51
 updateCalorieTitle: "Cập nhật mức calo?" # mock S-53-1
 keepCurrent: "Giữ nguyên" # 03 F02-R9, 04 S-52, S-53
+
+# Thực đơn AI S-30, thẻ thực đơn ở Hôm nay (VS-12)
+menuEmptyTitle: "Hôm nay ăn gì?" # 04 S-30 (Trống)
+menuEmptyBody: "App gợi ý thực đơn cả ngày theo mức calo của Bạn, ưu tiên món Việt dễ nấu." # 04 S-30
+generateMenu: "Gợi ý thực đơn hôm nay" # 03 F-08, 04 S-30, §6.7.4
+retry: "Thử lại" # 04 S-30 (F08-E4, lỗi khác), mock S-30-5
+menuEstimateNote: "Calo món ăn là ước lượng." # 03 F-08, 04 S-30
+menuTotal: "Tổng" # mock S-30-3 "Tổng  2.020 kcal"; 04 S-30 "Tổng: {X} kcal"
+calorieChangedRegenerate: "Mức calo đã thay đổi. Bạn có thể gợi ý lại." # 03 F08-R10
+regenerateTitle: "Gợi ý thực đơn mới?" # 04 S-30 (UA-10)
+regenerate: "Gợi ý lại" # 04 S-30 (UA-10)
+mealBreakfast: "Sáng" # mock S-30-3
+mealLunch: "Trưa" # mock S-30-3
+mealDinner: "Tối" # mock S-30-3
+mealMorningSnack: "Bữa phụ sáng" # mock S-30-3
+mealAfternoonSnack: "Bữa phụ chiều" # mock S-30-3
+

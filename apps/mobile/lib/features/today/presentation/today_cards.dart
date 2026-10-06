@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,7 +13,9 @@ import '../../../core/formatters.dart';
 import '../../../core/widgets/heading.dart';
 import '../../../core/widgets/reference_tag.dart';
 import '../../../core/widgets/session_tag.dart';
-import '../../me/application/calorie_view.dart';
+import '../../menu/application/menu_generator.dart';
+import '../../menu/application/menu_view.dart';
+import '../../menu/presentation/menu_screen.dart';
 import '../../schedule/application/schedule_providers.dart';
 import '../../schedule/presentation/day_sheet.dart';
 import '../../schedule/presentation/extra_session_sheet.dart';
@@ -490,35 +494,124 @@ class MenuCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final view = ref.watch(calorieViewProvider);
+    final view = ref.watch(menuViewProvider);
     if (view == null) return const SizedBox.shrink();
-    final kcal = CalorieRules.menuKcal(view.kcal, view.sex);
+    final palette = context.palette;
+    void openMenu() => context.go(AppTab.menu.path);
+    final menu = view.menu;
+    final reason = view.generating || menu != null
+        ? null
+        : view.blocked
+        ? S.budgetPaused(view.nextMonth)
+        : view.exhausted
+        ? S.menuQuotaExhausted
+        : view.issue == MenuIssue.offline
+        ? S.offlineMenu
+        : null;
+    final List<Widget> children;
+    if (view.generating) {
+      children = [
+        Text(
+          S.menuGenerating,
+          key: const ValueKey('menu-card-generating'),
+          style: context.text.bodyLarge,
+        ),
+      ];
+    } else if (menu != null) {
+      // UR-15: mỗi bữa một dòng, tên bữa bên trái, các món bên phải.
+      children = [
+        Table(
+          columnWidths: const {0: IntrinsicColumnWidth(), 1: FlexColumnWidth()},
+          children: [
+            for (final (meal, snack) in menu.ordered)
+              TableRow(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 16, bottom: 8),
+                    child: Text(
+                      mealLabel(meal, snack),
+                      style: context.text.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      [for (final d in meal.dishes) d.name].join(', '),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.text.bodyLarge,
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          children: [
+            Text(
+              Fmt.kcal(view.totalKcal ?? menu.totalKcal),
+              key: const ValueKey('menu-card-total'),
+              style: context.text.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const ReferenceTag(),
+          ],
+        ),
+      ];
+    } else if (reason != null) {
+      children = [
+        Text(
+          reason,
+          key: const ValueKey('menu-card-reason'),
+          style: context.text.bodyLarge?.copyWith(color: palette.textSecondary),
+        ),
+      ];
+    } else {
+      children = [
+        Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          children: [
+            Text.rich(
+              TextSpan(
+                children: [
+                  const TextSpan(text: '${S.menuTargetPrefix} '),
+                  TextSpan(
+                    text: Fmt.kcal(view.targetKcal),
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ],
+              ),
+              style: context.text.titleMedium,
+            ),
+            const ReferenceTag(),
+          ],
+        ),
+        const SizedBox(height: 12),
+        // Bắt đầu tạo và chuyển sang tab Thực đơn (04 §6.7.4).
+        FilledButton(
+          key: const ValueKey('menu-card-generate'),
+          onPressed: () {
+            unawaited(ref.read(menuGeneratorProvider.notifier).generate());
+            openMenu();
+          },
+          child: const Text(S.generateMenu, textAlign: TextAlign.center),
+        ),
+      ];
+    }
     return Padding(
       padding: const EdgeInsets.only(top: 16),
       child: TodayCard(
         key: const ValueKey('menu-card'),
         title: S.menuCardTitle,
-        children: [
-          Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 8,
-            children: [
-              Text.rich(
-                TextSpan(
-                  children: [
-                    const TextSpan(text: '${S.menuTargetPrefix} '),
-                    TextSpan(
-                      text: Fmt.kcal(kcal),
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                  ],
-                ),
-                style: context.text.titleMedium,
-              ),
-              const ReferenceTag(),
-            ],
-          ),
-        ],
+        onTap: openMenu,
+        children: children,
       ),
     );
   }

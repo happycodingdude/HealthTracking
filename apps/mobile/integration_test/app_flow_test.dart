@@ -297,4 +297,58 @@ void main() {
       );
     },
   );
+
+  testWidgets(
+    'VS-12: tab Thực đơn trống → "Gợi ý thực đơn hôm nay" → server thật (nhà '
+    'cung cấp giả, ED-11) trả thực đơn → "Gợi ý lại" có hộp xác nhận → còn 1 '
+    'lượt; thẻ thực đơn ở Hôm nay mỗi bữa một dòng (F08-AC1, AC4, UX-AC10, '
+    'UX-AC11)',
+    (tester) async {
+      // Server chỉ nhận ngày bấm lệch tối đa 1 ngày (05 §6.9.2): dùng giờ thật.
+      clock.setNow(DateTime.now().subtract(const Duration(minutes: 1)));
+      await tester.pumpWidget(const SizedBox());
+      await launch();
+      await pumpUntil(tester, tabLabel(S.tabMenu));
+      await tester.tap(tabLabel(S.tabMenu));
+      await tester.pumpAndSettle();
+      expect(find.text(S.menuEmptyTitle), findsOneWidget);
+      expect(find.text(S.remainingToday(3)), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('generate-menu')));
+      await pumpUntil(tester, find.text(S.mealBreakfast));
+      expect(find.text(S.mealLunch), findsOneWidget);
+      final regenerate = find.byKey(const ValueKey('regenerate'));
+      await reveal(tester, regenerate);
+      // Nút ở cuối trang: kéo lên khỏi thanh tab rồi mới chạm.
+      await tester.ensureVisible(regenerate);
+      await tester.pumpAndSettle();
+      expect(find.text(S.regenerateWithRemaining(2)), findsOneWidget);
+
+      await tester.tap(regenerate);
+      await tester.pumpAndSettle();
+      expect(find.text(S.regenerateBody(2)), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('confirm-regenerate')));
+      await tester.pump(const Duration(milliseconds: 300));
+      await pumpUntilGone(
+        tester,
+        find.byKey(const ValueKey('menu-generating')),
+      );
+      await pumpUntil(tester, find.text(S.mealBreakfast));
+      // Danh sách dựng lười: cuộn tới nút ở cuối trang.
+      await reveal(tester, regenerate);
+      await tester.pumpAndSettle();
+      expect(find.text(S.regenerateWithRemaining(1)), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('tab-today-button')));
+      await tester.pumpAndSettle();
+      final card = find.byKey(const ValueKey('menu-card'));
+      await reveal(tester, card);
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(of: card, matching: find.text(S.mealBreakfast)),
+        findsOneWidget,
+      );
+      await pumpUntilGone(tester, find.byKey(const ValueKey('sync-indicator')));
+    },
+  );
 }

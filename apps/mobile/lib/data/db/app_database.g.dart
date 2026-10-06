@@ -40,8 +40,19 @@ class $SyncStateTable extends SyncState
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _aiBudgetMeta = const VerificationMeta(
+    'aiBudget',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, cursor, lastSyncedAt];
+  late final GeneratedColumn<String> aiBudget = GeneratedColumn<String>(
+    'ai_budget',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, cursor, lastSyncedAt, aiBudget];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -72,6 +83,12 @@ class $SyncStateTable extends SyncState
         ),
       );
     }
+    if (data.containsKey('ai_budget')) {
+      context.handle(
+        _aiBudgetMeta,
+        aiBudget.isAcceptableOrUnknown(data['ai_budget']!, _aiBudgetMeta),
+      );
+    }
     return context;
   }
 
@@ -93,6 +110,10 @@ class $SyncStateTable extends SyncState
         DriftSqlType.dateTime,
         data['${effectivePrefix}last_synced_at'],
       ),
+      aiBudget: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ai_budget'],
+      ),
     );
   }
 
@@ -106,10 +127,14 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
   final int id;
   final int cursor;
   final DateTime? lastSyncedAt;
+
+  /// `meta.aiBudget` của lần pull gần nhất, JSON (VS-12, ED-04).
+  final String? aiBudget;
   const SyncStateRow({
     required this.id,
     required this.cursor,
     this.lastSyncedAt,
+    this.aiBudget,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -118,6 +143,9 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
     map['cursor'] = Variable<int>(cursor);
     if (!nullToAbsent || lastSyncedAt != null) {
       map['last_synced_at'] = Variable<DateTime>(lastSyncedAt);
+    }
+    if (!nullToAbsent || aiBudget != null) {
+      map['ai_budget'] = Variable<String>(aiBudget);
     }
     return map;
   }
@@ -129,6 +157,9 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
       lastSyncedAt: lastSyncedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(lastSyncedAt),
+      aiBudget: aiBudget == null && nullToAbsent
+          ? const Value.absent()
+          : Value(aiBudget),
     );
   }
 
@@ -141,6 +172,7 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
       id: serializer.fromJson<int>(json['id']),
       cursor: serializer.fromJson<int>(json['cursor']),
       lastSyncedAt: serializer.fromJson<DateTime?>(json['lastSyncedAt']),
+      aiBudget: serializer.fromJson<String?>(json['aiBudget']),
     );
   }
   @override
@@ -150,6 +182,7 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
       'id': serializer.toJson<int>(id),
       'cursor': serializer.toJson<int>(cursor),
       'lastSyncedAt': serializer.toJson<DateTime?>(lastSyncedAt),
+      'aiBudget': serializer.toJson<String?>(aiBudget),
     };
   }
 
@@ -157,10 +190,12 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
     int? id,
     int? cursor,
     Value<DateTime?> lastSyncedAt = const Value.absent(),
+    Value<String?> aiBudget = const Value.absent(),
   }) => SyncStateRow(
     id: id ?? this.id,
     cursor: cursor ?? this.cursor,
     lastSyncedAt: lastSyncedAt.present ? lastSyncedAt.value : this.lastSyncedAt,
+    aiBudget: aiBudget.present ? aiBudget.value : this.aiBudget,
   );
   SyncStateRow copyWithCompanion(SyncStateCompanion data) {
     return SyncStateRow(
@@ -169,6 +204,7 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
       lastSyncedAt: data.lastSyncedAt.present
           ? data.lastSyncedAt.value
           : this.lastSyncedAt,
+      aiBudget: data.aiBudget.present ? data.aiBudget.value : this.aiBudget,
     );
   }
 
@@ -177,45 +213,52 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
     return (StringBuffer('SyncStateRow(')
           ..write('id: $id, ')
           ..write('cursor: $cursor, ')
-          ..write('lastSyncedAt: $lastSyncedAt')
+          ..write('lastSyncedAt: $lastSyncedAt, ')
+          ..write('aiBudget: $aiBudget')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, cursor, lastSyncedAt);
+  int get hashCode => Object.hash(id, cursor, lastSyncedAt, aiBudget);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is SyncStateRow &&
           other.id == this.id &&
           other.cursor == this.cursor &&
-          other.lastSyncedAt == this.lastSyncedAt);
+          other.lastSyncedAt == this.lastSyncedAt &&
+          other.aiBudget == this.aiBudget);
 }
 
 class SyncStateCompanion extends UpdateCompanion<SyncStateRow> {
   final Value<int> id;
   final Value<int> cursor;
   final Value<DateTime?> lastSyncedAt;
+  final Value<String?> aiBudget;
   const SyncStateCompanion({
     this.id = const Value.absent(),
     this.cursor = const Value.absent(),
     this.lastSyncedAt = const Value.absent(),
+    this.aiBudget = const Value.absent(),
   });
   SyncStateCompanion.insert({
     this.id = const Value.absent(),
     this.cursor = const Value.absent(),
     this.lastSyncedAt = const Value.absent(),
+    this.aiBudget = const Value.absent(),
   });
   static Insertable<SyncStateRow> custom({
     Expression<int>? id,
     Expression<int>? cursor,
     Expression<DateTime>? lastSyncedAt,
+    Expression<String>? aiBudget,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (cursor != null) 'cursor': cursor,
       if (lastSyncedAt != null) 'last_synced_at': lastSyncedAt,
+      if (aiBudget != null) 'ai_budget': aiBudget,
     });
   }
 
@@ -223,11 +266,13 @@ class SyncStateCompanion extends UpdateCompanion<SyncStateRow> {
     Value<int>? id,
     Value<int>? cursor,
     Value<DateTime?>? lastSyncedAt,
+    Value<String?>? aiBudget,
   }) {
     return SyncStateCompanion(
       id: id ?? this.id,
       cursor: cursor ?? this.cursor,
       lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
+      aiBudget: aiBudget ?? this.aiBudget,
     );
   }
 
@@ -243,6 +288,9 @@ class SyncStateCompanion extends UpdateCompanion<SyncStateRow> {
     if (lastSyncedAt.present) {
       map['last_synced_at'] = Variable<DateTime>(lastSyncedAt.value);
     }
+    if (aiBudget.present) {
+      map['ai_budget'] = Variable<String>(aiBudget.value);
+    }
     return map;
   }
 
@@ -251,7 +299,8 @@ class SyncStateCompanion extends UpdateCompanion<SyncStateRow> {
     return (StringBuffer('SyncStateCompanion(')
           ..write('id: $id, ')
           ..write('cursor: $cursor, ')
-          ..write('lastSyncedAt: $lastSyncedAt')
+          ..write('lastSyncedAt: $lastSyncedAt, ')
+          ..write('aiBudget: $aiBudget')
           ..write(')'))
         .toString();
   }
@@ -3924,6 +3973,776 @@ class DaysCompanion extends UpdateCompanion<DayRow> {
   }
 }
 
+class $MenusTable extends Menus with TableInfo<$MenusTable, MenuRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MenusTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _dateMeta = const VerificationMeta('date');
+  @override
+  late final GeneratedColumn<String> date = GeneratedColumn<String>(
+    'date',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _payloadMeta = const VerificationMeta(
+    'payload',
+  );
+  @override
+  late final GeneratedColumn<String> payload = GeneratedColumn<String>(
+    'payload',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _targetKcalMeta = const VerificationMeta(
+    'targetKcal',
+  );
+  @override
+  late final GeneratedColumn<int> targetKcal = GeneratedColumn<int>(
+    'target_kcal',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _usedSafetyFloorMeta = const VerificationMeta(
+    'usedSafetyFloor',
+  );
+  @override
+  late final GeneratedColumn<bool> usedSafetyFloor = GeneratedColumn<bool>(
+    'used_safety_floor',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("used_safety_floor" IN (0, 1))',
+    ),
+  );
+  static const VerificationMeta _totalKcalMeta = const VerificationMeta(
+    'totalKcal',
+  );
+  @override
+  late final GeneratedColumn<int> totalKcal = GeneratedColumn<int>(
+    'total_kcal',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lastAttemptStatusMeta = const VerificationMeta(
+    'lastAttemptStatus',
+  );
+  @override
+  late final GeneratedColumn<String> lastAttemptStatus =
+      GeneratedColumn<String>(
+        'last_attempt_status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _lastErrorCodeMeta = const VerificationMeta(
+    'lastErrorCode',
+  );
+  @override
+  late final GeneratedColumn<String> lastErrorCode = GeneratedColumn<String>(
+    'last_error_code',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _generatedAtMeta = const VerificationMeta(
+    'generatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> generatedAt = GeneratedColumn<DateTime>(
+    'generated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    date,
+    payload,
+    targetKcal,
+    usedSafetyFloor,
+    totalKcal,
+    lastAttemptStatus,
+    lastErrorCode,
+    generatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'menus';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MenuRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('date')) {
+      context.handle(
+        _dateMeta,
+        date.isAcceptableOrUnknown(data['date']!, _dateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dateMeta);
+    }
+    if (data.containsKey('payload')) {
+      context.handle(
+        _payloadMeta,
+        payload.isAcceptableOrUnknown(data['payload']!, _payloadMeta),
+      );
+    }
+    if (data.containsKey('target_kcal')) {
+      context.handle(
+        _targetKcalMeta,
+        targetKcal.isAcceptableOrUnknown(data['target_kcal']!, _targetKcalMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_targetKcalMeta);
+    }
+    if (data.containsKey('used_safety_floor')) {
+      context.handle(
+        _usedSafetyFloorMeta,
+        usedSafetyFloor.isAcceptableOrUnknown(
+          data['used_safety_floor']!,
+          _usedSafetyFloorMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_usedSafetyFloorMeta);
+    }
+    if (data.containsKey('total_kcal')) {
+      context.handle(
+        _totalKcalMeta,
+        totalKcal.isAcceptableOrUnknown(data['total_kcal']!, _totalKcalMeta),
+      );
+    }
+    if (data.containsKey('last_attempt_status')) {
+      context.handle(
+        _lastAttemptStatusMeta,
+        lastAttemptStatus.isAcceptableOrUnknown(
+          data['last_attempt_status']!,
+          _lastAttemptStatusMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_lastAttemptStatusMeta);
+    }
+    if (data.containsKey('last_error_code')) {
+      context.handle(
+        _lastErrorCodeMeta,
+        lastErrorCode.isAcceptableOrUnknown(
+          data['last_error_code']!,
+          _lastErrorCodeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('generated_at')) {
+      context.handle(
+        _generatedAtMeta,
+        generatedAt.isAcceptableOrUnknown(
+          data['generated_at']!,
+          _generatedAtMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {date};
+  @override
+  MenuRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MenuRow(
+      date: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}date'],
+      )!,
+      payload: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}payload'],
+      ),
+      targetKcal: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}target_kcal'],
+      )!,
+      usedSafetyFloor: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}used_safety_floor'],
+      )!,
+      totalKcal: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}total_kcal'],
+      ),
+      lastAttemptStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_attempt_status'],
+      )!,
+      lastErrorCode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_error_code'],
+      ),
+      generatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}generated_at'],
+      ),
+    );
+  }
+
+  @override
+  $MenusTable createAlias(String alias) {
+    return $MenusTable(attachedDatabase, alias);
+  }
+}
+
+class MenuRow extends DataClass implements Insertable<MenuRow> {
+  final String date;
+
+  /// Thực đơn (JSON theo 05 §6.9.4); null khi chưa có lần nào thành công.
+  final String? payload;
+  final int targetKcal;
+  final bool usedSafetyFloor;
+  final int? totalKcal;
+
+  /// `generating` / `ready` / `failed`.
+  final String lastAttemptStatus;
+  final String? lastErrorCode;
+  final DateTime? generatedAt;
+  const MenuRow({
+    required this.date,
+    this.payload,
+    required this.targetKcal,
+    required this.usedSafetyFloor,
+    this.totalKcal,
+    required this.lastAttemptStatus,
+    this.lastErrorCode,
+    this.generatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['date'] = Variable<String>(date);
+    if (!nullToAbsent || payload != null) {
+      map['payload'] = Variable<String>(payload);
+    }
+    map['target_kcal'] = Variable<int>(targetKcal);
+    map['used_safety_floor'] = Variable<bool>(usedSafetyFloor);
+    if (!nullToAbsent || totalKcal != null) {
+      map['total_kcal'] = Variable<int>(totalKcal);
+    }
+    map['last_attempt_status'] = Variable<String>(lastAttemptStatus);
+    if (!nullToAbsent || lastErrorCode != null) {
+      map['last_error_code'] = Variable<String>(lastErrorCode);
+    }
+    if (!nullToAbsent || generatedAt != null) {
+      map['generated_at'] = Variable<DateTime>(generatedAt);
+    }
+    return map;
+  }
+
+  MenusCompanion toCompanion(bool nullToAbsent) {
+    return MenusCompanion(
+      date: Value(date),
+      payload: payload == null && nullToAbsent
+          ? const Value.absent()
+          : Value(payload),
+      targetKcal: Value(targetKcal),
+      usedSafetyFloor: Value(usedSafetyFloor),
+      totalKcal: totalKcal == null && nullToAbsent
+          ? const Value.absent()
+          : Value(totalKcal),
+      lastAttemptStatus: Value(lastAttemptStatus),
+      lastErrorCode: lastErrorCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastErrorCode),
+      generatedAt: generatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(generatedAt),
+    );
+  }
+
+  factory MenuRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MenuRow(
+      date: serializer.fromJson<String>(json['date']),
+      payload: serializer.fromJson<String?>(json['payload']),
+      targetKcal: serializer.fromJson<int>(json['targetKcal']),
+      usedSafetyFloor: serializer.fromJson<bool>(json['usedSafetyFloor']),
+      totalKcal: serializer.fromJson<int?>(json['totalKcal']),
+      lastAttemptStatus: serializer.fromJson<String>(json['lastAttemptStatus']),
+      lastErrorCode: serializer.fromJson<String?>(json['lastErrorCode']),
+      generatedAt: serializer.fromJson<DateTime?>(json['generatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'date': serializer.toJson<String>(date),
+      'payload': serializer.toJson<String?>(payload),
+      'targetKcal': serializer.toJson<int>(targetKcal),
+      'usedSafetyFloor': serializer.toJson<bool>(usedSafetyFloor),
+      'totalKcal': serializer.toJson<int?>(totalKcal),
+      'lastAttemptStatus': serializer.toJson<String>(lastAttemptStatus),
+      'lastErrorCode': serializer.toJson<String?>(lastErrorCode),
+      'generatedAt': serializer.toJson<DateTime?>(generatedAt),
+    };
+  }
+
+  MenuRow copyWith({
+    String? date,
+    Value<String?> payload = const Value.absent(),
+    int? targetKcal,
+    bool? usedSafetyFloor,
+    Value<int?> totalKcal = const Value.absent(),
+    String? lastAttemptStatus,
+    Value<String?> lastErrorCode = const Value.absent(),
+    Value<DateTime?> generatedAt = const Value.absent(),
+  }) => MenuRow(
+    date: date ?? this.date,
+    payload: payload.present ? payload.value : this.payload,
+    targetKcal: targetKcal ?? this.targetKcal,
+    usedSafetyFloor: usedSafetyFloor ?? this.usedSafetyFloor,
+    totalKcal: totalKcal.present ? totalKcal.value : this.totalKcal,
+    lastAttemptStatus: lastAttemptStatus ?? this.lastAttemptStatus,
+    lastErrorCode: lastErrorCode.present
+        ? lastErrorCode.value
+        : this.lastErrorCode,
+    generatedAt: generatedAt.present ? generatedAt.value : this.generatedAt,
+  );
+  MenuRow copyWithCompanion(MenusCompanion data) {
+    return MenuRow(
+      date: data.date.present ? data.date.value : this.date,
+      payload: data.payload.present ? data.payload.value : this.payload,
+      targetKcal: data.targetKcal.present
+          ? data.targetKcal.value
+          : this.targetKcal,
+      usedSafetyFloor: data.usedSafetyFloor.present
+          ? data.usedSafetyFloor.value
+          : this.usedSafetyFloor,
+      totalKcal: data.totalKcal.present ? data.totalKcal.value : this.totalKcal,
+      lastAttemptStatus: data.lastAttemptStatus.present
+          ? data.lastAttemptStatus.value
+          : this.lastAttemptStatus,
+      lastErrorCode: data.lastErrorCode.present
+          ? data.lastErrorCode.value
+          : this.lastErrorCode,
+      generatedAt: data.generatedAt.present
+          ? data.generatedAt.value
+          : this.generatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MenuRow(')
+          ..write('date: $date, ')
+          ..write('payload: $payload, ')
+          ..write('targetKcal: $targetKcal, ')
+          ..write('usedSafetyFloor: $usedSafetyFloor, ')
+          ..write('totalKcal: $totalKcal, ')
+          ..write('lastAttemptStatus: $lastAttemptStatus, ')
+          ..write('lastErrorCode: $lastErrorCode, ')
+          ..write('generatedAt: $generatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    date,
+    payload,
+    targetKcal,
+    usedSafetyFloor,
+    totalKcal,
+    lastAttemptStatus,
+    lastErrorCode,
+    generatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MenuRow &&
+          other.date == this.date &&
+          other.payload == this.payload &&
+          other.targetKcal == this.targetKcal &&
+          other.usedSafetyFloor == this.usedSafetyFloor &&
+          other.totalKcal == this.totalKcal &&
+          other.lastAttemptStatus == this.lastAttemptStatus &&
+          other.lastErrorCode == this.lastErrorCode &&
+          other.generatedAt == this.generatedAt);
+}
+
+class MenusCompanion extends UpdateCompanion<MenuRow> {
+  final Value<String> date;
+  final Value<String?> payload;
+  final Value<int> targetKcal;
+  final Value<bool> usedSafetyFloor;
+  final Value<int?> totalKcal;
+  final Value<String> lastAttemptStatus;
+  final Value<String?> lastErrorCode;
+  final Value<DateTime?> generatedAt;
+  final Value<int> rowid;
+  const MenusCompanion({
+    this.date = const Value.absent(),
+    this.payload = const Value.absent(),
+    this.targetKcal = const Value.absent(),
+    this.usedSafetyFloor = const Value.absent(),
+    this.totalKcal = const Value.absent(),
+    this.lastAttemptStatus = const Value.absent(),
+    this.lastErrorCode = const Value.absent(),
+    this.generatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MenusCompanion.insert({
+    required String date,
+    this.payload = const Value.absent(),
+    required int targetKcal,
+    required bool usedSafetyFloor,
+    this.totalKcal = const Value.absent(),
+    required String lastAttemptStatus,
+    this.lastErrorCode = const Value.absent(),
+    this.generatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : date = Value(date),
+       targetKcal = Value(targetKcal),
+       usedSafetyFloor = Value(usedSafetyFloor),
+       lastAttemptStatus = Value(lastAttemptStatus);
+  static Insertable<MenuRow> custom({
+    Expression<String>? date,
+    Expression<String>? payload,
+    Expression<int>? targetKcal,
+    Expression<bool>? usedSafetyFloor,
+    Expression<int>? totalKcal,
+    Expression<String>? lastAttemptStatus,
+    Expression<String>? lastErrorCode,
+    Expression<DateTime>? generatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (date != null) 'date': date,
+      if (payload != null) 'payload': payload,
+      if (targetKcal != null) 'target_kcal': targetKcal,
+      if (usedSafetyFloor != null) 'used_safety_floor': usedSafetyFloor,
+      if (totalKcal != null) 'total_kcal': totalKcal,
+      if (lastAttemptStatus != null) 'last_attempt_status': lastAttemptStatus,
+      if (lastErrorCode != null) 'last_error_code': lastErrorCode,
+      if (generatedAt != null) 'generated_at': generatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MenusCompanion copyWith({
+    Value<String>? date,
+    Value<String?>? payload,
+    Value<int>? targetKcal,
+    Value<bool>? usedSafetyFloor,
+    Value<int?>? totalKcal,
+    Value<String>? lastAttemptStatus,
+    Value<String?>? lastErrorCode,
+    Value<DateTime?>? generatedAt,
+    Value<int>? rowid,
+  }) {
+    return MenusCompanion(
+      date: date ?? this.date,
+      payload: payload ?? this.payload,
+      targetKcal: targetKcal ?? this.targetKcal,
+      usedSafetyFloor: usedSafetyFloor ?? this.usedSafetyFloor,
+      totalKcal: totalKcal ?? this.totalKcal,
+      lastAttemptStatus: lastAttemptStatus ?? this.lastAttemptStatus,
+      lastErrorCode: lastErrorCode ?? this.lastErrorCode,
+      generatedAt: generatedAt ?? this.generatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (date.present) {
+      map['date'] = Variable<String>(date.value);
+    }
+    if (payload.present) {
+      map['payload'] = Variable<String>(payload.value);
+    }
+    if (targetKcal.present) {
+      map['target_kcal'] = Variable<int>(targetKcal.value);
+    }
+    if (usedSafetyFloor.present) {
+      map['used_safety_floor'] = Variable<bool>(usedSafetyFloor.value);
+    }
+    if (totalKcal.present) {
+      map['total_kcal'] = Variable<int>(totalKcal.value);
+    }
+    if (lastAttemptStatus.present) {
+      map['last_attempt_status'] = Variable<String>(lastAttemptStatus.value);
+    }
+    if (lastErrorCode.present) {
+      map['last_error_code'] = Variable<String>(lastErrorCode.value);
+    }
+    if (generatedAt.present) {
+      map['generated_at'] = Variable<DateTime>(generatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MenusCompanion(')
+          ..write('date: $date, ')
+          ..write('payload: $payload, ')
+          ..write('targetKcal: $targetKcal, ')
+          ..write('usedSafetyFloor: $usedSafetyFloor, ')
+          ..write('totalKcal: $totalKcal, ')
+          ..write('lastAttemptStatus: $lastAttemptStatus, ')
+          ..write('lastErrorCode: $lastErrorCode, ')
+          ..write('generatedAt: $generatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $AiDailyUsageTable extends AiDailyUsage
+    with TableInfo<$AiDailyUsageTable, AiDailyUsageRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AiDailyUsageTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _keyMeta = const VerificationMeta('key');
+  @override
+  late final GeneratedColumn<String> key = GeneratedColumn<String>(
+    'key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _successCountMeta = const VerificationMeta(
+    'successCount',
+  );
+  @override
+  late final GeneratedColumn<int> successCount = GeneratedColumn<int>(
+    'success_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [key, successCount];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'ai_daily_usage';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AiDailyUsageRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('key')) {
+      context.handle(
+        _keyMeta,
+        key.isAcceptableOrUnknown(data['key']!, _keyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_keyMeta);
+    }
+    if (data.containsKey('success_count')) {
+      context.handle(
+        _successCountMeta,
+        successCount.isAcceptableOrUnknown(
+          data['success_count']!,
+          _successCountMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_successCountMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {key};
+  @override
+  AiDailyUsageRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AiDailyUsageRow(
+      key: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}key'],
+      )!,
+      successCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}success_count'],
+      )!,
+    );
+  }
+
+  @override
+  $AiDailyUsageTable createAlias(String alias) {
+    return $AiDailyUsageTable(attachedDatabase, alias);
+  }
+}
+
+class AiDailyUsageRow extends DataClass implements Insertable<AiDailyUsageRow> {
+  final String key;
+  final int successCount;
+  const AiDailyUsageRow({required this.key, required this.successCount});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['key'] = Variable<String>(key);
+    map['success_count'] = Variable<int>(successCount);
+    return map;
+  }
+
+  AiDailyUsageCompanion toCompanion(bool nullToAbsent) {
+    return AiDailyUsageCompanion(
+      key: Value(key),
+      successCount: Value(successCount),
+    );
+  }
+
+  factory AiDailyUsageRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AiDailyUsageRow(
+      key: serializer.fromJson<String>(json['key']),
+      successCount: serializer.fromJson<int>(json['successCount']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'key': serializer.toJson<String>(key),
+      'successCount': serializer.toJson<int>(successCount),
+    };
+  }
+
+  AiDailyUsageRow copyWith({String? key, int? successCount}) => AiDailyUsageRow(
+    key: key ?? this.key,
+    successCount: successCount ?? this.successCount,
+  );
+  AiDailyUsageRow copyWithCompanion(AiDailyUsageCompanion data) {
+    return AiDailyUsageRow(
+      key: data.key.present ? data.key.value : this.key,
+      successCount: data.successCount.present
+          ? data.successCount.value
+          : this.successCount,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AiDailyUsageRow(')
+          ..write('key: $key, ')
+          ..write('successCount: $successCount')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(key, successCount);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AiDailyUsageRow &&
+          other.key == this.key &&
+          other.successCount == this.successCount);
+}
+
+class AiDailyUsageCompanion extends UpdateCompanion<AiDailyUsageRow> {
+  final Value<String> key;
+  final Value<int> successCount;
+  final Value<int> rowid;
+  const AiDailyUsageCompanion({
+    this.key = const Value.absent(),
+    this.successCount = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AiDailyUsageCompanion.insert({
+    required String key,
+    required int successCount,
+    this.rowid = const Value.absent(),
+  }) : key = Value(key),
+       successCount = Value(successCount);
+  static Insertable<AiDailyUsageRow> custom({
+    Expression<String>? key,
+    Expression<int>? successCount,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (key != null) 'key': key,
+      if (successCount != null) 'success_count': successCount,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AiDailyUsageCompanion copyWith({
+    Value<String>? key,
+    Value<int>? successCount,
+    Value<int>? rowid,
+  }) {
+    return AiDailyUsageCompanion(
+      key: key ?? this.key,
+      successCount: successCount ?? this.successCount,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (key.present) {
+      map['key'] = Variable<String>(key.value);
+    }
+    if (successCount.present) {
+      map['success_count'] = Variable<int>(successCount.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AiDailyUsageCompanion(')
+          ..write('key: $key, ')
+          ..write('successCount: $successCount, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3940,6 +4759,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final $MonthPlansTable monthPlans = $MonthPlansTable(this);
   late final $DaysTable days = $DaysTable(this);
+  late final $MenusTable menus = $MenusTable(this);
+  late final $AiDailyUsageTable aiDailyUsage = $AiDailyUsageTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3954,6 +4775,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     weeklyTemplates,
     monthPlans,
     days,
+    menus,
+    aiDailyUsage,
   ];
   @override
   DriftDatabaseOptions get options =>
@@ -3965,12 +4788,14 @@ typedef $$SyncStateTableCreateCompanionBuilder =
       Value<int> id,
       Value<int> cursor,
       Value<DateTime?> lastSyncedAt,
+      Value<String?> aiBudget,
     });
 typedef $$SyncStateTableUpdateCompanionBuilder =
     SyncStateCompanion Function({
       Value<int> id,
       Value<int> cursor,
       Value<DateTime?> lastSyncedAt,
+      Value<String?> aiBudget,
     });
 
 class $$SyncStateTableFilterComposer
@@ -3994,6 +4819,11 @@ class $$SyncStateTableFilterComposer
 
   ColumnFilters<DateTime> get lastSyncedAt => $composableBuilder(
     column: $table.lastSyncedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get aiBudget => $composableBuilder(
+    column: $table.aiBudget,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -4021,6 +4851,11 @@ class $$SyncStateTableOrderingComposer
     column: $table.lastSyncedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get aiBudget => $composableBuilder(
+    column: $table.aiBudget,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$SyncStateTableAnnotationComposer
@@ -4042,6 +4877,9 @@ class $$SyncStateTableAnnotationComposer
     column: $table.lastSyncedAt,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get aiBudget =>
+      $composableBuilder(column: $table.aiBudget, builder: (column) => column);
 }
 
 class $$SyncStateTableTableManager
@@ -4078,20 +4916,24 @@ class $$SyncStateTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<int> cursor = const Value.absent(),
                 Value<DateTime?> lastSyncedAt = const Value.absent(),
+                Value<String?> aiBudget = const Value.absent(),
               }) => SyncStateCompanion(
                 id: id,
                 cursor: cursor,
                 lastSyncedAt: lastSyncedAt,
+                aiBudget: aiBudget,
               ),
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
                 Value<int> cursor = const Value.absent(),
                 Value<DateTime?> lastSyncedAt = const Value.absent(),
+                Value<String?> aiBudget = const Value.absent(),
               }) => SyncStateCompanion.insert(
                 id: id,
                 cursor: cursor,
                 lastSyncedAt: lastSyncedAt,
+                aiBudget: aiBudget,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -5985,6 +6827,411 @@ typedef $$DaysTableProcessedTableManager =
       DayRow,
       PrefetchHooks Function()
     >;
+typedef $$MenusTableCreateCompanionBuilder =
+    MenusCompanion Function({
+      required String date,
+      Value<String?> payload,
+      required int targetKcal,
+      required bool usedSafetyFloor,
+      Value<int?> totalKcal,
+      required String lastAttemptStatus,
+      Value<String?> lastErrorCode,
+      Value<DateTime?> generatedAt,
+      Value<int> rowid,
+    });
+typedef $$MenusTableUpdateCompanionBuilder =
+    MenusCompanion Function({
+      Value<String> date,
+      Value<String?> payload,
+      Value<int> targetKcal,
+      Value<bool> usedSafetyFloor,
+      Value<int?> totalKcal,
+      Value<String> lastAttemptStatus,
+      Value<String?> lastErrorCode,
+      Value<DateTime?> generatedAt,
+      Value<int> rowid,
+    });
+
+class $$MenusTableFilterComposer extends Composer<_$AppDatabase, $MenusTable> {
+  $$MenusTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get payload => $composableBuilder(
+    column: $table.payload,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get targetKcal => $composableBuilder(
+    column: $table.targetKcal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get usedSafetyFloor => $composableBuilder(
+    column: $table.usedSafetyFloor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get totalKcal => $composableBuilder(
+    column: $table.totalKcal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastAttemptStatus => $composableBuilder(
+    column: $table.lastAttemptStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastErrorCode => $composableBuilder(
+    column: $table.lastErrorCode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get generatedAt => $composableBuilder(
+    column: $table.generatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$MenusTableOrderingComposer
+    extends Composer<_$AppDatabase, $MenusTable> {
+  $$MenusTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get payload => $composableBuilder(
+    column: $table.payload,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get targetKcal => $composableBuilder(
+    column: $table.targetKcal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get usedSafetyFloor => $composableBuilder(
+    column: $table.usedSafetyFloor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get totalKcal => $composableBuilder(
+    column: $table.totalKcal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastAttemptStatus => $composableBuilder(
+    column: $table.lastAttemptStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastErrorCode => $composableBuilder(
+    column: $table.lastErrorCode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get generatedAt => $composableBuilder(
+    column: $table.generatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$MenusTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MenusTable> {
+  $$MenusTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get date =>
+      $composableBuilder(column: $table.date, builder: (column) => column);
+
+  GeneratedColumn<String> get payload =>
+      $composableBuilder(column: $table.payload, builder: (column) => column);
+
+  GeneratedColumn<int> get targetKcal => $composableBuilder(
+    column: $table.targetKcal,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get usedSafetyFloor => $composableBuilder(
+    column: $table.usedSafetyFloor,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get totalKcal =>
+      $composableBuilder(column: $table.totalKcal, builder: (column) => column);
+
+  GeneratedColumn<String> get lastAttemptStatus => $composableBuilder(
+    column: $table.lastAttemptStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get lastErrorCode => $composableBuilder(
+    column: $table.lastErrorCode,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get generatedAt => $composableBuilder(
+    column: $table.generatedAt,
+    builder: (column) => column,
+  );
+}
+
+class $$MenusTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MenusTable,
+          MenuRow,
+          $$MenusTableFilterComposer,
+          $$MenusTableOrderingComposer,
+          $$MenusTableAnnotationComposer,
+          $$MenusTableCreateCompanionBuilder,
+          $$MenusTableUpdateCompanionBuilder,
+          (MenuRow, BaseReferences<_$AppDatabase, $MenusTable, MenuRow>),
+          MenuRow,
+          PrefetchHooks Function()
+        > {
+  $$MenusTableTableManager(_$AppDatabase db, $MenusTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MenusTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MenusTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MenusTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> date = const Value.absent(),
+                Value<String?> payload = const Value.absent(),
+                Value<int> targetKcal = const Value.absent(),
+                Value<bool> usedSafetyFloor = const Value.absent(),
+                Value<int?> totalKcal = const Value.absent(),
+                Value<String> lastAttemptStatus = const Value.absent(),
+                Value<String?> lastErrorCode = const Value.absent(),
+                Value<DateTime?> generatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MenusCompanion(
+                date: date,
+                payload: payload,
+                targetKcal: targetKcal,
+                usedSafetyFloor: usedSafetyFloor,
+                totalKcal: totalKcal,
+                lastAttemptStatus: lastAttemptStatus,
+                lastErrorCode: lastErrorCode,
+                generatedAt: generatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String date,
+                Value<String?> payload = const Value.absent(),
+                required int targetKcal,
+                required bool usedSafetyFloor,
+                Value<int?> totalKcal = const Value.absent(),
+                required String lastAttemptStatus,
+                Value<String?> lastErrorCode = const Value.absent(),
+                Value<DateTime?> generatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MenusCompanion.insert(
+                date: date,
+                payload: payload,
+                targetKcal: targetKcal,
+                usedSafetyFloor: usedSafetyFloor,
+                totalKcal: totalKcal,
+                lastAttemptStatus: lastAttemptStatus,
+                lastErrorCode: lastErrorCode,
+                generatedAt: generatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$MenusTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $MenusTable,
+      MenuRow,
+      $$MenusTableFilterComposer,
+      $$MenusTableOrderingComposer,
+      $$MenusTableAnnotationComposer,
+      $$MenusTableCreateCompanionBuilder,
+      $$MenusTableUpdateCompanionBuilder,
+      (MenuRow, BaseReferences<_$AppDatabase, $MenusTable, MenuRow>),
+      MenuRow,
+      PrefetchHooks Function()
+    >;
+typedef $$AiDailyUsageTableCreateCompanionBuilder =
+    AiDailyUsageCompanion Function({
+      required String key,
+      required int successCount,
+      Value<int> rowid,
+    });
+typedef $$AiDailyUsageTableUpdateCompanionBuilder =
+    AiDailyUsageCompanion Function({
+      Value<String> key,
+      Value<int> successCount,
+      Value<int> rowid,
+    });
+
+class $$AiDailyUsageTableFilterComposer
+    extends Composer<_$AppDatabase, $AiDailyUsageTable> {
+  $$AiDailyUsageTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get key => $composableBuilder(
+    column: $table.key,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get successCount => $composableBuilder(
+    column: $table.successCount,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$AiDailyUsageTableOrderingComposer
+    extends Composer<_$AppDatabase, $AiDailyUsageTable> {
+  $$AiDailyUsageTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get key => $composableBuilder(
+    column: $table.key,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get successCount => $composableBuilder(
+    column: $table.successCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$AiDailyUsageTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AiDailyUsageTable> {
+  $$AiDailyUsageTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get key =>
+      $composableBuilder(column: $table.key, builder: (column) => column);
+
+  GeneratedColumn<int> get successCount => $composableBuilder(
+    column: $table.successCount,
+    builder: (column) => column,
+  );
+}
+
+class $$AiDailyUsageTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AiDailyUsageTable,
+          AiDailyUsageRow,
+          $$AiDailyUsageTableFilterComposer,
+          $$AiDailyUsageTableOrderingComposer,
+          $$AiDailyUsageTableAnnotationComposer,
+          $$AiDailyUsageTableCreateCompanionBuilder,
+          $$AiDailyUsageTableUpdateCompanionBuilder,
+          (
+            AiDailyUsageRow,
+            BaseReferences<_$AppDatabase, $AiDailyUsageTable, AiDailyUsageRow>,
+          ),
+          AiDailyUsageRow,
+          PrefetchHooks Function()
+        > {
+  $$AiDailyUsageTableTableManager(_$AppDatabase db, $AiDailyUsageTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AiDailyUsageTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AiDailyUsageTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AiDailyUsageTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> key = const Value.absent(),
+                Value<int> successCount = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AiDailyUsageCompanion(
+                key: key,
+                successCount: successCount,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String key,
+                required int successCount,
+                Value<int> rowid = const Value.absent(),
+              }) => AiDailyUsageCompanion.insert(
+                key: key,
+                successCount: successCount,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$AiDailyUsageTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AiDailyUsageTable,
+      AiDailyUsageRow,
+      $$AiDailyUsageTableFilterComposer,
+      $$AiDailyUsageTableOrderingComposer,
+      $$AiDailyUsageTableAnnotationComposer,
+      $$AiDailyUsageTableCreateCompanionBuilder,
+      $$AiDailyUsageTableUpdateCompanionBuilder,
+      (
+        AiDailyUsageRow,
+        BaseReferences<_$AppDatabase, $AiDailyUsageTable, AiDailyUsageRow>,
+      ),
+      AiDailyUsageRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -6006,4 +7253,8 @@ class $AppDatabaseManager {
   $$MonthPlansTableTableManager get monthPlans =>
       $$MonthPlansTableTableManager(_db, _db.monthPlans);
   $$DaysTableTableManager get days => $$DaysTableTableManager(_db, _db.days);
+  $$MenusTableTableManager get menus =>
+      $$MenusTableTableManager(_db, _db.menus);
+  $$AiDailyUsageTableTableManager get aiDailyUsage =>
+      $$AiDailyUsageTableTableManager(_db, _db.aiDailyUsage);
 }

@@ -3,6 +3,7 @@ import 'package:domain/domain.dart';
 
 import '../../features/me/data/account_repository.dart';
 import '../../features/me/data/profile_repository.dart';
+import '../../features/menu/data/menu_repository.dart';
 import '../../features/schedule/data/schedule_repository.dart';
 import '../../features/weight/data/weight_repository.dart';
 
@@ -131,5 +132,48 @@ final class DayStore implements LocalEntityStore {
       return;
     }
     await _repo.putDay(_codec.decode(key, data));
+  }
+}
+
+/// Entity chỉ pull `menu` (VS-12). Tombstone = thực đơn ngày cũ (F08-R5).
+final class MenuStore implements LocalEntityStore {
+  MenuStore(this._repo);
+
+  final MenuRepository _repo;
+  static const _codec = MenuCodec();
+
+  @override
+  String get entity => SyncEntities.menu;
+
+  @override
+  Future<void> apply(String key, SyncChange? change) async {
+    final date = LocalDate.parse(key);
+    final data = change?.data;
+    if (change == null || change.deleted || data == null) {
+      await _repo.delete(date);
+      return;
+    }
+    await _repo.put(date, _codec.decode(data));
+  }
+}
+
+/// Entity chỉ pull `ai_daily_usage` (VS-12).
+final class AiDailyUsageStore implements LocalEntityStore {
+  AiDailyUsageStore(this._repo);
+
+  final MenuRepository _repo;
+  static const _codec = AiDailyUsageCodec();
+
+  @override
+  String get entity => SyncEntities.aiDailyUsage;
+
+  @override
+  Future<void> apply(String key, SyncChange? change) async {
+    final data = change?.data;
+    if (change == null || change.deleted || data == null) {
+      await _repo.deleteUsage(key);
+      return;
+    }
+    await _repo.putUsage(key, _codec.decode(data));
   }
 }

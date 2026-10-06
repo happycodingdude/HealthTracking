@@ -13,6 +13,9 @@ class SyncState extends Table {
   IntColumn get cursor => integer().withDefault(const Constant(0))();
   DateTimeColumn get lastSyncedAt => dateTime().nullable()();
 
+  /// `meta.aiBudget` của lần pull gần nhất, JSON (VS-12, ED-04).
+  TextColumn get aiBudget => text().nullable()();
+
   @override
   Set<Column<Object>> get primaryKey => {id};
 }
@@ -176,6 +179,44 @@ class Days extends Table {
   Set<Column<Object>> get primaryKey => {date};
 }
 
+/// Bản sao entity `menu` (chỉ pull, VS-12): thực đơn AI của một ngày (key
+/// `YYYY-MM-DD`, F08-E5). Cột giống bảng `menus` của server (05 §6.7.3).
+@DataClassName('MenuRow')
+class Menus extends Table {
+  @override
+  String get tableName => 'menus';
+
+  TextColumn get date => text()();
+
+  /// Thực đơn (JSON theo 05 §6.9.4); null khi chưa có lần nào thành công.
+  TextColumn get payload => text().nullable()();
+  IntColumn get targetKcal => integer()();
+  BoolColumn get usedSafetyFloor => boolean()();
+  IntColumn get totalKcal => integer().nullable()();
+
+  /// `generating` / `ready` / `failed`.
+  TextColumn get lastAttemptStatus => text()();
+  TextColumn get lastErrorCode => text().nullable()();
+  DateTimeColumn get generatedAt => dateTime().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {date};
+}
+
+/// Bản sao entity `ai_daily_usage` (chỉ pull, VS-12): số lần tạo thành công
+/// trong ngày (F08-R2), key `YYYY-MM-DD:menu`.
+@DataClassName('AiDailyUsageRow')
+class AiDailyUsage extends Table {
+  @override
+  String get tableName => 'ai_daily_usage';
+
+  TextColumn get key => text()();
+  IntColumn get successCount => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {key};
+}
+
 /// SQLite trên máy (TD-04). Mỗi slice tăng `schemaVersion` tối đa 1 bước
 /// (ED-05, 06 §6.5.2).
 @DriftDatabase(
@@ -189,13 +230,15 @@ class Days extends Table {
     WeeklyTemplates,
     MonthPlans,
     Days,
+    Menus,
+    AiDailyUsage,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -226,6 +269,12 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(weeklyTemplates);
         await m.createTable(monthPlans);
         await m.createTable(days);
+      }
+      if (from < 5) {
+        // VS-12: thực đơn AI, lượt trong ngày, ngân sách AI của tháng.
+        await m.addColumn(syncState, syncState.aiBudget);
+        await m.createTable(menus);
+        await m.createTable(aiDailyUsage);
       }
     },
     beforeOpen: (details) async {

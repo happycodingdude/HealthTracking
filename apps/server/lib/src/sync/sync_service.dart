@@ -2,6 +2,7 @@ import 'package:api_contract/api_contract.dart';
 import 'package:domain/domain.dart';
 import 'package:postgres/postgres.dart';
 
+import '../ai/budget_ledger.dart';
 import '../db/transaction.dart';
 import '../logging/logger.dart';
 import 'sync_entity_handler.dart';
@@ -13,7 +14,9 @@ final class SyncService {
     required Clock clock,
     required List<SyncEntityHandler> handlers,
     required Logger logger,
+    int budgetCapVnd = AiBudgetRules.capVnd,
   }) : _pool = pool,
+       _budgetCapVnd = budgetCapVnd,
        _clock = clock,
        _log = logger,
        _handlers = {for (final h in handlers) h.entity: h};
@@ -22,6 +25,7 @@ final class SyncService {
   final Clock _clock;
   final Logger _log;
   final Map<String, SyncEntityHandler> _handlers;
+  final int _budgetCapVnd;
 
   /// Khóa advisory theo user cho mọi lần ghi bảng đồng bộ (ED-03).
   static const lockNamespace = 7426002;
@@ -78,12 +82,15 @@ final class SyncService {
                   parameters: {'user': userId, 'cursor': next},
                 )).first[0]!
                 as int;
+        final now = _clock.now().toUtc();
+        // ED-04: ngân sách AI của tháng chỉ đi qua meta.
+        final budget = await BudgetLedger.meta(conn, now, _budgetCapVnd);
         return PullResponse(
           changes: changes,
           nextCursor: next,
           hasMore: remaining > 0,
           remaining: remaining,
-          meta: SyncMeta(serverTime: _clock.now().toUtc()),
+          meta: SyncMeta(serverTime: now, aiBudget: budget.toJson()),
         );
       },
     );

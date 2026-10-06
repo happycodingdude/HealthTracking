@@ -2,8 +2,10 @@
 library;
 
 export 'src/account/account_validators.dart';
+export 'src/ai/ai_budget.dart';
 export 'src/calorie/calorie.dart';
 export 'src/calorie/calorie_recalc.dart';
+export 'src/menu/menu.dart';
 export 'src/profile/profile.dart';
 export 'src/profile/profile_rules.dart';
 export 'src/progress/weekly_progress.dart';

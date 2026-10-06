@@ -27,7 +27,7 @@ final class TestResponse {
 
 /// API chạy trong tiến trình test với PostgreSQL thật và [FixedClock].
 final class TestApp {
-  TestApp._(this.tdb, this.clock, this.deps, this.log)
+  TestApp._(this.tdb, this.clock, this.deps, this.log, this.ai)
     : handler = buildApp(deps);
 
   /// [withTestItems] = true: thêm entity `test_item` (upsert/ensure/delete)
@@ -35,6 +35,8 @@ final class TestApp {
   static Future<TestApp> create({
     DateTime? now,
     bool withTestItems = false,
+    FakeAiProvider? ai,
+    AiConfig aiConfig = const AiConfig(),
   }) async {
     final tdb = await TestDatabase.create();
     if (withTestItems) await TestItemHandler.createTable(tdb.pool);
@@ -51,8 +53,10 @@ final class TestApp {
         ...defaultSyncHandlers,
         if (withTestItems) const TestItemHandler(),
       ],
+      aiConfig: aiConfig,
+      aiProvider: ai ??= FakeAiProvider(),
     );
-    return TestApp._(tdb, clock, deps, log);
+    return TestApp._(tdb, clock, deps, log, ai);
   }
 
   final TestDatabase tdb;
@@ -60,6 +64,9 @@ final class TestApp {
   final AppDeps deps;
   final CapturingLogger log;
   final Handler handler;
+
+  /// Nhà cung cấp AI giả (ED-11), chỉnh kịch bản trong test.
+  final FakeAiProvider ai;
 
   Future<TestResponse> send(
     String method,

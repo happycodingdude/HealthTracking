@@ -1,6 +1,14 @@
 /// Backend Health Tracking.
 library;
 
+export 'src/ai/ai_cleanup.dart';
+export 'src/ai/ai_config.dart';
+export 'src/ai/ai_provider.dart';
+export 'src/ai/anthropic_provider.dart';
+export 'src/ai/budget_ledger.dart';
+export 'src/ai/fake_ai_provider.dart';
+export 'src/ai/menu_service.dart';
+export 'src/ai/prompt_builder.dart';
 export 'src/app.dart';
 export 'src/config.dart';
 export 'src/db/database.dart';

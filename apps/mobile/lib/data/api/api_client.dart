@@ -54,12 +54,25 @@ class ApiClient {
         dio.get<Object?>(path, queryParameters: query, options: _options(auth)),
   );
 
-  Future<Object?> postJson(String path, Object? body, {bool auth = true}) =>
-      _send(() => dio.post<Object?>(path, data: body, options: _options(auth)));
+  /// [receiveTimeout] cho request chờ lâu (tạo thực đơn AI: tối đa 60 giây
+  /// mỗi lần gọi nhà cung cấp, thử lại 1 lần, 05 §6.9.1).
+  Future<Object?> postJson(
+    String path,
+    Object? body, {
+    bool auth = true,
+    Duration? receiveTimeout,
+  }) => _send(
+    () => dio.post<Object?>(
+      path,
+      data: body,
+      options: _options(auth, receiveTimeout: receiveTimeout),
+    ),
+  );
 
   static const _authKey = 'auth';
 
-  static Options _options(bool auth) => Options(extra: {_authKey: auth});
+  static Options _options(bool auth, {Duration? receiveTimeout}) =>
+      Options(extra: {_authKey: auth}, receiveTimeout: receiveTimeout);
 
   /// Request này có cần gắn access token không.
   static bool requiresAuth(RequestOptions options) =>
