@@ -58,4 +58,41 @@ void main() {
       expect(DayChangeRules.check(wed, marked(DayMark.done, at), null), isNull);
     });
   });
+
+  group('buổi tập thêm (VS07-T02)', () {
+    final sat = PlanDay(date: LocalDate(2026, 10, 10), kind: DayKind.rest);
+    PlanDay extra(DateTime at) =>
+        sat.withExtra(const [MuscleGroup.abs], loggedAt: at);
+
+    test('F05-AC6: ghi cho ngày mai → extraMuscles; hôm nay được', () {
+      final fri = DateTime(2026, 10, 9, 20);
+      expect(DayChangeRules.check(sat, extra(fri), fri), 'extraMuscles');
+      final now = DateTime(2026, 10, 10, 20);
+      expect(DayChangeRules.check(sat, extra(now), now), isNull);
+      expect(DayChangeRules.check(null, extra(now), now), isNull);
+    });
+
+    test('F05-R11: sửa, xóa trong 7 ngày; quá hạn → extraMuscles', () {
+      final added = extra(DateTime(2026, 10, 10, 20));
+      final last = DateTime(2026, 10, 17, 23, 59);
+      expect(DayChangeRules.check(added, sat, last), isNull, reason: 'xóa');
+      final late = DateTime(2026, 10, 18, 0, 1);
+      expect(DayChangeRules.check(added, sat, late), 'extraMuscles');
+      expect(DayChangeRules.check(added, extra(late), late), 'extraMuscles');
+      // Không đổi buổi tập thêm → không áp quy tắc thời gian.
+      expect(DayChangeRules.check(added, added, late), isNull);
+    });
+
+    test('ngày tập đổi buổi tập thêm → extraMuscles', () {
+      final at = DateTime(2026, 10, 7, 20);
+      expect(
+        DayChangeRules.check(
+          wed,
+          wed.withExtra(const [MuscleGroup.abs], loggedAt: at),
+          at,
+        ),
+        'extraMuscles',
+      );
+    });
+  });
 }

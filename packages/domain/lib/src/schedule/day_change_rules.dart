@@ -1,3 +1,4 @@
+import '../session/extra_session.dart';
 import '../session/session.dart';
 import 'month_plan.dart';
 import 'weekly_template.dart';
@@ -7,6 +8,9 @@ import 'weekly_template.dart';
 /// iPhone lúc ghi.
 ///
 /// - Đánh dấu (VS06-T03): chỉ ngày tập, từ giờ tập, trong hạn 7 ngày.
+/// - Buổi tập thêm (VS07-T02): ghi, sửa, xóa chỉ ở ngày nghỉ thứ 2 → thứ 7,
+///   không phải ngày tương lai, trong hạn 7 ngày (xóa = `extraMuscles: null`,
+///   ED-08).
 abstract final class DayChangeRules {
   /// [before] = bản trên server (null = chưa có). [localNow] = giờ trên iPhone
   /// lúc ghi, tính từ `clientUpdatedAt` và múi giờ trong hồ sơ; null khi chưa
@@ -21,6 +25,12 @@ abstract final class DayChangeRules {
         return 'mark';
       }
     }
+    if (_extraChanged(before, after)) {
+      if (after.isWorkout) return 'extraMuscles';
+      if (localNow != null && !ExtraSessionRules.canLog(after, localNow)) {
+        return 'extraMuscles';
+      }
+    }
     return null;
   }
 
@@ -29,6 +39,12 @@ abstract final class DayChangeRules {
     return before.mark != after.mark ||
         !_sameMuscles(before.actualMuscles, after.actualMuscles) ||
         !_sameInstant(before.markedAt, after.markedAt);
+  }
+
+  static bool _extraChanged(PlanDay? before, PlanDay after) {
+    if (before == null) return after.extraMuscles != null;
+    return !_sameMuscles(before.extraMuscles, after.extraMuscles) ||
+        !_sameInstant(before.extraLoggedAt, after.extraLoggedAt);
   }
 }
 

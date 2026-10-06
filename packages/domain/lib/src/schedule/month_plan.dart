@@ -71,10 +71,26 @@ final class PlanDay {
     extraLoggedAt: extraLoggedAt,
   );
 
+  /// Bản ghi với buổi tập thêm mới (null = xóa); các trường khác giữ nguyên.
+  PlanDay withExtra(List<MuscleGroup>? muscles, {DateTime? loggedAt}) =>
+      PlanDay(
+        date: date,
+        kind: kind,
+        time: time,
+        muscles: this.muscles,
+        source: source,
+        mark: mark,
+        actualMuscles: actualMuscles,
+        markedAt: markedAt,
+        extraMuscles: muscles,
+        extraLoggedAt: loggedAt,
+      );
+
   /// Ràng buộc của bản ghi (05 §6.7.3): không có chủ nhật; ngày tập có giờ và
   /// ≥ 1 nhóm cơ, ngày nghỉ không có; buổi tập thêm chỉ ở ngày nghỉ; đánh dấu
   /// chỉ ở ngày tập, "Đã tập" có ≥ 1 nhóm cơ thực tế (F05-R4, F05-R5), có
-  /// đánh dấu thì có thời điểm đánh dấu. Trả tên trường sai, null = hợp lệ.
+  /// đánh dấu thì có thời điểm đánh dấu; buổi tập thêm có ≥ 1 nhóm cơ
+  /// (F05-R10) và thời điểm ghi. Trả tên trường sai, null = hợp lệ.
   String? get invalidField {
     if (date.isSunday) return 'key';
     if (isWorkout) {
@@ -94,6 +110,9 @@ final class PlanDay {
         return 'mark';
       }
       if (extraMuscles != null && extraMuscles!.isEmpty) return 'extraMuscles';
+      if ((extraMuscles == null) != (extraLoggedAt == null)) {
+        return 'extraLoggedAt';
+      }
     }
     return null;
   }

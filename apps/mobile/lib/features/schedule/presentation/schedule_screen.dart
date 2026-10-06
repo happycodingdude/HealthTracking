@@ -234,8 +234,12 @@ class _DayLine extends StatelessWidget {
     final status = d == null ? null : SessionStatus.derive(d, now);
     final past = date.isBefore(today);
     final isToday = date == today;
+    final extra = d?.extraMuscles;
     final info = d != null && d.isWorkout
         ? '${Fmt.muscles(d.muscles)} · ${Fmt.time(d.time!)}'
+        : extra != null
+        // Buổi tập thêm hiện trong dòng của ngày đó (04 S-20, mock S-25).
+        ? S.restWithExtra(Fmt.muscles(extra))
         : S.rest;
     final color = past ? palette.textSecondary : null;
     final dateText = Text(
@@ -253,6 +257,7 @@ class _DayLine extends StatelessWidget {
     );
     final tags = [
       if (status != null) SessionTag(status),
+      if (extra != null) const ExtraSessionTag(),
       if (d?.source == DaySource.override)
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),

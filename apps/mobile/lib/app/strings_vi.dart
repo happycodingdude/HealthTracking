@@ -244,6 +244,28 @@ abstract final class S {
   static String plannedLine(String muscles, String time) =>
       'Lịch: $muscles · $time';
 
+  // Buổi tập thêm S-24 (04 §6.7.1, S-24, §6.13.3), F05-R7 → R12.
+  static const logExtraSession = 'Đã tập ngoài lịch? Ghi buổi tập thêm';
+  static const extraSession = 'Buổi tập thêm';
+  static const extraNotCounted = 'Không tính vào kế hoạch tuần.';
+  static const deleteExtraSession = 'Xóa buổi tập thêm';
+  static const delete = 'Xóa';
+  static const cancel = 'Hủy';
+
+  /// 04 §6.7.1: "Buổi tập thêm · {nhóm cơ}".
+  static String extraSessionLine(String muscles) => 'Buổi tập thêm · $muscles';
+
+  /// Mock S-24: "Buổi tập thêm · Thứ 5, 08/10 · Hôm nay".
+  static String extraSessionTitle(String weekdayDate, {required bool today}) =>
+      'Buổi tập thêm · $weekdayDate${today ? ' · $tabToday' : ''}';
+
+  /// Hộp xác nhận xóa (NAV-6), theo mẫu "Cho nghỉ {thứ}, {dd/mm}?" của S-21.
+  static String deleteExtraConfirm(String weekdayDate) =>
+      'Xóa buổi tập thêm $weekdayDate?';
+
+  /// Mock S-25: "Nghỉ · Bụng".
+  static String restWithExtra(String muscles) => '$rest · $muscles';
+
   // Định dạng (UR-10).
   static const currencySuffix = 'đ';
   static const weekdays = [
@@ -432,5 +454,11 @@ abstract final class S {
     'actualMusclesLabel': actualMusclesLabel,
     'missingActualMuscles': missingActualMuscles,
     'lockedNote': lockedNote,
+    'logExtraSession': logExtraSession,
+    'extraSession': extraSession,
+    'extraNotCounted': extraNotCounted,
+    'deleteExtraSession': deleteExtraSession,
+    'delete': delete,
+    'cancel': cancel,
   };
 }

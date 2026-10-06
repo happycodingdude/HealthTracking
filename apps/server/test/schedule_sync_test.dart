@@ -366,5 +366,78 @@ void main() {
       );
       expect(rows.single[0], isNull);
     });
+
+    // Buổi tập thêm (VS07-T02). Thứ 7 10/10 nghỉ; 20:00 giờ Việt Nam = 13:00
+    // UTC.
+    final sat = generated.days.firstWhere(
+      (d) => d.date == LocalDate(2026, 10, 10),
+    );
+
+    Future<PushResult> extraAt(
+      PlanDay day,
+      List<MuscleGroup>? muscles,
+      DateTime atUtc,
+    ) async {
+      await setNow(atUtc);
+      return (await push([
+        dayMutation(
+          day.withExtra(muscles, loggedAt: muscles == null ? null : atUtc),
+          op: SyncOp.upsert,
+          at: atUtc,
+        ),
+      ])).single;
+    }
+
+    test('F05-AC6: buổi tập thêm cho ngày mai, cho ngày đã có buổi theo lịch '
+        '→ rejected; thứ 7 ghi cho hôm nay → applied', () async {
+      await setUpSchedule();
+      const abs = [MuscleGroup.abs];
+      final tomorrow = await extraAt(sat, abs, DateTime.utc(2026, 10, 9, 13));
+      expect(
+        (tomorrow.status, tomorrow.field),
+        (PushStatus.rejected, 'extraMuscles'),
+      );
+      final workout = await extraAt(wed, abs, DateTime.utc(2026, 10, 10, 13));
+      expect(
+        (workout.status, workout.field),
+        (PushStatus.rejected, 'extraMuscles'),
+      );
+      final ok = await extraAt(sat, abs, DateTime.utc(2026, 10, 10, 13));
+      expect(ok.status, PushStatus.applied);
+      final rows = await app.tdb.pool.execute(
+        "SELECT extra_muscles::text[] FROM days WHERE date = '2026-10-10'",
+      );
+      expect(rows.single[0], ['abs']);
+    });
+
+    test('F05-R11, ED-08: xóa = extraMuscles null trong hạn → applied; sửa '
+        'sau 7 ngày giờ iPhone → rejected', () async {
+      await setUpSchedule();
+      final added = sat.withExtra(const [
+        MuscleGroup.abs,
+      ], loggedAt: DateTime.utc(2026, 10, 10, 13));
+      expect(
+        (await extraAt(sat, const [
+          MuscleGroup.abs,
+        ], DateTime.utc(2026, 10, 10, 13))).status,
+        PushStatus.applied,
+      );
+      // 00:00 18/10 giờ Việt Nam = 17:00 UTC ngày 17/10.
+      final late = await extraAt(added, const [
+        MuscleGroup.back,
+      ], DateTime.utc(2026, 10, 17, 17, 1));
+      expect((late.status, late.field), (PushStatus.rejected, 'extraMuscles'));
+      final deleted = await extraAt(
+        added,
+        null,
+        DateTime.utc(2026, 10, 17, 16, 59),
+      );
+      expect(deleted.status, PushStatus.applied);
+      final rows = await app.tdb.pool.execute(
+        'SELECT extra_muscles, extra_logged_at FROM days '
+        "WHERE date = '2026-10-10'",
+      );
+      expect(rows.single, [null, null]);
+    });
   });
 }

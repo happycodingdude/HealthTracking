@@ -9,6 +9,7 @@ export 'src/reminder/reminder_planner.dart';
 export 'src/schedule/day_change_rules.dart';
 export 'src/schedule/month_plan.dart';
 export 'src/schedule/weekly_template.dart';
+export 'src/session/extra_session.dart';
 export 'src/session/session.dart';
 export 'src/time/clock.dart';
 export 'src/time/local_date.dart';
