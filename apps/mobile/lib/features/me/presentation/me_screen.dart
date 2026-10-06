@@ -12,12 +12,14 @@ import '../../../core/widgets/settings_card.dart';
 import '../../../core/widgets/tab_page.dart';
 import '../../../core/widgets/toast.dart';
 import '../../../data/sync/sync_providers.dart';
+import '../application/budget_view.dart';
 import '../application/calorie_view.dart';
 import '../application/reminders.dart';
+import 'budget_screen.dart';
 import 'dev_server_status.dart';
 
 /// S-50 — Tôi: "Hồ sơ cơ thể", "Mức calo" (VS-11), "Nhắc đi tập" (VS-05),
-/// "Tài khoản và dữ liệu" (VS-02); dòng ngân sách AI thêm ở VS-13.
+/// "Ngân sách AI" (VS-13), "Tài khoản và dữ liệu" (VS-02).
 class MeScreen extends ConsumerWidget {
   const MeScreen({super.key});
 
@@ -26,6 +28,7 @@ class MeScreen extends ConsumerWidget {
     final pending = ref.watch(syncStatusProvider).value?.hasPending;
     final profile = ref.watch(profileProvider).value;
     final view = ref.watch(calorieViewProvider);
+    final budget = ref.watch(aiBudgetViewProvider);
     final year = ref.watch(clockProvider).now().year;
     return TabPage(
       tab: AppTab.me,
@@ -63,6 +66,16 @@ class MeScreen extends ConsumerWidget {
               onTap: () => context.go('/me/calorie'),
             ),
             const _RemindersRow(),
+            SettingsRow(
+              key: const ValueKey('row-budget'),
+              label: S.aiBudget,
+              value: S.budgetSummary(
+                Fmt.vnd(budget.usedVnd),
+                Fmt.vnd(budget.capVnd),
+              ),
+              below: BudgetBar(view: budget, height: 8),
+              onTap: () => context.go(budgetPath),
+            ),
             SettingsRow(
               key: const ValueKey('row-account-data'),
               label: S.accountAndData,

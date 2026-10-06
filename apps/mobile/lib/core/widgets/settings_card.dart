@@ -33,6 +33,7 @@ class SettingsRow extends StatelessWidget {
     this.value,
     this.onTap,
     this.dot = false,
+    this.below,
   });
 
   final String label;
@@ -41,6 +42,9 @@ class SettingsRow extends StatelessWidget {
 
   /// Chấm báo hiệu cạnh nhãn, ví dụ "Mức calo" khi có đề xuất (04 S-50).
   final bool dot;
+
+  /// Phần dưới nhãn và giá trị, ví dụ thanh nhỏ của "Ngân sách AI" (04 S-50).
+  final Widget? below;
 
   /// Từ mức phóng chữ này trở lên thì xếp dọc.
   static const stackedScale = 1.6;
@@ -129,7 +133,12 @@ class SettingsRow extends StatelessWidget {
             constraints: const BoxConstraints(minHeight: 56),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              child: content,
+              child: below == null
+                  ? content
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [content, const SizedBox(height: 12), below!],
+                    ),
             ),
           ),
         ),

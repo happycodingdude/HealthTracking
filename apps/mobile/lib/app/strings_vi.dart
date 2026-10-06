@@ -452,6 +452,27 @@ abstract final class S {
   static String menuDateLine(String date, String kcal) =>
       '$date · $menuTargetPrefix $kcal';
 
+  // Ngân sách AI S-54, dòng S-50, hộp báo 80% (VS-13), F-11.
+  static const aiBudget = 'Ngân sách AI';
+  static const budgetExplain =
+      'Mỗi lần tạo thực đơn đều tốn một ít chi phí. Khi chạm mức trần, gợi ý '
+      'AI tạm dừng đến tháng sau. Phần theo dõi vẫn hoạt động bình thường.';
+  static const budgetWarning80 = 'Bạn đã dùng 80% ngân sách AI tháng này.';
+  static const seeDetails = 'Xem chi tiết';
+
+  /// 04 S-50: "12.500đ / 50.000đ".
+  static String budgetSummary(String used, String cap) => '$used / $cap';
+
+  /// Mock S-54-1: "trên 50.000đ của tháng 10".
+  static String budgetOfMonth(String cap, int month) =>
+      'trên $cap của tháng $month';
+
+  /// 04 S-54: phần trăm đã dùng (F11-R6).
+  static String percent(int value) => '$value%';
+
+  /// 04 S-54: "Đặt lại vào 01/{tháng sau}" (mock S-54-1 "Đặt lại vào 01/11").
+  static String budgetResets(String date) => 'Đặt lại vào $date';
+
   // Định dạng (UR-10).
   static const currencySuffix = 'đ';
   static const weekdays = [
@@ -708,5 +729,9 @@ abstract final class S {
     'mealDinner': mealDinner,
     'mealMorningSnack': mealMorningSnack,
     'mealAfternoonSnack': mealAfternoonSnack,
+    'aiBudget': aiBudget,
+    'budgetExplain': budgetExplain,
+    'budgetWarning80': budgetWarning80,
+    'seeDetails': seeDetails,
   };
 }

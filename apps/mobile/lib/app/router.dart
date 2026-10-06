@@ -10,6 +10,7 @@ import '../features/auth/presentation/register_screen.dart';
 import '../features/auth/presentation/welcome_screen.dart';
 import '../features/me/presentation/about_reference_screen.dart';
 import '../features/me/presentation/account_data_screen.dart';
+import '../features/me/presentation/budget_screen.dart';
 import '../features/me/presentation/calorie_screen.dart';
 import '../features/me/presentation/me_screen.dart';
 import '../features/me/presentation/profile_screen.dart';
@@ -180,6 +181,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                       GoRoute(
                         path: 'calorie',
                         builder: (_, _) => const CalorieScreen(),
+                      ),
+                      GoRoute(
+                        path: 'budget',
+                        builder: (_, _) => const BudgetScreen(),
                       ),
                     ],
                   ],

@@ -1,4 +1,5 @@
 import 'package:api_contract/api_contract.dart';
+import 'package:postgres/postgres.dart';
 import 'package:server/src/admin/admin_commands.dart';
 import 'package:test/test.dart';
 
@@ -57,5 +58,43 @@ void main() {
     expect(a, hasLength(12));
     expect(a, isNot(b));
     expect(a, isNot(matches(RegExp('[0O1lI]'))));
+  });
+
+  test('VS13-T03: budget --show in tháng, đã dùng, đặt trước, trạng thái chặn, '
+      'yêu cầu gần nhất, không in thông tin tài khoản', () async {
+    final now = DateTime.utc(2026, 10, 7, 3);
+    expect(
+      await admin.budgetReport(now),
+      allOf(
+        contains('Ngân sách AI tháng 2026-10'),
+        contains('Đã dùng: 0đ (0%)'),
+        contains('(chưa có)'),
+      ),
+    );
+    await app.tdb.pool.execute(
+      'INSERT INTO ai_budget_months (month, used_vnd, reserved_vnd, blocked_at) '
+      "VALUES ('2026-10', 12500.5, 434.61, '2026-10-06T10:00:00Z')",
+    );
+    final user = await app.register();
+    await app.tdb.pool.execute(
+      Sql.named('''
+        INSERT INTO ai_requests (user_id, request_id, feature, local_date, month, provider,
+                                 model, status, reserved_vnd, actual_vnd, input_tokens,
+                                 output_tokens, created_at, settled_at)
+        SELECT id, gen_random_uuid(), 'menu', '2026-10-06', '2026-10', 'fake', 'm',
+               'succeeded', 434.61, 186.3, 900, 1200, '2026-10-06T09:00:00Z', now()
+        FROM users WHERE phone = '0912345678' '''),
+    );
+    expect(user.accessToken, isNotEmpty);
+    final report = await admin.budgetReport(now);
+    expect(report, contains('Mức trần: 50.000đ'));
+    expect(report, contains('Đã dùng: 12.500,50đ (25%)'));
+    expect(report, contains('Đang đặt trước: 434,61đ'));
+    expect(report, contains('ĐÃ CHẶN từ 2026-10-06T10:00:00Z'));
+    expect(
+      report,
+      contains('succeeded  đặt trước 434,61đ  thực tế 186,30đ  token 900/1200'),
+    );
+    expect(report, isNot(contains('0912345678')));
   });
 }

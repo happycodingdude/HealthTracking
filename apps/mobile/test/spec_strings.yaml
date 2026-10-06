@@ -258,3 +258,9 @@ mealDinner: "Tối" # mock S-30-3
 mealMorningSnack: "Bữa phụ sáng" # mock S-30-3
 mealAfternoonSnack: "Bữa phụ chiều" # mock S-30-3
 
+# Ngân sách AI S-54, dòng S-50, hộp báo 80% (VS-13)
+aiBudget: "Ngân sách AI" # 04 S-50, S-54
+budgetExplain: "Mỗi lần tạo thực đơn đều tốn một ít chi phí. Khi chạm mức trần, gợi ý AI tạm dừng đến tháng sau. Phần theo dõi vẫn hoạt động bình thường." # 04 S-54
+budgetWarning80: "Bạn đã dùng 80% ngân sách AI tháng này." # 03 F11-R4, 04 §6.9
+seeDetails: "Xem chi tiết" # 04 §6.9 (hộp báo 80%)
+

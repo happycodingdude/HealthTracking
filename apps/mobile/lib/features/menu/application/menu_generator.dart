@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 import '../../../app/providers.dart';
 import '../../../data/api/api_client.dart';
 import '../../../data/sync/sync_providers.dart';
+import '../../me/application/budget_view.dart';
 import '../../me/application/calorie_view.dart';
 import '../data/menu_api.dart';
 
@@ -72,6 +73,8 @@ class MenuGenerator extends Notifier<MenuGeneration> {
           );
       await _save(res.date, res.menu, res.remaining);
       state = MenuGeneration(date: date);
+      // F11-R4: báo 80% ngay sau lần tạo làm chi phí vượt 80% (một lần).
+      if (res.budgetWarning80) ref.read(budgetWarningProvider.notifier).raise();
       return res;
     } on NetworkFailure {
       state = MenuGeneration(date: date, issue: MenuIssue.offline);

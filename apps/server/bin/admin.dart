@@ -9,12 +9,14 @@ import 'package:server/src/auth/token_service.dart';
 /// Admin CLI (TR-09). Xem docs/runbook.md.
 ///
 ///   admin reset-password --phone 0901234567
+///   admin budget --show
 Future<void> main(List<String> args) async {
   final parser = ArgParser()
     ..addCommand(
       'reset-password',
       ArgParser()..addOption('phone', mandatory: true),
-    );
+    )
+    ..addCommand('budget', ArgParser()..addFlag('show', defaultsTo: true));
   final ArgResults parsed;
   try {
     parsed = parser.parse(args);
@@ -22,7 +24,8 @@ Future<void> main(List<String> args) async {
   } on FormatException catch (e) {
     stderr
       ..writeln(e.message)
-      ..writeln('Dùng: admin reset-password --phone <số điện thoại>');
+      ..writeln('Dùng: admin reset-password --phone <số điện thoại>')
+      ..writeln('      admin budget --show');
     exitCode = 64;
     return;
   }
@@ -43,6 +46,13 @@ Future<void> main(List<String> args) async {
           ..writeln('Mật khẩu tạm của $phone: $temp')
           ..writeln('Đã thu hồi mọi phiên đăng nhập của tài khoản này.')
           ..writeln('Báo mật khẩu tạm cho chủ tài khoản qua kênh riêng.');
+      case 'budget':
+        stdout.write(
+          await admin.budgetReport(
+            DateTime.now().toUtc(),
+            capVnd: config.ai.capVnd,
+          ),
+        );
     }
   } on AdminException catch (e) {
     stderr.writeln(e.message);
