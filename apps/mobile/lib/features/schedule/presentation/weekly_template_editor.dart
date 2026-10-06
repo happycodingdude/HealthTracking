@@ -130,10 +130,7 @@ class _DayRow extends StatelessWidget {
   }
 
   Future<void> _pickTime(BuildContext context) async {
-    final picked = await showAppSheet<LocalTime>(
-      context,
-      builder: (_) => _TimePicker(initial: day.time ?? LocalTime(18, 0)),
-    );
+    final picked = await pickTime(context, day.time ?? LocalTime(18, 0));
     if (picked != null) {
       onChanged(TemplateDay(enabled: true, time: picked, muscles: day.muscles));
     }
@@ -280,6 +277,13 @@ class _DayRow extends StatelessWidget {
   }
 }
 
+/// Mở bánh xe chọn giờ (UA-18); null khi Bạn đóng bảng.
+Future<LocalTime?> pickTime(BuildContext context, LocalTime initial) =>
+    showAppSheet<LocalTime>(
+      context,
+      builder: (_) => _TimePicker(initial: initial),
+    );
+
 /// Bánh xe chọn giờ 24 giờ, bước 5 phút (UA-18, 04 §6.13.5).
 class _TimePicker extends StatefulWidget {
   const _TimePicker({required this.initial});
@@ -304,17 +308,7 @@ class _TimePickerState extends State<_TimePicker> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SizedBox(
-            height: 216,
-            child: CupertinoDatePicker(
-              key: const ValueKey('time-picker'),
-              mode: CupertinoDatePickerMode.time,
-              use24hFormat: true,
-              minuteInterval: 5,
-              initialDateTime: DateTime(2000, 1, 1, _time.hour, _time.minute),
-              onDateTimeChanged: (d) => _time = LocalTime.fromDateTime(d),
-            ),
-          ),
+          TimeWheel(initial: _time, onChanged: (t) => _time = t),
           const SizedBox(height: 16),
           PrimaryButton(
             label: S.done,
@@ -324,4 +318,31 @@ class _TimePickerState extends State<_TimePicker> {
       ),
     );
   }
+}
+
+/// Bánh xe giờ 24 giờ, bước 5 phút (UA-18). [initial] làm tròn xuống 5 phút.
+class TimeWheel extends StatelessWidget {
+  const TimeWheel({super.key, required this.initial, required this.onChanged});
+
+  final LocalTime initial;
+  final ValueChanged<LocalTime> onChanged;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    height: 216,
+    child: CupertinoDatePicker(
+      key: const ValueKey('time-picker'),
+      mode: CupertinoDatePickerMode.time,
+      use24hFormat: true,
+      minuteInterval: 5,
+      initialDateTime: DateTime(
+        2000,
+        1,
+        1,
+        initial.hour,
+        initial.minute - initial.minute % 5,
+      ),
+      onDateTimeChanged: (d) => onChanged(LocalTime.fromDateTime(d)),
+    ),
+  );
 }

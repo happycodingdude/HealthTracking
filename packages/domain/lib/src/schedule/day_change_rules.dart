@@ -1,5 +1,6 @@
 import '../session/extra_session.dart';
 import '../session/session.dart';
+import 'day_edit.dart';
 import 'month_plan.dart';
 import 'weekly_template.dart';
 
@@ -11,6 +12,9 @@ import 'weekly_template.dart';
 /// - Buổi tập thêm (VS07-T02): ghi, sửa, xóa chỉ ở ngày nghỉ thứ 2 → thứ 7,
 ///   không phải ngày tương lai, trong hạn 7 ngày (xóa = `extraMuscles: null`,
 ///   ED-08).
+/// - Lịch của ngày (VS09-T04: sửa riêng, trả về, chia lại): chỉ từ hôm nay
+///   đến cuối tháng hiện tại; hôm nay chỉ khi buổi chưa đến giờ, chưa đánh
+///   dấu, và không thành ngày tập khi đã có buổi tập thêm (F03-R8, R9, E4).
 abstract final class DayChangeRules {
   /// [before] = bản trên server (null = chưa có). [localNow] = giờ trên iPhone
   /// lúc ghi, tính từ `clientUpdatedAt` và múi giờ trong hồ sơ; null khi chưa
@@ -19,6 +23,9 @@ abstract final class DayChangeRules {
   /// Trả tên trường sai, null = hợp lệ. Cấu trúc bản ghi kiểm ở
   /// [PlanDay.invalidField].
   static String? check(PlanDay? before, PlanDay after, DateTime? localNow) {
+    if (before != null && localNow != null && _planChanged(before, after)) {
+      if (OverrideRules.validate(before, after, localNow) != null) return 'key';
+    }
     if (_markChanged(before, after)) {
       if (!after.isWorkout) return 'mark';
       if (localNow != null && !SessionRules.canMark(after, localNow)) {
@@ -40,6 +47,12 @@ abstract final class DayChangeRules {
         !_sameMuscles(before.actualMuscles, after.actualMuscles) ||
         !_sameInstant(before.markedAt, after.markedAt);
   }
+
+  static bool _planChanged(PlanDay before, PlanDay after) =>
+      before.kind != after.kind ||
+      before.time != after.time ||
+      !_sameMuscles(before.muscles, after.muscles) ||
+      before.source != after.source;
 
   static bool _extraChanged(PlanDay? before, PlanDay after) {
     if (before == null) return after.extraMuscles != null;

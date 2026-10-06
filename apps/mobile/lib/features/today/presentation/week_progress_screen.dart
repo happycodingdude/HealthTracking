@@ -10,6 +10,7 @@ import '../../../app/time_ticker.dart';
 import '../../../core/formatters.dart';
 import '../../../core/widgets/heading.dart';
 import '../../schedule/presentation/day_line.dart';
+import '../../schedule/presentation/day_sheet.dart';
 import '../application/progress_view.dart';
 
 /// Đường dẫn S-25 của tuần [week], mở trong tab [tab] (Hôm nay hoặc Lịch tập).
@@ -19,7 +20,7 @@ String weekProgressPath(AppTab tab, ProgressWeek week) =>
 /// S-25 — Tiến độ tuần (04 S-25): thanh tuần "‹ 05/10 – 10/10 ›" không lùi
 /// trước tuần thiết lập, không tiến quá tuần hiện tại (F06-R5, F06-E3); con
 /// số lớn "X/Y", "Đã tập X/Y buổi theo lịch", "+Z buổi thêm"; danh sách thứ 2
-/// → thứ 7 kèm nhãn trạng thái. Chạm vào ngày → S-21 thêm ở VS-09.
+/// → thứ 7 kèm nhãn trạng thái; chạm vào ngày → S-21.
 class WeekProgressScreen extends ConsumerStatefulWidget {
   const WeekProgressScreen({super.key, required this.week, required this.tab});
 
@@ -126,6 +127,7 @@ class _WeekProgressScreenState extends ConsumerState<WeekProgressScreen> {
                           day: d.day,
                           now: now,
                           highlightToday: false,
+                          onTap: () => showDaySheet(context, d.date),
                         ),
                   ],
                 ),

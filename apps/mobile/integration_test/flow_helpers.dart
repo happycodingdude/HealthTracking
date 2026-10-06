@@ -36,9 +36,11 @@ Future<void> pumpUntil(WidgetTester tester, Finder finder) async {
   fail('Không thấy $finder sau 20 giây');
 }
 
-/// Chạm [finder] sau khi cuộn tới nó.
+/// Chạm [finder] sau khi cuộn tới nó. Chờ khung hình sau khi cuộn: trên máy
+/// thật vị trí mới chỉ có sau khi vẽ lại.
 Future<void> tapVisible(WidgetTester tester, Finder finder) async {
   await reveal(tester, finder);
+  await tester.pumpAndSettle();
   await tester.tap(finder);
   await tester.pumpAndSettle();
 }
