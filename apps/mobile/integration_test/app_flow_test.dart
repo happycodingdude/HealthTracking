@@ -349,6 +349,20 @@ void main() {
         findsOneWidget,
       );
       await pumpUntilGone(tester, find.byKey(const ValueKey('sync-indicator')));
+
+      // VS-13: chi phí của 2 lần tạo hiện ở dòng "Ngân sách AI" và S-54.
+      await tester.tap(tabLabel(S.tabMe));
+      await tester.pumpAndSettle();
+      final row = find.byKey(const ValueKey('row-budget'));
+      await reveal(tester, row);
+      expect(
+        find.descendant(of: row, matching: find.textContaining('/ 50.000đ')),
+        findsOneWidget,
+      );
+      expect(find.text('0đ / 50.000đ'), findsNothing);
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+      expect(find.text(S.budgetExplain), findsOneWidget);
     },
   );
 }

@@ -452,6 +452,43 @@ void main() {
     );
   });
 
+  group('F11-R4, F11-AC2: báo 80% đúng một lần trong tháng', () {
+    test('lần tạo làm chi phí đạt 80% → budgetWarning80 = true; các lần sau '
+        '→ false', () async {
+      await spent((40000 * 100 - actualCenti) / 100);
+      expect((await ok()).budgetWarning80, isTrue);
+      expect((await ok()).budgetWarning80, isFalse);
+      final b = await user('0987654321');
+      expect((await ok(as: b)).budgetWarning80, isFalse);
+    });
+
+    test(
+      '2 máy cùng tạo khi sắp chạm 80% → chỉ một kết quả có cờ báo',
+      () async {
+        final other = await user('0987654321');
+        await spent((40000 * 100 - actualCenti) / 100);
+        final gate = app.ai.gate = Completer<void>();
+        final a = generate();
+        final b = generate(as: other);
+        await Future<void>.delayed(const Duration(milliseconds: 300));
+        gate.complete();
+        final results = [
+          for (final r in await Future.wait([a, b]))
+            GenerateMenuResponse.fromJson(r.json),
+        ];
+        expect(results.where((r) => r.budgetWarning80), hasLength(1));
+      },
+    );
+
+    test('lần tạo lỗi không mang cờ; lần thành công kế tiếp mới báo', () async {
+      await spent((40000 * 100 - 1) / 100);
+      app.ai.mode = FakeAiMode.wrongKcal;
+      expect((await generate()).errorCode, 'ai_invalid_output');
+      app.ai.mode = FakeAiMode.valid;
+      expect((await ok()).budgetWarning80, isTrue);
+    });
+  });
+
   group('TAC-07: truy cập chéo tài khoản', () {
     test('B không xem, không pull được thực đơn và lượt của A; app không ghi '
         'được entity chỉ pull', () async {

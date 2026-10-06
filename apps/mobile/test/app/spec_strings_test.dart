@@ -152,4 +152,11 @@ void main() {
       'Gợi ý AI tạm dừng đến ngày 1/11 vì đã dùng hết ngân sách tháng này.',
     );
   });
+
+  test('F11-R6, 04 S-50, S-54: câu ngân sách AI có tham số', () {
+    expect(S.budgetSummary('12.500đ', '50.000đ'), '12.500đ / 50.000đ');
+    expect(S.budgetOfMonth('50.000đ', 10), 'trên 50.000đ của tháng 10');
+    expect(S.percent(25), '25%');
+    expect(S.budgetResets('01/11'), 'Đặt lại vào 01/11');
+  });
 }

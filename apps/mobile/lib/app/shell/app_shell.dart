@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/me/application/budget_view.dart';
 import '../../features/me/application/calorie_view.dart';
+import '../../features/me/presentation/budget_screen.dart';
 import '../../features/today/application/today_view.dart';
 import 'app_tab.dart';
 import 'app_tab_bar.dart';
@@ -25,7 +27,13 @@ class AppShell extends ConsumerWidget {
     // provider phụ thuộc giữa chừng ("setState() during build").
     ref
       ..listen(todayProvider, (_, _) {})
-      ..listen(calorieViewProvider, (_, _) {});
+      ..listen(calorieViewProvider, (_, _) {})
+      // F11-R4: hộp báo 80% ngay sau lần tạo thực đơn, dù đang ở tab nào.
+      ..listen(budgetWarningProvider, (_, show) {
+        if (!show) return;
+        ref.read(budgetWarningProvider.notifier).shown();
+        showBudgetWarning(context);
+      });
     return Scaffold(
       extendBody: true,
       body: navigationShell,
