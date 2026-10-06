@@ -39,7 +39,7 @@ class TodayScreen extends ConsumerWidget {
       children: const [
         SessionCard(),
         UnmarkedCard(),
-        WeekStripCard(),
+        ProgressCard(),
         MenuCard(),
       ],
     );

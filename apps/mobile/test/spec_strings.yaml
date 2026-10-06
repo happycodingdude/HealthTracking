@@ -185,3 +185,9 @@ extraNotCounted: "Không tính vào kế hoạch tuần." # 04 S-24, mock S-24-1
 deleteExtraSession: "Xóa buổi tập thêm" # 04 S-24
 delete: "Xóa" # 04 §6.13.1 (hộp xác nhận: nút xóa chữ đỏ)
 cancel: "Hủy" # 04 S-20 (hộp xác nhận "Chia lại" · "Hủy")
+
+# Tiến độ tuần S-25, thẻ tiến độ (VS-08)
+weekProgressTitle: "Tiến độ tuần" # 04 S-25, mock S-25-1
+noPlannedSessions: "Tuần này không có buổi tập theo lịch" # 03 F06-E1, 04 §6.7.3
+previousWeek: "Tuần trước" # nhãn VoiceOver nút "‹" ở S-25 (04 §6.17)
+nextWeek: "Tuần sau" # nhãn VoiceOver nút "›" ở S-25 (04 §6.17)

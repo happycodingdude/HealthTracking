@@ -266,6 +266,22 @@ abstract final class S {
   /// Mock S-25: "Nghỉ · Bụng".
   static String restWithExtra(String muscles) => '$rest · $muscles';
 
+  // Tiến độ tuần (04 §6.7.3, S-25, S-20), F-06.
+  static const weekProgressTitle = 'Tiến độ tuần';
+  static const noPlannedSessions = 'Tuần này không có buổi tập theo lịch';
+  static const previousWeek = 'Tuần trước';
+  static const nextWeek = 'Tuần sau';
+
+  /// F-06, 04 §6.7.3: "Đã tập X/Y buổi theo lịch".
+  static String progressLine(int done, int planned) =>
+      'Đã tập $done/$planned buổi theo lịch';
+
+  /// F-06: "+Z buổi thêm".
+  static String extraCount(int extra) => '+$extra buổi thêm';
+
+  /// 04 S-20: tiêu đề tuần "… · Đã tập 2/3".
+  static String weekDone(int done, int planned) => 'Đã tập $done/$planned';
+
   // Định dạng (UR-10).
   static const currencySuffix = 'đ';
   static const weekdays = [
@@ -460,5 +476,9 @@ abstract final class S {
     'deleteExtraSession': deleteExtraSession,
     'delete': delete,
     'cancel': cancel,
+    'weekProgressTitle': weekProgressTitle,
+    'noPlannedSessions': noPlannedSessions,
+    'previousWeek': previousWeek,
+    'nextWeek': nextWeek,
   };
 }

@@ -1,15 +1,18 @@
 import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../app/shell/app_tab.dart';
 import '../../../app/strings_vi.dart';
 import '../../../app/theme.dart';
 import '../../../app/time_ticker.dart';
 import '../../../core/formatters.dart';
-import '../../../core/widgets/session_tag.dart';
 import '../../../core/widgets/tab_page.dart';
+import '../../today/application/progress_view.dart';
+import '../../today/presentation/week_progress_screen.dart';
 import '../application/schedule_providers.dart';
+import 'day_line.dart';
 
 /// S-20 — Lịch tháng, chế độ xem (VS04-T11). Danh sách ngày nhóm theo tuần,
 /// hôm nay được làm nổi bật và tự cuộn tới khi mở tab; xem được các tháng
@@ -185,21 +188,9 @@ class _MonthList extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           for (final week in weeks) ...[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-              child: Text(
-                Fmt.weekRange(
-                  week.first.weekStart,
-                  week.first.weekStart.addDays(6),
-                ),
-                style: context.text.bodyMedium?.copyWith(
-                  color: palette.textSecondary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
+            _WeekHeader(start: week.first.weekStart),
             for (final date in week)
-              _DayLine(
+              DayLine(
                 key: date == today ? todayKey : ValueKey('day-${date.toKey()}'),
                 date: date,
                 day: byDate[date],
@@ -212,114 +203,60 @@ class _MonthList extends StatelessWidget {
   }
 }
 
-class _DayLine extends StatelessWidget {
-  const _DayLine({
-    super.key,
-    required this.date,
-    required this.day,
-    required this.now,
-  });
+/// Tiêu đề tuần "05/10 – 11/10" và bên phải "Đã tập 2/3 ›" (04 S-20, mock
+/// S-20-1). Chạm → S-25 của tuần đó; tuần chưa tới không mở được (F06-R5).
+class _WeekHeader extends ConsumerWidget {
+  const _WeekHeader({required this.start});
 
-  final LocalDate date;
-
-  /// null với chủ nhật (luôn nghỉ, không có bản ghi).
-  final PlanDay? day;
-  final DateTime now;
+  /// Thứ 2 của tuần.
+  final LocalDate start;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final palette = context.palette;
-    final today = LocalDate.fromDateTime(now);
-    final d = day;
-    final status = d == null ? null : SessionStatus.derive(d, now);
-    final past = date.isBefore(today);
-    final isToday = date == today;
-    final extra = d?.extraMuscles;
-    final info = d != null && d.isWorkout
-        ? '${Fmt.muscles(d.muscles)} · ${Fmt.time(d.time!)}'
-        : extra != null
-        // Buổi tập thêm hiện trong dòng của ngày đó (04 S-20, mock S-25).
-        ? S.restWithExtra(Fmt.muscles(extra))
-        : S.rest;
-    final color = past ? palette.textSecondary : null;
-    final dateText = Text(
-      Fmt.shortWeekdayDate(date),
-      style: context.text.bodyLarge?.copyWith(
-        fontWeight: FontWeight.w700,
-        color: color,
-      ),
+    final week = ProgressWeek.containing(start);
+    final weeks = ref.watch(progressWeeksProvider);
+    final progress = ref.watch(weekProgressProvider(week));
+    final style = context.text.bodyMedium?.copyWith(
+      color: palette.textSecondary,
+      fontWeight: FontWeight.w700,
     );
-    final infoText = Text(
-      info,
-      style: context.text.bodyLarge?.copyWith(
-        color: d != null && d.isWorkout ? color : palette.textSecondary,
-      ),
-    );
-    final tags = [
-      if (status != null) SessionTag(status),
-      if (extra != null) const ExtraSessionTag(),
-      if (d?.source == DaySource.override)
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: context.colors.primaryContainer,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            S.overridden,
-            style: context.text.labelLarge?.copyWith(
-              color: context.colors.onPrimaryContainer,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-    ];
-    // Cỡ chữ lớn: ngày, nội dung và nhãn xếp dọc, không cắt chữ (UX-AC18).
-    final stacked = MediaQuery.textScalerOf(context).scale(1) >= 1.6;
-    return Container(
-      color: isToday ? context.colors.primaryContainer : null,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: stacked
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                dateText,
-                infoText,
-                if (tags.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Wrap(spacing: 8, runSpacing: 6, children: tags),
-                ],
-              ],
-            )
-          : Row(
-              children: [
-                SizedBox(width: 96, child: dateText),
-                // Nội dung và nhãn không đủ một hàng thì nhãn xuống dưới,
-                // không ép nội dung thành cột hẹp (nhãn "Không tập · tự động").
-                Expanded(
-                  child: Wrap(
-                    alignment: WrapAlignment.spaceBetween,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 8,
-                    runSpacing: 6,
-                    children: [
-                      infoText,
-                      if (tags.isNotEmpty)
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            for (final (i, t) in tags.indexed) ...[
-                              if (i > 0) const SizedBox(height: 4),
-                              t,
-                            ],
-                          ],
-                        ),
-                    ],
-                  ),
+    // Tuần trước tuần thiết lập (chỉ có chủ nhật trong lịch) không có tiến độ.
+    final shown =
+        progress != null && weeks.isNotEmpty && week.start >= weeks.first.start;
+    final openable = shown && week.start <= weeks.last.start;
+    final count = !shown
+        ? null
+        : Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(S.weekDone(progress.done, progress.planned), style: style),
+              if (openable)
+                Icon(
+                  Icons.chevron_right,
+                  size: 20,
+                  color: palette.textSecondary,
                 ),
-              ],
-            ),
+            ],
+          );
+    return InkWell(
+      key: ValueKey('week-header-${start.toKey()}'),
+      onTap: openable
+          ? () => context.push(weekProgressPath(AppTab.schedule, week))
+          : null,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+        child: Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          runSpacing: 4,
+          children: [
+            Text(Fmt.weekRange(start, start.addDays(6)), style: style),
+            ?count,
+          ],
+        ),
+      ),
     );
   }
 }

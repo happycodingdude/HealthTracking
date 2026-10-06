@@ -145,5 +145,18 @@ void main() {
       await tester.pumpAndSettle();
       await snap('s24_${v.name}');
     });
+
+    testWidgets('S-25 tiến độ tuần (mock S-25-1) ${v.name}', (tester) async {
+      final db = await seed();
+      await seedMark(db, wed, DayMark.done);
+      await seedExtra(db, LocalDate(2026, 10, 8), const [MuscleGroup.abs]);
+      await pump(tester, v, db, DateTime(2026, 10, 9, 12));
+      final card = find.byKey(const ValueKey('progress-card'));
+      await tester.ensureVisible(card);
+      await tester.pumpAndSettle();
+      await tester.tap(card);
+      await tester.pumpAndSettle();
+      await snap('s25_${v.name}');
+    });
   }
 }

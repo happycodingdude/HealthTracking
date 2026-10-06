@@ -1,3 +1,4 @@
+import 'package:domain/domain.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -19,6 +20,7 @@ import '../features/onboarding/presentation/reminder_step_screen.dart';
 import '../features/onboarding/presentation/schedule_step_screen.dart';
 import '../features/schedule/presentation/schedule_screen.dart';
 import '../features/today/presentation/today_screen.dart';
+import '../features/today/presentation/week_progress_screen.dart';
 import '../features/weight/presentation/weight_screen.dart';
 import 'shell/app_shell.dart';
 import 'shell/app_tab.dart';
@@ -144,6 +146,18 @@ final routerProvider = Provider<GoRouter>((ref) {
                   path: tab.path,
                   builder: (context, state) => _tabScreen(tab),
                   routes: [
+                    // S-25 mở từ Hôm nay (thẻ tiến độ) hoặc Lịch tập (tiêu
+                    // đề tuần), nằm trong tab đó.
+                    if (tab == AppTab.today || tab == AppTab.schedule)
+                      GoRoute(
+                        path: 'progress/:week',
+                        builder: (_, state) => WeekProgressScreen(
+                          week: ProgressWeek.containing(
+                            LocalDate.parse(state.pathParameters['week']!),
+                          ),
+                          tab: tab,
+                        ),
+                      ),
                     // S-56 nằm trong tab Tôi, thanh tab vẫn hiện.
                     if (tab == AppTab.me)
                       GoRoute(
