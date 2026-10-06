@@ -94,3 +94,17 @@ Future<void> seedMark(
     ),
   );
 }
+
+/// Ghi sẵn buổi tập thêm ngày nghỉ [date] (bỏ qua kiểm tra thời gian của use
+/// case).
+Future<void> seedExtra(
+  AppDatabase db,
+  LocalDate date,
+  List<MuscleGroup> muscles,
+) async {
+  final schedule = ScheduleRepository(db);
+  final d = (await schedule.day(date))!;
+  await schedule.putDay(
+    d.withExtra(muscles, loggedAt: date.atTime(LocalTime(20, 0))),
+  );
+}

@@ -46,12 +46,62 @@ class SessionTag extends StatelessWidget {
       ),
     };
     final text = label(status.state);
+    return _TagChip(
+      key: ValueKey('session-tag-${status.state.name}'),
+      semantics: status.locked ? '$text, ${S.statusLocked}' : text,
+      text: text,
+      icon: icon,
+      iconSize: status.state == SessionState.awaitingMark ? 10 : 18,
+      fg: fg,
+      bg: bg,
+      locked: status.locked,
+    );
+  }
+}
+
+/// Nhãn "Buổi tập thêm" (04 §6.13.3): xanh ngọc, dấu cộng.
+class ExtraSessionTag extends StatelessWidget {
+  const ExtraSessionTag({super.key});
+
+  @override
+  Widget build(BuildContext context) => _TagChip(
+    key: const ValueKey('session-tag-extra'),
+    semantics: S.extraSession,
+    text: S.extraSession,
+    icon: Icons.add,
+    iconSize: 18,
+    fg: context.colors.onPrimaryContainer,
+    bg: context.colors.primaryContainer,
+  );
+}
+
+class _TagChip extends StatelessWidget {
+  const _TagChip({
+    super.key,
+    required this.semantics,
+    required this.text,
+    required this.icon,
+    required this.iconSize,
+    required this.fg,
+    required this.bg,
+    this.locked = false,
+  });
+
+  final String semantics;
+  final String text;
+  final IconData icon;
+  final double iconSize;
+  final Color fg;
+  final Color bg;
+  final bool locked;
+
+  @override
+  Widget build(BuildContext context) {
     return Semantics(
       container: true,
-      label: status.locked ? '$text, ${S.statusLocked}' : text,
+      label: semantics,
       child: ExcludeSemantics(
         child: Container(
-          key: ValueKey('session-tag-${status.state.name}'),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
             color: bg,
@@ -60,11 +110,7 @@ class SessionTag extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                icon,
-                size: status.state == SessionState.awaitingMark ? 10 : 18,
-                color: fg,
-              ),
+              Icon(icon, size: iconSize, color: fg),
               const SizedBox(width: 6),
               Flexible(
                 child: Text(
@@ -75,7 +121,7 @@ class SessionTag extends StatelessWidget {
                   ),
                 ),
               ),
-              if (status.locked) ...[
+              if (locked) ...[
                 const SizedBox(width: 6),
                 Icon(Icons.lock, size: 16, color: fg),
               ],

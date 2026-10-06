@@ -177,3 +177,11 @@ menuTargetPrefix: "Theo mức" # mock S-10-1 "Theo mức 2.090 kcal"
 actualMusclesLabel: "Nhóm cơ đã tập" # mock S-23-1
 missingActualMuscles: "Vui lòng chọn ít nhất 1 nhóm cơ" # 03 F05-V1, F05-V2
 lockedNote: "Chỉ sửa được trong 7 ngày" # 03 F05-E3
+
+# Buổi tập thêm S-24 (VS-07)
+logExtraSession: "Đã tập ngoài lịch? Ghi buổi tập thêm" # 04 §6.7.1, mock S-10-3, S-21-2
+extraSession: "Buổi tập thêm" # 04 §6.13.3, mock S-25-1
+extraNotCounted: "Không tính vào kế hoạch tuần." # 04 S-24, mock S-24-1
+deleteExtraSession: "Xóa buổi tập thêm" # 04 S-24
+delete: "Xóa" # 04 §6.13.1 (hộp xác nhận: nút xóa chữ đỏ)
+cancel: "Hủy" # 04 S-20 (hộp xác nhận "Chia lại" · "Hủy")

@@ -11,6 +11,7 @@ import '../../../core/widgets/reference_tag.dart';
 import '../../../core/widgets/session_tag.dart';
 import '../../me/application/calorie_view.dart';
 import '../../schedule/application/schedule_providers.dart';
+import '../../schedule/presentation/extra_session_sheet.dart';
 import '../../schedule/presentation/mark_session_sheet.dart';
 import '../application/today_view.dart';
 import 'quick_mark.dart';
@@ -181,13 +182,36 @@ class SessionCard extends ConsumerWidget {
           );
 
     if (day == null || status == null) {
-      // Ngày nghỉ thứ 2 → thứ 7, hoặc chủ nhật (FR-21).
+      // Ngày nghỉ thứ 2 → thứ 7, hoặc chủ nhật (FR-21): ghi buổi tập thêm
+      // (F05-R7, F05-E6). Ngày chưa có lịch (trước ngày thiết lập) thì không.
+      final extra = day?.extraMuscles;
+      final canLog = day != null && ExtraSessionRules.canLog(day, now);
       return TodayCard(
         key: const ValueKey('session-card'),
         title: S.todaySessionTitle,
         children: [
-          Heading(today.isSunday ? S.sundayRest : S.todayRest, style: title),
-          nextLine(),
+          if (extra != null) ...[
+            Heading(S.extraSessionLine(Fmt.muscles(extra)), style: title),
+            if (canLog) ...[
+              const SizedBox(height: 4),
+              _Link(
+                id: const ValueKey('extra-edit'),
+                label: S.edit,
+                onTap: () => showExtraSessionSheet(context, today),
+              ),
+            ],
+          ] else ...[
+            Heading(today.isSunday ? S.sundayRest : S.todayRest, style: title),
+            nextLine(),
+            if (canLog) ...[
+              const SizedBox(height: 4),
+              _Link(
+                id: const ValueKey('extra-log'),
+                label: S.logExtraSession,
+                onTap: () => showExtraSessionSheet(context, today),
+              ),
+            ],
+          ],
         ],
       );
     }
@@ -363,9 +387,15 @@ class _DayCell extends StatelessWidget {
         palette.neutral.withValues(alpha: 0.45),
         null,
       ),
+      // Ngày nghỉ: có buổi tập thêm thì xanh ngọc (04 §6.13.3).
+      null when d?.extraMuscles != null => (context.colors.primary, null),
       null => (palette.neutralContainer, null),
     };
-    final label = status == null ? S.rest : SessionTag.label(status.state);
+    final label = status != null
+        ? SessionTag.label(status.state)
+        : d?.extraMuscles != null
+        ? S.extraSession
+        : S.rest;
     return Expanded(
       child: Semantics(
         container: true,

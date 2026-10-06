@@ -131,5 +131,19 @@ void main() {
       await tester.pumpAndSettle();
       await snap('s23_${v.name}');
     });
+
+    testWidgets('S-24 sửa buổi tập thêm (mock S-24-1) ${v.name}', (
+      tester,
+    ) async {
+      final db = await seed();
+      final thu = LocalDate(2026, 10, 8);
+      await seedExtra(db, thu, const [MuscleGroup.abs]);
+      await pump(tester, v, db, DateTime(2026, 10, 8, 21));
+      final edit = find.byKey(const ValueKey('extra-edit'));
+      await tester.ensureVisible(edit);
+      await tester.tap(edit);
+      await tester.pumpAndSettle();
+      await snap('s24_${v.name}');
+    });
   }
 }
