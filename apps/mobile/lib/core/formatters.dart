@@ -20,6 +20,12 @@ abstract final class Fmt {
   /// Cân nặng lưu dạng ×10 (05 §6.7.1): 725 → `72,5 kg`, 800 → `80 kg`.
   static String kg(int weightKgX10) => '${kgNumber(weightKgX10)} kg';
 
+  /// Chênh lệch cân nặng có mũi tên, màu trung tính (F07-R7, UA-15):
+  /// -4 → `↓ 0,4 kg`, 8 → `↑ 0,8 kg`, 0 → `0 kg`.
+  static String weightChange(int diffKgX10) => diffKgX10 == 0
+      ? kg(0)
+      : '${diffKgX10 < 0 ? '↓' : '↑'} ${kg(diffKgX10.abs())}';
+
   /// Phần số của cân nặng, dấu phẩy thập phân: 725 → `72,5`.
   static String kgNumber(int weightKgX10) {
     final whole = integer(weightKgX10 ~/ 10);

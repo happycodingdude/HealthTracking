@@ -23,6 +23,12 @@ final class WeightRepository {
     _db.weights,
   )..where((w) => w.weekStart.equals(week.toKey()))).go();
 
+  /// Mọi số cân, cũ → mới (S-40).
+  Stream<List<WeightEntry>> watchAll() =>
+      (_db.select(_db.weights)..orderBy([(w) => OrderingTerm.asc(w.weekStart)]))
+          .watch()
+          .map((rows) => [for (final r in rows) _entry(r)]);
+
   Future<List<WeightEntry>> all() async => [
     for (final r in await (_db.select(
       _db.weights,

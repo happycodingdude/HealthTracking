@@ -104,7 +104,7 @@ setOtherLevel: "Đặt mức khác" # 04 S-04, S-52
 belowSafetyFloor: "Dưới ngưỡng an toàn" # 03 F02-R5, 04 S-52
 lowCalorieTitle: "Mức calo thấp" # 04 S-52 (mock S-52-2)
 saveAnyway: "Vẫn lưu" # 04 S-52
-editAgain: "Sửa lại" # 04 S-52
+editAgain: "Sửa lại" # 04 S-52, S-41
 noteRaisedToFloor: "Đã điều chỉnh lên ngưỡng an toàn tối thiểu." # 03 F02-E1
 noteMaintenanceBelowFloor: "Với thông số của Bạn, mức ăn an toàn tối thiểu đã gần hoặc cao hơn nhu cầu duy trì. Việc giảm mỡ nên dựa thêm vào vận động." # 03 F02-E2
 setCalorieTitle: "Đặt mức calo" # 04 S-52 (mock S-52-2)
@@ -220,3 +220,15 @@ markSession: "Đánh dấu buổi tập" # 04 §6.4 (tên S-23)
 editTodaySession: "Sửa buổi hôm nay" # 04 §6.7.1
 missingTimeOrMuscles: "Vui lòng chọn giờ tập và nhóm cơ" # 03 F03-V4
 muscleGroups: "Nhóm cơ" # 03 §6.4 (thông tin của mỗi thứ), nhãn ở S-21 "Lên lịch tập"
+
+# Cân nặng S-40, S-41 (VS-10)
+logThisWeek: "Ghi cân tuần này" # 04 S-40
+trendTitle: "Xu hướng" # mock S-40-1
+lastEightWeeks: "8 tuần gần nhất" # mock S-40-1, UA-13
+firstWeightHint: "Ghi thêm tuần sau để thấy xu hướng" # 03 F07-E1, 04 S-40
+notLogged: "Chưa ghi" # 04 S-40
+add: "Thêm" # 04 S-40
+fieldWeight: "Cân nặng" # mock S-41-1 "Cân nặng (kg)"; đơn vị kg đứng sau ô (04 §6.13.5)
+replace: "Thay" # 04 S-41
+deleteWeight: "Xóa số cân này" # 04 S-41
+keepOneWeight: "Cần giữ ít nhất 1 số cân để tính mức calo." # 04 S-41, 03 F07-R3

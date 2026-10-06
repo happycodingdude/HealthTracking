@@ -333,6 +333,51 @@ abstract final class S {
   static String dayTitle(String weekdayDate, {required bool today}) =>
       '$weekdayDate${today ? ' · $tabToday' : ''}';
 
+  // Cân nặng S-40, S-41 (04 §6.10), F-07.
+  static const logThisWeek = 'Ghi cân tuần này';
+  static const trendTitle = 'Xu hướng';
+  static const lastEightWeeks = '8 tuần gần nhất';
+  static const firstWeightHint = 'Ghi thêm tuần sau để thấy xu hướng';
+  static const notLogged = 'Chưa ghi';
+  static const add = 'Thêm';
+  static const fieldWeight = 'Cân nặng';
+  static const replace = 'Thay';
+  static const deleteWeight = 'Xóa số cân này';
+  static const keepOneWeight = 'Cần giữ ít nhất 1 số cân để tính mức calo.';
+
+  /// Mock S-40: "Mới nhất · Tuần 05/10 – 11/10".
+  static String latestWeek(String range) => 'Mới nhất · Tuần $range';
+
+  /// 04 S-40: "Tuần 05/10 – 11/10".
+  static String weekLabel(String range) => 'Tuần $range';
+
+  /// F07-R7: "↓ 0,4 kg so với lần trước" ([change] đã có mũi tên).
+  static String vsPrevious(String change) => '$change so với lần trước';
+
+  /// F07-R7: "↓ 2,5 kg so với ban đầu".
+  static String vsInitial(String change) => '$change so với ban đầu';
+
+  /// 04 S-41: "Cân nặng tuần {dd/mm} – {dd/mm}".
+  static String weightSheetTitle(String range) => 'Cân nặng tuần $range';
+
+  /// 04 S-41: "Tuần này đã ghi {X} kg".
+  static String weekAlreadyLogged(String kg) => 'Tuần này đã ghi $kg';
+
+  /// F07-R1: "Tuần này đã ghi {X} kg. Thay bằng số mới?"
+  static String replaceWeight(String kg) =>
+      'Tuần này đã ghi $kg. Thay bằng số mới?';
+
+  /// F07-V2: "Số này chênh {N} kg so với lần trước. Bạn chắc chắn chứ?"
+  static String bigWeightChange(String kg) =>
+      'Số này chênh $kg so với lần trước. Bạn chắc chắn chứ?';
+
+  /// 04 S-41: "Xóa số cân tuần {dd/mm}?"
+  static String deleteWeightConfirm(String dayMonth) =>
+      'Xóa số cân tuần $dayMonth?';
+
+  /// 04 S-41: "Đã lưu {X} kg".
+  static String weightSaved(String kg) => 'Đã lưu $kg';
+
   // Định dạng (UR-10).
   static const currencySuffix = 'đ';
   static const weekdays = [
@@ -558,5 +603,15 @@ abstract final class S {
     'editTodaySession': editTodaySession,
     'missingTimeOrMuscles': missingTimeOrMuscles,
     'muscleGroups': muscleGroups,
+    'logThisWeek': logThisWeek,
+    'trendTitle': trendTitle,
+    'lastEightWeeks': lastEightWeeks,
+    'firstWeightHint': firstWeightHint,
+    'notLogged': notLogged,
+    'add': add,
+    'fieldWeight': fieldWeight,
+    'replace': replace,
+    'deleteWeight': deleteWeight,
+    'keepOneWeight': keepOneWeight,
   };
 }

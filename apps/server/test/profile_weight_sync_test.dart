@@ -183,6 +183,7 @@ void main() {
   });
 
   test('cân: ghi, thay, xóa (tombstone đến được máy khác)', () async {
+    await pushOne(weight('2026-09-28', 752));
     await pushOne(weight('2026-10-05', 750));
     await pushOne(
       weight('2026-10-05', 746, at: t0.add(const Duration(minutes: 1))),
@@ -192,7 +193,7 @@ void main() {
     )).changes.where((c) => c.entity == 'weight');
     expect(
       [for (final c in changes) (c.key, c.data?['weightKgX10'])],
-      [('2026-10-05', 746)],
+      [('2026-09-28', 752), ('2026-10-05', 746)],
     );
     final cursor = (await app.pull(token)).nextCursor;
     await pushOne(
@@ -207,6 +208,40 @@ void main() {
     expect(
       [for (final c in changes) (c.entity, c.key, c.deleted)],
       [('weight', '2026-10-05', true)],
+    );
+  });
+
+  test('F07-AC5, F07-R3: xóa số cân duy nhất còn lại → rejected', () async {
+    await pushOne(weight('2026-10-05', 750));
+    final r = await pushOne(
+      mutation(
+        'weight',
+        '2026-10-05',
+        SyncOp.delete,
+        at: t0.add(const Duration(minutes: 1)),
+      ),
+    );
+    expect((r.status, r.field), (PushStatus.rejected, 'key'));
+    final rows = await app.tdb.pool.execute(
+      "SELECT weight_kg_x10, deleted FROM weights WHERE week_start = '2026-10-05'",
+    );
+    expect(rows.single, [750, false]);
+  });
+
+  test('F07-R2: đã thiết lập (tuần 05/10) → ghi tuần 28/09 bị rejected; tuần '
+      'thiết lập được', () async {
+    final completed = body(step: 5).copyWith(
+      calorieMode: CalorieMode.auto,
+      calorieKcal: 2210,
+      setupDate: LocalDate(2026, 10, 7),
+      onboardingCompletedAt: accepted,
+    );
+    expect((await pushOne(profile(completed))).status, PushStatus.applied);
+    final before = await pushOne(weight('2026-09-28', 750));
+    expect((before.status, before.field), (PushStatus.rejected, 'key'));
+    expect(
+      (await pushOne(weight('2026-10-05', 750))).status,
+      PushStatus.applied,
     );
   });
 
