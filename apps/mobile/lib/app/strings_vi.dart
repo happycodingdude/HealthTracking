@@ -378,6 +378,43 @@ abstract final class S {
   /// 04 S-41: "Đã lưu {X} kg".
   static String weightSaved(String kg) => 'Đã lưu $kg';
 
+  // Hồ sơ S-51, mức calo S-52, đề xuất S-53, dòng S-50 (VS-11), F01, F02.
+  static const bodyProfile = 'Hồ sơ cơ thể';
+  static const calorieLevel = 'Mức calo';
+  static const profileSaved = 'Đã lưu hồ sơ';
+  static const currentWeight = 'Cân nặng hiện tại';
+  static const logInWeightTab = 'Ghi ở tab Cân nặng';
+  static const updateCalorieTitle = 'Cập nhật mức calo?';
+  static const keepCurrent = 'Giữ nguyên';
+
+  /// 04 S-50: "175 cm · 30 tuổi · Nam".
+  static String profileSummary(int heightCm, int age, String sex) =>
+      '$heightCm cm · $age tuổi · $sex';
+
+  /// 04 S-50: "2.210 kcal · Tự động".
+  static String calorieSummary(String kcal, String mode) => '$kcal · $mode';
+
+  /// F02-R8: "Mức calo đã cập nhật từ X thành Y kcal."
+  static String calorieUpdated(String from, String to) =>
+      'Mức calo đã cập nhật từ $from thành $to kcal.';
+
+  /// F02-R9: "Theo cân nặng mới, mức ước tính là {Y} kcal. Bạn muốn dùng con
+  /// số này không?"; do sửa hồ sơ, sang năm mới: "Theo thông tin mới, …"
+  /// (04 S-53).
+  static String calorieProposal(String kcal, {required bool byWeight}) =>
+      '${byWeight ? 'Theo cân nặng mới' : 'Theo thông tin mới'}, mức ước tính '
+      'là $kcal. Bạn muốn dùng con số này không?';
+
+  /// 04 S-53: "Hiện tại Bạn đang dùng {X} kcal."
+  static String currentlyUsing(String kcal) => 'Hiện tại Bạn đang dùng $kcal.';
+
+  /// 04 S-52, S-53: "Dùng {Y} kcal".
+  static String useKcal(String kcal) => 'Dùng $kcal';
+
+  /// 04 S-52, F02-AC6: "Dùng lại ước tính của app ({Y} kcal)".
+  static String useAppEstimate(String kcal) =>
+      'Dùng lại ước tính của app ($kcal)';
+
   // Định dạng (UR-10).
   static const currencySuffix = 'đ';
   static const weekdays = [
@@ -613,5 +650,12 @@ abstract final class S {
     'replace': replace,
     'deleteWeight': deleteWeight,
     'keepOneWeight': keepOneWeight,
+    'bodyProfile': bodyProfile,
+    'calorieLevel': calorieLevel,
+    'profileSaved': profileSaved,
+    'currentWeight': currentWeight,
+    'logInWeightTab': logInWeightTab,
+    'updateCalorieTitle': updateCalorieTitle,
+    'keepCurrent': keepCurrent,
   };
 }

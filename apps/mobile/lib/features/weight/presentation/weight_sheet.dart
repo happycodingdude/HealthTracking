@@ -14,6 +14,7 @@ import '../../../core/widgets/primary_button.dart';
 import '../../../core/widgets/toast.dart';
 import '../../../core/widgets/unsaved_changes.dart';
 import '../../../data/sync/sync_providers.dart';
+import '../../me/presentation/calorie_proposal_sheet.dart';
 import '../application/weight_edits.dart';
 
 /// Mở S-41 cho tuần [week]. [edit] = chế độ sửa (chạm dòng đã ghi ở S-40):
@@ -110,8 +111,9 @@ class _WeightSheetState extends ConsumerState<WeightSheet> {
       );
       if (!ok) return;
     }
+    final WeightChange change;
     try {
-      await ref.read(weightEditsProvider).log(widget.week, kgX10);
+      change = await ref.read(weightEditsProvider).log(widget.week, kgX10);
     } on WeightException catch (e, st) {
       await ref.read(errorReporterProvider).report(e, st, reason: 'weight');
       return;
@@ -120,6 +122,8 @@ class _WeightSheetState extends ConsumerState<WeightSheet> {
     Navigator.of(context).pop();
     if (widget.host.mounted) {
       showToast(widget.host, S.weightSaved(Fmt.kg(kgX10)));
+      // F07-AC6: số cân mới nhất đổi → mức calo cập nhật hoặc đề xuất.
+      showCalorieOutcome(widget.host, change.calorie);
     }
   }
 
@@ -136,13 +140,17 @@ class _WeightSheetState extends ConsumerState<WeightSheet> {
       destructive: true,
     );
     if (!ok) return;
+    final WeightChange change;
     try {
-      await ref.read(weightEditsProvider).delete(widget.week);
+      change = await ref.read(weightEditsProvider).delete(widget.week);
     } on WeightException catch (e, st) {
       await ref.read(errorReporterProvider).report(e, st, reason: 'weight');
       return;
     }
-    if (mounted) Navigator.of(context).pop();
+    if (!mounted) return;
+    Navigator.of(context).pop();
+    // F07-E2: xóa số cân mới nhất → tính lại mức calo.
+    if (widget.host.mounted) showCalorieOutcome(widget.host, change.calorie);
   }
 
   Future<bool> _confirm({

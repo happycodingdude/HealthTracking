@@ -232,3 +232,12 @@ fieldWeight: "Cân nặng" # mock S-41-1 "Cân nặng (kg)"; đơn vị kg đứ
 replace: "Thay" # 04 S-41
 deleteWeight: "Xóa số cân này" # 04 S-41
 keepOneWeight: "Cần giữ ít nhất 1 số cân để tính mức calo." # 04 S-41, 03 F07-R3
+
+# Hồ sơ S-51, mức calo S-52, đề xuất S-53, dòng S-50 (VS-11)
+bodyProfile: "Hồ sơ cơ thể" # 04 S-50, S-51
+calorieLevel: "Mức calo" # 04 S-50, mock S-52-1
+profileSaved: "Đã lưu hồ sơ" # 04 S-51
+currentWeight: "Cân nặng hiện tại" # 04 S-51 "Cân nặng hiện tại: {X} kg", mock S-51-1
+logInWeightTab: "Ghi ở tab Cân nặng" # 04 S-51
+updateCalorieTitle: "Cập nhật mức calo?" # mock S-53-1
+keepCurrent: "Giữ nguyên" # 03 F02-R9, 04 S-52, S-53

@@ -105,6 +105,25 @@ final class Profile {
     timezone: timezone ?? this.timezone,
   );
 
+  /// Bản sao với đề xuất mức calo đang chờ (F02-R9, F02-E3); null = không
+  /// có đề xuất.
+  Profile withPending(int? kcal, CaloriePendingReason? reason) => Profile(
+    onboardingStep: onboardingStep,
+    heightCm: heightCm,
+    birthYear: birthYear,
+    sex: sex,
+    activityLevel: activityLevel,
+    setupDate: setupDate,
+    disclaimerAcceptedAt: disclaimerAcceptedAt,
+    onboardingCompletedAt: onboardingCompletedAt,
+    calorieMode: calorieMode,
+    calorieKcal: calorieKcal,
+    caloriePendingKcal: kcal,
+    caloriePendingReason: kcal == null ? null : reason,
+    remindersEnabled: remindersEnabled,
+    timezone: timezone,
+  );
+
   @override
   bool operator ==(Object other) =>
       other is Profile &&

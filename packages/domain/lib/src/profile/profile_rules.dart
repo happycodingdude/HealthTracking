@@ -49,14 +49,16 @@ abstract final class ProfileRules {
     required int? birthYear,
     required Sex? sex,
     required ActivityLevel? activityLevel,
-    required String weight,
+    required String? weight,
     required int currentYear,
   }) => [
     if (!isValidHeight(parseHeight(height))) ProfileField.height,
     if (!isValidBirthYear(birthYear, currentYear)) ProfileField.birthYear,
     if (sex == null) ProfileField.sex,
     if (activityLevel == null) ProfileField.activityLevel,
-    if (!WeightRules.isValidInput(weight)) ProfileField.weight,
+    // Sửa hồ sơ (S-51) không có ô cân nặng (F01-R4): [weight] null.
+    if (weight != null && !WeightRules.isValidInput(weight))
+      ProfileField.weight,
   ];
 
   /// Kiểm tra hồ sơ được gửi lên server (06 VS03-T05). Trả tên trường sai

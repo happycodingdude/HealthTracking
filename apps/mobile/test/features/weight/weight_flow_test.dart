@@ -27,7 +27,7 @@ void main() {
     clock = FixedClock(DateTime(2026, 10, 8, 9));
   });
 
-  Future<void> pump(WidgetTester tester) async {
+  Future<void> pump(WidgetTester tester, {bool openWeight = true}) async {
     tester.view
       ..physicalSize = const Size(390 * 3, 844 * 3)
       ..devicePixelRatio = 3;
@@ -46,6 +46,7 @@ void main() {
       UncontrolledProviderScope(container: container, child: const HealthApp()),
     );
     await tester.pumpAndSettle();
+    if (!openWeight) return;
     await tester.tap(
       find.descendant(
         of: find.byType(AppTabBar),
@@ -222,4 +223,35 @@ void main() {
       expect(find.textContaining('Tuần này đã ghi'), findsNothing);
     },
   );
+
+  testWidgets('lỗi tìm thấy ở demo VS-11: đang ở tab Tôi, sang ngày mới rồi mở '
+      'tab Cân nặng lần đầu → không có lỗi "setState() during build" của '
+      'Riverpod, S-40 theo ngày mới', (tester) async {
+    await seedSetUp(db);
+    await pump(tester, openWeight: false);
+    Finder tab(String label) =>
+        find.descendant(of: find.byType(AppTabBar), matching: find.text(label));
+    await tester.tap(tab(S.tabMe));
+    await tester.pumpAndSettle();
+    // Sang tuần sau khi app đang chạy nền; quay lại app ở tab Tôi.
+    clock.set(DateTime(2026, 10, 13, 9));
+    for (final s in [
+      AppLifecycleState.inactive,
+      AppLifecycleState.hidden,
+      AppLifecycleState.paused,
+      AppLifecycleState.hidden,
+      AppLifecycleState.inactive,
+      AppLifecycleState.resumed,
+    ]) {
+      tester.binding.handleAppLifecycleStateChanged(s);
+    }
+    await tester.pumpAndSettle();
+    await tester.tap(tab(S.tabWeight));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(
+      find.byKey(const ValueKey('weight-week-2026-10-12')),
+      findsOneWidget,
+    );
+  });
 }
