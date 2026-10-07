@@ -384,7 +384,10 @@ class ProgressCard extends ConsumerWidget {
         children: [
           // Con số đổi có hiệu ứng chuyển nhẹ khi đánh dấu (04 §6.7.1).
           AnimatedSwitcher(
-            duration: const Duration(milliseconds: 250),
+            // Tôn trọng "Giảm chuyển động" của iPhone (04 §6.16).
+            duration: MediaQuery.disableAnimationsOf(context)
+                ? Duration.zero
+                : const Duration(milliseconds: 250),
             layoutBuilder: (current, previous) => Stack(
               alignment: Alignment.centerLeft,
               children: [...previous, ?current],

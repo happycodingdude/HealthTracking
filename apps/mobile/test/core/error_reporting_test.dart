@@ -7,6 +7,9 @@ void main() {
     'TD-13: bỏ user, request, extra, tên máy; lọc số trong message và exception',
     () {
       final event = SentryEvent(
+        contexts: Contexts(
+          device: SentryDevice(name: 'iPhone của Minh', model: 'iPhone17,1'),
+        ),
         user: SentryUser(id: 'u1', username: 'Minh'),
         request: SentryRequest(
           url: 'https://api.x/v1/auth/login',
@@ -38,6 +41,8 @@ void main() {
       expect(out.user, isNull);
       expect(out.request, isNull);
       expect(out.serverName, isNull);
+      expect(out.contexts.device!.name, isNull);
+      expect(out.contexts.device!.model, 'iPhone17,1');
       // ignore: deprecated_member_use
       expect(out.extra, isNull);
       expect(out.message!.formatted, 'Sai số <n> nặng <n> kg');
