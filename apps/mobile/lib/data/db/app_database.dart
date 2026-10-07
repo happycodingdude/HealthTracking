@@ -240,6 +240,22 @@ class AppDatabase extends _$AppDatabase {
   @override
   int get schemaVersion => 5;
 
+  /// Đăng nhập tài khoản khác trên máy này (05 §6.6.6): xóa toàn bộ dữ liệu
+  /// của tài khoản cũ (kể cả thay đổi chưa gửi), đặt lại cursor để khôi phục
+  /// tài khoản mới từ đầu.
+  Future<void> wipe() => transaction(() async {
+    for (final table in allTables) {
+      if (table != syncState) await delete(table).go();
+    }
+    await update(syncState).write(
+      const SyncStateCompanion(
+        cursor: Value(0),
+        lastSyncedAt: Value(null),
+        aiBudget: Value(null),
+      ),
+    );
+  });
+
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {

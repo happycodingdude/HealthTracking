@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/sync/sync_providers.dart';
 import '../data/sync/sync_scheduler.dart';
+import '../features/auth/application/auth_controller.dart';
 import '../features/me/application/calorie_updates.dart';
 import '../features/me/application/reminders.dart';
 import '../features/schedule/application/month_materializer.dart';
@@ -67,6 +68,9 @@ class _BackgroundTasksState extends ConsumerState<BackgroundTasks> {
   }
 
   Future<void> _tasks() async {
+    // Đang khôi phục (S-07): chưa đủ dữ liệu, tạo lịch tháng lúc này sẽ đè
+    // lịch đang về; RestoreController tự chạy các việc này khi xong.
+    if (ref.read(authControllerProvider).restoring) return;
     try {
       await ref.read(monthMaterializerProvider).run();
       // F01-E2, ED-07: sang năm mới → tính lại mức calo (đề xuất ở S-52).

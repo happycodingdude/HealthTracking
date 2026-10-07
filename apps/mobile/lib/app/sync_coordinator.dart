@@ -46,8 +46,9 @@ class _SyncCoordinatorState extends ConsumerState<SyncCoordinator> {
   void _apply() {
     if (!mounted) return;
     final engine = ref.read(syncEngineProvider);
-    final signedIn =
-        ref.read(authControllerProvider).status == AuthStatus.signedIn;
+    final auth = ref.read(authControllerProvider);
+    // Lúc khôi phục (S-07), RestoreController tự pull; không chạy song song.
+    final signedIn = auth.status == AuthStatus.signedIn && !auth.restoring;
     if (signedIn && _foreground) {
       engine.start();
     } else {

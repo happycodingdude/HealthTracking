@@ -473,6 +473,13 @@ abstract final class S {
   /// 04 S-54: "Đặt lại vào 01/{tháng sau}" (mock S-54-1 "Đặt lại vào 01/11").
   static String budgetResets(String date) => 'Đặt lại vào $date';
 
+  // Khôi phục dữ liệu S-07 (VS-14), F-09.
+  static const restoreTitle = 'Đang khôi phục dữ liệu của Bạn…';
+  static const restoreSubtitle =
+      'Hồ sơ, lịch tập, buổi tập, cân nặng và cài đặt';
+  static const restoreFailed = 'Chưa khôi phục xong vì mất kết nối. Thử lại.';
+  static const restored = 'Đã khôi phục dữ liệu';
+
   // Định dạng (UR-10).
   static const currencySuffix = 'đ';
   static const weekdays = [
@@ -733,5 +740,9 @@ abstract final class S {
     'budgetExplain': budgetExplain,
     'budgetWarning80': budgetWarning80,
     'seeDetails': seeDetails,
+    'restoreTitle': restoreTitle,
+    'restoreSubtitle': restoreSubtitle,
+    'restoreFailed': restoreFailed,
+    'restored': restored,
   };
 }
