@@ -42,18 +42,22 @@ class _BackgroundTasksState extends ConsumerState<BackgroundTasks> {
       },
     );
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      // Đọc trước bước chờ: sau đó widget có thể đã bị gỡ (thoát app).
+      final reporter = ref.read(errorReporterProvider);
       try {
         await ref
             .read(notificationGatewayProvider)
             .init(
-              onTap: (payload) => ref
-                  .read(routerProvider)
-                  .go(payload.isEmpty ? reminderPayload : payload),
+              onTap: (payload) {
+                if (!mounted) return;
+                ref
+                    .read(routerProvider)
+                    .go(payload.isEmpty ? reminderPayload : payload);
+              },
             );
       } catch (e, st) {
-        await ref
-            .read(errorReporterProvider)
-            .report(e, st, reason: 'notifications_init');
+        await reporter.report(e, st, reason: 'notifications_init');
       }
       _run();
     });
@@ -71,16 +75,20 @@ class _BackgroundTasksState extends ConsumerState<BackgroundTasks> {
     // Đang khôi phục (S-07): chưa đủ dữ liệu, tạo lịch tháng lúc này sẽ đè
     // lịch đang về; RestoreController tự chạy các việc này khi xong.
     if (ref.read(authControllerProvider).restoring) return;
+    // Widget có thể bị gỡ giữa các bước chờ (thoát app): khi đó dừng, không
+    // dùng `ref` nữa.
+    final reporter = ref.read(errorReporterProvider);
     try {
       await ref.read(monthMaterializerProvider).run();
+      if (!mounted) return;
       // F01-E2, ED-07: sang năm mới → tính lại mức calo (đề xuất ở S-52).
       await ref.read(calorieUpdatesProvider).checkNewYear();
+      if (!mounted) return;
       await ref.read(notificationPermissionProvider.notifier).refresh();
+      if (!mounted) return;
       await ref.read(reminderSchedulerProvider).reschedule();
     } catch (e, st) {
-      await ref
-          .read(errorReporterProvider)
-          .report(e, st, reason: 'background_tasks');
+      await reporter.report(e, st, reason: 'background_tasks');
     }
   }
 

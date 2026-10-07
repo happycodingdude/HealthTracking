@@ -11,6 +11,7 @@ import 'package:mobile/data/auth/session_store.dart';
 import 'package:mobile/data/connectivity.dart';
 import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/data/local_marks.dart';
+import 'package:mobile/data/notifications/notification_gateway.dart';
 import 'package:mobile/data/sync/sync_providers.dart';
 import 'package:mobile/features/auth/application/auth_controller.dart';
 import 'package:mobile/features/me/application/calorie_updates.dart';
@@ -39,7 +40,7 @@ List<Override> appOverrides({
   Clock? clock,
   bool onboarded = true,
   SetupState? initialSetup,
-  FakeNotificationGateway? notifications,
+  NotificationGateway? notifications,
   LocalMarks? marks,
 }) {
   final store = MemorySessionStore(session);

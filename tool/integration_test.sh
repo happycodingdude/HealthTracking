@@ -4,6 +4,7 @@
 # Bật PostgreSQL + server test riêng (cổng 18080) để luồng đăng nhập/đồng bộ chạy thật.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$ROOT/tool/flutter_sdk.sh"
 DEVICE=""; PORT=18080
 [ "${1:-}" = "-d" ] && DEVICE="$2"
 

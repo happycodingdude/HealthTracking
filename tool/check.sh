@@ -4,6 +4,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$ROOT/tool/flutter_sdk.sh"
 cd "$ROOT"
 
 step() { printf '\n\033[1;36m==> %s\033[0m\n' "$*"; }

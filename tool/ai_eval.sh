@@ -5,5 +5,6 @@
 #   tool/ai_eval.sh --fake     kiểm tra bộ đánh giá với nhà cung cấp giả
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$ROOT/tool/flutter_sdk.sh"
 cd "$ROOT/apps/server"
 exec dart run bin/ai_eval.dart "$@"
