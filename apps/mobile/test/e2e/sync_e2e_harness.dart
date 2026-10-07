@@ -2,7 +2,14 @@ import 'dart:io';
 
 import 'package:api_contract/api_contract.dart';
 import 'package:domain/domain.dart';
-import 'package:drift/drift.dart' show QueryExecutor, driftRuntimeOptions;
+import 'package:drift/drift.dart'
+    show
+        Insertable,
+        QueryExecutor,
+        Table,
+        TableInfo,
+        Variable,
+        driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:mobile/data/api/api_client.dart';
 import 'package:mobile/data/auth/auth_interceptor.dart';
@@ -10,17 +17,25 @@ import 'package:mobile/data/auth/auth_repository.dart';
 import 'package:mobile/data/auth/session_store.dart';
 import 'package:mobile/data/auth/token_manager.dart';
 import 'package:mobile/data/db/app_database.dart';
+import 'package:mobile/data/local_marks.dart';
 import 'package:mobile/data/sync/local_stores.dart';
 import 'package:mobile/data/sync/outbox_writer.dart';
 import 'package:mobile/data/sync/sync_api.dart';
 import 'package:mobile/data/sync/sync_engine.dart';
 import 'package:mobile/data/sync/sync_status.dart';
+import 'package:mobile/features/me/application/calorie_updates.dart';
 import 'package:mobile/features/me/application/update_display_name.dart';
 import 'package:mobile/features/me/data/account_repository.dart';
 import 'package:mobile/features/me/data/profile_repository.dart';
+import 'package:mobile/features/menu/data/menu_api.dart';
+import 'package:mobile/features/menu/data/menu_repository.dart';
 import 'package:mobile/features/onboarding/application/onboarding_steps.dart';
 import 'package:mobile/features/onboarding/data/onboarding_draft_repository.dart';
+import 'package:mobile/features/schedule/application/month_materializer.dart';
 import 'package:mobile/features/schedule/data/schedule_repository.dart';
+import 'package:mobile/features/today/application/log_extra_session.dart';
+import 'package:mobile/features/today/application/mark_session.dart';
+import 'package:mobile/features/weight/application/weight_edits.dart';
 import 'package:mobile/features/weight/data/weight_repository.dart';
 import 'package:server/server.dart';
 import 'package:server/testing.dart';
@@ -64,9 +79,13 @@ final class E2eServer {
 /// Một iPhone: database riêng, phiên riêng, đồng hồ riêng (giờ trên máy).
 /// Đồng bộ chỉ chạy khi gọi [sync] — giữa các lần gọi coi như không có mạng.
 final class E2eDevice {
-  E2eDevice(this.server, {DateTime? now, QueryExecutor? executor})
-    : clock = FixedClock(now ?? DateTime.now()),
-      db = AppDatabase(executor ?? NativeDatabase.memory()) {
+  E2eDevice(
+    this.server, {
+    DateTime? now,
+    QueryExecutor? executor,
+    SyncApi Function(SyncApi api)? wrapSyncApi,
+  }) : clock = FixedClock(now ?? DateTime.now()),
+       db = AppDatabase(executor ?? NativeDatabase.memory()) {
     // Mỗi máy có executor riêng nên không tranh chấp; tắt cảnh báo của Drift
     // về việc tạo AppDatabase nhiều lần.
     driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -82,22 +101,65 @@ final class E2eDevice {
     accounts = AccountRepository(db);
     profiles = ProfileRepository(db);
     weights = WeightRepository(db);
+    schedule = ScheduleRepository(db);
+    menus = MenuRepository(db);
+    final outbox = OutboxWriter(db, clock);
     onboarding = OnboardingSteps(
       db: db,
       profiles: profiles,
       weights: weights,
       drafts: OnboardingDraftRepository(db),
-      schedule: ScheduleRepository(db),
-      outbox: OutboxWriter(db, clock),
+      schedule: schedule,
+      outbox: outbox,
       clock: clock,
     );
+    markSession = MarkSession(
+      db: db,
+      schedule: schedule,
+      outbox: outbox,
+      clock: clock,
+    );
+    logExtra = LogExtraSession(
+      db: db,
+      schedule: schedule,
+      outbox: outbox,
+      clock: clock,
+    );
+    materializer = MonthMaterializer(
+      db: db,
+      schedule: schedule,
+      outbox: outbox,
+      clock: clock,
+    );
+    weightEdits = WeightEdits(
+      db: db,
+      weights: weights,
+      profiles: profiles,
+      outbox: outbox,
+      calorie: CalorieUpdates(
+        db: db,
+        profiles: profiles,
+        weights: weights,
+        outbox: outbox,
+        marks: MemoryLocalMarks(),
+        clock: clock,
+      ),
+      clock: clock,
+    );
+    menuApi = HttpMenuApi(api);
+    final syncApi = HttpSyncApi(api);
     engine = SyncEngine(
       db: db,
-      api: HttpSyncApi(api),
+      api: wrapSyncApi == null ? syncApi : wrapSyncApi(syncApi),
       stores: {
         SyncEntities.account: AccountStore(accounts),
         SyncEntities.profile: ProfileStore(profiles),
         SyncEntities.weight: WeightStore(weights),
+        SyncEntities.weeklyTemplate: WeeklyTemplateStore(schedule),
+        SyncEntities.monthPlan: MonthPlanStore(schedule),
+        SyncEntities.day: DayStore(schedule),
+        SyncEntities.menu: MenuStore(menus),
+        SyncEntities.aiDailyUsage: AiDailyUsageStore(menus),
       },
       clock: clock,
       reporter: reporter,
@@ -116,6 +178,13 @@ final class E2eDevice {
   late final AccountRepository accounts;
   late final ProfileRepository profiles;
   late final WeightRepository weights;
+  late final ScheduleRepository schedule;
+  late final MenuRepository menus;
+  late final MarkSession markSession;
+  late final LogExtraSession logExtra;
+  late final MonthMaterializer materializer;
+  late final WeightEdits weightEdits;
+  late final MenuApi menuApi;
 
   /// Các bước thiết lập lần đầu qua use case thật (VS-03).
   late final OnboardingSteps onboarding;
@@ -152,6 +221,42 @@ final class E2eDevice {
   Future<SyncStatus> status() => watchSyncStatus(db).first;
 
   Future<SyncOutcome> sync() => engine.syncNow();
+
+  /// S-07: khôi phục từ cursor đã nhận đến hết (VS-14).
+  Future<void> restore({void Function(double)? onProgress}) =>
+      engine.restore(onProgress: onProgress);
+
+  /// Toàn bộ dữ liệu của Bạn trên máy (TAC-04): mọi bảng bản sao entity và
+  /// ngân sách AI của tháng; bỏ hàng đợi gửi, nháp thiết lập, cursor.
+  Future<Map<String, Object?>> snapshot() async {
+    Future<List<Map<String, Object?>>> rows(TableInfo<Table, Object?> t) async {
+      final all = [
+        for (final r in await db.select(t).get())
+          (r! as Insertable<Object?>)
+              .toColumns(false)
+              .map(
+                (k, v) => MapEntry(k, v is Variable ? v.value : v.toString()),
+              ),
+      ];
+      all.sort((a, b) => '$a'.compareTo('$b'));
+      return all;
+    }
+
+    return {
+      for (final t in <TableInfo<Table, Object?>>[
+        db.account,
+        db.profiles,
+        db.weights,
+        db.weeklyTemplates,
+        db.monthPlans,
+        db.days,
+        db.menus,
+        db.aiDailyUsage,
+      ])
+        t.actualTableName: await rows(t),
+      'aiBudget': (await db.select(db.syncState).getSingle()).aiBudget,
+    };
+  }
 
   Future<void> close() async {
     engine.stop();

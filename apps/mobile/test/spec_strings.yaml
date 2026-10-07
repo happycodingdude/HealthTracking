@@ -264,3 +264,9 @@ budgetExplain: "Mỗi lần tạo thực đơn đều tốn một ít chi phí. 
 budgetWarning80: "Bạn đã dùng 80% ngân sách AI tháng này." # 03 F11-R4, 04 §6.9
 seeDetails: "Xem chi tiết" # 04 §6.9 (hộp báo 80%)
 
+# Khôi phục dữ liệu S-07 (VS-14)
+restoreTitle: "Đang khôi phục dữ liệu của Bạn…" # 04 S-07
+restoreSubtitle: "Hồ sơ, lịch tập, buổi tập, cân nặng và cài đặt" # mock S-07-1
+restoreFailed: "Chưa khôi phục xong vì mất kết nối. Thử lại." # 04 S-07
+restored: "Đã khôi phục dữ liệu" # 04 S-07
+

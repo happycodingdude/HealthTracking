@@ -7,6 +7,7 @@ import 'app/env.dart';
 import 'app/providers.dart';
 import 'core/error_reporting.dart';
 import 'data/auth/session_store.dart';
+import 'data/db/app_database.dart';
 import 'data/db/open_database.dart';
 import 'features/auth/application/auth_controller.dart';
 import 'features/me/data/profile_repository.dart';
@@ -14,17 +15,22 @@ import 'features/onboarding/application/setup_state.dart';
 
 Future<void> main() => runHealthApp();
 
-/// Khởi động app. [overrides] chỉ dùng cho integration test (ví dụ đồng hồ).
-Future<void> runHealthApp({List<Override> overrides = const []}) async {
+/// Khởi động app. [overrides], [database] chỉ dùng cho integration test (ví
+/// dụ đồng hồ, database trống như iPhone mới).
+Future<void> runHealthApp({
+  List<Override> overrides = const [],
+  AppDatabase? database,
+}) async {
   WidgetsFlutterBinding.ensureInitialized();
   final env = AppEnv.fromEnvironment();
   await runWithErrorReporting(env, () async {
-    final db = openAppDatabase();
+    final db = database ?? openAppDatabase();
     final sessionStore = SecureSessionStore();
     // Đọc phiên trước khi vẽ màn hình đầu: có phiên thì vào thẳng app (UA-23).
     final session = await sessionStore.read();
     // Thiết lập dở thì mở đúng bước còn dở (OB-3).
-    final setup = SetupState.of(await ProfileRepository(db).get());
+    final profile = await ProfileRepository(db).get();
+    final setup = SetupState.of(profile);
     runApp(
       ProviderScope(
         // Không tự thử lại provider lỗi; lỗi được xử lý tường minh.
@@ -35,6 +41,11 @@ Future<void> runHealthApp({List<Override> overrides = const []}) async {
           sessionStoreProvider.overrideWithValue(sessionStore),
           initialSessionProvider.overrideWithValue(session),
           initialSetupProvider.overrideWithValue(setup),
+          // Có phiên mà máy chưa có hồ sơ: cài lại app hoặc tắt app giữa lúc
+          // khôi phục → khôi phục trước (S-07).
+          initialRestoreProvider.overrideWithValue(
+            session != null && profile == null,
+          ),
           errorReporterProvider.overrideWithValue(
             env.sentryDsn.isEmpty
                 ? const DebugErrorReporter()

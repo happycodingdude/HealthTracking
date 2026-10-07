@@ -214,27 +214,50 @@ final class SyncEngine {
 
   Future<void> _pullAll() async {
     while (true) {
-      final cursor = (await _db.select(_db.syncState).getSingle()).cursor;
-      final page = await _api.pull(cursor: cursor);
-      await _db.transaction(() async {
-        for (final change in page.changes) {
-          // Thay đổi trên máy chưa gửi được ưu tiên; server sẽ quyết khi push.
-          if (await _hasPending(change.entity, change.key)) continue;
-          await _stores[change.entity]?.apply(change.key, change);
-        }
-        final budget = page.meta.aiBudget;
-        await (_db.update(_db.syncState)..where((s) => s.id.equals(1))).write(
-          SyncStateCompanion(
-            cursor: Value(page.nextCursor),
-            // ED-04: ngân sách AI của tháng chỉ đi qua meta.
-            aiBudget: budget == null
-                ? const Value.absent()
-                : Value(jsonEncode(budget)),
-          ),
-        );
-      });
+      final page = await _pullPage();
       if (!page.hasMore) return;
     }
+  }
+
+  /// Khôi phục trên máy mới (05 §6.6.5, S-07): pull từ cursor đã nhận đến hết.
+  /// [onProgress] nhận tỷ lệ 0–1 theo `remaining`. Mất mạng → ném
+  /// [ApiFailure]; gọi lại thì tiếp tục từ cursor đã nhận (mỗi trang ghi
+  /// cursor trong cùng transaction với dữ liệu).
+  Future<void> restore({void Function(double progress)? onProgress}) async {
+    var received = 0;
+    while (true) {
+      final page = await _pullPage();
+      received += page.changes.length;
+      final total = received + page.remaining;
+      onProgress?.call(total == 0 ? 1 : received / total);
+      if (!page.hasMore) break;
+    }
+    await (_db.update(_db.syncState)..where((s) => s.id.equals(1))).write(
+      SyncStateCompanion(lastSyncedAt: Value(_clock.now())),
+    );
+  }
+
+  Future<PullResponse> _pullPage() async {
+    final cursor = (await _db.select(_db.syncState).getSingle()).cursor;
+    final page = await _api.pull(cursor: cursor);
+    await _db.transaction(() async {
+      for (final change in page.changes) {
+        // Thay đổi trên máy chưa gửi được ưu tiên; server sẽ quyết khi push.
+        if (await _hasPending(change.entity, change.key)) continue;
+        await _stores[change.entity]?.apply(change.key, change);
+      }
+      final budget = page.meta.aiBudget;
+      await (_db.update(_db.syncState)..where((s) => s.id.equals(1))).write(
+        SyncStateCompanion(
+          cursor: Value(page.nextCursor),
+          // ED-04: ngân sách AI của tháng chỉ đi qua meta.
+          aiBudget: budget == null
+              ? const Value.absent()
+              : Value(jsonEncode(budget)),
+        ),
+      );
+    });
+    return page;
   }
 
   Future<bool> _hasPending(String entity, String key) async =>

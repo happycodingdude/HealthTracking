@@ -21,6 +21,7 @@ import '../features/onboarding/presentation/disclaimer_screen.dart';
 import '../features/onboarding/presentation/profile_step_screen.dart';
 import '../features/onboarding/presentation/reminder_step_screen.dart';
 import '../features/onboarding/presentation/schedule_step_screen.dart';
+import '../features/restore/presentation/restore_screen.dart';
 import '../features/schedule/presentation/schedule_screen.dart';
 import '../features/schedule/presentation/weekly_schedule_screen.dart';
 import '../features/today/presentation/today_screen.dart';
@@ -36,6 +37,7 @@ import 'shell/app_tab.dart';
 /// - Phiên hết hạn → S-01b (`/welcome/login`), dữ liệu trên máy được giữ.
 /// - Vừa đăng nhập/đăng ký → bước thiết lập đang dở, hoặc [AuthState.landing]
 ///   khi đã thiết lập xong.
+/// - Đang khôi phục dữ liệu (máy mới, đổi tài khoản) → chỉ ở S-07.
 /// - Chưa hoàn tất thiết lập → chỉ ở trong luồng thiết lập (F01-R1); mở app
 ///   lại thì vào đúng bước đang dở. Trang "Về gợi ý tham khảo" xem được mọi
 ///   lúc (F10-R4).
@@ -50,10 +52,12 @@ String? appRedirect(AuthState auth, SetupState setup, String location) {
     case AuthStatus.signedIn:
       break;
   }
+  // S-07: chưa vào app khi dữ liệu chưa khôi phục xong (05 §6.6.5).
+  if (auth.restoring) return location == restorePath ? null : restorePath;
   final completed = setup.isCompleted || auth.serverSetupCompleted;
   // Trả thẳng đích cuối cùng: go_router không chạy lại redirect cho đích của
   // một lần redirect do trạng thái đổi.
-  if (inWelcome) {
+  if (inWelcome || location == restorePath) {
     final landing = auth.landing;
     if (!completed) {
       // [AuthState.landing] đã tính từ hồ sơ vừa lấy về (OB-6), không chờ
@@ -115,6 +119,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       // Thiết lập lần đầu (04 §6.5): ngoài khung tab nên thanh tab bị ẩn (NAV-7).
       // `/onboarding` luôn được chuyển tới bước đang dở.
+      GoRoute(path: restorePath, builder: (_, _) => const RestoreScreen()),
       GoRoute(path: '/onboarding', builder: (_, _) => const SizedBox.shrink()),
       GoRoute(
         path: '/onboarding/1',

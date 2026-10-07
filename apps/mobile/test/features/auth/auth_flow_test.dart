@@ -1,3 +1,4 @@
+import 'package:api_contract/api_contract.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,6 +14,7 @@ import 'package:mobile/features/auth/presentation/welcome_screen.dart';
 
 import '../../support/app_harness.dart';
 import '../../support/fake_server.dart';
+import '../../support/schedule_fixture.dart';
 
 Map<String, Object?> _pair() => {
   'accessToken': '***REMOVED***',
@@ -269,16 +271,41 @@ void main() {
       expect(find.text(S.disclaimerTitle), findsOneWidget);
     });
 
-    testWidgets('OB-6: tài khoản đã thiết lập → vào Hôm nay', (tester) async {
-      server.on(
-        'GET',
-        '/v1/me',
-        (_) => (200, {..._me(), 'onboardingState': 'completed'}),
-      );
+    testWidgets('OB-6, UX-AC4: tài khoản đã thiết lập, máy chưa có dữ liệu → '
+        'S-07 khôi phục → Hôm nay kèm "Đã khôi phục dữ liệu"', (tester) async {
+      server
+        ..on(
+          'GET',
+          '/v1/me',
+          (_) => (200, {..._me(), 'onboardingState': 'completed'}),
+        )
+        ..on(
+          'GET',
+          '/v1/sync/pull',
+          (_) => (
+            200,
+            {
+              'changes': [
+                {
+                  'entity': 'profile',
+                  'key': 'me',
+                  'deleted': false,
+                  'serverVersion': 3,
+                  'data': const ProfileCodec().encode(completedProfile()),
+                },
+              ],
+              'nextCursor': 3,
+              'hasMore': false,
+              'remaining': 0,
+              'meta': {'serverTime': '2026-10-07T11:42:00.000Z'},
+            },
+          ),
+        );
       await openLogin(tester);
       await login(tester);
       await tester.pumpAndSettle();
       expect(find.text(S.tabToday), findsWidgets);
+      expect(find.text(S.restored), findsOneWidget);
       expect(find.byType(LoginScreen), findsNothing);
     });
 

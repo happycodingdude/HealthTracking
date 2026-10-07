@@ -92,4 +92,33 @@ void main() {
     expect(go(expired, done, '/today'), '/welcome/login');
     expect(go(expired, done, '/welcome/login'), isNull);
   });
+
+  test('VS-14, UX-AC4: đang khôi phục → chỉ ở S-07; xong → Hôm nay hoặc bước '
+      'còn dở', () {
+    const restoring = AuthState(
+      AuthStatus.signedIn,
+      userId: 'u1',
+      landing: restorePath,
+      restoring: true,
+    );
+    for (final location in ['/today', '/me', '/onboarding/1', '/welcome']) {
+      expect(go(restoring, fresh, location), restorePath, reason: location);
+    }
+    expect(go(restoring, fresh, restorePath), isNull);
+    const restored = AuthState(
+      AuthStatus.signedIn,
+      userId: 'u1',
+      landing: '/today',
+      serverSetupCompleted: true,
+    );
+    expect(go(restored, done, restorePath), '/today');
+    const restoredHalfway = AuthState(
+      AuthStatus.signedIn,
+      userId: 'u1',
+      landing: '/onboarding/3',
+    );
+    expect(go(restoredHalfway, atStep3, restorePath), '/onboarding/3');
+    // Phiên hết hạn giữa lúc khôi phục → S-01b.
+    expect(go(expired, fresh, restorePath), '/welcome/login');
+  });
 }
