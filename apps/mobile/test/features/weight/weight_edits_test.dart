@@ -59,15 +59,11 @@ void main() {
     expect(older.latestChanged, isFalse);
     final same = await edits.log(w1210, 790);
     expect(same.latestChanged, isFalse, reason: 'ghi lại đúng số cũ');
-    expect(
-      await outbox(),
-      [
-        'weight:2026-10-12:upsert',
-        'profile:me:upsert',
-        'weight:2026-10-05:upsert',
-      ],
-      reason: 'Tự động: mức calo cập nhật theo số cân mới nhất (F07-AC6)',
-    );
+    expect(await outbox(), [
+      'weight:2026-10-12:upsert',
+      'profile:me:upsert',
+      'weight:2026-10-05:upsert',
+    ], reason: 'Tự động: mức calo cập nhật theo số cân mới nhất (F07-AC6)');
   });
 
   test(

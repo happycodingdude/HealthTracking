@@ -11,6 +11,7 @@
 # API_BASE_URL = http://<LocalHostName>.local:8080 (iPhone) hoặc http://localhost:8080 (simulator).
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$ROOT/tool/flutter_sdk.sh"
 
 MODE="--profile"; DEVICE=""; SIM=0; SERVER=1; PORT=8080
 while [ $# -gt 0 ]; do

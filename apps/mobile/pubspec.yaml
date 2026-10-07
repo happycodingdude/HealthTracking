@@ -6,6 +6,8 @@ resolution: workspace
 
 environment:
   sdk: ^3.8.0
+  # Phiên bản Flutter của dự án (tool/flutter_sdk.sh, CI flutter-version-file).
+  flutter: 3.47.6
 
 dependencies:
   api_contract:
@@ -51,3 +53,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  config:
+    # Thư viện iOS quản lý bằng CocoaPods như trước. Swift Package Manager tải
+    # gói nhị phân của Sentry phải chờ quyền Keychain, làm treo build tự động.
+    enable-swift-package-manager: false

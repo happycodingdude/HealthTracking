@@ -16,3 +16,5 @@ docs/
 # Quy trình làm việc nội bộ, chỉ giữ trên máy (quyết định 06/10/2026)
 CLAUDE.md
 .flutter-plugins-dependencies
+# SDK Flutter riêng của dự án trên máy (tool/flutter_sdk.sh)
+.flutter-sdk

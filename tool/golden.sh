@@ -4,7 +4,13 @@
 #   tool/golden.sh --update   tạo lại ảnh golden (ghi vào apps/mobile/test/**/goldens)
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-IMAGE="ghcr.io/cirruslabs/flutter:3.32.6"
+# Cùng phiên bản Flutter với dự án; ảnh dựng một lần từ tool/golden.Dockerfile.
+FLUTTER_VERSION="$(sed -n 's/^  flutter: *\([0-9.]*\).*/\1/p' "$ROOT/apps/mobile/pubspec.yaml")"
+IMAGE="health-golden:flutter-$FLUTTER_VERSION"
+if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
+  docker build --platform linux/amd64 --build-arg FLUTTER_VERSION="$FLUTTER_VERSION" \
+    -t "$IMAGE" -f "$ROOT/tool/golden.Dockerfile" "$ROOT/tool"
+fi
 UPDATE=""
 [ "${1:-}" = "--update" ] && UPDATE="--update-goldens"
 

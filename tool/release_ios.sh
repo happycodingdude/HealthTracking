@@ -11,6 +11,7 @@
 # Tùy chọn: SENTRY_DSN, SKIP_INTEGRATION=1 (bỏ integration test simulator — chỉ dùng cho R0).
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$ROOT/tool/flutter_sdk.sh"
 : "${API_BASE_URL:?Thiếu API_BASE_URL}" "${ASC_KEY_ID:?}" "${ASC_ISSUER_ID:?}" "${ASC_KEY_PATH:?}" "${TEAM_ID:?}"
 case "$API_BASE_URL" in https://*) ;; *) echo "API_BASE_URL phải là https:// (05 §6.8.1)" >&2; exit 1 ;; esac
 

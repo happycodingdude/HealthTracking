@@ -41,7 +41,8 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: 3.32.6
+          # Phiên bản ghim ở environment.flutter của app.
+          flutter-version-file: apps/mobile/pubspec.yaml
           channel: stable
           cache: true
 

@@ -50,6 +50,7 @@ Future<void> runWithErrorReporting(
       ..environment = env.flavor
       ..sendDefaultPii = false
       ..attachScreenshot = false
+      // ignore: experimental_member_use
       ..attachViewHierarchy = false
       ..tracesSampleRate = 0
       ..beforeSend = _beforeSend

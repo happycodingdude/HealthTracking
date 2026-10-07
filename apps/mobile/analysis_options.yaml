@@ -10,6 +10,7 @@ analyzer:
     - "build/**"
     # Sinh bởi `drift_dev schema generate` (test migration Drift).
     - "test/generated_migrations/**"
+    - ios/**
 
 linter:
   rules:
