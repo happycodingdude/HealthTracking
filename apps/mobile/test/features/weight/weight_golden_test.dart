@@ -112,5 +112,21 @@ void main() {
       await tester.pumpAndSettle();
       await snap('s41_${v.name}');
     });
+
+    testWidgets('S-41 sửa số cân, nút xóa chữ đỏ (UX-AC17) ${v.name}', (
+      tester,
+    ) async {
+      await pump(tester, v, await seed());
+      final row = find.byKey(const ValueKey('weight-week-2026-10-05'));
+      await tester.scrollUntilVisible(
+        row,
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+      await snap('s41_edit_${v.name}');
+    });
   }
 }

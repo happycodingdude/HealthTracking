@@ -158,6 +158,12 @@ abstract final class AppTheme {
       scaffoldBackgroundColor: scheme.surface,
       extensions: [palette],
       splashFactory: NoSplash.splashFactory,
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.iOS: ReducedMotionTransitionsBuilder(),
+          TargetPlatform.android: ReducedMotionTransitionsBuilder(),
+        },
+      ),
       appBarTheme: AppBarTheme(
         backgroundColor: scheme.surface,
         foregroundColor: scheme.onSurface,
@@ -256,4 +262,29 @@ abstract final class AppTheme {
       progressIndicatorTheme: ProgressIndicatorThemeData(color: scheme.primary),
     );
   }
+}
+
+/// Chuyển trang kiểu iPhone; bật "Giảm chuyển động" thì đổi trang ngay, không
+/// trượt (04 §6.16, 06 VS15-T04).
+class ReducedMotionTransitionsBuilder extends PageTransitionsBuilder {
+  const ReducedMotionTransitionsBuilder();
+
+  static const _ios = CupertinoPageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) => MediaQuery.disableAnimationsOf(context)
+      ? child
+      : _ios.buildTransitions(
+          route,
+          context,
+          animation,
+          secondaryAnimation,
+          child,
+        );
 }

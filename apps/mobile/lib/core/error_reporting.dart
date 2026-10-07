@@ -96,6 +96,8 @@ SentryEvent scrubEvent(SentryEvent event) {
     ..serverName = null
     // ignore: deprecated_member_use
     ..extra = null;
+  // Tên máy do người dùng đặt (ví dụ "iPhone của Minh").
+  event.contexts.device?.name = null;
   final message = event.message;
   if (message != null) {
     event.message = SentryMessage(

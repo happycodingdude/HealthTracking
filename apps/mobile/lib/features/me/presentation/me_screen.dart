@@ -8,6 +8,7 @@ import '../../../app/shell/app_tab.dart';
 import '../../../app/strings_vi.dart';
 import '../../../app/theme.dart';
 import '../../../core/formatters.dart';
+import '../../../core/widgets/reference_tag.dart';
 import '../../../core/widgets/settings_card.dart';
 import '../../../core/widgets/tab_page.dart';
 import '../../../core/widgets/toast.dart';
@@ -19,7 +20,8 @@ import 'budget_screen.dart';
 import 'dev_server_status.dart';
 
 /// S-50 — Tôi: "Hồ sơ cơ thể", "Mức calo" (VS-11), "Nhắc đi tập" (VS-05),
-/// "Ngân sách AI" (VS-13), "Tài khoản và dữ liệu" (VS-02).
+/// "Ngân sách AI" (VS-13), "Tài khoản và dữ liệu" (VS-02), "Về gợi ý tham
+/// khảo" (VS-15).
 class MeScreen extends ConsumerWidget {
   const MeScreen({super.key});
 
@@ -83,6 +85,12 @@ class MeScreen extends ConsumerWidget {
                   ? null
                   : (pending ? S.syncPending : S.syncDone),
               onTap: () => context.go('/me/account'),
+            ),
+            // F10-R4: xem lại nội dung thông báo tham khảo bất cứ lúc nào.
+            SettingsRow(
+              key: const ValueKey('row-about-reference'),
+              label: S.aboutReferenceTitle,
+              onTap: () => context.push(aboutReferencePath),
             ),
           ],
         ),

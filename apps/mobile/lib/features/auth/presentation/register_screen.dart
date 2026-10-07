@@ -129,7 +129,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       if (ctx != null && ctx.mounted) {
         Scrollable.ensureVisible(
           ctx,
-          duration: const Duration(milliseconds: 200),
+          duration: MediaQuery.disableAnimationsOf(context)
+              ? Duration.zero
+              : const Duration(milliseconds: 200),
           alignment: 0.2,
         );
       }
