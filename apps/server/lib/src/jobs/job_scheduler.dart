@@ -12,12 +12,57 @@ final class JobScheduler {
 
   final Logger _logger;
   final _timers = <Timer>[];
+  final _daily = <String, Timer>{};
   final _running = <String, Future<void>>{};
   bool _stopped = false;
 
   void every(String name, Duration interval, Future<void> Function() job) {
     if (_stopped) throw StateError('JobScheduler đã dừng');
     _timers.add(Timer.periodic(interval, (_) => runNow(name, job)));
+  }
+
+  /// Chạy [job] mỗi ngày lúc [time] theo giờ có độ lệch [utcOffset] so với
+  /// UTC (giờ Việt Nam: +7, không đổi giờ theo mùa). [now] cho test.
+  void dailyAt(
+    String name,
+    ({int hour, int minute}) time,
+    Future<void> Function() job, {
+    Duration utcOffset = vietnamOffset,
+    DateTime Function()? now,
+  }) {
+    if (_stopped) throw StateError('JobScheduler đã dừng');
+    final clock = now ?? DateTime.now;
+    void schedule() {
+      if (_stopped) return;
+      _daily[name] = Timer(untilNext(clock(), time, utcOffset), () {
+        unawaited(runNow(name, job));
+        schedule();
+      });
+    }
+
+    schedule();
+  }
+
+  /// Giờ Việt Nam so với UTC (TA-17).
+  static const vietnamOffset = Duration(hours: 7);
+
+  /// Thời gian từ [now] tới lần [time] kế tiếp (sau [now]) theo giờ lệch
+  /// [utcOffset].
+  static Duration untilNext(
+    DateTime now,
+    ({int hour, int minute}) time,
+    Duration utcOffset,
+  ) {
+    final local = now.toUtc().add(utcOffset);
+    var target = DateTime.utc(
+      local.year,
+      local.month,
+      local.day,
+      time.hour,
+      time.minute,
+    );
+    if (!target.isAfter(local)) target = target.add(const Duration(days: 1));
+    return target.difference(local);
   }
 
   /// Chạy [job] ngay (dùng cho timer và test). Trả về khi job xong.
@@ -47,10 +92,11 @@ final class JobScheduler {
 
   Future<void> stop() async {
     _stopped = true;
-    for (final t in _timers) {
+    for (final t in [..._timers, ..._daily.values]) {
       t.cancel();
     }
     _timers.clear();
+    _daily.clear();
     await Future.wait(_running.values.toList());
   }
 }

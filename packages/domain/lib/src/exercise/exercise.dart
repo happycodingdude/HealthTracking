@@ -226,10 +226,25 @@ abstract final class LibraryRules {
     if (e.videoDurationS != null &&
         (e.videoDurationS! < 1 || e.videoDurationS! > maxVideoSeconds))
       'video.durationSeconds',
-    if (e.guideSteps.length < minSteps || e.guideSteps.length > maxSteps)
+    ..._guideCounts(e.guideSteps, e.guideSafety),
+  ];
+
+  static List<String> _guideCounts(List<String> steps, List<String> safety) => [
+    if (steps.length < minSteps ||
+        steps.length > maxSteps ||
+        steps.any((s) => s.trim().isEmpty))
       'guide.steps',
-    if (e.guideSafety.length < minSafety || e.guideSafety.length > maxSafety)
+    if (safety.length < minSafety ||
+        safety.length > maxSafety ||
+        safety.any((s) => s.trim().isEmpty))
       'guide.safety',
+  ];
+
+  /// LIB-R4 cho một hướng dẫn (dùng cả cho bản nháp AI soạn, ED2-12): số
+  /// bước, số ý, không có con số đi kèm "kg", "hiệp", "lần".
+  static List<String> guideErrors(List<String> steps, List<String> safety) => [
+    ..._guideCounts(steps, safety),
+    if ([...steps, ...safety].any(_numberWithUnit.hasMatch)) 'guide',
   ];
 
   /// Cổng phát hành (IR2-06, LIB-AC1 → AC3, `--check-only`): ngoài

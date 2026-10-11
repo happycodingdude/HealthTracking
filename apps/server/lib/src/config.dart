@@ -20,6 +20,9 @@ final class ServerConfig {
     this.trustProxy = false,
     this.migrationsDir = 'migrations',
     this.ai = const AiConfig(),
+    this.youtubeApiKey,
+    this.videoCheckAt = defaultVideoCheckAt,
+    this.sentryDsn,
   });
 
   factory ServerConfig.fromEnvironment(Map<String, String> env) {
@@ -55,8 +58,36 @@ final class ServerConfig {
           ? env['MIGRATIONS_DIR']!
           : 'migrations',
       ai: AiConfig.fromEnvironment(env),
+      youtubeApiKey: env['YOUTUBE_API_KEY']?.isNotEmpty == true
+          ? env['YOUTUBE_API_KEY']
+          : null,
+      videoCheckAt: parseDailyCron(
+        env['VIDEO_CHECK_CRON']?.isNotEmpty == true
+            ? env['VIDEO_CHECK_CRON']!
+            : '30 3 * * *',
+      ),
+      sentryDsn: env['SENTRY_DSN']?.isNotEmpty == true
+          ? env['SENTRY_DSN']
+          : null,
     );
   }
+
+  /// `VIDEO_CHECK_CRON` dạng "phút giờ * * *" (một lần mỗi ngày, giờ Việt
+  /// Nam). Dạng khác → [ConfigException].
+  static ({int hour, int minute}) parseDailyCron(String cron) {
+    final m = RegExp(r'^(\d{1,2}) (\d{1,2}) \* \* \*$').firstMatch(cron.trim());
+    final minute = m == null ? null : int.parse(m.group(1)!);
+    final hour = m == null ? null : int.parse(m.group(2)!);
+    if (minute == null || hour == null || minute > 59 || hour > 23) {
+      throw ConfigException(
+        'VIDEO_CHECK_CRON chỉ nhận dạng "phút giờ * * *", ví dụ "30 3 * * *"',
+      );
+    }
+    return (hour: hour, minute: minute);
+  }
+
+  /// 03:30 giờ Việt Nam (05 Bản 2 TD2-17).
+  static const defaultVideoCheckAt = (hour: 3, minute: 30);
 
   final String databaseUrl;
   final String jwtSecret;
@@ -68,6 +99,16 @@ final class ServerConfig {
 
   /// AI Gateway (05 §6.9.1).
   final AiConfig ai;
+
+  /// Khóa YouTube Data API (05 Bản 2 §6.13). Không có → job kiểm tra video
+  /// không chạy (dev, CI).
+  final String? youtubeApiKey;
+
+  /// Giờ chạy job kiểm tra video mỗi ngày (giờ Việt Nam).
+  final ({int hour, int minute}) videoCheckAt;
+
+  /// Sentry của server (OPS-6); không có thì cảnh báo chỉ ghi log.
+  final String? sentryDsn;
 
   /// Biến môi trường của tiến trình, bổ sung bằng file `.env` nếu có
   /// (biến của tiến trình được ưu tiên).

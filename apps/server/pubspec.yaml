@@ -15,6 +15,8 @@ dependencies:
   domain:
     path: ../../packages/domain
   postgres: ^3.5.7
+  # Sự kiện cảnh báo của job kiểm tra video (05 Bản 2 TD2-17, OPS-6).
+  sentry: ^9.30.1
   shelf: ^1.4.2
   shelf_router: ^1.1.4
   uuid: ^4.6.0

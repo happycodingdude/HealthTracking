@@ -9,22 +9,28 @@ Future<T> inTransaction<T>(
   Pool<void> pool,
   Future<T> Function(Connection conn) fn, {
   String begin = 'BEGIN',
-}) {
-  return pool.withConnection((conn) async {
-    await conn.execute(begin);
+}) => pool.withConnection((conn) => inTransactionOn(conn, fn, begin: begin));
+
+/// Như [inTransaction] trên một connection đã lấy sẵn (ví dụ đang giữ khóa
+/// advisory mức phiên).
+Future<T> inTransactionOn<T>(
+  Connection conn,
+  Future<T> Function(Connection conn) fn, {
+  String begin = 'BEGIN',
+}) async {
+  await conn.execute(begin);
+  try {
+    final result = await fn(conn);
+    await conn.execute('COMMIT');
+    return result;
+  } catch (_) {
     try {
-      final result = await fn(conn);
-      await conn.execute('COMMIT');
-      return result;
+      await conn.execute('ROLLBACK');
     } catch (_) {
-      try {
-        await conn.execute('ROLLBACK');
-      } catch (_) {
-        // Lỗi ban đầu quan trọng hơn.
-      }
-      rethrow;
+      // Lỗi ban đầu quan trọng hơn.
     }
-  });
+    rethrow;
+  }
 }
 
 /// Chạy [fn] trong savepoint [name]: lỗi (SQL hoặc từ chối của handler) chỉ
