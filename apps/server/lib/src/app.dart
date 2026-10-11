@@ -17,6 +17,7 @@ import 'health/health_routes.dart';
 import 'http/middleware.dart';
 import 'logging/logger.dart';
 import 'sync/account_handler.dart';
+import 'sync/lift_log_handler.dart';
 import 'sync/menu_handlers.dart';
 import 'sync/profile_handler.dart';
 import 'sync/schedule_handlers.dart';
@@ -40,6 +41,8 @@ const defaultSyncHandlers = <SyncEntityHandler>[
   // Bản 2: dòng dùng chung, chỉ pull (VS20-T08).
   ExerciseHandler(),
   DishImageHandler(),
+  // Bản 2: mức tạ, push + pull (VS26-T05).
+  LiftLogHandler(),
 ];
 
 /// Các thành phần dùng chung của API, tạo một lần khi khởi động.

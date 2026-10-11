@@ -9,8 +9,9 @@
 // thử in ra màn hình.
 //
 // Tài khoản thử (mật khẩu `matkhau123`):
-// - 0900000001 "Minh": như Bản 1 — đã xếp lịch từ 20 ngày trước, có buổi đã
-//   đánh dấu, buổi chờ đánh dấu, vài số cân.
+// - 0900000001 "Minh": như Bản 1 — đã xếp lịch từ 40 ngày trước (trải qua 2
+//   tháng), có buổi đã đánh dấu, buổi chờ đánh dấu, vài số cân; mức tạ của
+//   các buổi trước tuần này, tăng dần theo từng buổi (06 Bản 2 §6.5.2).
 // - 0900000002 "Lan": đã hoàn tất thiết lập nhưng "Để sau" lịch tuần (chưa có
 //   lịch, 03 Bản 2 §6.1), công tắc nhắc bật.
 //
@@ -43,8 +44,8 @@ Future<void> main() async {
     // Giờ trên iPhone của Bạn (giờ Việt Nam), không phụ thuộc múi giờ của Mac.
     final now = DateTime.now().toUtc().add(_vnOffset);
     final local = DateTime(now.year, now.month, now.day, now.hour, now.minute);
-    await _seedLibrary(conn);
-    await _seedScheduled(conn, local);
+    final library = await _seedLibrary(conn);
+    await _seedScheduled(conn, local, library);
     await _seedNoSchedule(conn, local);
   } finally {
     await conn.close();
@@ -77,12 +78,14 @@ String _withSslMode(String url) {
             .toString();
 }
 
-Future<void> _seedLibrary(Connection c) async {
-  final report = await LibraryImporter(
-    c,
-  ).run(LibraryFile.parse(File('data/v2__exercises.json').readAsStringSync()));
+Future<List<Exercise>> _seedLibrary(Connection c) async {
+  final file = LibraryFile.parse(
+    File('data/v2__exercises.json').readAsStringSync(),
+  );
+  final report = await LibraryImporter(c).run(file);
   stdout.writeln('Thư viện: ${report.describe()}');
   if (!report.ok) exitCode = 1;
+  return LibraryRules.sorted(file.exercises);
 }
 
 /// Tạo tài khoản; null khi số đã có (bỏ qua, giữ dữ liệu cũ).
@@ -125,10 +128,14 @@ Future<void> _profile(
   },
 );
 
-Future<void> _seedScheduled(Connection c, DateTime now) async {
+Future<void> _seedScheduled(
+  Connection c,
+  DateTime now,
+  List<Exercise> library,
+) async {
   final user = await _user(c, '0900000001', 'Minh');
   if (user == null) return;
-  final setupAt = now.subtract(const Duration(days: 20));
+  final setupAt = now.subtract(const Duration(days: 40));
   final template = WeeklyTemplate({
     1: TemplateDay(
       enabled: true,
@@ -175,6 +182,7 @@ Future<void> _seedScheduled(Connection c, DateTime now) async {
     months.add(MonthGenerator.month(template, m, m.firstDay.startOfDay));
   }
   var workouts = 0;
+  final lifted = <PlanDay>[];
   for (final month in months) {
     final p = month.plan;
     await c.execute(
@@ -204,6 +212,7 @@ Future<void> _seedScheduled(Connection c, DateTime now) async {
         day = workouts % 4 == 0
             ? d.withMark(DayMark.skipped, markedAt: at)
             : d.withMark(DayMark.done, actual: d.muscles, markedAt: at);
+        lifted.add(day);
       }
       await _day(c, user, day);
     }
@@ -224,10 +233,59 @@ Future<void> _seedScheduled(Connection c, DateTime now) async {
       },
     );
   }
+  final logs = await _liftLogs(c, user, lifted, library);
   stdout.writeln(
-    'Đã nạp 0900000001 "Minh" (có lịch từ ${LocalDate.fromDateTime(setupAt)}), '
-    'mật khẩu $_password',
+    'Đã nạp 0900000001 "Minh" (có lịch từ ${LocalDate.fromDateTime(setupAt)}, '
+    '$logs bản ghi mức tạ), mật khẩu $_password',
   );
+}
+
+/// Mức tạ (kg × 10) cho bài đầu tiên của mỗi nhóm cơ trong buổi (trừ bụng,
+/// FR2-12), kể cả buổi "Không tập" (AP-9): tăng 2,5 kg mỗi buổi, kết thúc
+/// cao hơn bắt đầu 5 kg; buổi thứ 4 của mỗi bài giảm 5 kg để có cảnh báo
+/// F21-R8. Ghi lúc 1 giờ sau giờ tập, trong cửa sổ ghi tạ.
+Future<int> _liftLogs(
+  Connection c,
+  String user,
+  List<PlanDay> days,
+  List<Exercise> library,
+) async {
+  const base = {
+    MuscleGroup.chest: 300,
+    MuscleGroup.back: 350,
+    MuscleGroup.shoulders: 150,
+    MuscleGroup.biceps: 100,
+    MuscleGroup.triceps: 125,
+  };
+  final sessions = <String, int>{};
+  var count = 0;
+  for (final d in days) {
+    for (final g in d.sessionMuscles) {
+      final start = base[g];
+      if (start == null) continue;
+      final e = library.firstWhere((e) => e.group == g && e.active);
+      final n = sessions.update(e.id, (n) => n + 1, ifAbsent: () => 0);
+      final kg = start + 25 * n - (n % 4 == 3 ? 75 : 0);
+      final at = _utc(d.date.atTime(d.time!).add(const Duration(hours: 1)));
+      await c.execute(
+        Sql.named('''
+          INSERT INTO lift_logs (user_id, date, exercise_id, start_kg_x10, end_kg_x10,
+                                 logged_at, server_version, client_updated_at)
+          VALUES (@user, @date::date, @exercise, @start, @end, @at,
+                  nextval('sync_version_seq'), @at)'''),
+        parameters: {
+          'user': user,
+          'date': d.date.toKey(),
+          'exercise': e.id,
+          'start': kg,
+          'end': kg + 50,
+          'at': at,
+        },
+      );
+      count++;
+    }
+  }
+  return count;
 }
 
 Future<void> _day(Connection c, String user, PlanDay d) {

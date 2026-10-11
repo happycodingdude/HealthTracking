@@ -8,6 +8,7 @@ import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/data/sync/outbox_writer.dart';
 import 'package:mobile/features/schedule/data/schedule_repository.dart';
 import 'package:mobile/features/today/application/mark_session.dart';
+import 'package:mobile/features/workout/data/lift_log_repository.dart';
 
 import '../../support/schedule_fixture.dart';
 
@@ -36,6 +37,7 @@ void main() {
     skipped = MarkSessionSkipped(
       db: db,
       schedule: schedule,
+      liftLogs: LiftLogRepository(db),
       outbox: outbox,
       clock: clock,
     );

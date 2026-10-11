@@ -6818,24 +6818,12 @@ class $LiftLogsTable extends LiftLogs
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _loggedAtMeta = const VerificationMeta(
-    'loggedAt',
-  );
-  @override
-  late final GeneratedColumn<DateTime> loggedAt = GeneratedColumn<DateTime>(
-    'logged_at',
-    aliasedName,
-    false,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
-  );
   @override
   List<GeneratedColumn> get $columns => [
     date,
     exerciseId,
     startKgX10,
     endKgX10,
-    loggedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -6884,14 +6872,6 @@ class $LiftLogsTable extends LiftLogs
     } else if (isInserting) {
       context.missing(_endKgX10Meta);
     }
-    if (data.containsKey('logged_at')) {
-      context.handle(
-        _loggedAtMeta,
-        loggedAt.isAcceptableOrUnknown(data['logged_at']!, _loggedAtMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_loggedAtMeta);
-    }
     return context;
   }
 
@@ -6917,10 +6897,6 @@ class $LiftLogsTable extends LiftLogs
         DriftSqlType.int,
         data['${effectivePrefix}end_kg_x10'],
       )!,
-      loggedAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}logged_at'],
-      )!,
     );
   }
 
@@ -6936,13 +6912,11 @@ class LiftLogRow extends DataClass implements Insertable<LiftLogRow> {
   final String exerciseId;
   final int startKgX10;
   final int endKgX10;
-  final DateTime loggedAt;
   const LiftLogRow({
     required this.date,
     required this.exerciseId,
     required this.startKgX10,
     required this.endKgX10,
-    required this.loggedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -6951,7 +6925,6 @@ class LiftLogRow extends DataClass implements Insertable<LiftLogRow> {
     map['exercise_id'] = Variable<String>(exerciseId);
     map['start_kg_x10'] = Variable<int>(startKgX10);
     map['end_kg_x10'] = Variable<int>(endKgX10);
-    map['logged_at'] = Variable<DateTime>(loggedAt);
     return map;
   }
 
@@ -6961,7 +6934,6 @@ class LiftLogRow extends DataClass implements Insertable<LiftLogRow> {
       exerciseId: Value(exerciseId),
       startKgX10: Value(startKgX10),
       endKgX10: Value(endKgX10),
-      loggedAt: Value(loggedAt),
     );
   }
 
@@ -6975,7 +6947,6 @@ class LiftLogRow extends DataClass implements Insertable<LiftLogRow> {
       exerciseId: serializer.fromJson<String>(json['exerciseId']),
       startKgX10: serializer.fromJson<int>(json['startKgX10']),
       endKgX10: serializer.fromJson<int>(json['endKgX10']),
-      loggedAt: serializer.fromJson<DateTime>(json['loggedAt']),
     );
   }
   @override
@@ -6986,7 +6957,6 @@ class LiftLogRow extends DataClass implements Insertable<LiftLogRow> {
       'exerciseId': serializer.toJson<String>(exerciseId),
       'startKgX10': serializer.toJson<int>(startKgX10),
       'endKgX10': serializer.toJson<int>(endKgX10),
-      'loggedAt': serializer.toJson<DateTime>(loggedAt),
     };
   }
 
@@ -6995,13 +6965,11 @@ class LiftLogRow extends DataClass implements Insertable<LiftLogRow> {
     String? exerciseId,
     int? startKgX10,
     int? endKgX10,
-    DateTime? loggedAt,
   }) => LiftLogRow(
     date: date ?? this.date,
     exerciseId: exerciseId ?? this.exerciseId,
     startKgX10: startKgX10 ?? this.startKgX10,
     endKgX10: endKgX10 ?? this.endKgX10,
-    loggedAt: loggedAt ?? this.loggedAt,
   );
   LiftLogRow copyWithCompanion(LiftLogsCompanion data) {
     return LiftLogRow(
@@ -7013,7 +6981,6 @@ class LiftLogRow extends DataClass implements Insertable<LiftLogRow> {
           ? data.startKgX10.value
           : this.startKgX10,
       endKgX10: data.endKgX10.present ? data.endKgX10.value : this.endKgX10,
-      loggedAt: data.loggedAt.present ? data.loggedAt.value : this.loggedAt,
     );
   }
 
@@ -7023,15 +6990,13 @@ class LiftLogRow extends DataClass implements Insertable<LiftLogRow> {
           ..write('date: $date, ')
           ..write('exerciseId: $exerciseId, ')
           ..write('startKgX10: $startKgX10, ')
-          ..write('endKgX10: $endKgX10, ')
-          ..write('loggedAt: $loggedAt')
+          ..write('endKgX10: $endKgX10')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(date, exerciseId, startKgX10, endKgX10, loggedAt);
+  int get hashCode => Object.hash(date, exerciseId, startKgX10, endKgX10);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -7039,8 +7004,7 @@ class LiftLogRow extends DataClass implements Insertable<LiftLogRow> {
           other.date == this.date &&
           other.exerciseId == this.exerciseId &&
           other.startKgX10 == this.startKgX10 &&
-          other.endKgX10 == this.endKgX10 &&
-          other.loggedAt == this.loggedAt);
+          other.endKgX10 == this.endKgX10);
 }
 
 class LiftLogsCompanion extends UpdateCompanion<LiftLogRow> {
@@ -7048,14 +7012,12 @@ class LiftLogsCompanion extends UpdateCompanion<LiftLogRow> {
   final Value<String> exerciseId;
   final Value<int> startKgX10;
   final Value<int> endKgX10;
-  final Value<DateTime> loggedAt;
   final Value<int> rowid;
   const LiftLogsCompanion({
     this.date = const Value.absent(),
     this.exerciseId = const Value.absent(),
     this.startKgX10 = const Value.absent(),
     this.endKgX10 = const Value.absent(),
-    this.loggedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   LiftLogsCompanion.insert({
@@ -7063,19 +7025,16 @@ class LiftLogsCompanion extends UpdateCompanion<LiftLogRow> {
     required String exerciseId,
     required int startKgX10,
     required int endKgX10,
-    required DateTime loggedAt,
     this.rowid = const Value.absent(),
   }) : date = Value(date),
        exerciseId = Value(exerciseId),
        startKgX10 = Value(startKgX10),
-       endKgX10 = Value(endKgX10),
-       loggedAt = Value(loggedAt);
+       endKgX10 = Value(endKgX10);
   static Insertable<LiftLogRow> custom({
     Expression<String>? date,
     Expression<String>? exerciseId,
     Expression<int>? startKgX10,
     Expression<int>? endKgX10,
-    Expression<DateTime>? loggedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -7083,7 +7042,6 @@ class LiftLogsCompanion extends UpdateCompanion<LiftLogRow> {
       if (exerciseId != null) 'exercise_id': exerciseId,
       if (startKgX10 != null) 'start_kg_x10': startKgX10,
       if (endKgX10 != null) 'end_kg_x10': endKgX10,
-      if (loggedAt != null) 'logged_at': loggedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -7093,7 +7051,6 @@ class LiftLogsCompanion extends UpdateCompanion<LiftLogRow> {
     Value<String>? exerciseId,
     Value<int>? startKgX10,
     Value<int>? endKgX10,
-    Value<DateTime>? loggedAt,
     Value<int>? rowid,
   }) {
     return LiftLogsCompanion(
@@ -7101,7 +7058,6 @@ class LiftLogsCompanion extends UpdateCompanion<LiftLogRow> {
       exerciseId: exerciseId ?? this.exerciseId,
       startKgX10: startKgX10 ?? this.startKgX10,
       endKgX10: endKgX10 ?? this.endKgX10,
-      loggedAt: loggedAt ?? this.loggedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -7121,9 +7077,6 @@ class LiftLogsCompanion extends UpdateCompanion<LiftLogRow> {
     if (endKgX10.present) {
       map['end_kg_x10'] = Variable<int>(endKgX10.value);
     }
-    if (loggedAt.present) {
-      map['logged_at'] = Variable<DateTime>(loggedAt.value);
-    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -7137,7 +7090,6 @@ class LiftLogsCompanion extends UpdateCompanion<LiftLogRow> {
           ..write('exerciseId: $exerciseId, ')
           ..write('startKgX10: $startKgX10, ')
           ..write('endKgX10: $endKgX10, ')
-          ..write('loggedAt: $loggedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -10604,7 +10556,6 @@ typedef $$LiftLogsTableCreateCompanionBuilder =
       required String exerciseId,
       required int startKgX10,
       required int endKgX10,
-      required DateTime loggedAt,
       Value<int> rowid,
     });
 typedef $$LiftLogsTableUpdateCompanionBuilder =
@@ -10613,7 +10564,6 @@ typedef $$LiftLogsTableUpdateCompanionBuilder =
       Value<String> exerciseId,
       Value<int> startKgX10,
       Value<int> endKgX10,
-      Value<DateTime> loggedAt,
       Value<int> rowid,
     });
 
@@ -10643,11 +10593,6 @@ class $$LiftLogsTableFilterComposer
 
   ColumnFilters<int> get endKgX10 => $composableBuilder(
     column: $table.endKgX10,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get loggedAt => $composableBuilder(
-    column: $table.loggedAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -10680,11 +10625,6 @@ class $$LiftLogsTableOrderingComposer
     column: $table.endKgX10,
     builder: (column) => ColumnOrderings(column),
   );
-
-  ColumnOrderings<DateTime> get loggedAt => $composableBuilder(
-    column: $table.loggedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
 }
 
 class $$LiftLogsTableAnnotationComposer
@@ -10711,9 +10651,6 @@ class $$LiftLogsTableAnnotationComposer
 
   GeneratedColumn<int> get endKgX10 =>
       $composableBuilder(column: $table.endKgX10, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get loggedAt =>
-      $composableBuilder(column: $table.loggedAt, builder: (column) => column);
 }
 
 class $$LiftLogsTableTableManager
@@ -10751,14 +10688,12 @@ class $$LiftLogsTableTableManager
                 Value<String> exerciseId = const Value.absent(),
                 Value<int> startKgX10 = const Value.absent(),
                 Value<int> endKgX10 = const Value.absent(),
-                Value<DateTime> loggedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LiftLogsCompanion(
                 date: date,
                 exerciseId: exerciseId,
                 startKgX10: startKgX10,
                 endKgX10: endKgX10,
-                loggedAt: loggedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -10767,14 +10702,12 @@ class $$LiftLogsTableTableManager
                 required String exerciseId,
                 required int startKgX10,
                 required int endKgX10,
-                required DateTime loggedAt,
                 Value<int> rowid = const Value.absent(),
               }) => LiftLogsCompanion.insert(
                 date: date,
                 exerciseId: exerciseId,
                 startKgX10: startKgX10,
                 endKgX10: endKgX10,
-                loggedAt: loggedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
