@@ -270,3 +270,7 @@ restoreSubtitle: "Hồ sơ, lịch tập, buổi tập, cân nặng và cài đ�
 restoreFailed: "Chưa khôi phục xong vì mất kết nối. Thử lại." # 04 S-07
 restored: "Đã khôi phục dữ liệu" # 04 S-07
 
+# ===== Bản 2 =====
+
+# 03 Bản 2 F12-E2; 05 Bản 2 §6.8.3 (dish_image_quota_exhausted)
+dishImageQuotaExhausted: "Bạn đã xem đủ 3 hình mới hôm nay."

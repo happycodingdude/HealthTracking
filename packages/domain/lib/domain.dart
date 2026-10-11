@@ -5,6 +5,7 @@ export 'src/account/account_validators.dart';
 export 'src/ai/ai_budget.dart';
 export 'src/calorie/calorie.dart';
 export 'src/calorie/calorie_recalc.dart';
+export 'src/exercise/muscle_region.dart';
 export 'src/menu/menu.dart';
 export 'src/profile/profile.dart';
 export 'src/profile/profile_rules.dart';

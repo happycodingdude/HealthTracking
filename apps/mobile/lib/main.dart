@@ -1,6 +1,8 @@
+import 'package:api_contract/api_contract.dart' show AppVersion;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:package_info_plus/package_info_plus.dart';
 
 import 'app/app.dart';
 import 'app/env.dart';
@@ -25,6 +27,9 @@ Future<void> runHealthApp({
   final env = AppEnv.fromEnvironment();
   await runWithErrorReporting(env, () async {
     final db = database ?? openAppDatabase();
+    final version = AppVersion.parse(
+      (await PackageInfo.fromPlatform()).version,
+    );
     final sessionStore = SecureSessionStore();
     // Đọc phiên trước khi vẽ màn hình đầu: có phiên thì vào thẳng app (UA-23).
     final session = await sessionStore.read();
@@ -37,6 +42,7 @@ Future<void> runHealthApp({
         retry: (_, _) => null,
         overrides: [
           envProvider.overrideWithValue(env),
+          appVersionProvider.overrideWithValue(version),
           databaseProvider.overrideWithValue(db),
           sessionStoreProvider.overrideWithValue(sessionStore),
           initialSessionProvider.overrideWithValue(session),

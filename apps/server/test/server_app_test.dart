@@ -7,9 +7,9 @@ import 'package:test/test.dart';
 
 void main() {
   test(
-    'khởi động (chạy migration) → /healthz qua HTTP thật → tắt an toàn',
+    'khởi động (database tạo từ schema.sql, không có migration nào) → /healthz qua HTTP thật → tắt an toàn',
     () async {
-      final tdb = await TestDatabase.create(migrate: false);
+      final tdb = await TestDatabase.create();
       addTearDown(tdb.dispose);
       final log = CapturingLogger();
       final app = await ServerApp.start(

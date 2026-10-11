@@ -27,6 +27,7 @@ void main() {
       'sex',
       'activityLevel',
       'setupDate',
+      'scheduleStartedOn',
       'onboardingStep',
       'disclaimerAcceptedAt',
       'onboardingCompletedAt',
@@ -82,5 +83,41 @@ void main() {
       SyncEntities.codecs.keys,
       containsAll(['account', 'profile', 'weight']),
     );
+  });
+
+  group('Bản 2: scheduleStartedOn (06 Bản 2 §6.5.1)', () {
+    final base = Profile(
+      onboardingStep: 5,
+      heightCm: 175,
+      birthYear: 1996,
+      sex: Sex.male,
+      activityLevel: ActivityLevel.moderate,
+      setupDate: LocalDate(2026, 10, 7),
+      scheduleStartedOn: LocalDate(2026, 10, 14),
+      disclaimerAcceptedAt: DateTime.utc(2026, 10, 7, 11, 40),
+      onboardingCompletedAt: DateTime.utc(2026, 10, 7, 11, 45),
+      calorieMode: CalorieMode.auto,
+      calorieKcal: 2210,
+    );
+
+    test(
+      'khứ hồi; mốc lịch = scheduleStartedOn khi có, setupDate khi không',
+      () {
+        final json = const ProfileCodec().encode(base);
+        expect(json['scheduleStartedOn'], '2026-10-14');
+        final back = const ProfileCodec().decode(json);
+        expect(back, base);
+        expect(back.scheduleStart, LocalDate(2026, 10, 14));
+      },
+    );
+
+    test('TA2-01: dữ liệu của app Bản 1 (không có trường) đọc được, '
+        'scheduleStartedOn = null', () {
+      final json = const ProfileCodec().encode(base)
+        ..remove('scheduleStartedOn');
+      final p = const ProfileCodec().decode(json);
+      expect(p.scheduleStartedOn, isNull);
+      expect(p.scheduleStart, LocalDate(2026, 10, 7));
+    });
   });
 }

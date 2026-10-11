@@ -515,6 +515,9 @@ abstract final class S {
   static const invalidPassword = 'Mật khẩu cần ít nhất 8 ký tự';
 
   /// Mọi câu hằng, dùng cho test so khớp nguyên văn (ED-12).
+  // Hình món ăn (03 Bản 2 F12-E2, 05 Bản 2 §6.8.3).
+  static const dishImageQuotaExhausted = 'Bạn đã xem đủ 3 hình mới hôm nay.';
+
   static const Map<String, String> catalog = {
     'back': back,
     'understood': understood,
@@ -744,5 +747,6 @@ abstract final class S {
     'restoreSubtitle': restoreSubtitle,
     'restoreFailed': restoreFailed,
     'restored': restored,
+    'dishImageQuotaExhausted': dishImageQuotaExhausted,
   };
 }

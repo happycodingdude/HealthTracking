@@ -1,11 +1,13 @@
 import 'dart:async';
 
+import 'package:api_contract/api_contract.dart' show AppVersion;
 import 'package:domain/domain.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/env.dart';
 import 'package:mobile/app/providers.dart';
+import 'package:mobile/data/api/app_version_interceptor.dart';
 import 'package:mobile/data/auth/auth_interceptor.dart';
 import 'package:mobile/data/auth/session_store.dart';
 import 'package:mobile/data/connectivity.dart';
@@ -116,12 +118,18 @@ List<Override> appOverrides({
     clockProvider.overrideWithValue(
       clock ?? FixedClock(DateTime(2026, 10, 7, 18, 42)),
     ),
-    publicApiClientProvider.overrideWith((ref) => fake.client()),
+    appVersionProvider.overrideWithValue(AppVersion.v2),
+    publicApiClientProvider.overrideWith(
+      (ref) => fake.client()
+        ..dio.interceptors.add(
+          AppVersionInterceptor(ref.watch(appVersionProvider)),
+        ),
+    ),
     apiClientProvider.overrideWith((ref) {
       final api = fake.client();
-      api.dio.interceptors.add(
-        AuthInterceptor(api.dio, ref.watch(tokenManagerProvider)),
-      );
+      api.dio.interceptors
+        ..add(AppVersionInterceptor(ref.watch(appVersionProvider)))
+        ..add(AuthInterceptor(api.dio, ref.watch(tokenManagerProvider)));
       return api;
     }),
   ];

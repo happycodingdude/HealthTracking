@@ -1,3 +1,4 @@
+import 'package:domain/domain.dart' show MuscleRegion;
 import 'package:drift/drift.dart' hide isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,14 +13,37 @@ void main() {
   test(
     'schemaVersion 1: tạo sync_state một dòng, cursor 0, chưa đồng bộ',
     () async {
-      expect(db.schemaVersion, 5);
+      // 06 Bản 2 ED2-18: giữ schemaVersion 1 và onCreate đến bản phát hành đầu tiên.
+      expect(db.schemaVersion, 1);
       final rows = await db.select(db.syncState).get();
       expect(rows, hasLength(1));
       expect(rows.single.id, 1);
       expect(rows.single.cursor, 0);
       expect(rows.single.lastSyncedAt, isNull);
+      expect(rows.single.knownEntities, isNull);
     },
   );
+
+  test('VS20-T09: bảng Bản 2 có sẵn; 16 vùng cơ nạp sẵn đúng thứ tự (05 Bản 2 '
+      '§6.10.4)', () async {
+    final regions = await (db.select(
+      db.muscleRegions,
+    )..orderBy([(r) => OrderingTerm.asc(r.sortOrder)])).get();
+    expect(
+      [for (final r in regions) r.id],
+      [for (final r in MuscleRegion.values) r.id],
+    );
+    expect(regions.first.muscleGroup, 'chest');
+    expect(regions[8].view, 'back');
+    expect(await db.select(db.exercises).get(), isEmpty);
+    expect(await db.select(db.liftLogs).get(), isEmpty);
+    expect(await db.select(db.dishImages).get(), isEmpty);
+  });
+
+  test('đăng nhập tài khoản khác (wipe) giữ vùng cơ nạp sẵn', () async {
+    await db.wipe();
+    expect(await db.select(db.muscleRegions).get(), hasLength(16));
+  });
 
   test('sync_state chỉ có dòng id = 1', () async {
     await expectLater(

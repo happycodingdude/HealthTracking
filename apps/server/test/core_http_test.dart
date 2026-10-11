@@ -84,7 +84,7 @@ void main() {
     );
 
     test('đường dẫn không tồn tại → 404 not_found', () async {
-      final tdb = await TestDatabase.create(migrate: false);
+      final tdb = await TestDatabase.create(schema: false);
       addTearDown(tdb.dispose);
       final app = buildApp(_deps(tdb.db, log));
       final res = await call(app, '/khong-co');
@@ -113,7 +113,7 @@ void main() {
 
   group('/healthz', () {
     test('200 khi database trả lời', () async {
-      final tdb = await TestDatabase.create(migrate: false);
+      final tdb = await TestDatabase.create(schema: false);
       addTearDown(tdb.dispose);
       final res = await call(buildApp(_deps(tdb.db, log)), '/healthz');
       expect(res.statusCode, 200);

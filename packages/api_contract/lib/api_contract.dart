@@ -2,6 +2,7 @@
 library;
 
 export 'src/api_error.dart';
+export 'src/app_version.dart';
 export 'src/auth_dtos.dart';
 export 'src/codecs.dart';
 export 'src/error_code.dart';

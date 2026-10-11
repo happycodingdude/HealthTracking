@@ -36,6 +36,11 @@ String _instant(String column) =>
 
 /// Entity `weekly_template` (key `me`) = bảng `weekly_templates` (VS04-T06).
 /// Kiểm tra lại bằng domain: F03-V1 → V3, không có chủ nhật, `contentHash`.
+///
+/// Bản 2 (05 Bản 2 §6.6.5, VS20-T07): lần lưu lịch tuần đầu tiên của tài khoản
+/// đã hoàn tất thiết lập ("Để sau" lịch tuần) mà hồ sơ chưa có
+/// `schedule_started_on` → server tự ghi ngày lưu theo múi giờ trong hồ sơ.
+/// Dự phòng cho máy không gửi trường này (app Bản 1 theo TD2-04).
 final class WeeklyTemplateHandler implements SyncEntityHandler {
   const WeeklyTemplateHandler();
 
@@ -83,7 +88,7 @@ final class WeeklyTemplateHandler implements SyncEntityHandler {
     int serverVersion,
   ) async {
     final t = _codec.decode(m.data!);
-    await s.execute(
+    final rows = await s.execute(
       Sql.named('''
         INSERT INTO weekly_templates (user_id, days, content_hash, server_version, client_updated_at)
         VALUES (@user, @days:jsonb, @hash, @version, @clientUpdatedAt)
@@ -93,7 +98,8 @@ final class WeeklyTemplateHandler implements SyncEntityHandler {
           server_version = EXCLUDED.server_version,
           client_updated_at = EXCLUDED.client_updated_at,
           updated_at = now(),
-          deleted = false'''),
+          deleted = false
+        RETURNING (xmax = 0) AS inserted'''),
       parameters: {
         'user': userId,
         'days': t.toJson(),
@@ -102,6 +108,21 @@ final class WeeklyTemplateHandler implements SyncEntityHandler {
         'clientUpdatedAt': m.clientUpdatedAt,
       },
     );
+    if (rows.single[0] == true) {
+      await s.execute(
+        Sql.named('''
+          UPDATE profiles p SET
+            schedule_started_on = (@at::timestamptz AT TIME ZONE
+              CASE WHEN p.timezone IN (SELECT name FROM pg_timezone_names)
+                   THEN p.timezone ELSE 'Asia/Ho_Chi_Minh' END)::date,
+            server_version = nextval('sync_version_seq'),
+            updated_at = now()
+          WHERE p.user_id = @user AND NOT p.deleted
+            AND p.onboarding_completed_at IS NOT NULL
+            AND p.schedule_started_on IS NULL'''),
+        parameters: {'user': userId, 'at': m.clientUpdatedAt},
+      );
+    }
   }
 
   @override

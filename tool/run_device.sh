@@ -41,6 +41,20 @@ trap cleanup EXIT
 
 if [ "$SERVER" = 1 ]; then
   "$ROOT/tool/test_db.sh" ensure
+  # Database dev phải được tạo từ đúng bản apps/server/db/schema.sql (ED2-18).
+  PSQL=(docker compose -f "$ROOT/deploy/docker-compose.dev.yml" exec -T db psql -U health -tA)
+  HASH="schema:$(shasum -a 256 "$ROOT/apps/server/db/schema.sql" | cut -d' ' -f1)"
+  CURRENT="$("${PSQL[@]}" -d postgres -c "SELECT shobj_description(oid, 'pg_database') FROM pg_database WHERE datname = 'health'")"
+  if [ "$CURRENT" != "$HASH" ]; then
+    TABLES="$("${PSQL[@]}" -d health -c "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public'")"
+    if [ "$TABLES" = 0 ]; then
+      "$ROOT/tool/reset_dev_db.sh"
+    else
+      echo "Cấu trúc database dev cũ hơn apps/server/db/schema.sql." >&2
+      echo "Chạy tool/reset_dev_db.sh (xóa dữ liệu thử, nạp lại), cài lại app, rồi chạy lại script này." >&2
+      exit 1
+    fi
+  fi
   if curl -sf "http://127.0.0.1:$PORT/healthz" >/dev/null; then
     echo "Server dev đã chạy sẵn ở cổng $PORT."
   else

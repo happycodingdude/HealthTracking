@@ -18,6 +18,46 @@ void main() {
     }
   });
 
+  test('06 Bản 2 §6.4: hai danh sách — mã có câu riêng, mã không bao giờ '
+      'hiện câu (hoàn về trạng thái server, TA-12)', () {
+    // Mã có câu riêng ở mọi màn hình gọi AI (không rơi về câu mất mạng).
+    const displayed = {
+      ErrorCode.menuQuotaExhausted,
+      ErrorCode.budgetExhausted,
+      ErrorCode.generationInProgress,
+      ErrorCode.aiInvalidOutput,
+      ErrorCode.aiProviderError,
+      ErrorCode.dishImageQuotaExhausted,
+    };
+    expect(
+      errorMessage(
+        const ApiError(ErrorCode.dishImageQuotaExhausted),
+        ErrorScreen.menu,
+      ),
+      'Bạn đã xem đủ 3 hình mới hôm nay.',
+    );
+    for (final code in displayed) {
+      expect(
+        errorMessage(ApiError(code), ErrorScreen.menu, nextMonth: 11),
+        isNot(S.offlineMenu),
+        reason: code.wire,
+      );
+    }
+    expect(silentErrorCodes.map((c) => c.wire).toSet(), {
+      'session_locked',
+      'extra_session_locked',
+      'no_schedule',
+      'lift_no_session',
+      'lift_window_closed',
+      'lift_not_allowed_for_exercise',
+      'lift_exercise_not_in_session',
+    });
+    expect(silentErrorCodes.intersection(displayed), isEmpty);
+    for (final code in silentErrorCodes) {
+      expect(code.httpStatus, 422, reason: code.wire);
+    }
+  });
+
   test('05 §6.8.3: câu theo mã', () {
     expect(
       errorMessage(const ApiError(ErrorCode.phoneTaken), ErrorScreen.register),

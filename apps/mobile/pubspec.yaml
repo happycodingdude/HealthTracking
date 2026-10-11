@@ -1,7 +1,8 @@
 name: mobile
 description: App iPhone Health Tracking (Flutter).
 publish_to: none
-version: 0.1.0+1
+# Bản 2 (05 Bản 2 TR2-13): app gửi phiên bản này trong header X-App-Version.
+version: 2.0.0+1
 resolution: workspace
 
 environment:
@@ -31,6 +32,8 @@ dependencies:
   flutter_secure_storage: ^10.3.4
   flutter_timezone: ^5.1.1
   go_router: ^17.0.0
+  # Phiên bản app cho header X-App-Version (06 Bản 2 ED2-02).
+  package_info_plus: ^10.2.1
   sentry_flutter: ^9.30.1
   timezone: ^0.10.1
   url_launcher: ^6.3.2

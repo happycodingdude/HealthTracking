@@ -12,6 +12,20 @@ enum ErrorCode {
   aiInvalidOutput('ai_invalid_output', 502),
   aiProviderError('ai_provider_error', 502),
 
+  /// Bản 2 (05 Bản 2 §6.8.3): hết 3 lượt hình món ăn mới hôm nay (F12-E2).
+  dishImageQuotaExhausted('dish_image_quota_exhausted', 429),
+
+  /// Bản 2, chỉ trong kết quả push (05 Bản 2 §6.6.2, §6.6.3). App không hiện
+  /// câu nào: hoàn bản ghi về trạng thái server và báo lỗi (TA-12), vì UI đã
+  /// chặn trước các trường hợp này.
+  sessionLocked('session_locked', 422),
+  extraSessionLocked('extra_session_locked', 422),
+  noSchedule('no_schedule', 422),
+  liftNoSession('lift_no_session', 422),
+  liftWindowClosed('lift_window_closed', 422),
+  liftNotAllowedForExercise('lift_not_allowed_for_exercise', 422),
+  liftExerciseNotInSession('lift_exercise_not_in_session', 422),
+
   /// Mã kỹ thuật: đường dẫn không tồn tại. App xử lý như lỗi kết nối.
   notFound('not_found', 404),
 

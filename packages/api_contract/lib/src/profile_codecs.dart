@@ -64,6 +64,10 @@ final class ProfileCodec implements EntityCodec<Profile> {
       setupDate: r.has('setupDate')
           ? r.decoded('setupDate', DateCodec.decode)
           : null,
+      // Bản 2 (06 Bản 2 §6.5.1). App Bản 1 không gửi trường này.
+      scheduleStartedOn: r.has('scheduleStartedOn')
+          ? r.decoded('scheduleStartedOn', DateCodec.decode)
+          : null,
       disclaimerAcceptedAt: instant('disclaimerAcceptedAt'),
       onboardingCompletedAt: instant('onboardingCompletedAt'),
       calorieMode: ProfileWire.decode(
@@ -90,6 +94,9 @@ final class ProfileCodec implements EntityCodec<Profile> {
     'sex': ProfileWire.sex[p.sex],
     'activityLevel': ProfileWire.activityLevel[p.activityLevel],
     'setupDate': p.setupDate == null ? null : DateCodec.encode(p.setupDate!),
+    'scheduleStartedOn': p.scheduleStartedOn == null
+        ? null
+        : DateCodec.encode(p.scheduleStartedOn!),
     'onboardingStep': p.onboardingStep,
     'disclaimerAcceptedAt': p.disclaimerAcceptedAt == null
         ? null

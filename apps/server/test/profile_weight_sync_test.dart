@@ -75,6 +75,26 @@ void main() {
       (OnboardingState.inProgress, 4),
     );
 
+    // Bước 4 lưu lịch tuần như Bản 1. Tài khoản hoàn tất thiết lập mà chưa có
+    // lịch ("Để sau", Bản 2) được kiểm ở v2_foundation_test.dart (TD2-04).
+    await pushOne(
+      mutation(
+        'weekly_template',
+        'me',
+        SyncOp.upsert,
+        at: t0.add(const Duration(milliseconds: 1500)),
+        data: const WeeklyTemplateCodec().encode(
+          WeeklyTemplate({
+            1: TemplateDay(
+              enabled: true,
+              time: LocalTime(18, 0),
+              muscles: const [MuscleGroup.chest],
+            ),
+          }),
+        ),
+      ),
+    );
+
     await pushOne(
       profile(
         body(step: 5).copyWith(

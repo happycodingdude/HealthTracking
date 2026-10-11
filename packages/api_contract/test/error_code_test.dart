@@ -16,6 +16,15 @@ void main() {
         'generation_in_progress': 409,
         'ai_invalid_output': 502,
         'ai_provider_error': 502,
+        // Bản 2 (05 Bản 2 §6.8.3).
+        'dish_image_quota_exhausted': 429,
+        'session_locked': 422,
+        'extra_session_locked': 422,
+        'no_schedule': 422,
+        'lift_no_session': 422,
+        'lift_window_closed': 422,
+        'lift_not_allowed_for_exercise': 422,
+        'lift_exercise_not_in_session': 422,
       };
       for (final entry in expected.entries) {
         final code = ErrorCode.fromWire(entry.key);

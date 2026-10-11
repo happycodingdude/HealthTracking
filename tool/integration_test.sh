@@ -13,6 +13,8 @@ DEVICE=""; PORT=18080
 "$ROOT/tool/test_db.sh" ensure
 DBNAME="itest_$(date +%s)"
 docker compose -f "$ROOT/deploy/docker-compose.dev.yml" exec -T db psql -U health -d health -c "CREATE DATABASE $DBNAME" >/dev/null
+# Trong lúc dev, cấu trúc database tạo từ schema.sql (06 Bản 2 ED2-18).
+docker compose -f "$ROOT/deploy/docker-compose.dev.yml" exec -T db psql -U health -d "$DBNAME" -v ON_ERROR_STOP=1 -q <"$ROOT/apps/server/db/schema.sql"
 mkdir -p "$ROOT/build"
 (cd "$ROOT/apps/server" && DATABASE_URL="postgres://health:***REMOVED***@localhost:55432/$DBNAME" HOST=127.0.0.1 PORT=$PORT \
   JWT_SECRET="***REMOVED***" BCRYPT_COST=4 \

@@ -59,6 +59,12 @@ abstract final class SyncEntities {
   static const menu = 'menu';
   static const aiDailyUsage = 'ai_daily_usage';
 
+  /// Bản 2 (06 Bản 2 §6.5.1). `exercise`, `dish_image` là dòng dùng chung
+  /// (không có `user_id`), chỉ pull; `lift_log` push + pull.
+  static const exercise = 'exercise';
+  static const dishImage = 'dish_image';
+  static const liftLog = 'lift_log';
+
   static const Map<String, EntityCodec<Object>> codecs = {
     account: AccountCodec(),
     profile: ProfileCodec(),
