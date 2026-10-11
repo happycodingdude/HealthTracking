@@ -201,6 +201,19 @@ abstract final class S {
   static const later = 'Để sau';
   static const remindersRow = 'Nhắc đi tập';
   static const remindersHint = '1 giờ trước giờ tập';
+
+  // Chưa có lịch (04 Bản 2 UA2-03 → UA2-05, UA2-15, S-06, S-10, S-20, S-50).
+  static const noScheduleTitle = 'Chưa có lịch tập';
+  static const noScheduleToday =
+      'Buổi tập và tiến độ tuần sẽ hiện khi Bạn xếp lịch tuần.';
+  static const noScheduleInvite =
+      'Chọn các ngày Bạn muốn tập trong tuần. App sẽ xếp lịch từ hôm nay đến cuối tháng.';
+  static const arrangeWeekly = 'Xếp lịch tuần';
+  static const reminderGenericExample =
+      'Ví dụ: lịch có buổi Ngực lúc 18:00 thứ 2, thì 17:00 app sẽ nhắc: Hôm nay tập ngực lúc 18:00.';
+  static const remindersStartWhenScheduled =
+      'Nhắc bắt đầu hoạt động khi Bạn xếp lịch tuần.';
+  static const remindersHintNoSchedule = 'Sẽ nhắc khi Bạn đã xếp lịch tuần';
   static const notificationsBlocked =
       'iPhone đang chặn thông báo của app. Mở Cài đặt để cho phép.';
   static const openSettings = 'Mở Cài đặt';
@@ -612,6 +625,13 @@ abstract final class S {
     'later': later,
     'remindersRow': remindersRow,
     'remindersHint': remindersHint,
+    'noScheduleTitle': noScheduleTitle,
+    'noScheduleToday': noScheduleToday,
+    'noScheduleInvite': noScheduleInvite,
+    'arrangeWeekly': arrangeWeekly,
+    'reminderGenericExample': reminderGenericExample,
+    'remindersStartWhenScheduled': remindersStartWhenScheduled,
+    'remindersHintNoSchedule': remindersHintNoSchedule,
     'notificationsBlocked': notificationsBlocked,
     'openSettings': openSettings,
     'remindersTurnedOff': remindersTurnedOff,

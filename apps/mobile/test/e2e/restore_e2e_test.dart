@@ -7,12 +7,16 @@ import 'package:api_contract/api_contract.dart';
 import 'package:domain/domain.dart';
 import 'package:flutter_test/flutter_test.dart' hide pumpEventQueue;
 import 'package:mobile/data/api/api_client.dart';
+import 'package:mobile/data/sync/outbox_writer.dart';
 import 'package:mobile/data/sync/sync_api.dart';
 import 'package:mobile/data/sync/sync_engine.dart';
+import 'package:mobile/features/me/application/reminders.dart';
 import 'package:mobile/features/onboarding/data/onboarding_draft_repository.dart';
+import 'package:mobile/features/schedule/application/schedule_edits.dart';
 import 'package:postgres/postgres.dart';
 import 'package:uuid/uuid.dart';
 
+import '../support/fake_notifications.dart';
 import 'sync_e2e_harness.dart';
 
 /// Lịch tuần thử: T2 Ngực 06:00, T4 Lưng 06:00, T6 Vai 06:00.
@@ -177,6 +181,74 @@ void main() {
       onA['aiBudget'],
       isNotNull,
       reason: 'F09-AC3: chi phí AI giữ nguyên',
+    );
+  });
+
+  test('F09-AC23, F03-E22 (VS25-T09): máy A "Để sau" lịch tuần, bật nhắc → '
+      'máy B đăng nhập (completed, không qua lại thiết lập), khôi phục → vẫn '
+      'Chưa có lịch, công tắc vẫn bật; lưu lịch lần đầu trên B → server ghi '
+      'mốc bắt đầu lịch', () async {
+    final a = device();
+    await a.register();
+    // Giờ máy ở quá khứ so với server (server từ chối thời điểm tương lai).
+    a.clock.set(DateTime(2026, 9, 14, 9));
+    await a.onboarding.acceptDisclaimer();
+    expect(
+      await a.onboarding.saveProfile(
+        const ProfileDraft(
+          height: '175',
+          birthYear: 1996,
+          sex: Sex.male,
+          activityLevel: ActivityLevel.moderate,
+          weight: '80',
+        ),
+      ),
+      isEmpty,
+    );
+    expect(await a.onboarding.saveCalorie(), isTrue);
+    await a.onboarding.skipSchedule();
+    await a.onboarding.complete(
+      remindersEnabled: true,
+      timezone: 'Asia/Ho_Chi_Minh',
+    );
+    expect(await a.sync(), SyncOutcome.synced);
+
+    final b = device();
+    final me = await b.login();
+    expect(me.onboardingState, OnboardingState.completed);
+    await b.restore();
+    expect(await b.snapshot(), await a.snapshot());
+    expect(await b.schedule.template(), isNull);
+    final p = (await b.profiles.get())!;
+    expect(p.remindersEnabled, isTrue);
+    expect(p.scheduleStartedOn, isNull);
+
+    // Lưu lịch tuần lần đầu trên B (12:00 thứ 4 16/09) → lịch từ hôm nay, mốc
+    // bắt đầu lịch được đồng bộ (05 Bản 2 §6.6.5).
+    b.clock.set(DateTime(2026, 9, 16, 12));
+    final edits = ScheduleEdits(
+      db: b.db,
+      schedule: b.schedule,
+      outbox: OutboxWriter(b.db, b.clock),
+      reminders: ReminderScheduler(
+        gateway: FakeNotificationGateway(),
+        profiles: b.profiles,
+        schedule: b.schedule,
+        clock: b.clock,
+      ),
+      profiles: b.profiles,
+      clock: b.clock,
+    );
+    expect(await edits.saveTemplate(_template), isEmpty);
+    expect(await b.sync(), SyncOutcome.synced);
+    final c = device();
+    await c.login();
+    await c.restore();
+    expect((await c.profiles.get())!.scheduleStartedOn, LocalDate(2026, 9, 16));
+    expect(await c.schedule.template(), _template);
+    expect(
+      (await c.schedule.plan(YearMonth(2026, 9)))!.startDate,
+      LocalDate(2026, 9, 16),
     );
   });
 

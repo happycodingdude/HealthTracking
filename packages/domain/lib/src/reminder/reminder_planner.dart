@@ -65,19 +65,18 @@ abstract final class ReminderPlanner {
   /// - [nextMonth]: các ngày của tháng sau nếu đã được tạo; null thì suy ra từ
   ///   [template] (đúng với những gì F03-R6 sẽ tạo, TAC-09).
   /// - Chỉ nhắc buổi theo lịch (F04-R4), gồm cả ngày sửa riêng (F04-R7).
+  /// - Chưa có lịch tuần (Chưa có lịch, 05 Bản 2 TD2-09) → rỗng (F04-R22).
   static List<Reminder> plan({
     required List<PlanDay> currentMonth,
     required List<PlanDay>? nextMonth,
     required WeeklyTemplate? template,
     required DateTime now,
   }) {
+    if (template == null) return const [];
     final today = LocalDate.fromDateTime(now);
     final next = today.yearMonth.next;
     final following =
-        nextMonth ??
-        (template == null
-            ? const <PlanDay>[]
-            : MonthGenerator.month(template, next, now).days);
+        nextMonth ?? MonthGenerator.month(template, next, now).days;
     final reminders = <Reminder>[];
     for (final d in [...currentMonth, ...following]) {
       if (!d.isWorkout || d.mark != null || d.date.isBefore(today)) continue;

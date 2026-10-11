@@ -196,6 +196,8 @@ final class MonthPlanHandler implements SyncEntityHandler {
   ) async {
     final userId = ctx.userId;
     final p = _codec.decode(m.key, m.data!);
+    // Chưa có lịch tuần thì không có lịch tháng (F03-R22, 05 Bản 2 §6.6.3).
+    await _requireSchedule(s, userId, 'key');
     await s.execute(
       Sql.named('''
         INSERT INTO month_plans (user_id, month, start_date, template_hash, generated_at,
@@ -300,6 +302,7 @@ final class DayHandler implements SyncEntityHandler {
   ) async {
     final userId = ctx.userId;
     final d = _codec.decode(m.key, m.data!);
+    if (m.op == SyncOp.ensure) await _requireSchedule(s, userId, 'key');
     final plan = await s.execute(
       Sql.named(
         'SELECT 1 FROM month_plans WHERE user_id = @user AND month = @month AND NOT deleted',
@@ -319,6 +322,10 @@ final class DayHandler implements SyncEntityHandler {
       await deviceNow(s, userId, m.clientUpdatedAt),
       fromV2App: ctx.appVersion != null,
     );
+    // Buổi tập thêm mới khi chưa có lịch tuần (F05-R31, 05 Bản 2 §6.6.3).
+    if (d.extraMuscles != null && before?.extraMuscles == null) {
+      await _requireSchedule(s, userId, 'extraMuscles');
+    }
     if (violation != null) {
       throw SyncRejection(
         violation.field,
@@ -395,4 +402,18 @@ final class DayHandler implements SyncEntityHandler {
              'extraLoggedAt', ${_instant('extra_logged_at')}) AS data
     FROM days
     WHERE user_id = @user AND server_version > @cursor''';
+}
+
+/// Tài khoản đã có lịch tuần (05 Bản 2 TD2-09); chưa có → `rejected`
+/// `no_schedule` với [field].
+Future<void> _requireSchedule(Session s, String userId, String field) async {
+  final rows = await s.execute(
+    Sql.named(
+      'SELECT 1 FROM weekly_templates WHERE user_id = @user AND NOT deleted',
+    ),
+    parameters: {'user': userId},
+  );
+  if (rows.isEmpty) {
+    throw SyncRejection(field, code: ErrorCode.noSchedule);
+  }
 }

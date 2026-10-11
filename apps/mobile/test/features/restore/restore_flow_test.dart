@@ -240,6 +240,21 @@ void main() {
     expect(find.byType(AppTabBar), findsOneWidget);
   });
 
+  testWidgets('F09-AC23, F03-E22: tài khoản Chưa có lịch, nhắc bật → khôi '
+      'phục trên máy mới → vẫn Chưa có lịch ("Chưa có lịch tập", không có thẻ '
+      'tiến độ), công tắc vẫn bật, iPhone hỏi lại quyền, không hẹn nhắc nào', (
+    tester,
+  ) async {
+    serverData(reminders: true);
+    me('u1');
+    await pump(tester, session: session, restoreAtStart: true);
+    expect(notifications.requests, 1);
+    expect(find.byKey(const ValueKey('no-schedule-card')), findsOneWidget);
+    expect(find.byKey(const ValueKey('progress-card')), findsNothing);
+    expect(notifications.scheduled, isEmpty);
+    expect((await ProfileRepository(db).get())!.remindersEnabled, isTrue);
+  });
+
   testWidgets(
     'J-06: máy mới đăng nhập tài khoản đã thiết lập → S-07 → Hôm nay, '
     'không phải thiết lập lại',

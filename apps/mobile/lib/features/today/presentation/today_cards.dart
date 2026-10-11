@@ -119,6 +119,10 @@ class SessionCard extends ConsumerWidget {
     final async = ref.watch(dayProvider(today));
     if (!async.hasValue) return const SizedBox.shrink();
     final day = async.value;
+    // Chưa có lịch (04 Bản 2 §6.6.1, UA2-03): thẻ nhạt, không nút.
+    final schedule = ref.watch(scheduleStateProvider);
+    if (schedule == null) return const SizedBox.shrink();
+    if (!schedule.hasSchedule) return const _NoScheduleCard();
     final next = ref.watch(nextSessionProvider);
     final status = day == null ? null : SessionStatus.derive(day, now);
     final title = context.text.headlineSmall?.copyWith(
@@ -226,6 +230,44 @@ class SessionCard extends ConsumerWidget {
   }
 }
 
+/// "Chưa có lịch tập" ở vị trí thẻ buổi tập (mock S-10-1 Bản 2): nền nhạt,
+/// không có nút — nút "Xếp lịch tuần" chỉ ở mục Lịch (UA2-03, BR2-30).
+class _NoScheduleCard extends StatelessWidget {
+  const _NoScheduleCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return Container(
+      key: const ValueKey('no-schedule-card'),
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+      decoration: BoxDecoration(
+        color: palette.neutralContainer,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: palette.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Heading(
+            S.noScheduleTitle,
+            style: context.text.titleLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            S.noScheduleToday,
+            style: context.text.bodyLarge?.copyWith(
+              color: palette.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Buổi chưa đánh dấu khác trong tuần (04 §6.7.2, UA-11). Chỉ hiện khi có.
 class UnmarkedCard extends ConsumerWidget {
   const UnmarkedCard({super.key});
@@ -308,7 +350,11 @@ class ProgressCard extends ConsumerWidget {
     final now = ref.watch(nowProvider);
     final week = ProgressWeek.containing(LocalDate.fromDateTime(now));
     final progress = ref.watch(weekProgressProvider(week));
-    if (progress == null) return const SizedBox.shrink();
+    // Chưa có lịch: thẻ ẩn hẳn, không "0/0" (F06-R21, 04 Bản 2 §6.6.3).
+    if (progress == null ||
+        ref.watch(scheduleStateProvider)?.hasSchedule != true) {
+      return const SizedBox.shrink();
+    }
     final cells = [for (final d in progress.days) _DayCell(day: d)];
     final main = progress.planned == 0
         ? S.noPlannedSessions

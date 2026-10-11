@@ -60,11 +60,13 @@ final class ReminderScheduler {
     );
   }
 
-  /// Trả số nhắc đã hẹn.
+  /// Trả số nhắc đã hẹn. Chưa có lịch tuần (05 Bản 2 TD2-09) → hủy hết và
+  /// dừng, dù công tắc đang bật (F04-R22).
   Future<int> reschedule() async {
     await _gateway.cancelAll();
     final profile = await _profiles.get();
     if (profile == null || !profile.remindersEnabled) return 0;
+    if (await _schedule.template() == null) return 0;
     if (!await _gateway.isPermitted()) return 0;
     final reminders = await upcoming();
     for (final r in reminders) {
