@@ -30,6 +30,15 @@ final class SyncService {
   /// Khóa advisory theo user cho mọi lần ghi bảng đồng bộ (ED-03).
   static const lockNamespace = 7426002;
 
+  /// Khóa của dòng dùng chung (thư viện, hình món ăn — 05 Bản 2 §6.6.1).
+  /// Dòng dùng chung lấy `server_version` từ cùng sequence nhưng không nằm
+  /// trong khóa của user nào: nếu một pull chụp snapshot khi transaction ghi
+  /// dòng dùng chung đang dở, dòng đó có thể có version nhỏ hơn cursor trả
+  /// về và bị bỏ sót. Nơi ghi giữ khóa độc quyền đến hết transaction
+  /// ([lockSharedRowsForWrite]); pull giữ khóa chia sẻ trước khi chụp
+  /// snapshot, nên không bao giờ thấy nửa chừng.
+  static const sharedRowsLock = 7426004;
+
   /// `clientUpdatedAt` lớn hơn giờ server quá mức này bị từ chối (05 §6.6.2).
   static const maxClockSkew = Duration(minutes: 10);
 
@@ -64,8 +73,32 @@ final class SyncService {
     final union = [
       for (final h in _handlers.values) '(${h.pullSql})',
     ].join('\nUNION ALL\n');
-    return inTransaction(
-      _pool,
+    return _pool.withConnection((conn) async {
+      // Khóa chia sẻ mức phiên, lấy TRƯỚC khi transaction chụp snapshot.
+      await conn.execute(
+        Sql.named('SELECT pg_advisory_lock_shared(@k)'),
+        parameters: {'k': sharedRowsLock},
+      );
+      try {
+        return await _pullIn(conn, userId, union, cursor, limit);
+      } finally {
+        await conn.execute(
+          Sql.named('SELECT pg_advisory_unlock_shared(@k)'),
+          parameters: {'k': sharedRowsLock},
+        );
+      }
+    });
+  }
+
+  Future<PullResponse> _pullIn(
+    Connection connection,
+    String userId,
+    String union,
+    int cursor,
+    int limit,
+  ) {
+    return inTransactionOn(
+      connection,
       begin: 'BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY',
       (conn) async {
         final rows = await conn.execute(
@@ -95,6 +128,12 @@ final class SyncService {
       },
     );
   }
+
+  /// Gọi đầu tiên trong transaction ghi dòng dùng chung, trước mọi `nextval`.
+  static Future<void> lockSharedRowsForWrite(Session s) => s.execute(
+    Sql.named('SELECT pg_advisory_xact_lock(@k)'),
+    parameters: {'k': sharedRowsLock},
+  );
 
   /// Khóa advisory của [userId] đến hết transaction (ED-03).
   static Future<void> lockUser(Session s, String userId) => s.execute(

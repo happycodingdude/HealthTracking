@@ -11,6 +11,7 @@ import 'package:server/src/auth/token_service.dart';
 ///   admin reset-password --phone 0901234567
 ///   admin budget --show
 ///   admin library import data/v2__exercises.json [--check-only]
+///   admin library check-videos
 Future<void> main(List<String> args) async {
   final parser = ArgParser()
     ..addCommand(
@@ -20,10 +21,12 @@ Future<void> main(List<String> args) async {
     ..addCommand('budget', ArgParser()..addFlag('show', defaultsTo: true))
     ..addCommand(
       'library',
-      ArgParser()..addCommand(
-        'import',
-        ArgParser()..addFlag('check-only', negatable: false),
-      ),
+      ArgParser()
+        ..addCommand(
+          'import',
+          ArgParser()..addFlag('check-only', negatable: false),
+        )
+        ..addCommand('check-videos'),
     );
   final ArgResults parsed;
   try {
@@ -33,7 +36,8 @@ Future<void> main(List<String> args) async {
         ? parsed.command!.command
         : null;
     if (parsed.command!.name == 'library' &&
-        (library == null || library.rest.length != 1)) {
+        (library == null ||
+            library.rest.length != (library.name == 'import' ? 1 : 0))) {
       throw const FormatException('Thiếu lệnh con hoặc đường dẫn file');
     }
   } on FormatException catch (e) {
@@ -43,7 +47,8 @@ Future<void> main(List<String> args) async {
       ..writeln('      admin budget --show')
       ..writeln(
         '      admin library import <file thư viện .json> [--check-only]',
-      );
+      )
+      ..writeln('      admin library check-videos');
     exitCode = 64;
     return;
   }
@@ -64,6 +69,25 @@ Future<void> main(List<String> args) async {
           ..writeln('Mật khẩu tạm của $phone: $temp')
           ..writeln('Đã thu hồi mọi phiên đăng nhập của tài khoản này.')
           ..writeln('Báo mật khẩu tạm cho chủ tài khoản qua kênh riêng.');
+      case 'library' when parsed.command!.command!.name == 'check-videos':
+        // 05 Bản 2 §6.10.3: cùng logic với job hằng ngày.
+        final key = config.youtubeApiKey;
+        if (key == null) {
+          stderr.writeln('Thiếu YOUTUBE_API_KEY trong .env của server.');
+          exitCode = 1;
+          return;
+        }
+        final log = Logger.stdout();
+        final dsn = config.sentryDsn;
+        if (dsn != null) await SentryAlerts.init(dsn);
+        final result = await VideoCheckJob(
+          db: db.pool,
+          api: YouTubeDataApiClient(apiKey: key),
+          alerts: dsn == null ? LogAlerts(log) : SentryAlerts(log),
+          logger: log,
+        ).run();
+        (result.failed ? stderr : stdout).writeln(result.describe());
+        if (result.failed) exitCode = 1;
       case 'library':
         // 05 Bản 2 §6.10.2. File không đọc được → in lỗi, mã thoát 1.
         final cmd = parsed.command!.command!;

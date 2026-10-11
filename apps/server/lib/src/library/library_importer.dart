@@ -1,6 +1,7 @@
 import 'package:domain/domain.dart';
 import 'package:postgres/postgres.dart';
 
+import '../sync/sync_service.dart';
 import 'library_file.dart';
 
 /// Kết quả `admin library import` (05 Bản 2 §6.10.2 bước 5).
@@ -60,9 +61,6 @@ final class LibraryImporter {
   /// Pool của server hoặc một kết nối (công cụ dev `tool/seed_dev.dart`).
   final SessionExecutor _db;
 
-  /// Khóa advisory: hai lần nạp không chạy chồng nhau.
-  static const _lockKey = 7426003;
-
   Future<ImportReport> run(LibraryFile file, {bool checkOnly = false}) async {
     final issues = <String>[
       for (final e in file.exercises)
@@ -81,10 +79,8 @@ final class LibraryImporter {
 
     final sorted = LibraryRules.sorted(file.exercises);
     return _db.runTx((tx) async {
-      await tx.execute(
-        Sql.named('SELECT pg_advisory_xact_lock(@k)'),
-        parameters: {'k': _lockKey},
-      );
+      // Hai lần nạp không chạy chồng nhau; không pull nào thấy nửa chừng.
+      await SyncService.lockSharedRowsForWrite(tx);
       final ids = [for (final e in sorted) e.id];
       final gone = await tx.execute(
         Sql.named('''

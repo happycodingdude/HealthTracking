@@ -8,12 +8,15 @@ import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'ai/ai_cleanup.dart';
 import 'ai/anthropic_provider.dart';
 import 'ai/fake_ai_provider.dart';
+import 'alerts.dart';
 import 'app.dart';
 import 'config.dart';
 import 'db/database.dart';
 import 'db/migrator.dart';
 import 'jobs/job_scheduler.dart';
 import 'jobs/maintenance.dart';
+import 'library/video_check.dart';
+import 'library/youtube_api.dart';
 import 'logging/logger.dart';
 
 /// Vòng đời server: migration → mở HTTP → job định kỳ → tắt an toàn.
@@ -72,6 +75,22 @@ final class ServerApp {
     });
     // Chạy một lần khi khởi động để không phụ thuộc server chạy liền 24 giờ.
     unawaited(jobs.runNow('daily_cleanup', cleanup));
+    // 05 Bản 2 TD2-17: kiểm tra video thư viện hằng ngày (mặc định 03:30 giờ
+    // Việt Nam). Không có khóa YouTube (dev, CI) thì không chạy.
+    final dsn = config.sentryDsn;
+    if (dsn != null) await SentryAlerts.init(dsn);
+    final key = config.youtubeApiKey;
+    if (key == null) {
+      log.info('video_check_disabled');
+    } else {
+      final videoCheck = VideoCheckJob(
+        db: db.pool,
+        api: YouTubeDataApiClient(apiKey: key),
+        alerts: dsn == null ? LogAlerts(log) : SentryAlerts(log),
+        logger: log,
+      );
+      jobs.dailyAt('video_check', config.videoCheckAt, videoCheck.run);
+    }
     final handler = buildApp(deps);
     final http = await shelf_io.serve(handler, config.host, config.port);
     http.autoCompress = false;
