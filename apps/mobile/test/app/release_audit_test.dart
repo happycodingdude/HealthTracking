@@ -40,14 +40,38 @@ void main() {
       'lib/features/schedule/presentation/weekly_template_editor.dart', // F03-V2, V3
       'lib/features/schedule/presentation/weekly_schedule_screen.dart', // F03-V1
       'lib/features/schedule/presentation/day_sheet.dart', // F03-V4
-      'lib/features/schedule/presentation/mark_session_sheet.dart', // F05-V1
-      'lib/features/schedule/presentation/extra_session_sheet.dart', // lỗi, nút xóa
+      'lib/features/schedule/presentation/extra_session_sheet.dart', // F05-V21
       'lib/features/weight/presentation/weight_sheet.dart', // nút xóa
     };
     final used = filesUsing(
       RegExp(r'colors\.error\b|colorScheme\.error\b|Colors\.red'),
     );
     expect(used.difference(reviewed), isEmpty, reason: 'chỗ dùng đỏ mới');
+  });
+
+  test('06 Bản 2 ED2-04, F05-V22, UX-AC26: mọi đường lưu "Đã tập" và buổi '
+      'tập thêm đi qua hộp S-65 (confirmLock)', () {
+    // Chỉ hai nơi gọi use case chốt buổi, cả hai lấy cờ từ confirmLock().
+    expect(
+      filesUsing(RegExp(r'markSessionDoneProvider|addExtraSessionProvider')),
+      {
+        'lib/features/today/application/mark_session.dart',
+        'lib/features/schedule/presentation/session_marking.dart',
+        'lib/features/schedule/presentation/extra_session_sheet.dart',
+      },
+    );
+    expect(filesUsing(RegExp(r'confirmed:\s*true')), isEmpty);
+    for (final f in [
+      'lib/features/schedule/presentation/session_marking.dart',
+      'lib/features/schedule/presentation/extra_session_sheet.dart',
+    ]) {
+      expect(sources[f], contains('await confirmLock('), reason: f);
+    }
+    // S-23 Bản 1 không còn trong code (UA2-07).
+    expect(
+      sources.keys.where((f) => f.contains('mark_session_sheet')),
+      isEmpty,
+    );
   });
 
   test('04 §6.17: nút chỉ có biểu tượng đều có tên đọc được (tooltip)', () {

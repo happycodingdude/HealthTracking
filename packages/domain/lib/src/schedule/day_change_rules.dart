@@ -4,38 +4,93 @@ import 'day_edit.dart';
 import 'month_plan.dart';
 import 'weekly_template.dart';
 
-/// Kiểm tra một lần ghi bản ghi `day` ở server (05 §6.6.2, §6.10): so với bản
-/// đang có trên server, phần nào đổi thì áp quy tắc của phần đó theo giờ trên
-/// iPhone lúc ghi.
+/// Buổi đã chốt mà một lần ghi `day` định thay đổi (05 Bản 2 §6.6.3).
+enum DayLock {
+  /// Buổi theo lịch "Đã tập" → `session_locked`.
+  session,
+
+  /// Buổi tập thêm đã lưu → `extra_session_locked`.
+  extra,
+}
+
+/// Lần ghi `day` không hợp lệ: [field] sai, [lock] khi chạm buổi đã chốt.
+final class DayViolation {
+  const DayViolation(this.field, [this.lock]);
+
+  final String field;
+  final DayLock? lock;
+
+  @override
+  bool operator ==(Object other) =>
+      other is DayViolation && other.field == field && other.lock == lock;
+
+  @override
+  int get hashCode => Object.hash(field, lock);
+
+  @override
+  String toString() => 'DayViolation($field${lock == null ? '' : ', $lock'})';
+}
+
+/// Kiểm tra một lần ghi bản ghi `day` ở server (05 §6.6.2, §6.10; 05 Bản 2
+/// §6.6.3): so với bản đang có trên server, phần nào đổi thì áp quy tắc của
+/// phần đó theo giờ trên iPhone lúc ghi. Áp dụng cho mọi phiên bản app.
 ///
-/// - Đánh dấu (VS06-T03): chỉ ngày tập, từ giờ tập, trong hạn 7 ngày.
-/// - Buổi tập thêm (VS07-T02): ghi, sửa, xóa chỉ ở ngày nghỉ thứ 2 → thứ 7,
-///   không phải ngày tương lai, trong hạn 7 ngày (xóa = `extraMuscles: null`,
-///   ED-08).
-/// - Lịch của ngày (VS09-T04: sửa riêng, trả về, chia lại): chỉ từ hôm nay
-///   đến cuối tháng hiện tại; hôm nay chỉ khi buổi chưa đến giờ, chưa đánh
-///   dấu, và không thành ngày tập khi đã có buổi tập thêm (F03-R8, R9, E4).
+/// - Buổi đã chốt ([SessionLock]): buổi "Đã tập" không đổi `mark`, nhóm cơ
+///   thực tế, lịch của ngày; buổi tập thêm không đổi, không bỏ.
+/// - Đánh dấu: chỉ ngày tập, từ giờ tập, trong hạn 7 ngày (gồm `skipped` →
+///   `done`, F05-R25). App Bản 2 ghi "Đã tập" phải có nhóm cơ thực tế bằng
+///   nhóm cơ của lịch (TD2-08); app Bản 1 tự chọn được.
+/// - Buổi tập thêm: chỉ thêm, ở ngày nghỉ thứ 2 → thứ 7, không phải ngày
+///   tương lai, trong hạn 7 ngày.
+/// - Lịch của ngày (sửa riêng, trả về, chia lại): chỉ từ hôm nay đến cuối
+///   tháng hiện tại; hôm nay chỉ khi buổi chưa đến giờ, chưa đánh dấu, và
+///   không thành ngày tập khi đã có buổi tập thêm (F03-R8, R9, E4).
 abstract final class DayChangeRules {
   /// [before] = bản trên server (null = chưa có). [localNow] = giờ trên iPhone
   /// lúc ghi, tính từ `clientUpdatedAt` và múi giờ trong hồ sơ; null khi chưa
-  /// biết múi giờ thì bỏ qua các quy tắc theo thời gian.
+  /// biết múi giờ thì bỏ qua các quy tắc theo thời gian. [fromV2App] = request
+  /// có `X-App-Version`.
   ///
-  /// Trả tên trường sai, null = hợp lệ. Cấu trúc bản ghi kiểm ở
-  /// [PlanDay.invalidField].
-  static String? check(PlanDay? before, PlanDay after, DateTime? localNow) {
-    if (before != null && localNow != null && _planChanged(before, after)) {
-      if (OverrideRules.validate(before, after, localNow) != null) return 'key';
-    }
-    if (_markChanged(before, after)) {
-      if (!after.isWorkout) return 'mark';
-      if (localNow != null && !SessionRules.canMark(after, localNow)) {
-        return 'mark';
+  /// Trả null khi hợp lệ. Cấu trúc bản ghi kiểm ở [PlanDay.invalidField].
+  static DayViolation? check(
+    PlanDay? before,
+    PlanDay after,
+    DateTime? localNow, {
+    bool fromV2App = false,
+  }) {
+    final markChanged = _markChanged(before, after);
+    final extraChanged = _extraChanged(before, after);
+    if (before != null) {
+      if (SessionLock.session(before) &&
+          (markChanged || _planChanged(before, after))) {
+        return const DayViolation('mark', DayLock.session);
+      }
+      if (SessionLock.extra(before) && extraChanged) {
+        return const DayViolation('extraMuscles', DayLock.extra);
+      }
+      if (localNow != null &&
+          _planChanged(before, after) &&
+          OverrideRules.validate(before, after, localNow) != null) {
+        return const DayViolation('key');
       }
     }
-    if (_extraChanged(before, after)) {
-      if (after.isWorkout) return 'extraMuscles';
-      if (localNow != null && !ExtraSessionRules.canLog(after, localNow)) {
-        return 'extraMuscles';
+    if (markChanged) {
+      if (!after.isWorkout) return const DayViolation('mark');
+      if (localNow != null && !SessionRules.canMark(after, localNow)) {
+        return const DayViolation('mark');
+      }
+      if (fromV2App &&
+          after.mark == DayMark.done &&
+          !_sameMuscles(after.actualMuscles, after.muscles)) {
+        return const DayViolation('actualMuscles');
+      }
+    }
+    if (extraChanged) {
+      if (after.isWorkout) return const DayViolation('extraMuscles');
+      if (after.extraMuscles != null &&
+          localNow != null &&
+          !ExtraSessionRules.canAdd(after.withExtra(null), localNow)) {
+        return const DayViolation('extraMuscles');
       }
     }
     return null;

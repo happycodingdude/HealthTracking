@@ -8,11 +8,18 @@ import '../../../data/sync/outbox_writer.dart';
 import '../../../data/sync/sync_providers.dart';
 import '../../schedule/data/schedule_repository.dart';
 
-/// Đánh dấu buổi tập theo lịch (F-05, 06 §6.4.2): kiểm tra bằng domain, ghi
-/// bản ghi ngày + outbox trong một transaction. Giao diện đổi ngay nhờ stream
-/// của Drift, không chờ mạng (P6, TAC-01, F05-E5).
-final class MarkSession {
-  MarkSession({
+/// Chưa xác nhận hộp chốt buổi S-65: chưa lưu gì (F05-V22, 06 Bản 2 ED2-04).
+final class NotConfirmedException implements Exception {
+  const NotConfirmedException();
+
+  @override
+  String toString() => 'NotConfirmedException';
+}
+
+/// Ghi một bản ngày đã kiểm tra bằng domain + outbox trong một transaction.
+/// Giao diện đổi ngay nhờ stream của Drift, không chờ mạng (P6, F05-E28).
+abstract base class _DayWrite {
+  _DayWrite({
     required AppDatabase db,
     required ScheduleRepository schedule,
     required OutboxWriter outbox,
@@ -29,22 +36,11 @@ final class MarkSession {
 
   static const _codec = DayCodec();
 
-  /// Ghi [mark] cho buổi ngày [date]; null = bỏ đánh dấu ("Hoàn tác", UA-09).
-  /// [actual] = nhóm cơ thực tế khi "Đã tập" (F05-R4). Trả bản ghi mới; ném
-  /// [MarkException] khi không đánh dấu được.
-  Future<PlanDay> call(
+  Future<PlanDay> _write(
     LocalDate date,
-    DayMark? mark, {
-    List<MuscleGroup>? actual,
-  }) => _db.transaction(() async {
-    final day = await _schedule.day(date);
-    if (day == null) throw const MarkException(MarkError.notWorkout);
-    final updated = SessionRules.mark(
-      day,
-      mark,
-      actual: actual,
-      now: _clock.now(),
-    );
+    PlanDay Function(PlanDay? day, DateTime now) change,
+  ) => _db.transaction(() async {
+    final updated = change(await _schedule.day(date), _clock.now());
     await _schedule.putDay(updated);
     await _outbox.enqueue(
       SyncEntities.day,
@@ -56,8 +52,87 @@ final class MarkSession {
   });
 }
 
-final markSessionProvider = Provider<MarkSession>(
-  (ref) => MarkSession(
+/// "Đã tập" (F05-R23, F05-R24, 05 Bản 2 TD2-08): chỉ khi Bạn đã xác nhận hộp
+/// S-65 ([confirmed]); ghi `mark = done`, nhóm cơ thực tế = nhóm cơ của lịch,
+/// `markedAt`. Buổi chốt từ đây. Ném [NotConfirmedException] hoặc
+/// [MarkException].
+final class MarkSessionDone extends _DayWrite {
+  MarkSessionDone({
+    required super.db,
+    required super.schedule,
+    required super.outbox,
+    required super.clock,
+  });
+
+  Future<PlanDay> call(LocalDate date, {required bool confirmed}) async {
+    if (!confirmed) throw const NotConfirmedException();
+    return _write(date, (day, now) {
+      if (day == null) throw const MarkException(MarkError.notWorkout);
+      return SessionRules.markDone(day, now: now);
+    });
+  }
+}
+
+/// "Không tập" (F05-R25): lưu ngay, không cần xác nhận, chỉ từ "Chờ đánh dấu".
+/// Ném [MarkException].
+final class MarkSessionSkipped extends _DayWrite {
+  MarkSessionSkipped({
+    required super.db,
+    required super.schedule,
+    required super.outbox,
+    required super.clock,
+  });
+
+  Future<PlanDay> call(LocalDate date) => _write(date, (day, now) {
+    if (day == null) throw const MarkException(MarkError.notWorkout);
+    return SessionRules.markSkipped(day, now: now);
+  });
+}
+
+/// Thêm buổi tập thêm (F05-R31 → R35): chỉ khi Bạn đã xác nhận hộp S-65
+/// ([confirmed]); khóa ngay khi lưu. Không có sửa, xóa. Ném
+/// [NotConfirmedException] hoặc [ExtraException].
+final class AddExtraSession extends _DayWrite {
+  AddExtraSession({
+    required super.db,
+    required super.schedule,
+    required super.outbox,
+    required super.clock,
+  });
+
+  Future<PlanDay> call(
+    LocalDate date,
+    List<MuscleGroup> muscles, {
+    required bool confirmed,
+  }) async {
+    if (!confirmed) throw const NotConfirmedException();
+    return _write(date, (day, now) {
+      if (day == null) throw const ExtraException(ExtraError.notRestDay);
+      return ExtraSessionRules.add(day, muscles, now: now);
+    });
+  }
+}
+
+final markSessionDoneProvider = Provider<MarkSessionDone>(
+  (ref) => MarkSessionDone(
+    db: ref.watch(databaseProvider),
+    schedule: ref.watch(scheduleRepositoryProvider),
+    outbox: ref.watch(outboxWriterProvider),
+    clock: ref.watch(clockProvider),
+  ),
+);
+
+final markSessionSkippedProvider = Provider<MarkSessionSkipped>(
+  (ref) => MarkSessionSkipped(
+    db: ref.watch(databaseProvider),
+    schedule: ref.watch(scheduleRepositoryProvider),
+    outbox: ref.watch(outboxWriterProvider),
+    clock: ref.watch(clockProvider),
+  ),
+);
+
+final addExtraSessionProvider = Provider<AddExtraSession>(
+  (ref) => AddExtraSession(
     db: ref.watch(databaseProvider),
     schedule: ref.watch(scheduleRepositoryProvider),
     outbox: ref.watch(outboxWriterProvider),

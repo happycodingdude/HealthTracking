@@ -4,7 +4,7 @@ import '../time/local_date.dart';
 import '../time/week.dart';
 import '../time/year_month.dart';
 
-/// Trạng thái của một buổi tập theo lịch (03 §6.1).
+/// Trạng thái của một buổi tập theo lịch (03 Bản 2 §6.1).
 enum SessionState {
   /// Chưa đến giờ tập.
   upcoming,
@@ -12,17 +12,19 @@ enum SessionState {
   /// Đã đến giờ tập, Bạn chưa đánh dấu.
   awaitingMark,
 
-  /// Bạn đánh dấu "Đã tập".
+  /// Bạn đánh dấu "Đã tập". Chốt khi lưu, không thay đổi nữa (F05-R24).
   done,
 
   /// Bạn đánh dấu "Không tập".
   skipped,
 
-  /// Hết thứ 7 mà buổi vẫn "Chờ đánh dấu" (F05-R3). Không lưu (AP-2).
+  /// Hết thứ 7 mà buổi vẫn "Chờ đánh dấu" (F05-R26). Không lưu (AP-2).
   autoSkipped,
 }
 
-/// Trạng thái kèm cờ "Đã khóa": quá 7 ngày, trạng thái cuối được giữ nguyên.
+/// Trạng thái kèm cờ "Đã khóa": buổi "Không tập" / "Không tập (tự động)" quá
+/// 7 ngày (F05-R27). Buổi "Đã tập" không bao giờ "Đã khóa": nó đã chốt từ lúc
+/// lưu ([SessionLock]), không mang biểu tượng khóa (04 Bản 2 UA2-06).
 final class SessionStatus {
   const SessionStatus(this.state, {this.locked = false});
 
@@ -35,7 +37,6 @@ final class SessionStatus {
   /// Suy ra trạng thái lúc [now] (giờ trên iPhone). null với ngày nghỉ.
   static SessionStatus? derive(PlanDay day, DateTime now) {
     if (!day.isWorkout) return null;
-    final locked = SessionRules.isLocked(day.date, now);
     final state = switch (day.mark) {
       DayMark.done => SessionState.done,
       DayMark.skipped => SessionState.skipped,
@@ -45,6 +46,9 @@ final class SessionStatus {
         SessionState.autoSkipped,
       null => SessionState.awaitingMark,
     };
+    final locked =
+        (state == SessionState.skipped || state == SessionState.autoSkipped) &&
+        SessionRules.isLocked(day.date, now);
     return SessionStatus(state, locked: locked);
   }
 
@@ -59,19 +63,36 @@ final class SessionStatus {
   String toString() => 'SessionStatus(${state.name}${locked ? ', khóa' : ''})';
 }
 
-/// Lý do không đánh dấu được (F05-R1, F05-R2, F05-V1).
+/// "Đã chốt" (05 Bản 2 AP-8, 06 Bản 2 ED2-03): buổi "Đã tập" và buổi tập thêm
+/// đã lưu không đổi trạng thái, nhóm cơ, không xóa được. Không có cờ trong
+/// database: suy ra từ bản ghi ngày. App (UI, use case) và server cùng dùng.
+abstract final class SessionLock {
+  /// Ngày có buổi đã chốt (buổi theo lịch "Đã tập" hoặc buổi tập thêm).
+  static bool of(PlanDay day) => session(day) || extra(day);
+
+  /// Buổi theo lịch "Đã tập" (F05-R24, F05-R36).
+  static bool session(PlanDay day) => day.mark == DayMark.done;
+
+  /// Buổi tập thêm đã lưu (F05-R34, F05-R36).
+  static bool extra(PlanDay day) => day.extraMuscles?.isNotEmpty ?? false;
+}
+
+/// Lý do không đánh dấu được (F05-R22 → R27).
 enum MarkError {
   /// Ngày nghỉ không có buổi theo lịch.
   notWorkout,
 
-  /// F05-R1, F05-E1: chưa đến giờ tập.
+  /// F05-R22: chưa đến giờ tập.
   tooEarly,
 
-  /// F05-R2, F05-E3: quá 7 ngày.
+  /// F05-R27: buổi "Không tập" quá 7 ngày.
   locked,
 
-  /// F05-V1: "Đã tập" chưa có nhóm cơ.
-  noMuscles,
+  /// F05-R24: buổi đã "Đã tập", đã chốt.
+  alreadyDone,
+
+  /// "Không tập" chỉ bấm được khi buổi đang "Chờ đánh dấu".
+  notAwaiting,
 }
 
 final class MarkException implements Exception {
@@ -83,57 +104,85 @@ final class MarkException implements Exception {
   String toString() => 'MarkException(${error.name})';
 }
 
-/// Quy tắc đánh dấu buổi tập theo lịch (F-05). App và server cùng dùng (AP-4).
+/// Quy tắc đánh dấu buổi tập theo lịch (F-05 Bản 2). App và server cùng dùng
+/// (AP-4).
 abstract final class SessionRules {
-  /// F05-R2: sửa được trong 7 ngày kể từ ngày của buổi tập.
+  /// F05-R25: đổi "Không tập" sang "Đã tập" được trong 7 ngày kể từ ngày của
+  /// buổi.
   static const editDays = 7;
 
   /// Giờ bắt đầu buổi tập (giờ trên iPhone).
   static DateTime startsAt(PlanDay day) => day.date.atTime(day.time!);
 
-  /// F05-R2: hết ngày thứ 7 sau ngày của buổi, tức 00:00 ngày thứ 8.
+  /// Ngày cuối còn đổi sang "Đã tập" được: ngày thứ 7 sau ngày của buổi
+  /// ("Đổi sang Đã tập được đến hết {dd/mm}").
+  static LocalDate lastChangeDate(LocalDate date) => date.addDays(editDays);
+
+  /// Hết ngày thứ 7 sau ngày của buổi, tức 00:00 ngày thứ 8.
   static DateTime lockedFrom(LocalDate date) =>
-      date.addDays(editDays + 1).startOfDay;
+      lastChangeDate(date).addDays(1).startOfDay;
 
   static bool isLocked(LocalDate date, DateTime now) =>
       !now.isBefore(lockedFrom(date));
 
-  /// F05-R1, F05-R2: từ giờ tập đến hết hạn sửa.
+  /// Ghi đánh dấu được về mặt thời gian: ngày tập, từ giờ tập đến hết hạn 7
+  /// ngày. Server dùng cho mọi phiên bản app (05 Bản 2 §6.6.3).
   static bool canMark(PlanDay day, DateTime now) =>
       day.isWorkout && !now.isBefore(startsAt(day)) && !isLocked(day.date, now);
 
-  /// Kiểm tra đánh dấu [mark] (null = bỏ đánh dấu, "Hoàn tác") lúc [now].
-  static MarkError? validateMark(
-    PlanDay day,
-    DayMark? mark,
-    List<MuscleGroup>? actual,
-    DateTime now,
-  ) {
+  /// "Đã tập": từ "Chờ đánh dấu", hoặc đổi từ "Không tập" / "Không tập (tự
+  /// động)" trong 7 ngày (F05-R22, F05-R25, F05-R26). Không bao giờ khi đã
+  /// "Đã tập" (F05-R24).
+  static MarkError? validateDone(PlanDay day, DateTime now) {
     if (!day.isWorkout) return MarkError.notWorkout;
+    if (SessionLock.session(day)) return MarkError.alreadyDone;
     if (now.isBefore(startsAt(day))) return MarkError.tooEarly;
     if (isLocked(day.date, now)) return MarkError.locked;
-    if (mark == DayMark.done && (actual == null || actual.isEmpty)) {
-      return MarkError.noMuscles;
+    return null;
+  }
+
+  static bool canMarkDone(PlanDay day, DateTime now) =>
+      validateDone(day, now) == null;
+
+  /// "Không tập": chỉ khi buổi đang "Chờ đánh dấu" (bảng 03 Bản 2 §6.1).
+  /// Không bao giờ "Đã tập" → "Không tập".
+  static MarkError? validateSkipped(PlanDay day, DateTime now) {
+    if (!day.isWorkout) return MarkError.notWorkout;
+    if (SessionLock.session(day)) return MarkError.alreadyDone;
+    if (now.isBefore(startsAt(day))) return MarkError.tooEarly;
+    if (SessionStatus.derive(day, now)?.state != SessionState.awaitingMark) {
+      return MarkError.notAwaiting;
     }
     return null;
   }
 
-  /// Bản ghi ngày sau khi đánh dấu. Nhóm cơ thực tế chỉ có khi "Đã tập"
-  /// (F05-R4, F05-R5). Ném [MarkException] khi vi phạm [validateMark].
-  static PlanDay mark(
-    PlanDay day,
-    DayMark? mark, {
-    List<MuscleGroup>? actual,
-    required DateTime now,
-  }) {
-    final error = validateMark(day, mark, actual, now);
+  static bool canMarkSkipped(PlanDay day, DateTime now) =>
+      validateSkipped(day, now) == null;
+
+  /// Bản ghi ngày sau khi "Đã tập": nhóm cơ là nhóm cơ của lịch tháng, kể cả
+  /// ngày đã sửa riêng (F05-R21, 05 Bản 2 TD2-08). Ném [MarkException].
+  static PlanDay markDone(PlanDay day, {required DateTime now}) {
+    final error = validateDone(day, now);
     if (error != null) throw MarkException(error);
     return day.withMark(
-      mark,
-      actual: mark == DayMark.done ? MuscleGroup.ordered(actual!) : null,
-      markedAt: mark == null ? null : now,
+      DayMark.done,
+      actual: MuscleGroup.ordered(day.muscles),
+      markedAt: now,
     );
   }
+
+  /// Bản ghi ngày sau khi "Không tập" (F05-R25). Ném [MarkException].
+  static PlanDay markSkipped(PlanDay day, {required DateTime now}) {
+    final error = validateSkipped(day, now);
+    if (error != null) throw MarkException(error);
+    return day.withMark(DayMark.skipped, markedAt: now);
+  }
+
+  /// Nhóm cơ của buổi theo lịch: nhóm cơ đã ghi lúc "Đã tập" nếu có (buổi
+  /// Bản 1 có thể khác lịch, F05-R38), ngược lại nhóm cơ của lịch tháng.
+  static List<MuscleGroup> musclesOf(PlanDay day) => day.mark == DayMark.done
+      ? (day.actualMuscles ?? day.muscles)
+      : day.muscles;
 
   /// Buổi theo lịch gần nhất sau ngày [after] (dòng "Buổi tới" ở S-10).
   ///

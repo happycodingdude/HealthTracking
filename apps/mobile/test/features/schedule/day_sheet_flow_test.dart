@@ -128,7 +128,8 @@ void main() {
 
     testWidgets(
       'hôm nay nghỉ (mock S-21-2): lên lịch tập hôm nay · ghi buổi tập thêm; '
-      'đã có buổi tập thêm → chỉ sửa buổi tập thêm, câu F03-E4',
+      'đã có buổi tập thêm → chỉ xem "Buổi tập thêm · {nhóm cơ}", "Đã chốt '
+      'khi lưu", câu F03-E4 (04 Bản 2 S-21)',
       (tester) async {
         clock.set(DateTime(2026, 10, 15, 9));
         await seedSetUp(db);
@@ -145,26 +146,35 @@ void main() {
         await pump(tester);
         await open(tester, LocalDate(2026, 10, 15));
         expect(find.text(S.scheduleToday), findsNothing);
-        expect(find.text(S.editExtraSession), findsOneWidget);
+        expect(find.text(S.logExtraSession), findsNothing);
+        expect(find.text(S.extraSessionLine('Bụng')), findsOneWidget);
+        expect(find.byKey(const ValueKey('locked-on-save')), findsOneWidget);
         expect(find.text(S.extraBlocksSchedule), findsOneWidget);
       },
     );
 
     testWidgets(
-      'buổi đã đến giờ hoặc đã qua trong 7 ngày → "Đánh dấu buổi tập" mở '
-      'S-23; ngày nghỉ đã qua → S-24; quá 7 ngày → khóa; chủ nhật → chỉ xem',
+      'buổi Không tập (tự động) trong 7 ngày → "Đổi sang Đã tập" (không còn '
+      'S-23); ngày nghỉ đã qua → S-24; quá 7 ngày → khóa; chủ nhật → chỉ xem',
       (tester) async {
         await seedSetUp(db);
         await pump(tester);
         await open(tester, LocalDate(2026, 10, 9));
         expect(find.byKey(const ValueKey('day-change-time')), findsNothing);
-        await tapKey(tester, 'day-mark');
-        expect(find.text(S.plannedLine('Vai', '18:00')), findsOneWidget);
+        expect(find.text(S.changeableUntil('16/10')), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('change-to-done-2026-10-09')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('mark-skipped-2026-10-09')),
+          findsNothing,
+        );
         await tester.tapAt(const Offset(195, 60));
         await tester.pumpAndSettle();
 
         await open(tester, LocalDate(2026, 10, 13));
-        await tapKey(tester, 'day-extra');
+        await tapKey(tester, 'day-log-extra');
         expect(find.text(S.extraNotCounted), findsOneWidget, reason: 'S-24');
         await tester.tapAt(const Offset(195, 60));
         await tester.pumpAndSettle();
@@ -174,7 +184,10 @@ void main() {
         await tester.pumpAndSettle();
         await open(tester, LocalDate(2026, 10, 7));
         expect(find.text(S.lockedNote), findsOneWidget);
-        expect(find.byKey(const ValueKey('day-mark')), findsNothing);
+        expect(
+          find.byKey(const ValueKey('change-to-done-2026-10-07')),
+          findsNothing,
+        );
         await tester.tapAt(const Offset(195, 60));
         await tester.pumpAndSettle();
 
@@ -183,6 +196,65 @@ void main() {
         expect(find.byType(ListTile), findsNothing);
       },
     );
+  });
+
+  testWidgets(
+    'UX-AC26, UA2-07: S-21 buổi Chờ đánh dấu có "Đã tập" · "Không tập" ngay '
+    'trong bảng; "Đã tập" → S-65 (buổi đã qua: không có dòng 2) → Lưu → bảng '
+    'đóng, "Đã ghi: tập Lưng"; "Không tập" → lưu ngay, bảng đóng, thông báo có '
+    '"Đổi sang Đã tập"',
+    (tester) async {
+      clock.set(DateTime(2026, 10, 8, 10));
+      await seedSetUp(db);
+      await pump(tester);
+      final wed7 = LocalDate(2026, 10, 7);
+      await open(tester, wed7);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('day-summary')),
+          matching: find.text(S.statusAwaiting),
+        ),
+        findsOneWidget,
+      );
+      await tapKey(tester, 'mark-done-${wed7.toKey()}');
+      expect(find.text(S.doneConfirmTitle('Lưng')), findsOneWidget);
+      expect(find.byKey(const ValueKey('lock-confirm-line2')), findsNothing);
+      await tapKey(tester, 'lock-confirm-cancel');
+      expect(
+        find.byKey(ValueKey('mark-done-${wed7.toKey()}')),
+        findsOneWidget,
+        reason: 'Hủy: bảng vẫn mở, không đổi gì',
+      );
+      await tapKey(tester, 'mark-done-${wed7.toKey()}');
+      await tapKey(tester, 'lock-confirm-save');
+      expect(find.byKey(const ValueKey('day-summary')), findsNothing);
+      expect(find.text(S.markedDone('Lưng')), findsOneWidget);
+      expect((await day(7)).mark, DayMark.done);
+
+      await open(tester, wed7);
+      expect(find.byKey(const ValueKey('locked-on-save')), findsOneWidget);
+      expect(
+        find.byKey(ValueKey('mark-skipped-${wed7.toKey()}')),
+        findsNothing,
+      );
+    },
+  );
+
+  testWidgets('UR2-05: "Không tập" trong S-21 → lưu ngay, bảng đóng, thông báo '
+      '"Đã ghi: không tập" có "Đổi sang Đã tập", không có Hoàn tác', (
+    tester,
+  ) async {
+    clock.set(DateTime(2026, 10, 8, 10));
+    await seedSetUp(db);
+    await pump(tester);
+    final wed7 = LocalDate(2026, 10, 7);
+    await open(tester, wed7);
+    await tapKey(tester, 'mark-skipped-${wed7.toKey()}');
+    expect(find.byKey(const ValueKey('lock-confirm')), findsNothing);
+    expect(find.byKey(const ValueKey('day-summary')), findsNothing);
+    expect(find.text(S.markedSkipped), findsOneWidget);
+    expect(find.text(S.changeToDone), findsOneWidget);
+    expect((await day(7)).mark, DayMark.skipped);
   });
 
   testWidgets(

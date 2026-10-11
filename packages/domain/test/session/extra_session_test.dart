@@ -14,37 +14,33 @@ void main() {
   final sun = PlanDay(date: LocalDate(2026, 10, 11), kind: DayKind.rest);
   final satNoon = DateTime(2026, 10, 10, 12);
 
-  group('buổi tập thêm (F05-R7 → R11, F05-V2)', () {
-    test('F05-AC6: không thêm được cho ngày mai, chủ nhật, ngày đã có buổi '
-        'theo lịch', () {
+  group('buổi tập thêm Bản 2 (F05-R31 → R35, F05-V21)', () {
+    test('F05-R32, F05-E29: không thêm được cho ngày mai, chủ nhật, ngày đã có '
+        'buổi theo lịch', () {
       final fridayNoon = DateTime(2026, 10, 9, 12);
       expect(
-        ExtraSessionRules.validate(sat, const [MuscleGroup.abs], fridayNoon),
+        ExtraSessionRules.validate(sat, null, fridayNoon),
         ExtraError.future,
-        reason: 'ngày mai',
       );
       expect(
-        ExtraSessionRules.validate(sun, const [
-          MuscleGroup.abs,
-        ], DateTime(2026, 10, 11, 12)),
+        ExtraSessionRules.validate(sun, null, DateTime(2026, 10, 11, 12)),
         ExtraError.notRestDay,
-        reason: 'chủ nhật (F05-E6)',
       );
       expect(
-        ExtraSessionRules.validate(fri, const [MuscleGroup.abs], satNoon),
+        ExtraSessionRules.validate(fri, null, fridayNoon),
         ExtraError.notRestDay,
-        reason: 'ngày đã có buổi theo lịch (F05-E4)',
       );
-      expect(ExtraSessionRules.canLog(sat, fridayNoon), isFalse);
-      expect(ExtraSessionRules.canLog(fri, satNoon), isFalse);
     });
 
-    test('F05-R7, F05-R9: ngày nghỉ hôm nay hoặc trong 7 ngày trước', () {
-      expect(ExtraSessionRules.canLog(sat, satNoon), isTrue);
-      expect(ExtraSessionRules.canLog(thu, satNoon), isTrue);
-      // 08/10 ghi được đến hết 15/10, từ 00:00 16/10 bị khóa.
+    test('F05-R32, F05-R35: ngày nghỉ hôm nay (bất kỳ lúc nào) hoặc trong 7 '
+        'ngày trước', () {
       expect(
-        ExtraSessionRules.canLog(thu, DateTime(2026, 10, 15, 23, 59)),
+        ExtraSessionRules.canAdd(sat, DateTime(2026, 10, 10, 0, 1)),
+        isTrue,
+      );
+      expect(ExtraSessionRules.canAdd(thu, satNoon), isTrue);
+      expect(
+        ExtraSessionRules.canAdd(thu, DateTime(2026, 10, 15, 23, 59)),
         isTrue,
       );
       expect(
@@ -53,58 +49,48 @@ void main() {
       );
     });
 
-    test('F05-V2, F05-R10: phải chọn ít nhất 1 nhóm cơ', () {
+    test('F05-V21: phải chọn ít nhất 1 nhóm cơ', () {
       expect(
         ExtraSessionRules.validate(sat, const [], satNoon),
         ExtraError.noMuscles,
       );
       expect(
-        () => ExtraSessionRules.log(sat, const [], now: satNoon),
+        () => ExtraSessionRules.add(sat, const [], now: satNoon),
+        throwsA(isA<ExtraException>()),
+      );
+    });
+
+    test('F05-AC26, F05-R34: lưu xong thì khóa — không thêm lại, không sửa; '
+        'thứ tự nhóm cơ theo bộ chọn', () {
+      final added = ExtraSessionRules.add(sat, const [
+        MuscleGroup.back,
+        MuscleGroup.chest,
+      ], now: satNoon);
+      expect(added.extraMuscles, [MuscleGroup.chest, MuscleGroup.back]);
+      expect(added.extraLoggedAt, satNoon);
+      expect(SessionLock.extra(added), isTrue);
+      expect(ExtraSessionRules.canAdd(added, satNoon), isFalse);
+      expect(
+        () =>
+            ExtraSessionRules.add(added, const [MuscleGroup.abs], now: satNoon),
         throwsA(
           isA<ExtraException>().having(
             (e) => e.error,
             'error',
-            ExtraError.noMuscles,
+            ExtraError.alreadyLogged,
           ),
         ),
       );
     });
 
-    test('F05-R8: ghi lại thay buổi đã có (tối đa 1 buổi mỗi ngày); thứ tự '
-        'nhóm cơ chuẩn hóa; xóa bỏ cả nhóm cơ và thời điểm ghi (ED-08)', () {
-      final added = ExtraSessionRules.log(sat, const [
-        MuscleGroup.abs,
-        MuscleGroup.chest,
-      ], now: satNoon);
-      expect(added.extraMuscles, [MuscleGroup.chest, MuscleGroup.abs]);
-      expect(added.extraLoggedAt, satNoon);
-      expect(added.invalidField, isNull);
-
-      final later = DateTime(2026, 10, 10, 20);
-      final edited = ExtraSessionRules.log(added, const [
-        MuscleGroup.back,
-      ], now: later);
-      expect(edited.extraMuscles, [MuscleGroup.back]);
-      expect(edited.extraLoggedAt, later);
-
-      final deleted = ExtraSessionRules.log(edited, null, now: later);
-      expect(deleted.extraMuscles, isNull);
-      expect(deleted.extraLoggedAt, isNull);
-      expect(deleted.invalidField, isNull);
-    });
-
-    test('F05-R11: quá 7 ngày không sửa, không xóa được', () {
-      final added = ExtraSessionRules.log(thu, const [
-        MuscleGroup.abs,
-      ], now: DateTime(2026, 10, 8, 20));
-      final late = DateTime(2026, 10, 16, 8);
+    test('F05-R31, F05-AC27: chưa có lịch tuần → không thêm được', () {
       expect(
-        () => ExtraSessionRules.log(added, null, now: late),
-        throwsA(isA<ExtraException>()),
+        ExtraSessionRules.validate(sat, null, satNoon, hasSchedule: false),
+        ExtraError.noSchedule,
       );
       expect(
-        () => ExtraSessionRules.log(added, const [MuscleGroup.back], now: late),
-        throwsA(isA<ExtraException>()),
+        ExtraSessionRules.canAdd(sat, satNoon, hasSchedule: false),
+        isFalse,
       );
     });
 

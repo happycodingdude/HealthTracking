@@ -57,8 +57,11 @@ void main() {
     data: const DayCodec().encode(d),
   );
 
-  Future<List<PushResult>> push(List<SyncMutation> ms, {String? as}) async =>
-      (await app.push(as ?? token, ms)).results;
+  Future<List<PushResult>> push(
+    List<SyncMutation> ms, {
+    String? as,
+    AppVersion? appVersion,
+  }) async => (await app.push(as ?? token, ms, appVersion: appVersion)).results;
 
   test(
     'lưu lịch tuần lần đầu: template + month_plan + các ngày, khứ hồi qua pull',
@@ -266,12 +269,130 @@ void main() {
       token = TokenPair.fromJson(res.json).accessToken;
     }
 
-    Future<PushResult> markAt(DayMark mark, DateTime atUtc) async {
+    Future<PushResult> markAt(
+      DayMark mark,
+      DateTime atUtc, {
+      AppVersion? appVersion,
+    }) async {
       await setNow(atUtc);
       return (await push([
         dayMutation(marked(mark, atUtc), op: SyncOp.upsert, at: atUtc),
-      ])).single;
+      ], appVersion: appVersion)).single;
     }
+
+    /// Ghi nguyên bản [day] lúc [atUtc] (giờ iPhone = UTC+7).
+    Future<PushResult> writeAt(
+      PlanDay day,
+      DateTime atUtc, {
+      AppVersion? appVersion,
+    }) async {
+      await setNow(atUtc);
+      return (await push([
+        dayMutation(day, op: SyncOp.upsert, at: atUtc),
+      ], appVersion: appVersion)).single;
+    }
+
+    Future<PlanDay> serverDay(LocalDate date) async {
+      final c = (await app.pull(
+        token,
+      )).changes.lastWhere((c) => c.key == date.toKey());
+      return const DayCodec().decode(c.key, c.data!);
+    }
+
+    test('TAC2-03: buổi "Đã tập" → đổi sang Không tập, đổi nhóm cơ thực tế, '
+        'bỏ đánh dấu, cho nghỉ — app Bản 1 hay Bản 2 → rejected '
+        'session_locked, server giữ nguyên', () async {
+      await setUpSchedule();
+      // 19:00 07/10 giờ Việt Nam = 12:00 UTC.
+      expect(
+        (await markAt(
+          DayMark.done,
+          DateTime.utc(2026, 10, 7, 12),
+          appVersion: AppVersion.v2,
+        )).status,
+        PushStatus.applied,
+      );
+      final done = await serverDay(wed.date);
+      final attempts = [
+        marked(DayMark.skipped, DateTime.utc(2026, 10, 7, 12, 30)),
+        done.withMark(
+          DayMark.done,
+          actual: const [MuscleGroup.shoulders],
+          markedAt: done.markedAt,
+        ),
+        wed,
+        PlanDay(date: wed.date, kind: DayKind.rest, source: DaySource.override),
+      ];
+      for (final version in [null, AppVersion.v2]) {
+        for (final (i, a) in attempts.indexed) {
+          final r = await writeAt(
+            a,
+            DateTime.utc(2026, 10, 7, 12, 30 + i),
+            appVersion: version,
+          );
+          expect(
+            (r.status, r.code),
+            (PushStatus.rejected, ErrorCode.sessionLocked),
+            reason: '$version #$i',
+          );
+          expect(
+            const DayCodec().decode(wed.date.toKey(), r.current!.data!).mark,
+            DayMark.done,
+          );
+        }
+      }
+      expect((await serverDay(wed.date)).actualMuscles, [MuscleGroup.back]);
+    });
+
+    test('app Bản 1 (không có header) ghi "Đã tập" với nhóm cơ thực tế tự '
+        'chọn → applied, rồi khóa như mọi buổi; app Bản 2 phải ghi đúng nhóm '
+        'cơ của lịch (TD2-08)', () async {
+      await setUpSchedule();
+      final at = DateTime.utc(2026, 10, 7, 12);
+      final v1 = wed.withMark(
+        DayMark.done,
+        actual: const [MuscleGroup.shoulders],
+        markedAt: at,
+      );
+      expect(
+        (await writeAt(v1, at, appVersion: AppVersion.v2)).field,
+        'actualMuscles',
+      );
+      expect((await writeAt(v1, at)).status, PushStatus.applied);
+      final undo = await writeAt(wed, DateTime.utc(2026, 10, 8, 3));
+      expect(undo.code, ErrorCode.sessionLocked);
+      expect((await serverDay(wed.date)).actualMuscles, [
+        MuscleGroup.shoulders,
+      ]);
+    });
+
+    test('F05-R25: Không tập → Đã tập trong 7 ngày (app Bản 2) → applied rồi '
+        'khóa', () async {
+      await setUpSchedule();
+      expect(
+        (await markAt(
+          DayMark.skipped,
+          DateTime.utc(2026, 10, 7, 12),
+          appVersion: AppVersion.v2,
+        )).status,
+        PushStatus.applied,
+      );
+      // 10:00 13/10 giờ Việt Nam.
+      expect(
+        (await markAt(
+          DayMark.done,
+          DateTime.utc(2026, 10, 13, 3),
+          appVersion: AppVersion.v2,
+        )).status,
+        PushStatus.applied,
+      );
+      final back = await markAt(
+        DayMark.skipped,
+        DateTime.utc(2026, 10, 13, 4),
+        appVersion: AppVersion.v2,
+      );
+      expect(back.code, ErrorCode.sessionLocked);
+    });
 
     test('F05-AC1: 17:59 giờ iPhone → rejected, kèm bản trên server; 18:00 '
         '→ applied', () async {
@@ -490,8 +611,8 @@ void main() {
       expect(rows.single[0], 3, reason: '14/10, 21/10, 28/10');
     });
 
-    test('F05-R11, ED-08: xóa = extraMuscles null trong hạn → applied; sửa '
-        'sau 7 ngày giờ iPhone → rejected', () async {
+    test('TAC2-04: buổi tập thêm đã lưu → xóa hoặc đổi nhóm cơ, kể cả trong '
+        'ngày → rejected extra_session_locked, server giữ nguyên', () async {
       await setUpSchedule();
       final added = sat.withExtra(const [
         MuscleGroup.abs,
@@ -502,22 +623,24 @@ void main() {
         ], DateTime.utc(2026, 10, 10, 13))).status,
         PushStatus.applied,
       );
-      // 00:00 18/10 giờ Việt Nam = 17:00 UTC ngày 17/10.
-      final late = await extraAt(added, const [
+      final changed = await extraAt(added, const [
         MuscleGroup.back,
-      ], DateTime.utc(2026, 10, 17, 17, 1));
-      expect((late.status, late.field), (PushStatus.rejected, 'extraMuscles'));
+      ], DateTime.utc(2026, 10, 10, 13, 30));
+      expect(
+        (changed.status, changed.code),
+        (PushStatus.rejected, ErrorCode.extraSessionLocked),
+      );
       final deleted = await extraAt(
         added,
         null,
-        DateTime.utc(2026, 10, 17, 16, 59),
+        DateTime.utc(2026, 10, 10, 13, 31),
       );
-      expect(deleted.status, PushStatus.applied);
+      expect(deleted.code, ErrorCode.extraSessionLocked);
       final rows = await app.tdb.pool.execute(
-        'SELECT extra_muscles, extra_logged_at FROM days '
+        'SELECT extra_muscles::text[] FROM days '
         "WHERE date = '2026-10-10'",
       );
-      expect(rows.single, [null, null]);
+      expect(rows.single[0], ['abs']);
     });
   });
 }

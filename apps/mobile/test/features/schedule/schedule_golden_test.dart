@@ -136,11 +136,13 @@ void main() {
 
     /// Lịch tháng 10 chia từ [template] lúc 08:00 thứ 5 01/10; thứ 2 05/10
     /// đã tập; hôm nay thứ 5 08/10. [changed] = lịch tuần đã đổi thứ 4 sang
-    /// Vai nhưng chưa chia lại (mock S-20-1).
+    /// Vai nhưng chưa chia lại (mock S-20-1). [skipWed] = thứ 4 07/10 đã
+    /// "Không tập" (mock S-21-3).
     Future<void> seedOctober(
       WidgetTester tester,
       GoldenVariant v, {
       bool changed = false,
+      bool skipWed = false,
     }) async {
       final db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);
@@ -148,15 +150,18 @@ void main() {
       final g = MonthGenerator.first(template, DateTime(2026, 10, 1, 8));
       await schedule.putPlan(g.plan);
       for (final d in g.days) {
-        await schedule.putDay(
-          d.date.day == 5
-              ? d.withMark(
-                  DayMark.done,
-                  actual: d.muscles,
-                  markedAt: DateTime(2026, 10, 5, 19),
-                )
-              : d,
-        );
+        await schedule.putDay(switch (d.date.day) {
+          5 => d.withMark(
+            DayMark.done,
+            actual: d.muscles,
+            markedAt: DateTime(2026, 10, 5, 19),
+          ),
+          7 when skipWed => d.withMark(
+            DayMark.skipped,
+            markedAt: DateTime(2026, 10, 7, 19),
+          ),
+          _ => d,
+        });
       }
       await schedule.putTemplate(
         changed
@@ -214,6 +219,28 @@ void main() {
       await seedOctober(tester, v);
       await tapRow(tester, 'T5 08/10');
       await snap('s21_today_rest_${v.name}');
+    });
+
+    testWidgets('S-21 chờ đánh dấu: hai nút trong bảng (mock S-21-1 Bản 2) '
+        '${v.name}', (tester) async {
+      await seedOctober(tester, v);
+      await tapRow(tester, 'T4 07/10');
+      await snap('s21_markable_${v.name}');
+    });
+
+    testWidgets('S-21 buổi đã chốt, chỉ xem (mock S-21-2 Bản 2) ${v.name}', (
+      tester,
+    ) async {
+      await seedOctober(tester, v);
+      await tapRow(tester, 'T2 05/10');
+      await snap('s21_done_${v.name}');
+    });
+
+    testWidgets('S-21 "Không tập" còn trong 7 ngày (mock S-21-3 Bản 2) '
+        '${v.name}', (tester) async {
+      await seedOctober(tester, v, skipWed: true);
+      await tapRow(tester, 'T4 07/10');
+      await snap('s21_change_${v.name}');
     });
 
     testWidgets('S-22 lịch tuần, chế độ sửa (mock S-22-1) ${v.name}', (

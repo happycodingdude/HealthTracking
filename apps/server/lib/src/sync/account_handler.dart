@@ -55,10 +55,11 @@ final class AccountHandler implements SyncEntityHandler {
   @override
   Future<void> apply(
     Session s,
-    String userId,
+    SyncContext ctx,
     SyncMutation m,
     int serverVersion,
   ) async {
+    final userId = ctx.userId;
     final account = _codec.decode(m.data!);
     await s.execute(
       Sql.named('''

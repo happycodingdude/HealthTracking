@@ -1,6 +1,8 @@
 @Tags(['golden'])
 library;
 
+import 'dart:async';
+
 import 'package:api_contract/api_contract.dart';
 import 'package:domain/domain.dart';
 import 'package:drift/native.dart';
@@ -13,6 +15,8 @@ import 'package:mobile/data/sync/outbox_writer.dart';
 import 'package:mobile/features/me/data/account_repository.dart';
 import 'package:mobile/features/me/data/profile_repository.dart';
 import 'package:mobile/features/schedule/data/schedule_repository.dart';
+import 'package:mobile/features/schedule/presentation/extra_session_sheet.dart';
+import 'package:mobile/features/today/presentation/today_screen.dart';
 import 'package:mobile/features/weight/data/weight_repository.dart';
 
 import '../../support/app_harness.dart';
@@ -78,13 +82,29 @@ void main() {
     matchesGoldenFile('goldens/$name.png'),
   );
 
+  /// S-24 của hôm nay (thứ 5 08/10 nghỉ), chọn Vai (mock S-24-1).
+  Future<void> openExtraSheet(WidgetTester tester) async {
+    unawaited(
+      showExtraSessionSheet(
+        tester.element(find.byType(TodayScreen)),
+        LocalDate(2026, 10, 8),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final shoulders = find.byKey(const ValueKey('muscle-shoulders'));
+    await tester.ensureVisible(shoulders);
+    await tester.pumpAndSettle();
+    await tester.tap(shoulders);
+    await tester.pumpAndSettle();
+  }
+
   for (final v in GoldenVariant.all) {
     testWidgets('S-10 chờ đánh dấu (mock S-10-1) ${v.name}', (tester) async {
       await pump(tester, v, await seed(), DateTime(2026, 10, 7, 18, 5));
       await snap('s10_awaiting_${v.name}');
     });
 
-    testWidgets('S-10 ngay sau khi bấm "Đã tập" (mock S-10-2) ${v.name}', (
+    testWidgets('S-65 "Đã tập Lưng?" có dòng 2 (mock S-65-1) ${v.name}', (
       tester,
     ) async {
       await pump(tester, v, await seed(), DateTime(2026, 10, 7, 18, 5));
@@ -92,7 +112,30 @@ void main() {
       await tester.ensureVisible(done);
       await tester.tap(done);
       await tester.pumpAndSettle();
+      await snap('s65_today_${v.name}');
+    });
+
+    testWidgets('S-10 vừa lưu "Đã tập": đã chốt khi lưu (mock S-10-3) '
+        '${v.name}', (tester) async {
+      await pump(tester, v, await seed(), DateTime(2026, 10, 7, 18, 5));
+      final done = find.byKey(ValueKey('mark-done-${wed.toKey()}'));
+      await tester.ensureVisible(done);
+      await tester.tap(done);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('lock-confirm-save')));
+      await tester.pumpAndSettle();
       await snap('s10_done_${v.name}');
+    });
+
+    testWidgets('S-10 vừa bấm "Không tập" (mock S-10-4) ${v.name}', (
+      tester,
+    ) async {
+      await pump(tester, v, await seed(), DateTime(2026, 10, 7, 18, 5));
+      final skipped = find.byKey(ValueKey('mark-skipped-${wed.toKey()}'));
+      await tester.ensureVisible(skipped);
+      await tester.tap(skipped);
+      await tester.pumpAndSettle();
+      await snap('s10_skipped_${v.name}');
     });
 
     testWidgets(
@@ -121,29 +164,35 @@ void main() {
       await snap('s10_sunday_${v.name}');
     });
 
-    testWidgets('S-23 sửa đánh dấu (mock S-23-1) ${v.name}', (tester) async {
-      final db = await seed();
-      await seedMark(db, wed, DayMark.done);
-      await pump(tester, v, db, DateTime(2026, 10, 7, 19));
-      final edit = find.byKey(const ValueKey('session-edit'));
-      await tester.ensureVisible(edit);
-      await tester.tap(edit);
+    testWidgets(
+      'S-24 thêm buổi tập thêm, đã chọn Vai (mock S-24-1) ${v.name}',
+      (tester) async {
+        await pump(tester, v, await seed(), DateTime(2026, 10, 8, 21));
+        await openExtraSheet(tester);
+        await snap('s24_${v.name}');
+      },
+    );
+
+    testWidgets('S-65 "Lưu buổi tập thêm?" hôm nay (mock S-65-2) ${v.name}', (
+      tester,
+    ) async {
+      await pump(tester, v, await seed(), DateTime(2026, 10, 8, 21));
+      await openExtraSheet(tester);
+      final save = find.byKey(const ValueKey('extra-save'));
+      await tester.ensureVisible(save);
       await tester.pumpAndSettle();
-      await snap('s23_${v.name}');
+      await tester.tap(save);
+      await tester.pumpAndSettle();
+      await snap('s65_extra_${v.name}');
     });
 
-    testWidgets('S-24 sửa buổi tập thêm (mock S-24-1) ${v.name}', (
+    testWidgets('S-10 hôm nay đã có buổi tập thêm: chỉ xem ${v.name}', (
       tester,
     ) async {
       final db = await seed();
-      final thu = LocalDate(2026, 10, 8);
-      await seedExtra(db, thu, const [MuscleGroup.abs]);
+      await seedExtra(db, LocalDate(2026, 10, 8), const [MuscleGroup.abs]);
       await pump(tester, v, db, DateTime(2026, 10, 8, 21));
-      final edit = find.byKey(const ValueKey('extra-edit'));
-      await tester.ensureVisible(edit);
-      await tester.tap(edit);
-      await tester.pumpAndSettle();
-      await snap('s24_${v.name}');
+      await snap('s10_extra_${v.name}');
     });
 
     testWidgets('S-25 tiến độ tuần (mock S-25-1) ${v.name}', (tester) async {

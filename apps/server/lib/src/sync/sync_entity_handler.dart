@@ -3,9 +3,16 @@ import 'package:postgres/postgres.dart';
 
 /// Ngữ cảnh khi kiểm tra một mutation.
 final class SyncContext {
-  const SyncContext({required this.userId, required this.serverNow});
+  const SyncContext({
+    required this.userId,
+    required this.serverNow,
+    this.appVersion,
+  });
 
   final String userId;
+
+  /// Header `X-App-Version` của request; null = app Bản 1 (05 Bản 2 TD2-15).
+  final AppVersion? appVersion;
 
   /// Giờ server (UTC). Quy tắc phụ thuộc thời gian dùng `clientUpdatedAt` của
   /// mutation (05 §6.6.2), giờ server chỉ để chặn thời điểm tương lai.
@@ -16,12 +23,15 @@ final class SyncContext {
 /// chưa có `month_plan`). Ném trong [SyncEntityHandler.apply]: phần đã ghi của
 /// mutation được hoàn tác, kết quả là `rejected` kèm [field].
 final class SyncRejection implements Exception {
-  const SyncRejection(this.field);
+  const SyncRejection(this.field, {this.code = ErrorCode.validationFailed});
 
   final String field;
 
+  /// Mã lỗi trả về app, ví dụ `session_locked` (05 Bản 2 §6.6.3).
+  final ErrorCode code;
+
   @override
-  String toString() => 'SyncRejection($field)';
+  String toString() => 'SyncRejection($field, ${code.wire})';
 }
 
 /// Trạng thái dòng hiện có, đọc khi đã khóa (`FOR UPDATE`).
@@ -49,9 +59,10 @@ abstract interface class SyncEntityHandler {
   Future<RowState?> lock(Session s, String userId, String key);
 
   /// Ghi `upsert`/`ensure`, hoặc tombstone với `delete`, kèm [serverVersion].
+  /// Quy tắc cần đọc database thì ném [SyncRejection].
   Future<void> apply(
     Session s,
-    String userId,
+    SyncContext ctx,
     SyncMutation mutation,
     int serverVersion,
   );
@@ -97,7 +108,7 @@ abstract base class PullOnlyHandler implements SyncEntityHandler {
   @override
   Future<void> apply(
     Session s,
-    String userId,
+    SyncContext ctx,
     SyncMutation mutation,
     int serverVersion,
   ) => throw UnsupportedError('$entity chỉ pull');

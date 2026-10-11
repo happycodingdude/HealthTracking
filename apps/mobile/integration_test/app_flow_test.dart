@@ -198,6 +198,9 @@ void main() {
       await pumpUntil(tester, done);
       expect(find.text(S.statusAwaiting), findsOneWidget);
       await tester.tap(done);
+      // VS-24: "Đã tập" qua hộp chốt buổi S-65.
+      await pumpUntil(tester, find.text(S.doneConfirmTitle('Ngực')));
+      await tester.tap(find.byKey(const ValueKey('lock-confirm-save')));
       await pumpUntil(tester, find.text(S.markedDone('Ngực')));
       await pumpUntilGone(tester, find.byKey(const ValueKey('sync-indicator')));
       // Server nhận (không trả về bản cũ chưa đánh dấu).

@@ -5,6 +5,8 @@ import 'month_plan.dart';
 import 'weekly_template.dart';
 
 /// Tình huống của một ngày ở S-21 (04 S-21, bảng 8 tình huống).
+/// Tình huống của một ngày ở S-21 (04 Bản 2 S-21): quyết định thao tác nào
+/// có trong bảng.
 enum DaySituation {
   /// Ngày tập, từ hôm nay trở đi trong tháng, chưa đến giờ, chưa đánh dấu:
   /// đổi giờ, đổi nhóm cơ, cho nghỉ, trả về theo lịch tuần (nếu đã sửa riêng).
@@ -18,16 +20,29 @@ enum DaySituation {
   /// buổi tập thêm.
   todayRest,
 
-  /// Hôm nay đã có buổi tập thêm: sửa buổi tập thêm (F03-E4).
-  todayExtra,
+  /// Ngày sau này không sửa riêng được (tháng sau): chỉ xem.
+  upcoming,
 
-  /// Ngày tập đã đến giờ hoặc đã qua, trong 7 ngày: đánh dấu (S-23).
+  /// Ngày tập đang "Chờ đánh dấu": "Đã tập" (S-65) · "Không tập".
   markable,
 
-  /// Ngày nghỉ đã qua, trong 7 ngày: thêm, sửa, xóa buổi tập thêm (S-24).
+  /// Buổi "Đã tập": chỉ xem, "Đã chốt khi lưu" (F05-R24, F05-R38).
+  done,
+
+  /// Buổi "Không tập" / "Không tập (tự động)" trong 7 ngày: "Đổi sang Đã
+  /// tập" (F05-R25, F05-R26).
+  changeToDone,
+
+  /// Ngày nghỉ đã qua, trong 7 ngày, chưa có buổi tập thêm: ghi buổi tập
+  /// thêm (S-24).
   pastRest,
 
-  /// Quá 7 ngày: chỉ xem (F05-E3).
+  /// Ngày nghỉ (hôm nay hoặc đã qua) đã có buổi tập thêm: chỉ xem, "Đã chốt
+  /// khi lưu" (F05-R34); hôm nay kèm dòng F03-E4.
+  extraSaved,
+
+  /// Buổi "Không tập" quá 7 ngày, hoặc ngày nghỉ đã qua quá 7 ngày: chỉ xem
+  /// (F05-R27).
   locked,
 
   /// Chủ nhật: chỉ xem.
@@ -63,16 +78,26 @@ abstract final class OverrideRules {
   static DaySituation situation(LocalDate date, PlanDay? day, DateTime now) {
     final today = LocalDate.fromDateTime(now);
     if (date.isSunday || day == null) return DaySituation.sunday;
+    if (SessionLock.session(day)) return DaySituation.done;
+    if (SessionLock.extra(day)) return DaySituation.extraSaved;
     if (canEdit(day, now)) {
       if (day.isWorkout) return DaySituation.editableWorkout;
-      if (date != today) return DaySituation.futureRest;
-      return day.extraMuscles == null
-          ? DaySituation.todayRest
-          : DaySituation.todayExtra;
+      return date == today ? DaySituation.todayRest : DaySituation.futureRest;
     }
-    if (SessionRules.isLocked(date, now)) return DaySituation.locked;
-    // Ngày nghỉ hôm nay luôn sửa riêng được nên ở đây là ngày nghỉ đã qua.
-    return day.isWorkout ? DaySituation.markable : DaySituation.pastRest;
+    if (date > today) return DaySituation.upcoming;
+    if (!day.isWorkout) {
+      return SessionRules.isLocked(date, now)
+          ? DaySituation.locked
+          : DaySituation.pastRest;
+    }
+    final status = SessionStatus.derive(day, now)!;
+    return switch (status.state) {
+      SessionState.awaitingMark => DaySituation.markable,
+      SessionState.upcoming => DaySituation.upcoming,
+      SessionState.done => DaySituation.done,
+      SessionState.skipped || SessionState.autoSkipped =>
+        status.locked ? DaySituation.locked : DaySituation.changeToDone,
+    };
   }
 
   /// F03-R9, F03-R11, F03-E6: sửa riêng được (đổi giờ, nhóm cơ, cho nghỉ,

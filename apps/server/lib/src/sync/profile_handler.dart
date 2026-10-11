@@ -62,10 +62,11 @@ final class ProfileHandler implements SyncEntityHandler {
   @override
   Future<void> apply(
     Session s,
-    String userId,
+    SyncContext ctx,
     SyncMutation m,
     int serverVersion,
   ) async {
+    final userId = ctx.userId;
     final p = _codec.decode(m.data!);
     await s.execute(
       Sql.named('''

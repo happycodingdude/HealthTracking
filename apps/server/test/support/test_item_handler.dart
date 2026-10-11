@@ -53,11 +53,11 @@ final class TestItemHandler implements SyncEntityHandler {
   @override
   Future<void> apply(
     Session s,
-    String userId,
+    SyncContext ctx,
     SyncMutation m,
     int version,
   ) async {
-    await _write(s, userId, m, version);
+    await _write(s, ctx.userId, m, version);
     if (m.data?['value'] == 'slow') await s.execute('SELECT pg_sleep(0.03)');
   }
 

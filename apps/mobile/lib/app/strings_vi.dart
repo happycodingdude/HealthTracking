@@ -207,7 +207,7 @@ abstract final class S {
   static const remindersTurnedOff = 'Đã tắt nhắc đi tập';
   static const remindersTurnedOn = 'Đã bật nhắc đi tập';
 
-  // Hôm nay S-10 (04 §6.7), đánh dấu S-23, nhãn trạng thái buổi tập
+  // Hôm nay S-10 (04 §6.7, 04 Bản 2 §6.6), nhãn trạng thái buổi tập
   // (04 §6.13.3), F-05.
   static const todaySessionTitle = 'Buổi tập hôm nay';
   static const statusUpcoming = 'Sắp tới';
@@ -219,8 +219,6 @@ abstract final class S {
   static const todayRest = 'Hôm nay nghỉ';
   static const sundayRest = 'Chủ nhật luôn nghỉ';
   static const markedSkipped = 'Đã ghi: không tập';
-  static const editMuscles = 'Sửa nhóm cơ';
-  static const undo = 'Hoàn tác';
   static const edit = 'Sửa';
   static const unmarkedTitle = 'Buổi chưa đánh dấu';
   static const progressCardTitle = 'Tiến độ tuần · T2–T7';
@@ -240,28 +238,44 @@ abstract final class S {
   /// UA-08: "Đã ghi: tập {nhóm cơ}".
   static String markedDone(String muscles) => 'Đã ghi: tập $muscles';
 
-  /// Mock S-23: "Lịch: {nhóm cơ} · {giờ}".
-  static String plannedLine(String muscles, String time) =>
-      'Lịch: $muscles · $time';
-
   // Buổi tập thêm S-24 (04 §6.7.1, S-24, §6.13.3), F05-R7 → R12.
   static const logExtraSession = 'Đã tập ngoài lịch? Ghi buổi tập thêm';
   static const extraSession = 'Buổi tập thêm';
   static const extraNotCounted = 'Không tính vào kế hoạch tuần.';
-  static const deleteExtraSession = 'Xóa buổi tập thêm';
   static const delete = 'Xóa';
   static const cancel = 'Hủy';
 
   /// 04 §6.7.1: "Buổi tập thêm · {nhóm cơ}".
   static String extraSessionLine(String muscles) => 'Buổi tập thêm · $muscles';
 
-  /// Mock S-24: "Buổi tập thêm · Thứ 5, 08/10 · Hôm nay".
-  static String extraSessionTitle(String weekdayDate, {required bool today}) =>
-      'Buổi tập thêm · $weekdayDate${today ? ' · $tabToday' : ''}';
+  /// 04 Bản 2 S-24: "Buổi tập thêm · {thứ} {dd/mm}".
+  static String extraSheetTitle(String weekday, String dayMonth) =>
+      'Buổi tập thêm · $weekday $dayMonth';
 
-  /// Hộp xác nhận xóa (NAV-6), theo mẫu "Cho nghỉ {thứ}, {dd/mm}?" của S-21.
-  static String deleteExtraConfirm(String weekdayDate) =>
-      'Xóa buổi tập thêm $weekdayDate?';
+  /// 04 Bản 2 S-24: "Đã ghi buổi tập thêm: {nhóm cơ}".
+  static String extraLogged(String muscles) => 'Đã ghi buổi tập thêm: $muscles';
+
+  // Chốt buổi (04 Bản 2 S-65, §6.6.1, S-21; UA2-02), F05-R23, F05-R33.
+  static const lockConfirmLine1 = 'Sau khi lưu, buổi này không sửa được nữa.';
+  static const lockConfirmLine2 =
+      'Mức tạ của buổi vẫn ghi được đến hết hôm nay.';
+  static const extraConfirmTitle = 'Lưu buổi tập thêm?';
+  static const lockedOnSave = 'Đã chốt khi lưu';
+  static const changeToDone = 'Đổi sang Đã tập';
+
+  /// 04 Bản 2 S-65: "Đã tập {nhóm cơ}?".
+  static String doneConfirmTitle(String muscles) => 'Đã tập $muscles?';
+
+  /// 04 Bản 2 §6.6.1, S-21: "Đã tập · {nhóm cơ}".
+  static String doneLine(String muscles) => 'Đã tập · $muscles';
+
+  /// 04 Bản 2 §6.6.1: "Đổi sang Đã tập được đến hết {dd/mm}".
+  static String changeToDoneUntil(String dayMonth) =>
+      'Đổi sang Đã tập được đến hết $dayMonth';
+
+  /// 04 Bản 2 S-21: "Đổi được đến hết {dd/mm}".
+  static String changeableUntil(String dayMonth) =>
+      'Đổi được đến hết $dayMonth';
 
   /// Mock S-25: "Nghỉ · Bụng".
   static String restWithExtra(String muscles) => '$rest · $muscles';
@@ -309,8 +323,6 @@ abstract final class S {
       'Còn chưa đến 1 giờ nên sẽ không có nhắc cho buổi này.';
   static const extraBlocksSchedule =
       'Hôm nay đã có buổi tập thêm nên không lên lịch tập được.';
-  static const editExtraSession = 'Sửa buổi tập thêm';
-  static const markSession = 'Đánh dấu buổi tập';
   static const editTodaySession = 'Sửa buổi hôm nay';
   static const missingTimeOrMuscles = 'Vui lòng chọn giờ tập và nhóm cơ';
   static const muscleGroups = 'Nhóm cơ';
@@ -714,8 +726,6 @@ abstract final class S {
     'todayRest': todayRest,
     'sundayRest': sundayRest,
     'markedSkipped': markedSkipped,
-    'editMuscles': editMuscles,
-    'undo': undo,
     'edit': edit,
     'unmarkedTitle': unmarkedTitle,
     'progressCardTitle': progressCardTitle,
@@ -727,7 +737,11 @@ abstract final class S {
     'logExtraSession': logExtraSession,
     'extraSession': extraSession,
     'extraNotCounted': extraNotCounted,
-    'deleteExtraSession': deleteExtraSession,
+    'lockConfirmLine1': lockConfirmLine1,
+    'lockConfirmLine2': lockConfirmLine2,
+    'extraConfirmTitle': extraConfirmTitle,
+    'lockedOnSave': lockedOnSave,
+    'changeToDone': changeToDone,
     'delete': delete,
     'cancel': cancel,
     'weekProgressTitle': weekProgressTitle,
@@ -756,8 +770,6 @@ abstract final class S {
     'onlyThisDay': onlyThisDay,
     'noReminderUnderHour': noReminderUnderHour,
     'extraBlocksSchedule': extraBlocksSchedule,
-    'editExtraSession': editExtraSession,
-    'markSession': markSession,
     'editTodaySession': editTodaySession,
     'missingTimeOrMuscles': missingTimeOrMuscles,
     'muscleGroups': muscleGroups,

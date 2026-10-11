@@ -35,7 +35,6 @@ import 'package:mobile/features/onboarding/application/onboarding_steps.dart';
 import 'package:mobile/features/onboarding/data/onboarding_draft_repository.dart';
 import 'package:mobile/features/schedule/application/month_materializer.dart';
 import 'package:mobile/features/schedule/data/schedule_repository.dart';
-import 'package:mobile/features/today/application/log_extra_session.dart';
 import 'package:mobile/features/today/application/mark_session.dart';
 import 'package:mobile/features/weight/application/weight_edits.dart';
 import 'package:mobile/features/weight/data/weight_repository.dart';
@@ -119,13 +118,19 @@ final class E2eDevice {
       outbox: outbox,
       clock: clock,
     );
-    markSession = MarkSession(
+    markDone = MarkSessionDone(
       db: db,
       schedule: schedule,
       outbox: outbox,
       clock: clock,
     );
-    logExtra = LogExtraSession(
+    markSkipped = MarkSessionSkipped(
+      db: db,
+      schedule: schedule,
+      outbox: outbox,
+      clock: clock,
+    );
+    addExtra = AddExtraSession(
       db: db,
       schedule: schedule,
       outbox: outbox,
@@ -188,8 +193,9 @@ final class E2eDevice {
   late final ScheduleRepository schedule;
   late final MenuRepository menus;
   late final ExerciseRepository exercises;
-  late final MarkSession markSession;
-  late final LogExtraSession logExtra;
+  late final MarkSessionDone markDone;
+  late final MarkSessionSkipped markSkipped;
+  late final AddExtraSession addExtra;
   late final MonthMaterializer materializer;
   late final WeightEdits weightEdits;
   late final MenuApi menuApi;
