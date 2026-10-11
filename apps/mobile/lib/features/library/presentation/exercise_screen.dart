@@ -142,7 +142,7 @@ class ExerciseScreen extends ConsumerWidget {
                 _GuideLine(marker: '•', text: note),
               const SizedBox(height: 16),
               const _GuideNote(),
-              _LiftArea(exercise: exercise, session: session),
+              _LiftArea(exercise: exercise, session: session, from: from),
             ],
           ],
         ),
@@ -267,10 +267,15 @@ class _GuideNote extends StatelessWidget {
 /// bản ghi gần nhất. Ẩn khi bài chưa có bản ghi nào (F19-AC3) và với bài bụng
 /// (F19-R4). Bài đã rời thư viện không có "Ghi mức tạ" (UA2-18).
 class _LiftArea extends ConsumerWidget {
-  const _LiftArea({required this.exercise, required this.session});
+  const _LiftArea({
+    required this.exercise,
+    required this.session,
+    required this.from,
+  });
 
   final Exercise exercise;
   final LocalDate? session;
+  final ExerciseFrom from;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -359,6 +364,27 @@ class _LiftArea extends ConsumerWidget {
           ),
           key: const ValueKey('exercise-lift-latest'),
           style: secondary,
+        ),
+        // S-69 (NAV-11). Mở từ biểu đồ thì quay lại biểu đồ đó.
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton(
+            key: const ValueKey('exercise-view-chart'),
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.zero,
+              textStyle: context.text.titleMedium,
+            ),
+            onPressed: () => from == ExerciseFrom.progress
+                ? context.pop()
+                : context.push('${GoRouterState.of(context).uri.path}/chart'),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(child: Text(S.viewChart)),
+                Icon(Icons.chevron_right, size: 22),
+              ],
+            ),
+          ),
         ),
       ];
     } else {

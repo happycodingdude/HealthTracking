@@ -22,6 +22,7 @@ import '../features/onboarding/presentation/disclaimer_screen.dart';
 import '../features/onboarding/presentation/profile_step_screen.dart';
 import '../features/onboarding/presentation/reminder_step_screen.dart';
 import '../features/onboarding/presentation/schedule_step_screen.dart';
+import '../features/progress/presentation/lift_chart_screen.dart';
 import '../features/restore/presentation/restore_screen.dart';
 import '../features/schedule/presentation/weekly_schedule_screen.dart';
 import '../features/today/presentation/today_screen.dart';
@@ -189,6 +190,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                                 state.pathParameters['date']!,
                               ),
                             ),
+                            routes: [_chartFromExercise],
                           ),
                         ],
                       ),
@@ -207,6 +209,24 @@ final routerProvider = Provider<GoRouter>((ref) {
                             state.uri.queryParameters['from'],
                           ),
                         ),
+                        routes: [_chartFromExercise],
+                      ),
+                      // S-69 mở từ S-68; "Xem bài" → S-67 nằm ngay dưới.
+                      GoRoute(
+                        path: 'chart/:id',
+                        builder: (_, state) => LiftChartScreen(
+                          exerciseId: state.pathParameters['id']!,
+                          from: ChartFrom.progress,
+                        ),
+                        routes: [
+                          GoRoute(
+                            path: 'exercise',
+                            builder: (_, state) => ExerciseScreen(
+                              id: state.pathParameters['id']!,
+                              from: ExerciseFrom.progress,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                     // S-56 nằm trong tab Tôi, thanh tab vẫn hiện.
@@ -239,6 +259,15 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.onDispose(router.dispose);
   return router;
 });
+
+/// S-69 mở từ "Xem biểu đồ" của S-67 (NAV-11), cùng tab với S-67.
+final _chartFromExercise = GoRoute(
+  path: 'chart',
+  builder: (_, state) => LiftChartScreen(
+    exerciseId: state.pathParameters['id']!,
+    from: ChartFrom.exercise,
+  ),
+);
 
 Widget _tabScreen(AppTab tab) => switch (tab) {
   AppTab.schedule => const TrainingScreen(),
