@@ -7,6 +7,7 @@ import '../../../data/db/app_database.dart';
 import '../../../data/sync/outbox_writer.dart';
 import '../../../data/sync/sync_providers.dart';
 import '../../schedule/data/schedule_repository.dart';
+import '../../workout/data/lift_log_repository.dart';
 
 /// Chưa xác nhận hộp chốt buổi S-65: chưa lưu gì (F05-V22, 06 Bản 2 ED2-04).
 final class NotConfirmedException implements Exception {
@@ -74,14 +75,21 @@ final class MarkSessionDone extends _DayWrite {
 }
 
 /// "Không tập" (F05-R25): lưu ngay, không cần xác nhận, chỉ từ "Chờ đánh dấu".
-/// Ném [MarkException].
+/// Ném [MarkException]. Mức tạ đã ghi của buổi giữ nguyên (FD2-02).
 final class MarkSessionSkipped extends _DayWrite {
   MarkSessionSkipped({
     required super.db,
     required super.schedule,
+    required LiftLogRepository liftLogs,
     required super.outbox,
     required super.clock,
-  });
+  }) : _liftLogs = liftLogs;
+
+  final LiftLogRepository _liftLogs;
+
+  /// Số bài đã có mức tạ trong buổi ngày [date]: > 0 thì UI hỏi trước khi
+  /// lưu "Buổi này đã có mức tạ của {N} bài." (F05-R28).
+  Future<int> liftLogCount(LocalDate date) => _liftLogs.countDay(date);
 
   Future<PlanDay> call(LocalDate date) => _write(date, (day, now) {
     if (day == null) throw const MarkException(MarkError.notWorkout);
@@ -138,6 +146,7 @@ final markSessionSkippedProvider = Provider<MarkSessionSkipped>(
   (ref) => MarkSessionSkipped(
     db: ref.watch(databaseProvider),
     schedule: ref.watch(scheduleRepositoryProvider),
+    liftLogs: ref.watch(liftLogRepositoryProvider),
     outbox: ref.watch(outboxWriterProvider),
     clock: ref.watch(clockProvider),
   ),

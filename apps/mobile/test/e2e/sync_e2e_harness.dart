@@ -38,6 +38,8 @@ import 'package:mobile/features/schedule/data/schedule_repository.dart';
 import 'package:mobile/features/today/application/mark_session.dart';
 import 'package:mobile/features/weight/application/weight_edits.dart';
 import 'package:mobile/features/weight/data/weight_repository.dart';
+import 'package:mobile/features/workout/application/lift_log_edits.dart';
+import 'package:mobile/features/workout/data/lift_log_repository.dart';
 import 'package:server/server.dart';
 import 'package:server/testing.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
@@ -108,6 +110,7 @@ final class E2eDevice {
     schedule = ScheduleRepository(db);
     menus = MenuRepository(db);
     exercises = ExerciseRepository(db);
+    liftLogs = LiftLogRepository(db);
     final outbox = OutboxWriter(db, clock);
     onboarding = OnboardingSteps(
       db: db,
@@ -127,12 +130,29 @@ final class E2eDevice {
     markSkipped = MarkSessionSkipped(
       db: db,
       schedule: schedule,
+      liftLogs: liftLogs,
       outbox: outbox,
       clock: clock,
     );
     addExtra = AddExtraSession(
       db: db,
       schedule: schedule,
+      outbox: outbox,
+      clock: clock,
+    );
+    saveLift = SaveLiftLog(
+      db: db,
+      logs: liftLogs,
+      schedule: schedule,
+      exercises: exercises,
+      outbox: outbox,
+      clock: clock,
+    );
+    deleteLift = DeleteLiftLog(
+      db: db,
+      logs: liftLogs,
+      schedule: schedule,
+      exercises: exercises,
       outbox: outbox,
       clock: clock,
     );
@@ -172,6 +192,7 @@ final class E2eDevice {
         SyncEntities.menu: MenuStore(menus),
         SyncEntities.aiDailyUsage: AiDailyUsageStore(menus),
         SyncEntities.exercise: ExerciseStore(exercises),
+        SyncEntities.liftLog: LiftLogStore(liftLogs),
       },
       clock: clock,
       reporter: reporter,
@@ -193,6 +214,9 @@ final class E2eDevice {
   late final ScheduleRepository schedule;
   late final MenuRepository menus;
   late final ExerciseRepository exercises;
+  late final LiftLogRepository liftLogs;
+  late final SaveLiftLog saveLift;
+  late final DeleteLiftLog deleteLift;
   late final MarkSessionDone markDone;
   late final MarkSessionSkipped markSkipped;
   late final AddExtraSession addExtra;
@@ -267,6 +291,7 @@ final class E2eDevice {
         db.menus,
         db.aiDailyUsage,
         db.exercises,
+        db.liftLogs,
       ])
         t.actualTableName: await rows(t),
       'aiBudget': (await db.select(db.syncState).getSingle()).aiBudget,

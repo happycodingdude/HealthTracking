@@ -8,6 +8,7 @@ export 'src/codecs.dart';
 export 'src/error_code.dart';
 export 'src/exercise_codecs.dart';
 export 'src/json_reader.dart';
+export 'src/lift_log_codecs.dart';
 export 'src/menu_dtos.dart';
 export 'src/profile_codecs.dart';
 export 'src/schedule_codecs.dart';

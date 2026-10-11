@@ -8,6 +8,7 @@ import '../../features/me/data/profile_repository.dart';
 import '../../features/menu/data/menu_repository.dart';
 import '../../features/schedule/data/schedule_repository.dart';
 import '../../features/weight/data/weight_repository.dart';
+import '../../features/workout/data/lift_log_repository.dart';
 import 'local_stores.dart';
 import 'outbox_writer.dart';
 import 'sync_api.dart';
@@ -37,6 +38,10 @@ final menuRepositoryProvider = Provider<MenuRepository>(
 
 final exerciseRepositoryProvider = Provider<ExerciseRepository>(
   (ref) => ExerciseRepository(ref.watch(databaseProvider)),
+);
+
+final liftLogRepositoryProvider = Provider<LiftLogRepository>(
+  (ref) => LiftLogRepository(ref.watch(databaseProvider)),
 );
 
 final outboxWriterProvider = Provider<OutboxWriter>(
@@ -70,6 +75,7 @@ final syncEngineProvider = Provider<SyncEngine>((ref) {
       SyncEntities.exercise: ExerciseStore(
         ref.watch(exerciseRepositoryProvider),
       ),
+      SyncEntities.liftLog: LiftLogStore(ref.watch(liftLogRepositoryProvider)),
     },
     clock: ref.watch(clockProvider),
     reporter: ref.watch(errorReporterProvider),

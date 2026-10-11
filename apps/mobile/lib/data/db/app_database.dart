@@ -301,7 +301,8 @@ class Exercises extends Table {
 }
 
 /// Bản sao entity `lift_log` (key `YYYY-MM-DD:exerciseId`, 05 Bản 2 §6.6.2),
-/// ghi qua outbox. Mức tạ lưu kg × 10 như cân nặng.
+/// ghi qua outbox. Mức tạ lưu kg × 10 như cân nặng. Cùng trường với `data`
+/// của entity (06 Bản 2 §6.5.1).
 @DataClassName('LiftLogRow')
 class LiftLogs extends Table {
   @override
@@ -312,7 +313,6 @@ class LiftLogs extends Table {
   TextColumn get exerciseId => text()();
   IntColumn get startKgX10 => integer()();
   IntColumn get endKgX10 => integer()();
-  DateTimeColumn get loggedAt => dateTime()();
 
   @override
   Set<Column<Object>> get primaryKey => {date, exerciseId};
