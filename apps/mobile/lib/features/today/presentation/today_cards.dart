@@ -19,10 +19,9 @@ import '../../menu/presentation/menu_screen.dart';
 import '../../schedule/application/schedule_providers.dart';
 import '../../schedule/presentation/day_sheet.dart';
 import '../../schedule/presentation/extra_session_sheet.dart';
-import '../../schedule/presentation/mark_session_sheet.dart';
+import '../../schedule/presentation/session_marking.dart';
 import '../application/progress_view.dart';
 import '../application/today_view.dart';
-import 'quick_mark.dart';
 import 'week_progress_screen.dart';
 
 /// Từ mức phóng chữ này trở lên, các nút và cột xếp dọc (UX-AC18).
@@ -84,61 +83,6 @@ class TodayCard extends StatelessWidget {
   }
 }
 
-/// "Đã tập" (nút chính) · "Không tập" (nút phụ cùng kích thước, 04 §6.7.1).
-class MarkButtons extends StatelessWidget {
-  const MarkButtons({
-    super.key,
-    required this.day,
-    required this.onDone,
-    required this.onSkipped,
-    this.compact = false,
-  });
-
-  final PlanDay day;
-  final VoidCallback onDone;
-  final VoidCallback onSkipped;
-
-  /// Nút nhỏ trong danh sách buổi chưa đánh dấu (04 §6.7.2).
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    final key = day.date.toKey();
-    final padding = compact ? const EdgeInsets.symmetric(horizontal: 16) : null;
-    final done = FilledButton(
-      key: ValueKey('mark-done-$key'),
-      style: FilledButton.styleFrom(padding: padding),
-      onPressed: onDone,
-      child: const Text(S.sessionDone, textAlign: TextAlign.center),
-    );
-    final skipped = OutlinedButton(
-      key: ValueKey('mark-skipped-$key'),
-      style: OutlinedButton.styleFrom(padding: padding),
-      onPressed: onSkipped,
-      child: const Text(S.sessionSkipped, textAlign: TextAlign.center),
-    );
-    if (_stacked(context)) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [done, const SizedBox(height: 8), skipped],
-      );
-    }
-    if (compact) {
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [done, const SizedBox(width: 8), skipped],
-      );
-    }
-    return Row(
-      children: [
-        Expanded(child: done),
-        const SizedBox(width: 12),
-        Expanded(child: skipped),
-      ],
-    );
-  }
-}
-
 /// Liên kết chữ (nút phụ dạng chữ, căn trái).
 class _Link extends StatelessWidget {
   const _Link({required this.id, required this.label, required this.onTap});
@@ -163,7 +107,8 @@ class _Link extends StatelessWidget {
   );
 }
 
-/// Thẻ buổi tập hôm nay (04 §6.7.1).
+/// Thẻ buổi tập hôm nay (04 Bản 2 §6.6.1). Buổi đã chốt (Đã tập, buổi tập
+/// thêm) không có nút sửa ở đâu cả (UR2-06). Phần bài tập làm ở VS-27.
 class SessionCard extends ConsumerWidget {
   const SessionCard({super.key});
 
@@ -198,28 +143,22 @@ class SessionCard extends ConsumerWidget {
           );
 
     if (day == null || status == null) {
-      // Ngày nghỉ thứ 2 → thứ 7, hoặc chủ nhật (FR-21): ghi buổi tập thêm
-      // (F05-R7, F05-E6). Ngày chưa có lịch (trước ngày thiết lập) thì không.
+      // Ngày nghỉ thứ 2 → thứ 7, hoặc chủ nhật (FR-21). Buổi tập thêm đã lưu
+      // thì chỉ xem (F05-R34); chưa có thì ghi được (F05-R32, F05-E29).
       final extra = day?.extraMuscles;
-      final canLog = day != null && ExtraSessionRules.canLog(day, now);
+      final canAdd = day != null && ExtraSessionRules.canAdd(day, now);
       return TodayCard(
         key: const ValueKey('session-card'),
         title: S.todaySessionTitle,
         children: [
           if (extra != null) ...[
             Heading(S.extraSessionLine(Fmt.muscles(extra)), style: title),
-            if (canLog) ...[
-              const SizedBox(height: 4),
-              _Link(
-                id: const ValueKey('extra-edit'),
-                label: S.edit,
-                onTap: () => showExtraSessionSheet(context, today),
-              ),
-            ],
+            const SizedBox(height: 8),
+            const LockedOnSaveLine(),
           ] else ...[
             Heading(today.isSunday ? S.sundayRest : S.todayRest, style: title),
             nextLine(),
-            if (canLog) ...[
+            if (canAdd) ...[
               const SizedBox(height: 4),
               _Link(
                 id: const ValueKey('extra-log'),
@@ -255,26 +194,31 @@ class SessionCard extends ConsumerWidget {
           const SizedBox(height: 16),
           MarkButtons(
             day: day,
-            onDone: () => QuickMark.done(context, ref, day),
-            onSkipped: () => QuickMark.skipped(context, ref, day),
+            onDone: () => SessionMarking.done(context, day),
+            onSkipped: () => SessionMarking.skipped(context, day),
           ),
         ],
         SessionState.done => [
-          Heading(Fmt.muscles(day.actualMuscles ?? day.muscles), style: title),
-          const SizedBox(height: 4),
-          _Link(
-            id: const ValueKey('session-edit'),
-            label: S.edit,
-            onTap: () => showMarkSessionSheet(context, day.date),
+          Heading(
+            S.doneLine(Fmt.muscles(SessionRules.musclesOf(day))),
+            style: title,
           ),
+          const SizedBox(height: 8),
+          const LockedOnSaveLine(),
         ],
         SessionState.skipped || SessionState.autoSkipped => [
           Heading(planned, style: title),
-          const SizedBox(height: 4),
-          _Link(
-            id: const ValueKey('session-edit'),
-            label: S.edit,
-            onTap: () => showMarkSessionSheet(context, day.date),
+          const SizedBox(height: 8),
+          Text(
+            S.changeToDoneUntil(
+              Fmt.dayMonth(SessionRules.lastChangeDate(day.date)),
+            ),
+            style: secondary,
+          ),
+          const SizedBox(height: 16),
+          ChangeToDoneButton(
+            day: day,
+            onTap: () => SessionMarking.done(context, day),
           ),
         ],
       },
@@ -306,13 +250,13 @@ class UnmarkedCard extends ConsumerWidget {
   }
 }
 
-class _UnmarkedRow extends ConsumerWidget {
+class _UnmarkedRow extends StatelessWidget {
   const _UnmarkedRow({required this.day});
 
   final PlanDay day;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final info = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -333,8 +277,8 @@ class _UnmarkedRow extends ConsumerWidget {
     final buttons = MarkButtons(
       day: day,
       compact: true,
-      onDone: () => QuickMark.done(context, ref, day),
-      onSkipped: () => QuickMark.skipped(context, ref, day),
+      onDone: () => SessionMarking.done(context, day),
+      onSkipped: () => SessionMarking.skipped(context, day),
     );
     if (MediaQuery.textScalerOf(context).scale(1) >= 1.3) {
       return Column(

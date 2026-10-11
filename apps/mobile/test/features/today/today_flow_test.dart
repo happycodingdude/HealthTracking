@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:domain/domain.dart';
+import 'package:domain/testing.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,7 +11,7 @@ import 'package:mobile/app/shell/app_tab_bar.dart';
 import 'package:mobile/app/strings_vi.dart';
 import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/features/schedule/data/schedule_repository.dart';
-import 'package:mobile/features/schedule/presentation/mark_session_sheet.dart';
+import 'package:mobile/features/schedule/presentation/day_sheet.dart';
 import 'package:mobile/features/today/presentation/today_screen.dart';
 
 import '../../support/app_harness.dart';
@@ -115,81 +116,95 @@ void main() {
   );
 
   testWidgets(
-    'UX-AC5, UA-08, F05-AC2: 1 chạm "Đã tập" → lưu ngay nhóm cơ theo lịch, thẻ '
-    'và dải tiến độ đổi; "Sửa nhóm cơ" → S-23 điền sẵn Lưng → đổi Vai → Lưu',
+    'UX-AC26, F05-AC21: "Đã tập" → hộp "Đã tập Lưng?" với dòng 1, dòng 2 (hôm '
+    'nay); "Hủy" không đổi gì; "Lưu" → thẻ "Đã tập · Lưng", "Đã chốt khi lưu", '
+    'không nút sửa; thông báo "Đã ghi: tập Lưng" không có nút; dải tiến độ đổi',
     (tester) async {
       await seedSetUp(db);
       await pump(tester);
       await tapKey(tester, 'mark-done-${wed.toKey()}');
+      expect(find.text(S.doneConfirmTitle('Lưng')), findsOneWidget);
+      expect(find.text(S.lockConfirmLine1), findsOneWidget);
+      expect(find.text(S.lockConfirmLine2), findsOneWidget);
+      await tapKey(tester, 'lock-confirm-cancel');
+      expect((await day(wed)).mark, isNull);
+      expect(await outbox(), isNot(contains('day:2026-10-07')));
+      expect(
+        inCard(sessionCard(), find.text(S.statusAwaiting)),
+        findsOneWidget,
+      );
 
+      await tapKey(tester, 'mark-done-${wed.toKey()}');
+      await tapKey(tester, 'lock-confirm-save');
       expect(find.text(S.markedDone('Lưng')), findsOneWidget);
-      expect(find.text(S.editMuscles), findsOneWidget);
-      expect(inCard(sessionCard(), find.text(S.sessionDone)), findsOneWidget);
-      expect(inCard(sessionCard(), find.text('Lưng')), findsOneWidget);
+      expect(find.byKey(const ValueKey('toast-action')), findsNothing);
+      expect(
+        inCard(sessionCard(), find.text(S.doneLine('Lưng'))),
+        findsOneWidget,
+      );
+      expect(
+        inCard(sessionCard(), find.byKey(const ValueKey('locked-on-save'))),
+        findsOneWidget,
+      );
+      expect(inCard(sessionCard(), find.text(S.edit)), findsNothing);
+      expect(inCard(sessionCard(), find.byType(OutlinedButton)), findsNothing);
       expect(
         find.bySemanticsLabel('Thứ 4: ${S.sessionDone}'),
         findsOneWidget,
         reason: 'dải tiến độ cập nhật ngay',
       );
-      var d = await day(wed);
+      final d = await day(wed);
       expect(d.mark, DayMark.done);
       expect(d.actualMuscles, [MuscleGroup.back]);
       expect(d.markedAt, DateTime(2026, 10, 7, 18, 5));
       expect(await outbox(), contains('day:2026-10-07'));
-
-      await tester.tap(find.text(S.editMuscles));
-      await tester.pumpAndSettle();
-      expect(find.text(S.plannedLine('Lưng', '18:00')), findsOneWidget);
-      expect(find.text(S.actualMusclesLabel), findsOneWidget);
-      final back = tester.widget<Semantics>(
-        find
-            .descendant(
-              of: find.byKey(const ValueKey('muscle-back')),
-              matching: find.byType(Semantics),
-            )
-            .first,
-      );
-      expect(back.properties.selected, isTrue, reason: 'điền sẵn Lưng');
-      await tapKey(tester, 'muscle-back');
-      await tapKey(tester, 'muscle-shoulders');
-      await tester.tap(find.widgetWithText(FilledButton, S.save));
-      await tester.pumpAndSettle();
-      d = await day(wed);
-      expect(d.mark, DayMark.done);
-      expect(d.actualMuscles, [MuscleGroup.shoulders]);
-      expect(inCard(sessionCard(), find.text('Vai')), findsOneWidget);
     },
   );
 
   testWidgets(
-    'UA-09: "Không tập" → lưu ngay, "Đã ghi: không tập" kèm "Hoàn tác"; Hoàn '
-    'tác → lại "Chờ đánh dấu"',
+    'UX-AC27, UD2-03: "Không tập" → lưu ngay, "Đã ghi: không tập" kèm "Đổi '
+    'sang Đã tập", không có "Hoàn tác"; thẻ "Đổi sang Đã tập được đến hết '
+    '14/10"; nút trong thông báo → S-65 → Lưu → Đã tập',
     (tester) async {
       await seedSetUp(db);
       await pump(tester);
       await tapKey(tester, 'mark-skipped-${wed.toKey()}');
+      expect(find.byKey(const ValueKey('lock-confirm')), findsNothing);
       expect(find.text(S.markedSkipped), findsOneWidget);
+      expect(find.widgetWithText(TextButton, S.changeToDone), findsOneWidget);
+      expect(find.text('Hoàn tác'), findsNothing);
       expect(
         inCard(sessionCard(), find.text(S.sessionSkipped)),
         findsOneWidget,
       );
-      expect((await day(wed)).mark, DayMark.skipped);
-
-      await tester.tap(find.text(S.undo));
-      await tester.pumpAndSettle();
-      expect((await day(wed)).mark, isNull);
       expect(
-        inCard(sessionCard(), find.text(S.statusAwaiting)),
+        inCard(sessionCard(), find.text(S.changeToDoneUntil('14/10'))),
         findsOneWidget,
       );
-      expect(find.byKey(ValueKey('mark-done-${wed.toKey()}')), findsOneWidget);
+      expect(
+        inCard(
+          sessionCard(),
+          find.byKey(ValueKey('change-to-done-${wed.toKey()}')),
+        ),
+        findsOneWidget,
+      );
+      expect((await day(wed)).mark, DayMark.skipped);
+
+      await tapKey(tester, 'toast-action');
+      expect(find.text(S.doneConfirmTitle('Lưng')), findsOneWidget);
+      await tapKey(tester, 'lock-confirm-save');
+      expect((await day(wed)).mark, DayMark.done);
+      expect(
+        inCard(sessionCard(), find.text(S.doneLine('Lưng'))),
+        findsOneWidget,
+      );
     },
   );
 
   testWidgets(
     'S-10 ngày nghỉ: "Hôm nay nghỉ", "Buổi tới: Thứ 6 · Vai · 18:00"; UA-11: '
     'buổi thứ 4 quên đánh dấu nằm trong "Buổi chưa đánh dấu", đánh dấu được '
-    'tại chỗ',
+    'tại chỗ; "Không tập" rồi "Đổi sang Đã tập" từ thông báo',
     (tester) async {
       clock.set(DateTime(2026, 10, 8, 9));
       await seedSetUp(db);
@@ -200,9 +215,17 @@ void main() {
       expect(inCard(unmarked, find.text('Thứ 4, 07/10')), findsOneWidget);
       expect(inCard(unmarked, find.text('Lưng · 18:00')), findsOneWidget);
 
-      await tapKey(tester, 'mark-done-${wed.toKey()}');
-      expect((await day(wed)).mark, DayMark.done);
+      // "Không tập" → dòng biến mất; nút "Đổi sang Đã tập" của thông báo vẫn
+      // mở S-65 (buổi đã qua: không có dòng 2, 04 Bản 2 S-65).
+      await tapKey(tester, 'mark-skipped-${wed.toKey()}');
+      expect((await day(wed)).mark, DayMark.skipped);
       expect(find.byKey(const ValueKey('unmarked-card')), findsNothing);
+      await tapKey(tester, 'toast-action');
+      expect(find.text(S.doneConfirmTitle('Lưng')), findsOneWidget);
+      expect(find.byKey(const ValueKey('lock-confirm-line2')), findsNothing);
+      await tapKey(tester, 'lock-confirm-save');
+      expect((await day(wed)).mark, DayMark.done);
+      expect(find.text(S.markedDone('Lưng')), findsOneWidget);
     },
   );
 
@@ -241,69 +264,119 @@ void main() {
     },
   );
 
-  testWidgets('S-23: bỏ hết nhóm cơ → F05-V1; "Không tập" bỏ nhóm cơ thực tế '
-      '(F05-R5)', (tester) async {
-    await seedSetUp(db);
-    await seedMark(db, wed, DayMark.done);
-    await pump(tester);
-    await tapKey(tester, 'session-edit');
-    await tapKey(tester, 'muscle-back');
-    await tester.tap(find.widgetWithText(FilledButton, S.save));
-    await tester.pumpAndSettle();
-    expect(find.text(S.missingActualMuscles), findsOneWidget);
-    expect((await day(wed)).actualMuscles, [MuscleGroup.back]);
-
-    await tapKey(tester, 'choice-skipped');
-    expect(find.text(S.actualMusclesLabel), findsNothing);
-    await tester.tap(find.widgetWithText(FilledButton, S.save));
-    await tester.pumpAndSettle();
-    final d = await day(wed);
-    expect(d.mark, DayMark.skipped);
-    expect(d.actualMuscles, isNull);
-    expect(find.text(S.markedSkipped), findsOneWidget);
-  });
-
   testWidgets(
-    'S-23 Q-2: đổi lựa chọn rồi chạm vùng mờ → hỏi "Bỏ các thay đổi chưa '
-    'lưu?"',
+    'F05-AC22, UR2-06: buổi Đã tập không có nút sửa hay đổi trạng thái ở Hôm '
+    'nay và S-21, kể cả trong ngày',
     (tester) async {
       await seedSetUp(db);
       await seedMark(db, wed, DayMark.done);
       await pump(tester);
-      await tapKey(tester, 'session-edit');
-      await tapKey(tester, 'choice-skipped');
-      await tester.tapAt(const Offset(195, 60));
+      expect(inCard(sessionCard(), find.byType(TextButton)), findsNothing);
+      expect(inCard(sessionCard(), find.byType(FilledButton)), findsNothing);
+      unawaited(showDaySheet(tester.element(find.byType(TodayScreen)), wed));
       await tester.pumpAndSettle();
-      expect(find.text(S.discardChangesTitle), findsOneWidget);
-      await tester.tap(find.text(S.discard));
-      await tester.pumpAndSettle();
-      expect(find.text(S.actualMusclesLabel), findsNothing);
-      expect((await day(wed)).mark, DayMark.done);
+      expect(find.text(S.doneLine('Lưng')), findsWidgets);
+      expect(find.byKey(const ValueKey('locked-on-save')), findsWidgets);
+      expect(find.byKey(ValueKey('mark-skipped-${wed.toKey()}')), findsNothing);
+      expect(
+        find.byKey(ValueKey('change-to-done-${wed.toKey()}')),
+        findsNothing,
+      );
+      expect(find.byKey(const ValueKey('day-change-time')), findsNothing);
     },
   );
 
   testWidgets(
-    'F05-AC4, F05-E3: buổi 07/10 trên S-23 sửa được đến hết 14/10; từ 15/10 '
-    'chỉ xem, có ổ khóa và "Chỉ sửa được trong 7 ngày"',
+    'F05-AC23, F05-R27: buổi Không tập 07/10 → S-21 "Đổi sang Đã tập" và "Đổi '
+    'được đến hết 14/10" đến 23:59 14/10; từ 15/10 chỉ xem, ổ khóa và "Chỉ sửa '
+    'được trong 7 ngày"',
     (tester) async {
       clock.set(DateTime(2026, 10, 14, 23, 59));
       await seedSetUp(db);
-      await seedMark(db, wed, DayMark.done);
+      await seedMark(db, wed, DayMark.skipped);
       await pump(tester);
-      // Mở S-23 trực tiếp (lối vào từ S-21 có ở VS-09).
-      unawaited(
-        showMarkSessionSheet(tester.element(find.byType(TodayScreen)), wed),
-      );
+      unawaited(showDaySheet(tester.element(find.byType(TodayScreen)), wed));
       await tester.pumpAndSettle();
-      expect(find.widgetWithText(FilledButton, S.save), findsOneWidget);
-
-      await advanceTo(tester, DateTime(2026, 10, 15));
-      expect(find.widgetWithText(FilledButton, S.save), findsNothing);
-      expect(find.text(S.lockedNote), findsOneWidget);
+      expect(find.text(S.changeableUntil('14/10')), findsOneWidget);
       expect(
-        find.bySemanticsLabel('${S.sessionDone}, ${S.statusLocked}'),
+        find.byKey(ValueKey('change-to-done-${wed.toKey()}')),
         findsOneWidget,
       );
+
+      await advanceTo(tester, DateTime(2026, 10, 15));
+      expect(
+        find.byKey(ValueKey('change-to-done-${wed.toKey()}')),
+        findsNothing,
+      );
+      expect(find.text(S.lockedNote), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('${S.sessionSkipped}, ${S.statusLocked}'),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'F05-AC29, F05-AC30, F05-E30 (legacyDoneDays): mở app Bản 2 với dữ liệu '
+    'Bản 1 → buổi Đã tập hôm qua, thứ 2 cùng tuần chỉ xem; buổi lịch Ngực đã '
+    'tập Vai hiện Vai; buổi tập thêm Bản 1 chỉ xem; buổi Không tập còn đổi '
+    'được',
+    (tester) async {
+      clock.set(legacyToday);
+      await seedSetUp(db);
+      final schedule = ScheduleRepository(db);
+      for (final d in LegacyDoneDays.all) {
+        await schedule.putDay(d);
+      }
+      await pump(tester);
+      final host = tester.element(find.byType(TodayScreen));
+      Future<void> openDay(PlanDay d) async {
+        unawaited(showDaySheet(host, d.date));
+        await tester.pumpAndSettle();
+      }
+
+      Future<void> close() async {
+        await tester.tapAt(const Offset(195, 60));
+        await tester.pumpAndSettle();
+      }
+
+      for (final d in [
+        LegacyDoneDays.doneYesterday,
+        LegacyDoneDays.doneMonday,
+      ]) {
+        await openDay(d);
+        expect(find.byKey(const ValueKey('locked-on-save')), findsOneWidget);
+        expect(
+          find.byKey(ValueKey('mark-skipped-${d.date.toKey()}')),
+          findsNothing,
+        );
+        await close();
+      }
+      await openDay(LegacyDoneDays.doneOtherMuscles);
+      expect(find.text(S.doneLine('Vai')), findsOneWidget);
+      expect(find.text(S.doneLine('Ngực')), findsNothing);
+      await close();
+      await openDay(LegacyDoneDays.extra);
+      expect(find.text(S.extraSessionLine('Bụng')), findsOneWidget);
+      expect(find.byKey(const ValueKey('locked-on-save')), findsOneWidget);
+      expect(find.byKey(const ValueKey('day-log-extra')), findsNothing);
+      await close();
+      await openDay(LegacyDoneDays.skipped);
+      expect(
+        find.byKey(
+          ValueKey('change-to-done-${LegacyDoneDays.skipped.date.toKey()}'),
+        ),
+        findsOneWidget,
+      );
+      await close();
+      // Dòng của ngày ở S-25 (tuần 05/10 – 10/10) cũng hiện Vai.
+      await tester.tap(find.byKey(const ValueKey('progress-card')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('week-previous')));
+      await tester.pumpAndSettle();
+      // Thứ 6 09/10 theo lịch Vai; thứ 7 10/10 lịch Ngực, đã ghi Vai.
+      expect(find.text('Vai · 18:00'), findsNWidgets(2));
+      expect(find.text('Ngực · 18:00'), findsNothing);
     },
   );
 
@@ -316,7 +389,8 @@ void main() {
       await pump(tester);
       server.offline = true;
       final before = server.requests.length;
-      await tester.tap(find.byKey(ValueKey('mark-done-${wed.toKey()}')));
+      await tapKey(tester, 'mark-done-${wed.toKey()}');
+      await tester.tap(find.byKey(const ValueKey('lock-confirm-save')));
       await tester.pump();
       expect(inCard(sessionCard(), find.text(S.sessionDone)), findsOneWidget);
       expect(server.requests.length, before);

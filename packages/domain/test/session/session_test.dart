@@ -1,4 +1,5 @@
 import 'package:domain/domain.dart';
+import 'package:domain/testing.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -22,223 +23,185 @@ void main() {
   SessionStatus status(PlanDay d, DateTime now) =>
       SessionStatus.derive(d, now)!;
 
-  group('trạng thái buổi tập (03 §6.1)', () {
+  group('trạng thái buổi tập Bản 2 (03 Bản 2 §6.1)', () {
     test('ngày nghỉ không có trạng thái buổi tập', () {
       expect(SessionStatus.derive(rest, DateTime(2026, 10, 8, 12)), isNull);
     });
 
-    test('F05-AC1: 17:59 Sắp tới, 18:00 Chờ đánh dấu', () {
-      expect(
-        status(chest, DateTime(2026, 10, 5, 17, 59)).state,
-        SessionState.upcoming,
-      );
-      expect(
-        status(chest, DateTime(2026, 10, 5, 18)).state,
-        SessionState.awaitingMark,
-      );
-      expect(SessionRules.canMark(chest, DateTime(2026, 10, 5, 17, 59)), false);
-      expect(SessionRules.canMark(chest, DateTime(2026, 10, 5, 18)), true);
+    test('F05-R22: 17:59 Sắp tới, chưa đánh dấu được; 18:00 Chờ đánh dấu', () {
+      final before = DateTime(2026, 10, 5, 17, 59);
+      final at = DateTime(2026, 10, 5, 18);
+      expect(status(chest, before).state, SessionState.upcoming);
+      expect(SessionRules.validateDone(chest, before), MarkError.tooEarly);
+      expect(SessionRules.validateSkipped(chest, before), MarkError.tooEarly);
+      expect(status(chest, at).state, SessionState.awaitingMark);
+      expect(SessionRules.canMarkDone(chest, at), isTrue);
+      expect(SessionRules.canMarkSkipped(chest, at), isTrue);
     });
 
-    test('Đã tập / Không tập theo đánh dấu của Bạn', () {
-      final now = DateTime(2026, 10, 7, 19);
-      final done = SessionRules.mark(
+    test('F05-AC21: "Đã tập" không chọn nhóm cơ — ghi nhóm cơ của lịch tháng '
+        '(TD2-08); trạng thái Đã tập, không đổi được gì nữa', () {
+      final at = DateTime(2026, 10, 7, 19);
+      final done = SessionRules.markDone(wed, now: at);
+      expect(done.mark, DayMark.done);
+      expect(done.actualMuscles, [MuscleGroup.back]);
+      expect(done.markedAt, at);
+      expect(status(done, at), const SessionStatus(SessionState.done));
+      expect(status(done, at).counts, isTrue);
+      expect(SessionLock.of(done), isTrue);
+      expect(SessionRules.validateDone(done, at), MarkError.alreadyDone);
+      expect(SessionRules.validateSkipped(done, at), MarkError.alreadyDone);
+    });
+
+    test('F05-AC22: buổi Đã tập không đổi sang Không tập, kể cả trong ngày; '
+        'không bao giờ "Đã khóa" hay hết hạn — chốt mãi', () {
+      final done = SessionRules.markDone(wed, now: DateTime(2026, 10, 7, 19));
+      for (final now in [
+        DateTime(2026, 10, 7, 19, 1),
+        DateTime(2026, 10, 14, 23, 59),
+        DateTime(2026, 11, 30),
+      ]) {
+        expect(
+          () => SessionRules.markSkipped(done, now: now),
+          throwsA(
+            isA<MarkException>().having(
+              (e) => e.error,
+              'error',
+              MarkError.alreadyDone,
+            ),
+          ),
+        );
+        expect(status(done, now), const SessionStatus(SessionState.done));
+      }
+    });
+
+    test('F05-AC23: buổi Không tập 07/10 → đổi sang Đã tập được đến hết '
+        '14/10; đổi xong thì chốt; từ 15/10 chưa đổi thì Đã khóa', () {
+      final skipped = SessionRules.markSkipped(
         wed,
-        DayMark.done,
-        actual: const [MuscleGroup.back],
-        now: now,
+        now: DateTime(2026, 10, 7, 19),
       );
-      expect(status(done, now).state, SessionState.done);
-      expect(status(done, now).counts, isTrue);
-      final skipped = SessionRules.mark(wed, DayMark.skipped, now: now);
-      expect(status(skipped, now).state, SessionState.skipped);
-      expect(status(skipped, now).counts, isFalse);
+      expect(skipped.actualMuscles, isNull);
+      expect(
+        status(skipped, DateTime(2026, 10, 7, 20)).state,
+        SessionState.skipped,
+      );
+      expect(SessionRules.lastChangeDate(wed.date), LocalDate(2026, 10, 14));
+      final lastMinute = DateTime(2026, 10, 14, 23, 59, 59);
+      expect(SessionRules.canMarkDone(skipped, lastMinute), isTrue);
+      expect(
+        SessionRules.validateSkipped(skipped, lastMinute),
+        MarkError.notAwaiting,
+        reason: 'không còn thao tác nào khác trên buổi Không tập',
+      );
+      final changed = SessionRules.markDone(skipped, now: lastMinute);
+      expect(status(changed, lastMinute).state, SessionState.done);
+      expect(SessionLock.session(changed), isTrue);
+
+      final locked = DateTime(2026, 10, 15);
+      expect(SessionRules.validateDone(skipped, locked), MarkError.locked);
+      expect(
+        status(skipped, locked),
+        const SessionStatus(SessionState.skipped, locked: true),
+      );
     });
 
-    test('F05-AC3, F05-R3: buổi thứ 4 chưa đánh dấu → 00:00 chủ nhật cùng tuần '
-        'thành Không tập (tự động)', () {
+    test('F05-R26: buổi thứ 4 chưa đánh dấu → 00:00 chủ nhật cùng tuần thành '
+        'Không tập (tự động); không bấm "Không tập" được nữa, đổi sang Đã tập '
+        'được trong 7 ngày rồi Đã khóa', () {
       expect(
         status(wed, DateTime(2026, 10, 10, 23, 59)).state,
         SessionState.awaitingMark,
       );
+      final sunday = DateTime(2026, 10, 11);
+      expect(status(wed, sunday).state, SessionState.autoSkipped);
+      expect(status(wed, sunday).counts, isFalse);
+      expect(SessionRules.validateSkipped(wed, sunday), MarkError.notAwaiting);
+      expect(SessionRules.canMarkDone(wed, sunday), isTrue);
       expect(
-        status(wed, DateTime(2026, 10, 11)).state,
-        SessionState.autoSkipped,
-      );
-      expect(status(wed, DateTime(2026, 10, 11)).counts, isFalse);
-      // Vẫn sửa được trong hạn (F05-R3).
-      expect(SessionRules.canMark(wed, DateTime(2026, 10, 11)), isTrue);
-    });
-
-    test('F05-AC4, F05-R2: buổi 07/10 sửa được đến hết 14/10, từ 15/10 bị '
-        'khóa; trạng thái cuối được giữ', () {
-      final lastMinute = DateTime(2026, 10, 14, 23, 59, 59);
-      final locked = DateTime(2026, 10, 15);
-      expect(SessionRules.lockedFrom(wed.date), locked);
-      expect(SessionRules.canMark(wed, lastMinute), isTrue);
-      expect(status(wed, lastMinute).locked, isFalse);
-      expect(SessionRules.canMark(wed, locked), isFalse);
-      expect(
-        status(wed, locked),
+        status(wed, DateTime(2026, 10, 15)),
         const SessionStatus(SessionState.autoSkipped, locked: true),
       );
-      final done = SessionRules.mark(
-        wed,
-        DayMark.done,
-        actual: const [MuscleGroup.back],
-        now: DateTime(2026, 10, 7, 19),
-      );
-      expect(
-        status(done, locked),
-        const SessionStatus(SessionState.done, locked: true),
-      );
+      expect(SessionRules.canMarkDone(wed, DateTime(2026, 10, 15)), isFalse);
     });
 
-    test('sơ đồ trạng thái: mọi chuyển đổi hợp lệ trong hạn sửa', () {
-      // Chờ đánh dấu → Đã tập → Không tập → Đã tập (F05-R2).
-      var d = wed;
+    test('sơ đồ trạng thái Bản 2: chỉ các chuyển đổi trong sơ đồ', () {
       final at = DateTime(2026, 10, 7, 18, 30);
-      d = SessionRules.mark(
-        d,
-        DayMark.done,
-        actual: const [MuscleGroup.back],
-        now: at,
-      );
-      expect(status(d, at).state, SessionState.done);
-      d = SessionRules.mark(d, DayMark.skipped, now: at);
-      expect(status(d, at).state, SessionState.skipped);
-      d = SessionRules.mark(
-        d,
-        DayMark.done,
-        actual: const [MuscleGroup.shoulders],
-        now: at,
-      );
-      expect(status(d, at).state, SessionState.done);
-      // Không tập (tự động) → Đã tập / Không tập (F05-E2).
-      final sunday = DateTime(2026, 10, 11, 9);
-      final auto = wed;
-      expect(status(auto, sunday).state, SessionState.autoSkipped);
+      // Chờ đánh dấu → Đã tập.
       expect(
-        status(
-          SessionRules.mark(
-            auto,
-            DayMark.done,
-            actual: const [MuscleGroup.back],
-            now: sunday,
-          ),
-          sunday,
-        ).state,
+        status(SessionRules.markDone(wed, now: at), at).state,
         SessionState.done,
       );
+      // Chờ đánh dấu → Không tập → Đã tập.
+      final skipped = SessionRules.markSkipped(wed, now: at);
       expect(
-        status(
-          SessionRules.mark(auto, DayMark.skipped, now: sunday),
-          sunday,
-        ).state,
-        SessionState.skipped,
+        status(SessionRules.markDone(skipped, now: at), at).state,
+        SessionState.done,
       );
-    });
-  });
-
-  group('đánh dấu (F05-R1 → R5, F05-V1)', () {
-    final at = DateTime(2026, 10, 7, 18, 5);
-
-    test('F05-R1: chưa đến giờ → tooEarly; F05-R2: quá hạn → locked', () {
+      // Không tập (tự động) → Đã tập.
+      final sunday = DateTime(2026, 10, 11, 9);
       expect(
-        SessionRules.validateMark(wed, DayMark.done, const [
-          MuscleGroup.back,
-        ], DateTime(2026, 10, 7, 17, 59)),
-        MarkError.tooEarly,
+        status(SessionRules.markDone(wed, now: sunday), sunday).state,
+        SessionState.done,
       );
-      expect(
-        SessionRules.validateMark(
-          wed,
-          DayMark.skipped,
-          null,
-          DateTime(2026, 10, 15),
-        ),
-        MarkError.locked,
-      );
-      expect(
-        SessionRules.validateMark(rest, DayMark.skipped, null, at),
-        MarkError.notWorkout,
-      );
+      // Không có Đã tập → Không tập, Không tập → Không tập, Đã tập → Đã tập.
+      final done = SessionRules.markDone(wed, now: at);
+      expect(SessionRules.canMarkSkipped(done, at), isFalse);
+      expect(SessionRules.canMarkSkipped(skipped, at), isFalse);
+      expect(SessionRules.canMarkDone(done, at), isFalse);
     });
 
-    test('F05-V1, F05-R4: "Đã tập" phải có ít nhất 1 nhóm cơ', () {
-      expect(
-        SessionRules.validateMark(wed, DayMark.done, const [], at),
-        MarkError.noMuscles,
+    test('F05-AC24: 10:00 sửa riêng thứ 4 14/10 từ Lưng thành Vai; 18:00 bấm '
+        'Đã tập → ghi nhận Vai', () {
+      final day = PlanDay(
+        date: LocalDate(2026, 10, 14),
+        kind: DayKind.workout,
+        time: t1800,
+        muscles: const [MuscleGroup.back],
       );
-      expect(
-        SessionRules.validateMark(wed, DayMark.done, null, at),
-        MarkError.noMuscles,
+      final shoulders = OverrideRules.override(
+        day,
+        time: t1800,
+        muscles: const [MuscleGroup.shoulders],
+        now: DateTime(2026, 10, 14, 10),
       );
-      expect(
-        SessionRules.validateMark(wed, DayMark.done, const [
-          MuscleGroup.back,
-        ], at),
-        isNull,
+      final done = SessionRules.markDone(
+        shoulders,
+        now: DateTime(2026, 10, 14, 18),
       );
+      expect(done.actualMuscles, [MuscleGroup.shoulders]);
+      expect(SessionRules.musclesOf(done), [MuscleGroup.shoulders]);
     });
 
-    test(
-      'F05-AC2: "Đã tập" ghi nhóm cơ thực tế theo thứ tự PR-02; giữ lịch',
-      () {
-        final d = SessionRules.mark(
-          wed,
-          DayMark.done,
-          actual: const [MuscleGroup.biceps, MuscleGroup.shoulders],
+    test('F05-AC25: 18:30 không sửa riêng được buổi hôm nay', () {
+      final day = PlanDay(
+        date: LocalDate(2026, 10, 14),
+        kind: DayKind.workout,
+        time: t1800,
+        muscles: const [MuscleGroup.back],
+      );
+      final at = DateTime(2026, 10, 14, 18, 30);
+      expect(OverrideRules.canEdit(day, at), isFalse);
+      expect(
+        () => OverrideRules.override(
+          day,
+          time: t1800,
+          muscles: const [MuscleGroup.shoulders],
           now: at,
-        );
-        expect(d.mark, DayMark.done);
-        expect(d.actualMuscles, [MuscleGroup.shoulders, MuscleGroup.biceps]);
-        expect(d.markedAt, at);
-        expect(d.muscles, [MuscleGroup.back]);
-        expect(d.time, t1800);
-        expect(d.invalidField, isNull);
-      },
-    );
-
-    test('F05-R5: đổi "Đã tập" sang "Không tập" thì bỏ nhóm cơ thực tế', () {
-      final done = SessionRules.mark(
-        wed,
-        DayMark.done,
-        actual: const [MuscleGroup.back],
-        now: at,
-      );
-      final skipped = SessionRules.mark(
-        done,
-        DayMark.skipped,
-        actual: const [MuscleGroup.back],
-        now: at,
-      );
-      expect(skipped.actualMuscles, isNull);
-      expect(skipped.invalidField, isNull);
-    });
-
-    test('UA-09 Hoàn tác: bỏ đánh dấu → Chờ đánh dấu, không còn markedAt', () {
-      final skipped = SessionRules.mark(wed, DayMark.skipped, now: at);
-      final undone = SessionRules.mark(skipped, null, now: at);
-      expect(undone.mark, isNull);
-      expect(undone.markedAt, isNull);
-      expect(status(undone, at).state, SessionState.awaitingMark);
-    });
-
-    test('mark ném lỗi khi vi phạm quy tắc', () {
-      expect(
-        () => SessionRules.mark(
-          wed,
-          DayMark.done,
-          actual: const [MuscleGroup.back],
-          now: DateTime(2026, 10, 7, 17),
         ),
-        throwsA(isA<MarkException>()),
+        throwsA(isA<OverrideException>()),
       );
+    });
+
+    test('ngày nghỉ không đánh dấu được', () {
+      final at = DateTime(2026, 10, 8, 19);
+      expect(SessionRules.validateDone(rest, at), MarkError.notWorkout);
+      expect(SessionRules.validateSkipped(rest, at), MarkError.notWorkout);
     });
 
     test('ràng buộc bản ghi: done ⇔ có nhóm cơ thực tế; có đánh dấu ⇔ có '
         'markedAt', () {
+      final at = DateTime(2026, 10, 7, 19);
       PlanDay withMark(
         DayMark? mark,
         List<MuscleGroup>? actual,
@@ -264,6 +227,65 @@ void main() {
       expect(withMark(DayMark.skipped, null, null).invalidField, 'markedAt');
       expect(withMark(null, null, at).invalidField, 'markedAt');
       expect(withMark(null, null, null).invalidField, isNull);
+    });
+  });
+
+  group('chuyển tiếp từ Bản 1: legacyDoneDays (F05-R36 → R38)', () {
+    final now = legacyToday;
+
+    test(
+      'F05-AC29, F05-E30: buổi Đã tập hôm qua và thứ 2 cùng tuần (còn "hạn '
+      '7 ngày" của Bản 1) khóa ngay; không có "Đã khóa" hay biểu tượng khóa',
+      () {
+        for (final d in [
+          LegacyDoneDays.doneYesterday,
+          LegacyDoneDays.doneMonday,
+          LegacyDoneDays.doneOtherMuscles,
+        ]) {
+          expect(SessionLock.of(d), isTrue, reason: '${d.date}');
+          expect(SessionRules.canMarkSkipped(d, now), isFalse);
+          expect(SessionRules.canMarkDone(d, now), isFalse);
+          expect(status(d, now), const SessionStatus(SessionState.done));
+          expect(OverrideRules.canEdit(d, now), isFalse);
+        }
+      },
+    );
+
+    test('F05-AC30, F05-R38: buổi Bản 1 lịch Ngực, nhóm cơ thực tế Vai → hiện '
+        'Vai', () {
+      final d = LegacyDoneDays.doneOtherMuscles;
+      expect(d.muscles, [MuscleGroup.chest]);
+      expect(SessionRules.musclesOf(d), [MuscleGroup.shoulders]);
+      expect(d.sessionMuscles, [MuscleGroup.shoulders]);
+    });
+
+    test(
+      'F05-R36: buổi tập thêm Bản 1 khóa ngay (không thêm lại, không sửa)',
+      () {
+        final d = LegacyDoneDays.extra;
+        expect(SessionLock.extra(d), isTrue);
+        expect(SessionLock.of(d), isTrue);
+        expect(ExtraSessionRules.canAdd(d, now), isFalse);
+        expect(
+          ExtraSessionRules.validate(d, const [MuscleGroup.back], now),
+          ExtraError.alreadyLogged,
+        );
+      },
+    );
+
+    test(
+      'F05-R37: buổi Không tập Bản 1 còn trong 7 ngày đổi sang Đã tập được',
+      () {
+        final d = LegacyDoneDays.skipped;
+        expect(SessionLock.of(d), isFalse);
+        expect(SessionRules.canMarkDone(d, now), isTrue);
+        expect(SessionRules.markDone(d, now: now).actualMuscles, d.muscles);
+      },
+    );
+
+    test('ngày chưa chốt: không có SessionLock', () {
+      expect(SessionLock.of(wed), isFalse);
+      expect(SessionLock.of(rest), isFalse);
     });
   });
 

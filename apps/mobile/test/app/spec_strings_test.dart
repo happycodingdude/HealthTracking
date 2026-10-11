@@ -67,17 +67,22 @@ void main() {
     );
   });
 
-  test('F05-E1, 04 §6.7.1, UA-08, mock S-23: câu có tham số', () {
+  test('F05-E1, 04 §6.7.1, UA-08: câu có tham số', () {
     expect(S.markableFrom('18:00'), 'Đánh dấu được từ 18:00');
     expect(
       S.nextSession('Thứ 6', 'Vai', '18:00'),
       'Buổi tới: Thứ 6 · Vai · 18:00',
     );
     expect(S.markedDone('Lưng'), 'Đã ghi: tập Lưng');
-    expect(
-      S.plannedLine('Ngực và tay sau', '18:00'),
-      'Lịch: Ngực và tay sau · 18:00',
-    );
+  });
+
+  test('04 Bản 2 S-65, §6.6.1, S-21, S-24: câu chốt buổi có tham số', () {
+    expect(S.doneConfirmTitle('Ngực'), 'Đã tập Ngực?');
+    expect(S.doneLine('Ngực'), 'Đã tập · Ngực');
+    expect(S.changeToDoneUntil('14/10'), 'Đổi sang Đã tập được đến hết 14/10');
+    expect(S.changeableUntil('13/10'), 'Đổi được đến hết 13/10');
+    expect(S.extraSheetTitle('Thứ 5', '09/10'), 'Buổi tập thêm · Thứ 5 09/10');
+    expect(S.extraLogged('Vai'), 'Đã ghi buổi tập thêm: Vai');
   });
 
   test('F-06, 04 §6.7.3, S-20: câu tiến độ tuần', () {

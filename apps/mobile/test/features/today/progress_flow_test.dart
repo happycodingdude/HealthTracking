@@ -77,6 +77,7 @@ void main() {
       expect(find.byKey(const ValueKey('extra-count')), findsNothing);
 
       await tapKey(tester, 'mark-done-${wed.toKey()}');
+      await tapKey(tester, 'lock-confirm-save');
       expect(inCard(find.text(S.progressLine(1, 2))), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
@@ -84,8 +85,8 @@ void main() {
       await pump(tester);
       await tapKey(tester, 'extra-log');
       await tapKey(tester, 'muscle-abs');
-      await tester.tap(find.widgetWithText(FilledButton, S.save));
-      await tester.pumpAndSettle();
+      await tapKey(tester, 'extra-save');
+      await tapKey(tester, 'lock-confirm-save');
       expect(inCard(find.text(S.progressLine(1, 2))), findsOneWidget);
       expect(inCard(find.text(S.extraCount(1))), findsOneWidget);
     },
@@ -161,12 +162,8 @@ void main() {
       expect(find.text(S.progressLine(1, 2)), findsOneWidget);
 
       await container
-          .read(markSessionProvider)
-          .call(
-            LocalDate(2026, 10, 9),
-            DayMark.done,
-            actual: const [MuscleGroup.shoulders],
-          );
+          .read(markSessionDoneProvider)
+          .call(LocalDate(2026, 10, 9), confirmed: true);
       await tester.pumpAndSettle();
       expect(find.text(S.progressLine(2, 2)), findsOneWidget);
     },

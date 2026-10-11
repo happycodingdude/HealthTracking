@@ -156,7 +156,7 @@ openSettings: "Mở Cài đặt" # 04 S-50
 remindersTurnedOff: "Đã tắt nhắc đi tập" # 04 S-50
 remindersTurnedOn: "Đã bật nhắc đi tập" # 04 S-50
 
-# Hôm nay S-10, đánh dấu S-23, nhãn trạng thái buổi tập (VS-06)
+# Hôm nay S-10, nhãn trạng thái buổi tập (VS-06; Bản 2 bỏ S-23)
 todaySessionTitle: "Buổi tập hôm nay" # mock S-10-1
 statusUpcoming: "Sắp tới" # 03 §6.1, 04 §6.13.3
 statusAwaiting: "Chờ đánh dấu" # 03 §6.1, 04 §6.13.3
@@ -167,22 +167,26 @@ statusLocked: "Đã khóa" # 03 §6.1 (nhãn VoiceOver của ổ khóa nhỏ, 04
 todayRest: "Hôm nay nghỉ" # 04 §6.7.1
 sundayRest: "Chủ nhật luôn nghỉ" # 04 §6.7.1, UX-AC7
 markedSkipped: "Đã ghi: không tập" # 04 §6.7.1
-editMuscles: "Sửa nhóm cơ" # 04 §6.7.1, UA-08
-undo: "Hoàn tác" # 04 §6.7.1, UA-09
 edit: "Sửa" # 04 §6.7.1
 unmarkedTitle: "Buổi chưa đánh dấu" # mock S-10-3 (04 §6.7.2)
 progressCardTitle: "Tiến độ tuần · T2–T7" # mock S-10-1
 menuCardTitle: "Thực đơn hôm nay" # mock S-10-1
 menuTargetPrefix: "Theo mức" # mock S-10-1 "Theo mức 2.090 kcal"
-actualMusclesLabel: "Nhóm cơ đã tập" # mock S-23-1
-missingActualMuscles: "Vui lòng chọn ít nhất 1 nhóm cơ" # 03 F05-V1, F05-V2
+actualMusclesLabel: "Nhóm cơ đã tập" # mock S-24-1 Bản 2
+missingActualMuscles: "Vui lòng chọn ít nhất 1 nhóm cơ" # 03 Bản 2 F05-V21
 lockedNote: "Chỉ sửa được trong 7 ngày" # 03 F05-E3
 
 # Buổi tập thêm S-24 (VS-07)
 logExtraSession: "Đã tập ngoài lịch? Ghi buổi tập thêm" # 04 §6.7.1, mock S-10-3, S-21-2
 extraSession: "Buổi tập thêm" # 04 §6.13.3, mock S-25-1
 extraNotCounted: "Không tính vào kế hoạch tuần." # 04 S-24, mock S-24-1
-deleteExtraSession: "Xóa buổi tập thêm" # 04 S-24
+
+# Chốt buổi Bản 2 (VS-24): S-65, S-10, S-21
+lockConfirmLine1: "Sau khi lưu, buổi này không sửa được nữa." # 03 Bản 2 F05-R23, F05-R33; 04 Bản 2 S-65, UA2-02
+lockConfirmLine2: "Mức tạ của buổi vẫn ghi được đến hết hôm nay." # 04 Bản 2 S-65, UA2-02
+extraConfirmTitle: "Lưu buổi tập thêm?" # 04 Bản 2 S-65, UA2-02
+lockedOnSave: "Đã chốt khi lưu" # 04 Bản 2 §6.6.1, S-21, UA2-06
+changeToDone: "Đổi sang Đã tập" # 04 Bản 2 §6.6.1, S-21, UR2-05
 delete: "Xóa" # 04 §6.13.1 (hộp xác nhận: nút xóa chữ đỏ)
 cancel: "Hủy" # 04 S-20 (hộp xác nhận "Chia lại" · "Hủy")
 
@@ -215,8 +219,6 @@ giveRest: "Cho nghỉ" # 04 S-21 (nút của hộp xác nhận — giả định
 onlyThisDay: "Chỉ thay đổi ngày này. Lịch tuần giữ nguyên." # mock S-21-1
 noReminderUnderHour: "Còn chưa đến 1 giờ nên sẽ không có nhắc cho buổi này." # 03 F03-E2, 04 S-21
 extraBlocksSchedule: "Hôm nay đã có buổi tập thêm nên không lên lịch tập được." # 03 F03-E4, 04 S-21
-editExtraSession: "Sửa buổi tập thêm" # 04 S-21
-markSession: "Đánh dấu buổi tập" # 04 §6.4 (tên S-23)
 editTodaySession: "Sửa buổi hôm nay" # 04 §6.7.1
 missingTimeOrMuscles: "Vui lòng chọn giờ tập và nhóm cơ" # 03 F03-V4
 muscleGroups: "Nhóm cơ" # 03 §6.4 (thông tin của mỗi thứ), nhãn ở S-21 "Lên lịch tập"

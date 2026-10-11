@@ -156,8 +156,12 @@ void main() {
     final startupMs = startWatch.elapsedMilliseconds;
     await tester.pumpAndSettle();
 
-    // Đánh dấu: từ lúc chạm tới khi thẻ đổi sang "đã tập" (nút biến mất).
+    // Đánh dấu: chạm "Đã tập" → hộp S-65; đo từ lúc chạm "Lưu" tới khi thẻ
+    // đổi sang "đã tập" (nút biến mất).
     await tester.tap(done);
+    final save = find.byKey(const ValueKey('lock-confirm-save'));
+    await pumpUntil(tester, save);
+    await tester.tap(save);
     final markMs = await _msUntil(tester, () => done.evaluate().isEmpty);
     await pumpUntil(tester, find.textContaining(S.markedDone('')));
 

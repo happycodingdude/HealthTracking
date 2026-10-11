@@ -51,10 +51,19 @@ final class SyncService {
   /// Xử lý tuần tự trong một transaction giữ khóa của user, mỗi mutation một
   /// savepoint. Thứ tự `server_version` trùng thứ tự commit trong phạm vi một
   /// user, nên pull theo cursor không bỏ sót (ED-03).
-  Future<PushResponse> push(String userId, PushRequest request) {
+  /// [appVersion] = header `X-App-Version` (null = app Bản 1).
+  Future<PushResponse> push(
+    String userId,
+    PushRequest request, {
+    AppVersion? appVersion,
+  }) {
     return inTransaction(_pool, (conn) async {
       await lockUser(conn, userId);
-      final ctx = SyncContext(userId: userId, serverNow: _clock.now().toUtc());
+      final ctx = SyncContext(
+        userId: userId,
+        serverNow: _clock.now().toUtc(),
+        appVersion: appVersion,
+      );
       final results = <PushResult>[];
       for (final m in request.mutations) {
         results.add(await _pushOne(conn, ctx, m));
@@ -222,11 +231,11 @@ final class SyncService {
         final version =
             (await conn.execute("SELECT nextval('sync_version_seq')")).first[0]!
                 as int;
-        await handler.apply(conn, ctx.userId, m, version);
+        await handler.apply(conn, ctx, m, version);
         return PushResult(mutationId: m.mutationId, status: PushStatus.applied);
       });
     } on SyncRejection catch (e) {
-      return _rejected(m, e.field);
+      return _rejected(m, e.field, e.code);
     } on ServerException catch (e) {
       // CHECK của database chặn dữ liệu sai mà validate chưa bắt được.
       _log.warn('sync_mutation_rejected', {
@@ -250,10 +259,14 @@ final class SyncService {
     return r.withCurrent(await handler.read(conn, ctx.userId, m.key));
   }
 
-  static PushResult _rejected(SyncMutation m, String? field) => PushResult(
+  static PushResult _rejected(
+    SyncMutation m,
+    String? field, [
+    ErrorCode code = ErrorCode.validationFailed,
+  ]) => PushResult(
     mutationId: m.mutationId,
     status: PushStatus.rejected,
-    code: ErrorCode.validationFailed,
+    code: code,
     field: field,
   );
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:domain/domain.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -8,6 +10,8 @@ import 'package:mobile/app/shell/app_tab_bar.dart';
 import 'package:mobile/app/strings_vi.dart';
 import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/features/schedule/data/schedule_repository.dart';
+import 'package:mobile/features/schedule/presentation/extra_session_sheet.dart';
+import 'package:mobile/features/schedule/presentation/schedule_screen.dart';
 
 import '../../support/app_harness.dart';
 import '../../support/fake_server.dart';
@@ -68,39 +72,47 @@ void main() {
   Finder inCard(Finder f) => find.descendant(of: sessionCard(), matching: f);
 
   testWidgets(
-    'Demo VS-07, F05-R7, F05-V2: thứ 7 nghỉ → "Đã tập ngoài lịch? Ghi buổi '
-    'tập thêm" → S-24 → chưa chọn nhóm cơ thì báo lỗi → chọn Bụng → Lưu → '
-    'thẻ "Buổi tập thêm · Bụng", ô thứ 7 của dải tiến độ là "Buổi tập thêm"; '
-    'F05-R12: buổi theo lịch không đổi',
+    'Demo VS-24, F05-R32, F05-V21, UX-AC28: thứ 7 nghỉ → "Đã tập ngoài lịch? '
+    'Ghi buổi tập thêm" → S-24 → chưa chọn nhóm cơ thì báo lỗi → chọn Bụng → '
+    'Lưu → S-65 "Lưu buổi tập thêm?" (hôm nay: có dòng 2) → Hủy không lưu → '
+    'Lưu → thẻ "Buổi tập thêm · Bụng" + "Đã chốt khi lưu", không có nút sửa '
+    'hay xóa; ô thứ 7 của dải tiến độ là "Buổi tập thêm"',
     (tester) async {
       await seedSetUp(db);
       await pump(tester);
       expect(inCard(find.text(S.todayRest)), findsOneWidget);
       await tapKey(tester, 'extra-log');
 
-      expect(
-        find.text(S.extraSessionTitle('Thứ 7, 10/10', today: true)),
-        findsOneWidget,
-      );
-      expect(
-        find.text('Buổi tập thêm · Thứ 7, 10/10 · Hôm nay'),
-        findsOneWidget,
-      );
+      expect(find.text('Buổi tập thêm · Thứ 7 10/10'), findsOneWidget);
       expect(find.text(S.extraNotCounted), findsOneWidget);
-      expect(find.byKey(const ValueKey('extra-delete')), findsNothing);
+      expect(find.text(S.delete), findsNothing);
 
-      await tester.tap(find.widgetWithText(FilledButton, S.save));
-      await tester.pumpAndSettle();
+      await tapKey(tester, 'extra-save');
       expect(find.text(S.missingActualMuscles), findsOneWidget);
+      expect(find.byKey(const ValueKey('lock-confirm')), findsNothing);
       expect((await day(sat)).extraMuscles, isNull);
 
       await tapKey(tester, 'muscle-abs');
       expect(find.text(S.missingActualMuscles), findsNothing);
-      await tester.tap(find.widgetWithText(FilledButton, S.save));
-      await tester.pumpAndSettle();
+      await tapKey(tester, 'extra-save');
+      expect(find.text(S.extraConfirmTitle), findsOneWidget);
+      expect(find.text(S.lockConfirmLine1), findsOneWidget);
+      expect(find.text(S.lockConfirmLine2), findsOneWidget);
+      await tapKey(tester, 'lock-confirm-cancel');
+      expect((await day(sat)).extraMuscles, isNull);
+      expect(find.text(S.extraNotCounted), findsOneWidget, reason: 'S-24 mở');
 
-      expect(find.text(S.markedDone('Bụng')), findsOneWidget);
+      await tapKey(tester, 'extra-save');
+      await tapKey(tester, 'lock-confirm-save');
+      expect(find.text(S.extraLogged('Bụng')), findsOneWidget);
+      expect(find.text(S.extraNotCounted), findsNothing, reason: 'đã đóng');
       expect(inCard(find.text(S.extraSessionLine('Bụng'))), findsOneWidget);
+      expect(
+        inCard(find.byKey(const ValueKey('locked-on-save'))),
+        findsOneWidget,
+      );
+      expect(inCard(find.text(S.edit)), findsNothing);
+      expect(find.byKey(const ValueKey('extra-log')), findsNothing);
       expect(inCard(find.text(S.todayRest)), findsNothing);
       expect(find.bySemanticsLabel('Thứ 7: ${S.extraSession}'), findsOneWidget);
       final d = await day(sat);
@@ -113,39 +125,40 @@ void main() {
   );
 
   testWidgets(
-    'S-24 sửa: Bụng → Lưng; "Xóa buổi tập thêm" → hộp xác nhận (NAV-6): Hủy '
-    'giữ nguyên, Xóa → thẻ về "Hôm nay nghỉ" (F05-R11, ED-08)',
+    'S-24 cho ngày đã qua (S-21 → "Ghi buổi tập thêm"): S-65 không có dòng 2 '
+    '(UA2-02); vuốt hay chạm vùng mờ = Hủy',
     (tester) async {
       await seedSetUp(db);
-      await seedExtra(db, sat, const [MuscleGroup.abs]);
       await pump(tester);
-      expect(inCard(find.text(S.extraSessionLine('Bụng'))), findsOneWidget);
-      expect(find.byKey(const ValueKey('extra-log')), findsNothing);
-
-      await tapKey(tester, 'extra-edit');
-      await tapKey(tester, 'muscle-abs');
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AppTabBar),
+          matching: find.text(S.tabTraining),
+        ),
+      );
+      await tester.pumpAndSettle();
+      // Thứ 5 08/10 nghỉ, đã qua, trong 7 ngày.
+      unawaited(
+        showExtraSessionSheet(
+          tester.element(find.byType(ScheduleScreen)),
+          LocalDate(2026, 10, 8),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Buổi tập thêm · Thứ 5 08/10'), findsOneWidget);
       await tapKey(tester, 'muscle-back');
-      await tester.tap(find.widgetWithText(FilledButton, S.save));
+      await tapKey(tester, 'extra-save');
+      expect(find.text(S.lockConfirmLine1), findsOneWidget);
+      expect(find.byKey(const ValueKey('lock-confirm-line2')), findsNothing);
+      await tester.tapAt(const Offset(10, 10));
       await tester.pumpAndSettle();
-      expect((await day(sat)).extraMuscles, [MuscleGroup.back]);
-      expect(inCard(find.text(S.extraSessionLine('Lưng'))), findsOneWidget);
-
-      await tapKey(tester, 'extra-edit');
-      await tapKey(tester, 'extra-delete');
-      expect(find.text(S.deleteExtraConfirm('Thứ 7, 10/10')), findsOneWidget);
-      expect(find.text('Xóa buổi tập thêm Thứ 7, 10/10?'), findsOneWidget);
-      await tester.tap(find.text(S.cancel));
-      await tester.pumpAndSettle();
-      expect((await day(sat)).extraMuscles, [MuscleGroup.back]);
-
-      await tapKey(tester, 'extra-delete');
-      await tapKey(tester, 'extra-delete-confirm');
-      final d = await day(sat);
-      expect(d.extraMuscles, isNull);
-      expect(d.extraLoggedAt, isNull);
-      expect(find.text(S.extraNotCounted), findsNothing, reason: 'đã đóng');
-      expect(inCard(find.text(S.todayRest)), findsOneWidget);
-      expect(find.byKey(const ValueKey('extra-log')), findsOneWidget);
+      expect(find.byKey(const ValueKey('lock-confirm')), findsNothing);
+      expect((await day(LocalDate(2026, 10, 8))).extraMuscles, isNull);
+      await tapKey(tester, 'extra-save');
+      await tapKey(tester, 'lock-confirm-save');
+      expect((await day(LocalDate(2026, 10, 8))).extraMuscles, [
+        MuscleGroup.back,
+      ]);
     },
   );
 

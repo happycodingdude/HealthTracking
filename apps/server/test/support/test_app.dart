@@ -144,11 +144,17 @@ SyncMutation mutation(
 );
 
 extension SyncCalls on TestApp {
-  Future<PushResponse> push(String token, List<SyncMutation> mutations) async {
+  /// [appVersion] = header `X-App-Version` (null = như app Bản 1).
+  Future<PushResponse> push(
+    String token,
+    List<SyncMutation> mutations, {
+    AppVersion? appVersion,
+  }) async {
     final res = await post(
       '/v1/sync/push',
       PushRequest(mutations).toJson(),
       token: token,
+      headers: {AppVersion.header: ?appVersion?.toString()},
     );
     if (res.status != 200) throw StateError('push ${res.status} ${res.json}');
     return PushResponse.fromJson(res.json);

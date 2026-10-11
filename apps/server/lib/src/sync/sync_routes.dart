@@ -6,6 +6,7 @@ import '../auth/auth_middleware.dart';
 import '../auth/token_service.dart';
 import '../http/api_exception.dart';
 import '../http/json.dart';
+import '../http/request_info.dart';
 import 'sync_service.dart';
 
 /// `/v1/sync/*` (05 §6.6.2, §6.6.3).
@@ -31,7 +32,13 @@ void addSyncRoutes(Router router, SyncService sync, TokenService tokens) {
     '/v1/sync/push',
     authenticated(tokens, (Request request, userId) async {
       final req = await readDto(request, PushRequest.fromJson);
-      return jsonResponse((await sync.push(userId, req)).toJson());
+      return jsonResponse(
+        (await sync.push(
+          userId,
+          req,
+          appVersion: request.info.appVersion,
+        )).toJson(),
+      );
     }),
   );
 }

@@ -68,10 +68,11 @@ final class WeightHandler implements SyncEntityHandler {
   @override
   Future<void> apply(
     Session s,
-    String userId,
+    SyncContext ctx,
     SyncMutation m,
     int serverVersion,
   ) async {
+    final userId = ctx.userId;
     final parameters = {
       'user': userId,
       'week': m.key,

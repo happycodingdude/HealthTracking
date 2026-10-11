@@ -39,8 +39,9 @@ class DayLine extends StatelessWidget {
     final past = date.isBefore(today);
     final isToday = highlightToday && date == today;
     final extra = d?.extraMuscles;
+    // Buổi Đã tập hiện nhóm cơ đã ghi (buổi Bản 1 có thể khác lịch, F05-R38).
     final info = d != null && d.isWorkout
-        ? '${Fmt.muscles(d.muscles)} · ${Fmt.time(d.time!)}'
+        ? '${Fmt.muscles(SessionRules.musclesOf(d))} · ${Fmt.time(d.time!)}'
         : extra != null
         // Buổi tập thêm hiện trong dòng của ngày đó (04 S-20, mock S-25).
         ? S.restWithExtra(Fmt.muscles(extra))

@@ -83,10 +83,11 @@ final class WeeklyTemplateHandler implements SyncEntityHandler {
   @override
   Future<void> apply(
     Session s,
-    String userId,
+    SyncContext ctx,
     SyncMutation m,
     int serverVersion,
   ) async {
+    final userId = ctx.userId;
     final t = _codec.decode(m.data!);
     final rows = await s.execute(
       Sql.named('''
@@ -189,10 +190,11 @@ final class MonthPlanHandler implements SyncEntityHandler {
   @override
   Future<void> apply(
     Session s,
-    String userId,
+    SyncContext ctx,
     SyncMutation m,
     int serverVersion,
   ) async {
+    final userId = ctx.userId;
     final p = _codec.decode(m.key, m.data!);
     await s.execute(
       Sql.named('''
@@ -292,10 +294,11 @@ final class DayHandler implements SyncEntityHandler {
   @override
   Future<void> apply(
     Session s,
-    String userId,
+    SyncContext ctx,
     SyncMutation m,
     int serverVersion,
   ) async {
+    final userId = ctx.userId;
     final d = _codec.decode(m.key, m.data!);
     final plan = await s.execute(
       Sql.named(
@@ -304,18 +307,28 @@ final class DayHandler implements SyncEntityHandler {
       parameters: {'user': userId, 'month': m.key.substring(0, 7)},
     );
     if (plan.isEmpty) throw const SyncRejection('key');
-    // Quy tắc theo thời gian (đánh dấu, ...) so với bản đang có, theo giờ
-    // trên iPhone lúc ghi (05 §6.6.2).
+    // Buổi đã chốt và quy tắc theo thời gian (đánh dấu, ...) so với bản đang
+    // có, theo giờ trên iPhone lúc ghi (05 §6.6.2, 05 Bản 2 §6.6.3).
     final current = await read(s, userId, m.key);
     final before = current == null || current.deleted
         ? null
         : _codec.decode(m.key, current.data!);
-    final field = DayChangeRules.check(
+    final violation = DayChangeRules.check(
       before,
       d,
       await deviceNow(s, userId, m.clientUpdatedAt),
+      fromV2App: ctx.appVersion != null,
     );
-    if (field != null) throw SyncRejection(field);
+    if (violation != null) {
+      throw SyncRejection(
+        violation.field,
+        code: switch (violation.lock) {
+          DayLock.session => ErrorCode.sessionLocked,
+          DayLock.extra => ErrorCode.extraSessionLocked,
+          null => ErrorCode.validationFailed,
+        },
+      );
+    }
     List<String>? names(List<MuscleGroup>? g) =>
         g == null ? null : [for (final m in g) m.name];
     await s.execute(

@@ -123,19 +123,17 @@ void main() {
     final a = device();
     await a.register();
     await setUp5Steps(a, DateTime(2026, 9, 14, 5));
-    // T2 14/09 sau 06:00: "Đã tập" (nhóm cơ thực tế khác lịch).
+    // T2 14/09 sau 06:00: "Đã tập" (qua S-65).
     a.clock.set(DateTime(2026, 9, 14, 7));
-    await a.markSession(
-      LocalDate(2026, 9, 14),
-      DayMark.done,
-      actual: const [MuscleGroup.chest, MuscleGroup.triceps],
-    );
+    await a.markDone(LocalDate(2026, 9, 14), confirmed: true);
     // T3 15/09 nghỉ: buổi tập thêm.
     a.clock.set(DateTime(2026, 9, 15, 20));
-    await a.logExtra(LocalDate(2026, 9, 15), const [MuscleGroup.abs]);
+    await a.addExtra(LocalDate(2026, 9, 15), const [
+      MuscleGroup.abs,
+    ], confirmed: true);
     // T4 16/09: "Không tập".
     a.clock.set(DateTime(2026, 9, 16, 8));
-    await a.markSession(LocalDate(2026, 9, 16), DayMark.skipped);
+    await a.markSkipped(LocalDate(2026, 9, 16));
     // Tuần 21/09: cân 78 kg → Bạn tự đặt: đề xuất mức calo mới.
     a.clock.set(DateTime(2026, 9, 21, 7));
     await a.weightEdits.log(LocalDate(2026, 9, 21), 780);
@@ -168,7 +166,7 @@ void main() {
     expect(p.caloriePendingKcal, isNotNull, reason: 'đề xuất đang chờ');
     final mon = (await b.schedule.day(LocalDate(2026, 9, 14)))!;
     expect(mon.mark, DayMark.done);
-    expect(mon.actualMuscles, const [MuscleGroup.chest, MuscleGroup.triceps]);
+    expect(mon.actualMuscles, const [MuscleGroup.chest]);
     expect((await b.schedule.day(LocalDate(2026, 9, 15)))!.extraMuscles, const [
       MuscleGroup.abs,
     ]);

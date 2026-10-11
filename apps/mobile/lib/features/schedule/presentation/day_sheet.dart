@@ -17,12 +17,12 @@ import '../../../core/widgets/unsaved_changes.dart';
 import '../application/schedule_edits.dart';
 import '../application/schedule_providers.dart';
 import 'extra_session_sheet.dart';
-import 'mark_session_sheet.dart';
 import 'muscle_picker.dart';
+import 'session_marking.dart';
 import 'weekly_template_editor.dart';
 
 /// Mở S-21 cho ngày [date] (từ S-20, S-25, "Sửa buổi hôm nay" ở Hôm nay).
-/// S-23, S-24 mở từ đây dùng [context] của màn hình gọi.
+/// S-24 mở từ đây và thông báo nhanh dùng [context] của màn hình gọi.
 Future<void> showDaySheet(BuildContext context, LocalDate date) =>
     showAppSheet<void>(
       context,
@@ -33,15 +33,17 @@ Future<void> showDaySheet(BuildContext context, LocalDate date) =>
 
 enum _Mode { actions, time, muscles, schedule }
 
-/// S-21 — Chi tiết ngày (04 S-21): đầu bảng "Thứ 4, 21/10" và thông tin hiện
-/// tại; phần dưới chỉ có thao tác hợp lệ theo 8 tình huống ([DaySituation]).
+/// S-21 — Chi tiết ngày (04 Bản 2 S-21): đầu bảng "Thứ 4, 21/10" và thông
+/// tin hiện tại; phần dưới chỉ có thao tác hợp lệ theo tình huống
+/// ([DaySituation]). "Đã tập" · "Không tập" ngay trong bảng (không còn S-23);
+/// buổi đã chốt chỉ xem (UR2-06).
 class DaySheet extends ConsumerStatefulWidget {
   const DaySheet({super.key, required this.date, required this.host});
 
   final LocalDate date;
 
-  /// Màn hình mở bảng này; dùng để mở S-23, S-24 và hiện thông báo nhanh sau
-  /// khi bảng đóng.
+  /// Màn hình mở bảng này; dùng để mở S-24 và hiện thông báo nhanh sau khi
+  /// bảng đóng.
   final BuildContext host;
 
   @override
@@ -136,7 +138,6 @@ class _DaySheetState extends ConsumerState<DaySheet> {
     if (!async.hasValue) return const SizedBox(height: 120);
     final day = async.value;
     final situation = OverrideRules.situation(_date, day, now);
-    final palette = context.palette;
     final today = LocalDate.fromDateTime(now);
 
     return UnsavedChangesGuard(
@@ -155,13 +156,7 @@ class _DaySheetState extends ConsumerState<DaySheet> {
             ),
             if (day != null) ...[
               const SizedBox(height: 4),
-              Text(
-                _summary(day),
-                key: const ValueKey('day-summary'),
-                style: context.text.bodyLarge?.copyWith(
-                  color: palette.textSecondary,
-                ),
-              ),
+              _summaryLine(context, day, now),
             ],
             const SizedBox(height: 20),
             ...switch (_mode) {
@@ -173,6 +168,33 @@ class _DaySheetState extends ConsumerState<DaySheet> {
           ],
         ),
       ),
+    );
+  }
+
+  /// "Lưng · 18:00 · [Chờ đánh dấu]" khi buổi đã đến giờ (mock S-21-1, S-21-3
+  /// Bản 2); ngược lại "Lưng · 18:00 · Theo lịch tuần".
+  Widget _summaryLine(BuildContext context, PlanDay d, DateTime now) {
+    final style = context.text.bodyLarge?.copyWith(
+      color: context.palette.textSecondary,
+    );
+    final status = SessionStatus.derive(d, now);
+    if (status == null || status.state == SessionState.upcoming) {
+      return Text(
+        _summary(d),
+        key: const ValueKey('day-summary'),
+        style: style,
+      );
+    }
+    final muscles = Fmt.muscles(SessionRules.musclesOf(d));
+    return Wrap(
+      key: const ValueKey('day-summary'),
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 6,
+      runSpacing: 6,
+      children: [
+        Text('$muscles · ${Fmt.time(d.time!)} ·', style: style),
+        SessionTag(status),
+      ],
     );
   }
 
@@ -207,10 +229,20 @@ class _DaySheetState extends ConsumerState<DaySheet> {
             onTap: _revert,
           )
         : null;
-    final status = day == null ? null : SessionStatus.derive(day, now);
-    final tag = status == null
-        ? null
-        : Align(alignment: Alignment.centerLeft, child: SessionTag(status));
+    final secondary = context.text.bodyLarge?.copyWith(
+      color: palette.textSecondary,
+    );
+    final canAdd = day != null && ExtraSessionRules.canAdd(day, now);
+    final logExtra = SettingsCard(
+      children: [
+        SettingsRow(
+          key: const ValueKey('day-log-extra'),
+          label: S.logExtraSession,
+          onTap: () => _open((h) => showExtraSessionSheet(h, _date)),
+        ),
+      ],
+    );
+    void close() => Navigator.of(context).pop();
     return switch (situation) {
       DaySituation.editableWorkout => [
         SettingsCard(
@@ -247,7 +279,7 @@ class _DaySheetState extends ConsumerState<DaySheet> {
           subtitle: S.countsInPlan,
           onTap: () => _edit(_Mode.schedule, day!),
         ),
-        if (situation == DaySituation.todayRest) ...[
+        if (situation == DaySituation.todayRest && canAdd) ...[
           const SizedBox(height: 12),
           _Option(
             id: 'day-log-extra',
@@ -263,67 +295,64 @@ class _DaySheetState extends ConsumerState<DaySheet> {
         const SizedBox(height: 16),
         note,
       ],
-      DaySituation.todayExtra => [
-        SettingsCard(
-          children: [
-            SettingsRow(
-              key: const ValueKey('day-edit-extra'),
-              label: S.editExtraSession,
-              onTap: () => _open((h) => showExtraSessionSheet(h, _date)),
-            ),
-          ],
+      DaySituation.markable => [
+        MarkButtons(
+          day: day!,
+          onDone: () => SessionMarking.done(context, day, onConfirmed: close),
+          onSkipped: () {
+            close();
+            SessionMarking.skipped(widget.host, day);
+          },
         ),
-        const SizedBox(height: 12),
+      ],
+      DaySituation.done => [
         Text(
-          S.extraBlocksSchedule,
-          style: context.text.bodyMedium?.copyWith(
-            color: palette.textSecondary,
+          S.doneLine(Fmt.muscles(SessionRules.musclesOf(day!))),
+          style: context.text.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
           ),
         ),
+        const SizedBox(height: 8),
+        const LockedOnSaveLine(),
       ],
-      DaySituation.markable => [
-        ?tag,
-        const SizedBox(height: 12),
-        SettingsCard(
-          children: [
-            SettingsRow(
-              key: const ValueKey('day-mark'),
-              label: S.markSession,
-              onTap: () => _open((h) => showMarkSessionSheet(h, _date)),
-            ),
-          ],
+      DaySituation.changeToDone => [
+        Text(
+          S.changeableUntil(
+            Fmt.dayMonth(SessionRules.lastChangeDate(day!.date)),
+          ),
+          style: secondary,
+        ),
+        const SizedBox(height: 16),
+        ChangeToDoneButton(
+          day: day,
+          onTap: () => SessionMarking.done(context, day, onConfirmed: close),
         ),
       ],
-      DaySituation.pastRest => [
-        SettingsCard(
-          children: [
-            SettingsRow(
-              key: const ValueKey('day-extra'),
-              label: day?.extraMuscles == null
-                  ? S.logExtraSession
-                  : S.editExtraSession,
-              onTap: () => _open((h) => showExtraSessionSheet(h, _date)),
-            ),
-          ],
+      DaySituation.pastRest => [if (canAdd) logExtra],
+      DaySituation.extraSaved => [
+        Text(
+          S.extraSessionLine(Fmt.muscles(day!.extraMuscles!)),
+          style: context.text.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
         ),
+        const SizedBox(height: 8),
+        const LockedOnSaveLine(),
+        // F03-E4: hôm nay đã có buổi tập thêm nên không lên lịch tập được.
+        if (_date == LocalDate.fromDateTime(now)) ...[
+          const SizedBox(height: 12),
+          Text(S.extraBlocksSchedule, style: secondary),
+        ],
       ],
+      DaySituation.upcoming => const [],
       DaySituation.locked => [
-        ?tag,
-        if (tag != null) const SizedBox(height: 12),
         Row(
           children: [
             ExcludeSemantics(
               child: Icon(Icons.lock, size: 18, color: palette.neutral),
             ),
             const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                S.lockedNote,
-                style: context.text.bodyLarge?.copyWith(
-                  color: palette.textSecondary,
-                ),
-              ),
-            ),
+            Expanded(child: Text(S.lockedNote, style: secondary)),
           ],
         ),
       ],
