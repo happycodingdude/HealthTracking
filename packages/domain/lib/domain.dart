@@ -7,6 +7,7 @@ export 'src/calorie/calorie.dart';
 export 'src/calorie/calorie_recalc.dart';
 export 'src/exercise/exercise.dart';
 export 'src/exercise/muscle_region.dart';
+export 'src/lift_chart/lift_chart.dart';
 export 'src/lift_log/lift_kg.dart';
 export 'src/lift_log/lift_log.dart';
 export 'src/lift_log/lift_window.dart';

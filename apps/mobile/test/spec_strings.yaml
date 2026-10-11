@@ -357,3 +357,12 @@ liftNotStep: "Mức tạ nhập theo bước 0,5 kg"
 liftNotNumber: "Mức tạ chưa đúng"
 liftDecrease: "Giảm 0,5 kg" # GIẢ ĐỊNH — nhãn VoiceOver của nút −, spec không ghi câu
 liftIncrease: "Tăng 0,5 kg" # GIẢ ĐỊNH — nhãn VoiceOver của nút +, spec không ghi câu
+
+# 04 Bản 2 S-68, S-69, §6.12; 03 Bản 2 F22-E1
+progressHint: "Mức tạ gần nhất của từng bài · bài tập gần nhất lên đầu"
+viewExercise: "Xem bài"
+viewChart: "Xem biểu đồ"
+chartLegend: "○ Bắt đầu · ● Kết thúc"
+chartMonthEmpty: "Chưa có mức tạ trong tháng này"
+chartSessions: "Các buổi trong tháng" # theo mock S-69-1
+backExerciseDetail: "Chi tiết bài" # GIẢ ĐỊNH — nút quay lại S-69 khi mở từ S-67, spec không ghi

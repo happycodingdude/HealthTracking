@@ -658,6 +658,33 @@ abstract final class S {
   static const progressEmptyBody =
       'Chưa có mức tạ nào. Ghi mức tạ trong buổi tập để theo dõi tiến bộ.';
 
+  // S-68 danh sách, S-69 Biểu đồ mức tạ (04 Bản 2 S-68, S-69, §6.12, §6.13;
+  // 03 Bản 2 F22-E1).
+  static const progressHint =
+      'Mức tạ gần nhất của từng bài · bài tập gần nhất lên đầu';
+  static const viewExercise = 'Xem bài';
+  static const viewChart = 'Xem biểu đồ';
+  static const chartLegend = '○ Bắt đầu · ● Kết thúc';
+  static const chartMonthEmpty = 'Chưa có mức tạ trong tháng này';
+
+  /// Tiêu đề danh sách dưới biểu đồ (theo mock S-69-1).
+  static const chartSessions = 'Các buổi trong tháng';
+
+  /// Nút quay lại của S-69 mở từ S-67 (giả định câu chữ: tên màn S-67).
+  static const backExerciseDetail = 'Chi tiết bài';
+
+  /// "Tháng 08/2026" (mock S-69).
+  static String chartMonth(int month, int year) =>
+      'Tháng ${month.toString().padLeft(2, '0')}/$year';
+
+  /// VoiceOver của biểu đồ (04 Bản 2 §6.13).
+  static String chartSemantics(int month, int sessions) =>
+      'Biểu đồ mức tạ tháng ${month.toString().padLeft(2, '0')}, $sessions buổi';
+
+  /// Ô nhỏ khi chạm một ngày: "07/10 · 10 → 12 kg".
+  static String chartTooltip(String date, String start, String end) =>
+      '$date · $start → $end kg';
+
   // Hình món ăn (03 Bản 2 F12-E2, 05 Bản 2 §6.8.3).
   static const dishImageQuotaExhausted = 'Bạn đã xem đủ 3 hình mới hôm nay.';
 
@@ -958,5 +985,12 @@ abstract final class S {
     'liftNotNumber': liftNotNumber,
     'liftDecrease': liftDecrease,
     'liftIncrease': liftIncrease,
+    'progressHint': progressHint,
+    'viewExercise': viewExercise,
+    'viewChart': viewChart,
+    'chartLegend': chartLegend,
+    'chartMonthEmpty': chartMonthEmpty,
+    'chartSessions': chartSessions,
+    'backExerciseDetail': backExerciseDetail,
   };
 }
