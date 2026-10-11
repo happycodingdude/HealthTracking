@@ -4,8 +4,8 @@
 // khớp với test/spec_strings.yaml. Câu có tham số là hàm.
 
 abstract final class S {
-  // Thanh tab (04 §6.3.1, UR-01).
-  static const tabSchedule = 'Lịch tập';
+  // Thanh tab (04 §6.3.1, UR-01). Bản 2: tab thứ nhất "Tập luyện" (UR2-02).
+  static const tabTraining = 'Tập luyện';
   static const tabMenu = 'Thực đơn';
   static const tabToday = 'Hôm nay';
   static const tabWeight = 'Cân nặng';
@@ -515,6 +515,60 @@ abstract final class S {
   static const invalidPassword = 'Mật khẩu cần ít nhất 8 ký tự';
 
   /// Mọi câu hằng, dùng cho test so khớp nguyên văn (ED-12).
+  // Tab Tập luyện: thanh chọn mục (04 Bản 2 §6.3.2).
+  static const sectionSchedule = 'Lịch';
+  static const sectionLibrary = 'Bài tập';
+  static const sectionProgress = 'Tiến bộ';
+
+  // 16 vùng cơ (03 Bản 2 §6.10).
+  static const regionChestUpper = 'Ngực trên';
+  static const regionChestMid = 'Ngực giữa';
+  static const regionChestLower = 'Ngực dưới';
+  static const regionLats = 'Lưng xô';
+  static const regionBackMid = 'Lưng giữa';
+  static const regionBackLower = 'Lưng dưới';
+  static const regionDeltFront = 'Vai trước';
+  static const regionDeltSide = 'Vai giữa';
+  static const regionDeltRear = 'Vai sau';
+  static const regionBiceps = 'Bắp tay';
+  static const regionBrachialisForearm = 'Cơ cánh tay và cẳng tay';
+  static const regionTricepsLong = 'Đầu dài';
+  static const regionTricepsLateralMedial = 'Đầu ngoài và đầu trong';
+  static const regionAbsLower = 'Bụng dưới';
+  static const regionAbsMid = 'Bụng giữa';
+  static const regionObliques = 'Hai bên';
+
+  // Nhãn dụng cụ (04 Bản 2 §6.10).
+  static const equipmentMachine = 'Máy';
+  static const equipmentFreeWeight = 'Tạ';
+  static const equipmentBodyweight = 'Không dụng cụ';
+
+  // S-66 Thư viện, S-67 Chi tiết bài (04 Bản 2 §6.8, §6.12).
+  static const libraryFootnote =
+      'Thư viện gồm các bài và video Bạn đã duyệt. Không cần mạng, trừ video.';
+  static const backLibrary = 'Thư viện';
+  static const backSession = 'Buổi tập';
+  static const backProgress = 'Tiến bộ';
+  static const mainRegion = 'Vùng cơ chịu tác động chính';
+  static const howTo = 'Cách tập';
+  static const safetyNotes = 'Lưu ý an toàn';
+  static const exerciseGuideNote =
+      'Hướng dẫn tham khảo cho người khỏe mạnh, không thay huấn luyện viên.';
+  static const notInLibrary = 'Không còn trong thư viện';
+  static const videoLoading = 'Đang tải video…';
+  static const videoUnavailable = 'Video không khả dụng';
+  static const videoOffline = 'Cần kết nối internet để xem video.';
+  static const videoLoadFailed =
+      'Không tải được video. Kiểm tra kết nối rồi thử lại.';
+
+  /// Nhãn VoiceOver của nút phát video (giả định câu chữ, chờ Bạn xem).
+  static const playVideo = 'Phát video';
+
+  // S-68 Tiến bộ mức tạ, trạng thái trống (04 Bản 2 S-68, 03 Bản 2 F23-R4).
+  static const progressEmptyTitle = 'Chưa có mức tạ nào';
+  static const progressEmptyBody =
+      'Chưa có mức tạ nào. Ghi mức tạ trong buổi tập để theo dõi tiến bộ.';
+
   // Hình món ăn (03 Bản 2 F12-E2, 05 Bản 2 §6.8.3).
   static const dishImageQuotaExhausted = 'Bạn đã xem đủ 3 hình mới hôm nay.';
 
@@ -634,7 +688,6 @@ abstract final class S {
     'accountAndData': accountAndData,
     'syncLabel': syncLabel,
     'save': save,
-    'tabSchedule': tabSchedule,
     'tabMenu': tabMenu,
     'tabToday': tabToday,
     'tabWeight': tabWeight,
@@ -748,5 +801,44 @@ abstract final class S {
     'restoreFailed': restoreFailed,
     'restored': restored,
     'dishImageQuotaExhausted': dishImageQuotaExhausted,
+    'tabTraining': tabTraining,
+    'sectionSchedule': sectionSchedule,
+    'sectionLibrary': sectionLibrary,
+    'sectionProgress': sectionProgress,
+    'regionChestUpper': regionChestUpper,
+    'regionChestMid': regionChestMid,
+    'regionChestLower': regionChestLower,
+    'regionLats': regionLats,
+    'regionBackMid': regionBackMid,
+    'regionBackLower': regionBackLower,
+    'regionDeltFront': regionDeltFront,
+    'regionDeltSide': regionDeltSide,
+    'regionDeltRear': regionDeltRear,
+    'regionBiceps': regionBiceps,
+    'regionBrachialisForearm': regionBrachialisForearm,
+    'regionTricepsLong': regionTricepsLong,
+    'regionTricepsLateralMedial': regionTricepsLateralMedial,
+    'regionAbsLower': regionAbsLower,
+    'regionAbsMid': regionAbsMid,
+    'regionObliques': regionObliques,
+    'equipmentMachine': equipmentMachine,
+    'equipmentFreeWeight': equipmentFreeWeight,
+    'equipmentBodyweight': equipmentBodyweight,
+    'libraryFootnote': libraryFootnote,
+    'backLibrary': backLibrary,
+    'backSession': backSession,
+    'backProgress': backProgress,
+    'mainRegion': mainRegion,
+    'howTo': howTo,
+    'safetyNotes': safetyNotes,
+    'exerciseGuideNote': exerciseGuideNote,
+    'notInLibrary': notInLibrary,
+    'videoLoading': videoLoading,
+    'videoUnavailable': videoUnavailable,
+    'videoOffline': videoOffline,
+    'videoLoadFailed': videoLoadFailed,
+    'playVideo': playVideo,
+    'progressEmptyTitle': progressEmptyTitle,
+    'progressEmptyBody': progressEmptyBody,
   };
 }

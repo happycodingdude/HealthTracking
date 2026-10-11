@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/shell/app_tab.dart';
+import '../../../app/shell/tab_scroll.dart';
 import '../../../app/strings_vi.dart';
 import '../../../app/theme.dart';
 import '../../../app/time_ticker.dart';
@@ -13,13 +14,16 @@ import '../../../core/widgets/tab_page.dart';
 import '../../../core/widgets/toast.dart';
 import '../../today/application/progress_view.dart';
 import '../../today/presentation/week_progress_screen.dart';
+import '../../training/application/training_section.dart';
+import '../../training/presentation/training_screen.dart';
 import '../application/schedule_edits.dart';
 import '../application/schedule_providers.dart';
 import 'day_line.dart';
 import 'day_sheet.dart';
 import 'weekly_schedule_screen.dart';
 
-/// S-20 — Lịch tháng, chế độ xem (VS04-T11). Danh sách ngày nhóm theo tuần,
+/// S-20 — Lịch tháng, chế độ xem (VS04-T11), mục Lịch của tab Tập luyện
+/// (Bản 2, 04 Bản 2 S-20). Danh sách ngày nhóm theo tuần,
 /// hôm nay được làm nổi bật và tự cuộn tới khi mở tab; xem được các tháng
 /// trước, không có tháng sau trước ngày 1 (F03-R13). Mỗi buổi tập có nhãn
 /// trạng thái (04 §6.13.3, VS06-T08). Nút "Lịch tuần" → S-22; banner Chia lại
@@ -70,7 +74,10 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
 
     return TabPage(
       tab: AppTab.schedule,
-      title: S.tabSchedule,
+      title: S.tabTraining,
+      scrollController: ref
+          .watch(tabScrollControllersProvider)
+          .section(TrainingSection.schedule),
       trailing: OutlinedButton(
         key: const ValueKey('open-weekly'),
         onPressed: () => context.push(weeklySchedulePath),
@@ -78,6 +85,8 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
       ),
       // Một khối duy nhất: dựng đủ mọi dòng để tự cuộn tới hôm nay.
       children: [
+        const TrainingSectionBar(),
+        const SizedBox(height: 16),
         Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

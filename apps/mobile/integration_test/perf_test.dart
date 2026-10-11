@@ -179,7 +179,7 @@ void main() {
       }, reportKey: key);
     }
 
-    await scroll(S.tabSchedule, 'scroll_s20');
+    await scroll(S.tabTraining, 'scroll_s20');
     await scroll(S.tabWeight, 'scroll_s40');
 
     binding.reportData = {

@@ -15,6 +15,10 @@ DBNAME="itest_$(date +%s)"
 docker compose -f "$ROOT/deploy/docker-compose.dev.yml" exec -T db psql -U health -d health -c "CREATE DATABASE $DBNAME" >/dev/null
 # Trong lúc dev, cấu trúc database tạo từ schema.sql (06 Bản 2 ED2-18).
 docker compose -f "$ROOT/deploy/docker-compose.dev.yml" exec -T db psql -U health -d "$DBNAME" -v ON_ERROR_STOP=1 -q <"$ROOT/apps/server/db/schema.sql"
+# Thư viện bài tập Bạn đã duyệt (mục Bài tập, chi tiết bài; 05 Bản 2 §6.10.2).
+(cd "$ROOT/apps/server" && DATABASE_URL="postgres://health:***REMOVED***@localhost:55432/$DBNAME" \
+  JWT_SECRET="***REMOVED***" \
+  dart run bin/admin.dart library import "$ROOT/data/v2__exercises.json" >/dev/null)
 mkdir -p "$ROOT/build"
 (cd "$ROOT/apps/server" && DATABASE_URL="postgres://health:***REMOVED***@localhost:55432/$DBNAME" HOST=127.0.0.1 PORT=$PORT \
   JWT_SECRET="***REMOVED***" BCRYPT_COST=4 \

@@ -4,17 +4,37 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/me/application/calorie_view.dart';
 import '../../features/me/application/reminders.dart';
 import '../../features/schedule/application/schedule_providers.dart';
+import '../../features/training/application/training_section.dart';
 import 'app_tab.dart';
 
 /// Mỗi tab có một [ScrollController] riêng để chạm lại tab đang mở thì cuộn
-/// về đầu (NAV-3). Vị trí cuộn được giữ khi đổi tab (NAV-8).
+/// về đầu (NAV-3). Vị trí cuộn được giữ khi đổi tab (NAV-8). Tab Tập luyện có
+/// một controller cho mỗi mục (04 Bản 2 §6.3.2): đổi mục giữ vị trí cuộn.
 final class TabScrollControllers {
   final _controllers = {for (final t in AppTab.values) t: ScrollController()};
+  final _sections = {
+    for (final s in TrainingSection.values)
+      s: s == TrainingSection.schedule
+          ? null
+          : ScrollController(debugLabel: s.name),
+  };
 
   ScrollController of(AppTab tab) => _controllers[tab]!;
 
-  void scrollToTop(AppTab tab, {required bool animate}) {
-    final c = _controllers[tab]!;
+  /// Controller của một mục trong tab Tập luyện; mục Lịch dùng controller
+  /// của tab.
+  ScrollController section(TrainingSection s) =>
+      _sections[s] ?? _controllers[AppTab.schedule]!;
+
+  /// Cuộn về đầu tab [tab]; với tab Tập luyện là mục [section] đang mở.
+  void scrollToTop(
+    AppTab tab, {
+    required bool animate,
+    TrainingSection? section,
+  }) {
+    final c = tab == AppTab.schedule && section != null
+        ? this.section(section)
+        : _controllers[tab]!;
     if (!c.hasClients) return;
     if (animate) {
       c.animateTo(
@@ -28,7 +48,7 @@ final class TabScrollControllers {
   }
 
   void dispose() {
-    for (final c in _controllers.values) {
+    for (final c in [..._controllers.values, ..._sections.values.nonNulls]) {
       c.dispose();
     }
   }

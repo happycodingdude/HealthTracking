@@ -132,7 +132,7 @@ class _WeeklyScheduleScreenState extends ConsumerState<WeeklyScheduleScreen> {
                   ),
                   onPressed: _back,
                   icon: const Icon(Icons.chevron_left),
-                  label: const Text(S.tabSchedule),
+                  label: const Text(S.tabTraining),
                 ),
               ),
               const SizedBox(height: 16),

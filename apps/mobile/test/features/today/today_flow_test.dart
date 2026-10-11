@@ -232,7 +232,7 @@ void main() {
       await tester.tap(
         find.descendant(
           of: find.byType(AppTabBar),
-          matching: find.text(S.tabSchedule),
+          matching: find.text(S.tabTraining),
         ),
       );
       await tester.pumpAndSettle();

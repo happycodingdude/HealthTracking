@@ -53,6 +53,13 @@ final class PlanDay {
 
   bool get isWorkout => kind == DayKind.workout;
 
+  /// Nhóm cơ của buổi tập ngày này (03 Bản 2 §6.1): buổi theo lịch = nhóm cơ
+  /// trong lịch tháng, kể cả ngày đã sửa riêng; buổi Bản 1 đã "Đã tập" với
+  /// nhóm cơ thực tế khác → nhóm cơ thực tế (FA2-06, F05-R38); buổi tập thêm
+  /// = nhóm cơ đã chọn. Rỗng khi ngày nghỉ không có buổi tập thêm.
+  List<MuscleGroup> get sessionMuscles =>
+      isWorkout ? (actualMuscles ?? muscles) : (extraMuscles ?? const []);
+
   /// Bản ghi với đánh dấu mới; các trường khác giữ nguyên.
   PlanDay withMark(
     DayMark? mark, {

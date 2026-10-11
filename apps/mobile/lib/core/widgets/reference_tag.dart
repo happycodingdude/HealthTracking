@@ -73,10 +73,7 @@ class ReferenceTag extends StatelessWidget {
         child: InkWell(
           key: const ValueKey('reference-tag'),
           borderRadius: BorderRadius.circular(8),
-          onTap: () => showAppSheet<void>(
-            context,
-            builder: (_) => const _ReferenceSheet(),
-          ),
+          onTap: () => showReferenceSheet(context),
           child: ConstrainedBox(
             // Vùng chạm 44 điểm (04 §6.17), nhãn vẫn nhỏ.
             constraints: const BoxConstraints(minHeight: 44),
@@ -106,6 +103,12 @@ class ReferenceTag extends StatelessWidget {
     );
   }
 }
+
+/// Bảng trượt nhắc lại ý chính của thông báo tham khảo (F10-R1), kèm "Xem
+/// đầy đủ" → S-55. Dùng cho nhãn "tham khảo" và nhãn hướng dẫn bài tập
+/// (F10-R21, 04 Bản 2 S-67).
+Future<void> showReferenceSheet(BuildContext context) =>
+    showAppSheet<void>(context, builder: (_) => const _ReferenceSheet());
 
 class _ReferenceSheet extends StatelessWidget {
   const _ReferenceSheet();
