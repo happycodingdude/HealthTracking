@@ -1,6 +1,7 @@
 import 'package:api_contract/api_contract.dart';
 import 'package:domain/domain.dart';
 
+import '../../features/library/data/exercise_repository.dart';
 import '../../features/me/data/account_repository.dart';
 import '../../features/me/data/profile_repository.dart';
 import '../../features/menu/data/menu_repository.dart';
@@ -175,5 +176,26 @@ final class AiDailyUsageStore implements LocalEntityStore {
       return;
     }
     await _repo.putUsage(key, _codec.decode(data));
+  }
+}
+
+/// Entity chỉ pull `exercise` (dòng dùng chung, 06 Bản 2 VS21-T07).
+final class ExerciseStore implements LocalEntityStore {
+  ExerciseStore(this._repo);
+
+  final ExerciseRepository _repo;
+  static const _codec = ExerciseCodec();
+
+  @override
+  String get entity => SyncEntities.exercise;
+
+  @override
+  Future<void> apply(String key, SyncChange? change) async {
+    final data = change?.data;
+    if (change == null || change.deleted || data == null) {
+      await _repo.delete(key);
+      return;
+    }
+    await _repo.put(_codec.decode(key, data));
   }
 }

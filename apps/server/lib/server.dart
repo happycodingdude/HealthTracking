@@ -18,5 +18,8 @@ export 'src/http/json.dart';
 export 'src/http/middleware.dart';
 export 'src/http/request_info.dart';
 export 'src/jobs/job_scheduler.dart';
+export 'src/library/library_file.dart';
+export 'src/library/library_importer.dart';
+export 'src/library/youtube_api.dart';
 export 'src/logging/logger.dart';
 export 'src/server_app.dart';
