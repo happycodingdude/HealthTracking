@@ -151,6 +151,15 @@ turnOnReminders: "Bật nhắc" # 04 S-06
 later: "Để sau" # 04 S-06, OB-4
 remindersRow: "Nhắc đi tập" # 04 S-50
 remindersHint: "1 giờ trước giờ tập" # 04 S-50
+
+# Chưa có lịch Bản 2 (VS-25)
+noScheduleTitle: "Chưa có lịch tập" # 04 Bản 2 UA2-03, §6.6.1, S-20
+noScheduleToday: "Buổi tập và tiến độ tuần sẽ hiện khi Bạn xếp lịch tuần." # 04 Bản 2 UA2-03, §6.6.1
+noScheduleInvite: "Chọn các ngày Bạn muốn tập trong tuần. App sẽ xếp lịch từ hôm nay đến cuối tháng." # 04 Bản 2 S-20
+arrangeWeekly: "Xếp lịch tuần" # 04 Bản 2 UA2-03, S-20
+reminderGenericExample: "Ví dụ: lịch có buổi Ngực lúc 18:00 thứ 2, thì 17:00 app sẽ nhắc: Hôm nay tập ngực lúc 18:00." # 04 Bản 2 UA2-04, S-06
+remindersStartWhenScheduled: "Nhắc bắt đầu hoạt động khi Bạn xếp lịch tuần." # 04 Bản 2 UA2-04, S-06
+remindersHintNoSchedule: "Sẽ nhắc khi Bạn đã xếp lịch tuần" # 04 Bản 2 UA2-15, S-50
 notificationsBlocked: "iPhone đang chặn thông báo của app. Mở Cài đặt để cho phép." # 04 S-50, 03 F04-E2
 openSettings: "Mở Cài đặt" # 04 S-50
 remindersTurnedOff: "Đã tắt nhắc đi tập" # 04 S-50

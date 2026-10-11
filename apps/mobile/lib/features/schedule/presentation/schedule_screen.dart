@@ -10,6 +10,7 @@ import '../../../app/theme.dart';
 import '../../../app/time_ticker.dart';
 import '../../../core/formatters.dart';
 import '../../../core/widgets/app_sheet.dart';
+import '../../../core/widgets/empty_card.dart';
 import '../../../core/widgets/tab_page.dart';
 import '../../../core/widgets/toast.dart';
 import '../../today/application/progress_view.dart';
@@ -71,6 +72,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     if (month == current && plan != null) _scrollToToday();
 
     final changed = month == current && ref.watch(templateChangedProvider);
+    final noSchedule = ref.watch(scheduleStateProvider)?.hasSchedule == false;
 
     return TabPage(
       tab: AppTab.schedule,
@@ -87,41 +89,62 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
       children: [
         const TrainingSectionBar(),
         const SizedBox(height: 16),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _MonthBar(
-              month: month,
-              // "‹" dừng ở tháng thiết lập; ở tháng hiện tại ẩn "›" (04 S-20).
-              onPrevious: month.compareTo(first) > 0
-                  ? () => setState(() => _shown = month.previous)
-                  : null,
-              onNext: month.compareTo(current) < 0
-                  ? () => setState(
-                      () => _shown = month.next == current ? null : month.next,
-                    )
-                  : null,
+        // Chưa có lịch (04 Bản 2 S-20, UA2-03): không thanh tháng, không
+        // banner, không danh sách; lời mời "Xếp lịch tuần" → S-22.
+        if (noSchedule) ...[
+          const SizedBox(height: 48),
+          EmptyCard(
+            key: const ValueKey('no-schedule'),
+            title: S.noScheduleTitle,
+            body: S.noScheduleInvite,
+            action: FilledButton(
+              key: const ValueKey('arrange-weekly'),
+              onPressed: () => context.push(weeklySchedulePath),
+              child: const Text(S.arrangeWeekly),
             ),
-            const SizedBox(height: 12),
-            if (changed) ...[
-              const _RedistributeBanner(),
-              const SizedBox(height: 16),
-            ],
-            if (plan != null)
-              _MonthList(plan: plan, days: days, now: now, todayKey: _todayKey),
-            if (month == current && plan != null)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Text(
-                  S.nextMonthNotice(current.next.month),
-                  textAlign: TextAlign.center,
-                  style: context.text.bodyMedium?.copyWith(
-                    color: context.palette.textSecondary,
+          ),
+        ] else
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _MonthBar(
+                month: month,
+                // "‹" dừng ở tháng thiết lập; ở tháng hiện tại ẩn "›" (04 S-20).
+                onPrevious: month.compareTo(first) > 0
+                    ? () => setState(() => _shown = month.previous)
+                    : null,
+                onNext: month.compareTo(current) < 0
+                    ? () => setState(
+                        () =>
+                            _shown = month.next == current ? null : month.next,
+                      )
+                    : null,
+              ),
+              const SizedBox(height: 12),
+              if (changed) ...[
+                const _RedistributeBanner(),
+                const SizedBox(height: 16),
+              ],
+              if (plan != null)
+                _MonthList(
+                  plan: plan,
+                  days: days,
+                  now: now,
+                  todayKey: _todayKey,
+                ),
+              if (month == current && plan != null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Text(
+                    S.nextMonthNotice(current.next.month),
+                    textAlign: TextAlign.center,
+                    style: context.text.bodyMedium?.copyWith(
+                      color: context.palette.textSecondary,
+                    ),
                   ),
                 ),
-              ),
-          ],
-        ),
+            ],
+          ),
       ],
     );
   }

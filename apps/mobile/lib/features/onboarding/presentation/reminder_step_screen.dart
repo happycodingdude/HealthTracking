@@ -8,6 +8,7 @@ import '../../../app/theme.dart';
 import '../../../core/formatters.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../../me/application/reminders.dart';
+import '../../schedule/application/schedule_providers.dart';
 import '../application/onboarding_steps.dart';
 import 'onboarding_scaffold.dart';
 
@@ -55,6 +56,7 @@ class _ReminderStepScreenState extends ConsumerState<ReminderStepScreen> {
   @override
   Widget build(BuildContext context) {
     final first = ref.watch(firstReminderProvider).value;
+    final noSchedule = ref.watch(scheduleStateProvider)?.hasSchedule == false;
     return OnboardingScaffold(
       step: 5,
       title: S.reminderStepTitle,
@@ -71,6 +73,9 @@ class _ReminderStepScreenState extends ConsumerState<ReminderStepScreen> {
         ),
       ],
       children: [
+        // 04 Bản 2 S-06, UA2-04, F04-E21: đã "Để sau" lịch tuần → câu ví dụ
+        // chung.
+        if (noSchedule) const _GenericExample(),
         if (first != null) ...[
           _Preview(reminder: first),
           const SizedBox(height: 20),
@@ -85,6 +90,53 @@ class _ReminderStepScreenState extends ConsumerState<ReminderStepScreen> {
           ),
         ],
       ],
+    );
+  }
+}
+
+/// Câu ví dụ chung khi chưa có lịch (mock S-06-1 Bản 2): phần lời nhắc in
+/// đậm, kèm dòng "Nhắc bắt đầu hoạt động khi Bạn xếp lịch tuần."
+class _GenericExample extends StatelessWidget {
+  const _GenericExample();
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    const example = S.reminderGenericExample;
+    // Phần sau "…sẽ nhắc: " là lời nhắc, in đậm.
+    final split = example.lastIndexOf(': ') + 2;
+    return Container(
+      key: const ValueKey('reminder-generic-example'),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+      decoration: BoxDecoration(
+        color: palette.card,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: palette.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text.rich(
+            TextSpan(
+              text: example.substring(0, split),
+              children: [
+                TextSpan(
+                  text: example.substring(split),
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+            style: context.text.bodyLarge,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            S.remindersStartWhenScheduled,
+            style: context.text.bodyMedium?.copyWith(
+              color: palette.textSecondary,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

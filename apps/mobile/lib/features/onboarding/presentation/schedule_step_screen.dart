@@ -60,6 +60,13 @@ class _ScheduleStepScreenState extends ConsumerState<ScheduleStepScreen> {
     );
   }
 
+  /// "Để sau" (F03-R21, F03-AC21): không lưu, không kiểm tra gì, các ngày
+  /// đang chọn dở bị bỏ (04 Bản 2 S-05).
+  Future<void> _later() async {
+    await ref.read(onboardingStepsProvider).skipSchedule();
+    if (mounted) context.go('/onboarding/5');
+  }
+
   Future<void> _save() async {
     final errors = await ref
         .read(onboardingStepsProvider)
@@ -90,7 +97,16 @@ class _ScheduleStepScreenState extends ConsumerState<ScheduleStepScreen> {
       step: 4,
       title: S.scheduleStepTitle,
       subtitle: S.scheduleStepSubtitle,
-      bottom: [PrimaryButton(label: S.saveSchedule, onPressed: _save)],
+      bottom: [
+        PrimaryButton(label: S.saveSchedule, onPressed: _save),
+        const SizedBox(height: 12),
+        // 04 Bản 2 S-05, UA2-05: nút phụ "Để sau", không hộp xác nhận.
+        OutlinedButton(
+          key: const ValueKey('schedule-later'),
+          onPressed: _later,
+          child: const Text(S.later),
+        ),
+      ],
       children: [
         WeeklyTemplateEditor(
           days: _days,

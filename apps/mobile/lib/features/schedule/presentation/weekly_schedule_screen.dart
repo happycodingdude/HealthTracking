@@ -13,6 +13,7 @@ import '../../../core/widgets/toast.dart';
 import '../../../core/widgets/unsaved_changes.dart';
 import '../../../data/sync/sync_providers.dart';
 import '../application/schedule_edits.dart';
+import '../application/schedule_providers.dart';
 import 'weekly_template_editor.dart';
 
 /// Đường dẫn S-22 (mở từ nút "Lịch tuần" ở S-20).
@@ -142,13 +143,17 @@ class _WeeklyScheduleScreenState extends ConsumerState<WeeklyScheduleScreen> {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                S.weeklyEditHint,
-                style: context.text.bodyLarge?.copyWith(
-                  color: context.palette.textSecondary,
+              // Câu "áp dụng từ tháng sau / Chia lại" chỉ đúng khi đã có lịch:
+              // lần lưu đầu áp dụng ngay (F03-R23).
+              if (ref.watch(scheduleStateProvider)?.hasSchedule ?? true) ...[
+                const SizedBox(height: 4),
+                Text(
+                  S.weeklyEditHint,
+                  style: context.text.bodyLarge?.copyWith(
+                    color: context.palette.textSecondary,
+                  ),
                 ),
-              ),
+              ],
               const SizedBox(height: 16),
               WeeklyTemplateEditor(
                 days: _days,

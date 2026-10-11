@@ -190,6 +190,18 @@ final class OnboardingSteps {
     return const [];
   }
 
+  /// Bước 4 (S-05) "Để sau" (F03-R21, F03-AC21, OB-7; 05 Bản 2
+  /// `SkipScheduleSetup`): không lưu lịch, không kiểm tra gì, bỏ các ngày đang
+  /// chọn dở (UA2-05); sang bước 5. Hoàn tất thiết lập thì tài khoản Chưa có
+  /// lịch.
+  Future<void> skipSchedule() => _db.transaction(() async {
+    final profile = (await _profiles.get())!;
+    await _saveProfile(
+      profile.copyWith(onboardingStep: math.max(profile.onboardingStep, 5)),
+    );
+    await _drafts.saveTemplate(null);
+  });
+
   /// Bước 5 (S-06): hoàn tất thiết lập lần đầu (VS05-T05). Ghi công tắc nhắc
   /// (F04-R1), ngày thiết lập, thời điểm hoàn tất và múi giờ của iPhone. Cân
   /// ban đầu ghi ở bước 2; nếu đã sang tuần khác thì chuyển sang tuần thiết

@@ -47,6 +47,7 @@ void main() {
         schedule: schedule,
         clock: clock,
       ),
+      profiles: profiles,
       clock: clock,
     );
     await seedSetUp(db, profile: completedProfile(remindersEnabled: true));

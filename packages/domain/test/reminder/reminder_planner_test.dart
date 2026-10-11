@@ -80,7 +80,7 @@ void main() {
     final r = ReminderPlanner.plan(
       currentMonth: [early],
       nextMonth: const [],
-      template: null,
+      template: template,
       now: DateTime(2026, 10, 5, 12),
     );
     expect(r.single.at, DateTime(2026, 10, 5, 23, 30));
@@ -105,7 +105,7 @@ void main() {
         ),
       ],
       nextMonth: const [],
-      template: null,
+      template: template,
       now: DateTime(2026, 10, 5, 12),
     );
     expect(r, isEmpty);
@@ -177,12 +177,41 @@ void main() {
           ),
       ],
       nextMonth: const [],
-      template: null,
+      template: template,
       now: DateTime(2026, 10, 1, 8),
     );
     expect(more, hasLength(ReminderPlanner.limit));
     for (var i = 1; i < more.length; i++) {
       expect(more[i].at.isAfter(more[i - 1].at), isTrue);
     }
+  });
+
+  test('F04-R22, F04-AC21: chưa có lịch tuần → không nhắc; lưu lịch "thứ 2 '
+      'Ngực 18:00" → nhắc 17:00 thứ 2 kế tiếp', () {
+    final now = DateTime(2026, 10, 14, 12);
+    expect(
+      ReminderPlanner.plan(
+        currentMonth: const [],
+        nextMonth: null,
+        template: null,
+        now: now,
+      ),
+      isEmpty,
+    );
+    final monday = WeeklyTemplate({
+      1: TemplateDay(
+        enabled: true,
+        time: t1800,
+        muscles: const [MuscleGroup.chest],
+      ),
+    });
+    final first = MonthGenerator.first(monday, now);
+    final r = ReminderPlanner.plan(
+      currentMonth: first.days,
+      nextMonth: null,
+      template: monday,
+      now: now,
+    );
+    expect(r.first.at, DateTime(2026, 10, 19, 17));
   });
 }

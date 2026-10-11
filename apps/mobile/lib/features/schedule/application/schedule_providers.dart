@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/time_ticker.dart';
 import '../../../data/sync/sync_providers.dart';
+import '../../me/application/calorie_view.dart';
 
 /// Các tháng đã có lịch, cũ → mới.
 final monthPlansProvider = StreamProvider<List<MonthPlan>>(
@@ -31,6 +32,17 @@ final progressWeekDaysProvider =
 final weeklyTemplateProvider = StreamProvider<WeeklyTemplate?>(
   (ref) => ref.watch(scheduleRepositoryProvider).watchTemplate(),
 );
+
+/// Có lịch hay Chưa có lịch (05 Bản 2 §6.4.2, TD2-09): S-10, S-20, S-50,
+/// S-24. null khi chưa đọc xong lịch tuần (không vẽ trạng thái nào).
+final scheduleStateProvider = Provider<ScheduleState?>((ref) {
+  final template = ref.watch(weeklyTemplateProvider);
+  if (!template.hasValue) return null;
+  return ScheduleState.of(
+    template: template.value,
+    profile: ref.watch(profileProvider).value,
+  );
+});
 
 /// "Lịch tuần đã đổi" (F03-R7, UX-AC9): lịch tháng hiện tại được chia từ
 /// lịch tuần khác lịch tuần đang lưu. Hiện banner Chia lại và chấm ở tab Lịch

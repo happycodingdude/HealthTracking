@@ -90,7 +90,8 @@ final class MarkSessionSkipped extends _DayWrite {
 }
 
 /// Thêm buổi tập thêm (F05-R31 → R35): chỉ khi Bạn đã xác nhận hộp S-65
-/// ([confirmed]); khóa ngay khi lưu. Không có sửa, xóa. Ném
+/// ([confirmed]) và đã có lịch tuần; khóa ngay khi lưu. Không có sửa, xóa.
+/// Ném
 /// [NotConfirmedException] hoặc [ExtraException].
 final class AddExtraSession extends _DayWrite {
   AddExtraSession({
@@ -106,9 +107,20 @@ final class AddExtraSession extends _DayWrite {
     required bool confirmed,
   }) async {
     if (!confirmed) throw const NotConfirmedException();
+    // F05-R31: chưa có lịch tuần thì không có buổi tập thêm.
+    final hasSchedule = await _schedule.template() != null;
     return _write(date, (day, now) {
-      if (day == null) throw const ExtraException(ExtraError.notRestDay);
-      return ExtraSessionRules.add(day, muscles, now: now);
+      if (day == null) {
+        throw ExtraException(
+          hasSchedule ? ExtraError.notRestDay : ExtraError.noSchedule,
+        );
+      }
+      return ExtraSessionRules.add(
+        day,
+        muscles,
+        now: now,
+        hasSchedule: hasSchedule,
+      );
     });
   }
 }

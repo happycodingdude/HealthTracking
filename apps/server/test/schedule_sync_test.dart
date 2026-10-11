@@ -86,6 +86,30 @@ void main() {
     },
   );
 
+  test(
+    'VS25-T04: tài khoản Chưa có lịch tuần → ensure lịch tháng, ngày → '
+    'rejected no_schedule; lưu lịch tuần trước (cùng lần push) → applied',
+    () async {
+      final rejected = await push([
+        planEnsure(generated.plan),
+        dayMutation(generated.days.first),
+      ]);
+      for (final r in rejected) {
+        expect((r.status, r.code), (PushStatus.rejected, ErrorCode.noSchedule));
+      }
+      final rows = await app.tdb.pool.execute(
+        'SELECT count(*) FROM month_plans',
+      );
+      expect(rows.single[0], 0);
+      final ok = await push([
+        templateUpsert(template),
+        planEnsure(generated.plan),
+        dayMutation(generated.days.first),
+      ]);
+      expect(ok.every((r) => r.status == PushStatus.applied), isTrue);
+    },
+  );
+
   group('kiểm tra lại bằng domain (VS04-T06)', () {
     test('F03-V1: lịch tuần không có ngày tập → rejected', () async {
       final r = (await push([templateUpsert(WeeklyTemplate({}))])).single;
@@ -207,7 +231,8 @@ void main() {
       (await push([dayMutation(generated.days[1])], as: b)).single.field,
       'key',
     );
-    await push([planEnsure(generated.plan)], as: b);
+    // B cần lịch tuần của mình trước (VS25-T04).
+    await push([templateUpsert(template), planEnsure(generated.plan)], as: b);
     expect(
       (await push([dayMutation(generated.days[1])], as: b)).single.status,
       PushStatus.applied,

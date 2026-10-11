@@ -13,6 +13,7 @@ import '../../../core/widgets/settings_card.dart';
 import '../../../core/widgets/tab_page.dart';
 import '../../../core/widgets/toast.dart';
 import '../../../data/sync/sync_providers.dart';
+import '../../schedule/application/schedule_providers.dart';
 import '../application/budget_view.dart';
 import '../application/calorie_view.dart';
 import '../application/reminders.dart';
@@ -135,7 +136,11 @@ class _RemindersRow extends ConsumerWidget {
                   children: [
                     Text(S.remindersRow, style: context.text.bodyLarge),
                     Text(
-                      S.remindersHint,
+                      // 04 Bản 2 UA2-15: chưa có lịch thì nói rõ vì sao bật
+                      // mà chưa có nhắc.
+                      ref.watch(scheduleStateProvider)?.hasSchedule == false
+                          ? S.remindersHintNoSchedule
+                          : S.remindersHint,
                       style: context.text.bodyMedium?.copyWith(
                         color: palette.textSecondary,
                       ),
