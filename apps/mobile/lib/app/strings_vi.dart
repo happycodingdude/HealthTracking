@@ -589,6 +589,70 @@ abstract final class S {
   /// Nhãn VoiceOver của nút phát video (giả định câu chữ, chờ Bạn xem).
   static const playVideo = 'Phát video';
 
+  // S-63 Buổi tập, S-64 Ghi mức tạ, khu mức tạ của S-67, phần bài tập ở
+  // S-10, S-21 (04 Bản 2 §6.6.1, S-21, S-63, S-64, S-67, §6.12; 03 Bản 2
+  // F21-V1 → V4, F21-R8, F21-R12, F05-R28).
+  static const viewExercises = 'Xem bài tập';
+  static const viewExercisesAndLog = 'Xem bài tập · Ghi mức tạ';
+  static const logLift = 'Ghi mức tạ';
+  static const logLiftShort = 'Ghi';
+  static const extraSaved = 'Đã lưu';
+  static const readOnlyFuture = 'Chỉ xem · Buổi chưa đến';
+  static const readOnlyLocked = 'Chỉ xem · Mức tạ của buổi này đã khóa';
+  static const readOnlyPastExtra =
+      'Chỉ xem · Buổi tập thêm cho ngày đã qua không ghi mức tạ';
+  static const liftStart = 'Bắt đầu';
+  static const liftEnd = 'Kết thúc';
+  static const liftStepHint = 'Bước 0,5 kg · chạm vào số để gõ';
+  static const liftFirstTime = 'Lần ghi đầu tiên của bài này';
+  static const deleteLift = 'Xóa mức tạ';
+  static const deleteLiftConfirm = 'Xóa mức tạ của bài này?';
+  static const liftDeleted = 'Đã xóa mức tạ';
+  static const liftLockedAtMidnight = 'Mức tạ của buổi này đã khóa lúc 00:00.';
+  static const liftMissing = 'Vui lòng nhập cả mức tạ bắt đầu và kết thúc';
+  static const liftOutOfRange = 'Mức tạ cần từ 0,5 đến 300 kg';
+  static const liftNotStep = 'Mức tạ nhập theo bước 0,5 kg';
+  static const liftNotNumber = 'Mức tạ chưa đúng';
+
+  /// Nhãn VoiceOver của nút − / + (giả định câu chữ, chờ Bạn xem).
+  static const liftDecrease = 'Giảm 0,5 kg';
+  static const liftIncrease = 'Tăng 0,5 kg';
+
+  /// "Buổi tập · Ngực và Tay sau".
+  static String sessionTitle(String muscles) => 'Buổi tập · $muscles';
+
+  /// "Buổi tập thêm · Vai và Bụng".
+  static String extraSessionTitle(String muscles) => 'Buổi tập thêm · $muscles';
+
+  /// F20-E3, F21-AC1.
+  static String liftOpensAt(String time) => 'Ghi mức tạ được từ $time';
+
+  /// Thanh đáy S-63.
+  static String liftLoggedOf(int n, int total) => 'Đã ghi mức tạ $n/$total bài';
+
+  /// Thẻ buổi tập ở Hôm nay (UA2-08).
+  static String liftLoggedCount(int n) => 'Đã ghi mức tạ $n bài';
+
+  /// "12 → 14 kg".
+  static String liftValue(String start, String end) => '$start → $end kg';
+  static String liftSaved(String start, String end) =>
+      'Đã lưu $start → $end kg';
+  static String liftPrevious(String date, String start, String end) =>
+      'Buổi trước ($date): $start → $end kg';
+  static String liftThisSession(String start, String end) =>
+      'Buổi này: $start → $end kg';
+  static String liftLatest(String date, String start, String end) =>
+      'Gần nhất ($date): $start → $end kg';
+
+  /// F21-R8 (nguyên văn `03`); {n} theo bước 0,5.
+  static String liftEndLower(String n) =>
+      'Mức tạ kết thúc thấp hơn buổi trước $n kg. Bạn kiểm tra lại con số nhé.';
+  static String liftEndMuchHigher(String n) =>
+      'Mức tạ kết thúc cao hơn buổi trước $n kg. Bạn kiểm tra lại con số, và nhớ tập trong sức mình nhé.';
+
+  /// F05-R28.
+  static String liftLogsExist(int n) => 'Buổi này đã có mức tạ của $n bài.';
+
   // S-68 Tiến bộ mức tạ, trạng thái trống (04 Bản 2 S-68, 03 Bản 2 F23-R4).
   static const progressEmptyTitle = 'Chưa có mức tạ nào';
   static const progressEmptyBody =
@@ -872,5 +936,27 @@ abstract final class S {
     'playVideo': playVideo,
     'progressEmptyTitle': progressEmptyTitle,
     'progressEmptyBody': progressEmptyBody,
+    'viewExercises': viewExercises,
+    'viewExercisesAndLog': viewExercisesAndLog,
+    'logLift': logLift,
+    'logLiftShort': logLiftShort,
+    'extraSaved': extraSaved,
+    'readOnlyFuture': readOnlyFuture,
+    'readOnlyLocked': readOnlyLocked,
+    'readOnlyPastExtra': readOnlyPastExtra,
+    'liftStart': liftStart,
+    'liftEnd': liftEnd,
+    'liftStepHint': liftStepHint,
+    'liftFirstTime': liftFirstTime,
+    'deleteLift': deleteLift,
+    'deleteLiftConfirm': deleteLiftConfirm,
+    'liftDeleted': liftDeleted,
+    'liftLockedAtMidnight': liftLockedAtMidnight,
+    'liftMissing': liftMissing,
+    'liftOutOfRange': liftOutOfRange,
+    'liftNotStep': liftNotStep,
+    'liftNotNumber': liftNotNumber,
+    'liftDecrease': liftDecrease,
+    'liftIncrease': liftIncrease,
   };
 }

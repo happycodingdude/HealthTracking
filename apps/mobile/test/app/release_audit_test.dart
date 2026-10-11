@@ -42,6 +42,8 @@ void main() {
       'lib/features/schedule/presentation/day_sheet.dart', // F03-V4
       'lib/features/schedule/presentation/extra_session_sheet.dart', // F05-V21
       'lib/features/weight/presentation/weight_sheet.dart', // nút xóa
+      // F21-V1 → V4 dưới hai ô, nút "Xóa mức tạ" (UX-AC42).
+      'lib/features/workout/presentation/lift_log_sheet.dart',
     };
     final used = filesUsing(
       RegExp(r'colors\.error\b|colorScheme\.error\b|Colors\.red'),

@@ -271,7 +271,18 @@ void main() {
       await seedSetUp(db);
       await seedMark(db, wed, DayMark.done);
       await pump(tester);
-      expect(inCard(sessionCard(), find.byType(TextButton)), findsNothing);
+      // Chỉ còn liên kết "Xem bài tập" → S-63 (VS-27), không có nút sửa.
+      expect(
+        inCard(
+          sessionCard(),
+          find.byWidgetPredicate(
+            (w) =>
+                w is TextButton &&
+                w.key != const ValueKey('session-view-exercises'),
+          ),
+        ),
+        findsNothing,
+      );
       expect(inCard(sessionCard(), find.byType(FilledButton)), findsNothing);
       unawaited(showDaySheet(tester.element(find.byType(TodayScreen)), wed));
       await tester.pumpAndSettle();

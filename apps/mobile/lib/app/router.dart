@@ -28,6 +28,7 @@ import '../features/today/presentation/today_screen.dart';
 import '../features/today/presentation/week_progress_screen.dart';
 import '../features/training/presentation/training_screen.dart';
 import '../features/weight/presentation/weight_screen.dart';
+import '../features/workout/presentation/session_screen.dart';
 import 'shell/app_shell.dart';
 import 'shell/app_tab.dart';
 
@@ -167,6 +168,29 @@ final routerProvider = Provider<GoRouter>((ref) {
                           ),
                           tab: tab,
                         ),
+                      ),
+                    // S-63 mở từ thẻ buổi tập ở Hôm nay, từ S-21 (Lịch, S-25)
+                    // và thông báo nhanh của S-24, trong tab đang mở (NAV-9).
+                    // S-67 mở từ dòng bài nằm ngay dưới, cùng tab.
+                    if (tab == AppTab.today || tab == AppTab.schedule)
+                      GoRoute(
+                        path: 'session/:date',
+                        builder: (_, state) => SessionScreen(
+                          date: LocalDate.parse(state.pathParameters['date']!),
+                          tab: tab,
+                        ),
+                        routes: [
+                          GoRoute(
+                            path: 'exercise/:id',
+                            builder: (_, state) => ExerciseScreen(
+                              id: state.pathParameters['id']!,
+                              from: ExerciseFrom.session,
+                              session: LocalDate.parse(
+                                state.pathParameters['date']!,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     // S-22 (chế độ sửa) mở từ nút "Lịch tuần" ở S-20.
                     if (tab == AppTab.schedule) ...[

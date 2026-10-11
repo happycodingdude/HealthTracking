@@ -207,6 +207,40 @@ void main() {
       await tester.pumpAndSettle(const Duration(seconds: 2));
       expect(find.text(S.sessionDone), findsWidgets);
       expect(done, findsNothing, reason: 'server không trả bản chưa đánh dấu');
+
+      // VS-27: "Xem bài tập" → S-63; buổi đã chốt vẫn ghi tạ đến hết ngày
+      // (F21-E1). "Ghi" → S-64 nhập 30 và 35 → Lưu → dòng bài đổi ngay, không
+      // chờ mạng; về Hôm nay, "Chưa đồng bộ" biến mất khi server nhận, server
+      // không hoàn về (F21-AC11, UX-AC37 phần S-63/S-64, 05 Bản 2 §6.6.2).
+      const pressId = 'chest-upper-machine-incline-machine-chest-press';
+      await tester.tap(find.byKey(const ValueKey('session-view-exercises')));
+      await pumpUntil(tester, find.byKey(const ValueKey('lift-log-$pressId')));
+      await tester.tap(find.byKey(const ValueKey('lift-log-$pressId')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('lift-start-input')),
+        '30',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('lift-end-input')),
+        '35',
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('lift-save')));
+      await pumpUntil(
+        tester,
+        find.byKey(const ValueKey('lift-value-$pressId')),
+      );
+      expect(find.text('30 → 35 kg'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('session-back')));
+      await tester.pumpAndSettle();
+      await pumpUntilGone(tester, find.byKey(const ValueKey('sync-indicator')));
+      await tester.pumpAndSettle(const Duration(seconds: 2));
+      expect(
+        find.text(S.liftLoggedCount(1)),
+        findsOneWidget,
+        reason: 'server nhận, không hoàn về',
+      );
     },
   );
 

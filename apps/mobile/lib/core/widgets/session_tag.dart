@@ -75,6 +75,23 @@ class ExtraSessionTag extends StatelessWidget {
   );
 }
 
+/// Nhãn "Đã lưu" của buổi tập thêm ở S-63 (mock S-63-3): buổi tập thêm chỉ
+/// có một trạng thái, chốt ngay khi lưu (03 Bản 2 §6.1).
+class ExtraSavedTag extends StatelessWidget {
+  const ExtraSavedTag({super.key});
+
+  @override
+  Widget build(BuildContext context) => _TagChip(
+    key: const ValueKey('session-tag-extra-saved'),
+    semantics: S.extraSaved,
+    text: S.extraSaved,
+    icon: Icons.add,
+    iconSize: 18,
+    fg: context.colors.onPrimaryContainer,
+    bg: context.colors.primaryContainer,
+  );
+}
+
 class _TagChip extends StatelessWidget {
   const _TagChip({
     super.key,
