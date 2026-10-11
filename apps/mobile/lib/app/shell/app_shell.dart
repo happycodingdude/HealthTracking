@@ -6,6 +6,7 @@ import '../../features/me/application/budget_view.dart';
 import '../../features/me/application/calorie_view.dart';
 import '../../features/me/presentation/budget_screen.dart';
 import '../../features/today/application/today_view.dart';
+import '../../features/training/application/training_section.dart';
 import 'app_tab.dart';
 import 'app_tab_bar.dart';
 import 'tab_scroll.dart';
@@ -47,6 +48,7 @@ class AppShell extends ConsumerWidget {
                 .scrollToTop(
                   tab,
                   animate: !MediaQuery.disableAnimationsOf(context),
+                  section: ref.read(trainingTabProvider),
                 );
           } else {
             navigationShell.goBranch(tab.index);

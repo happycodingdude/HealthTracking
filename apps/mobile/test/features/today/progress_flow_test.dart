@@ -204,7 +204,7 @@ void main() {
       await tester.tap(
         find.descendant(
           of: find.byType(AppTabBar),
-          matching: find.text(S.tabSchedule),
+          matching: find.text(S.tabTraining),
         ),
       );
       await tester.pumpAndSettle();
@@ -232,7 +232,7 @@ void main() {
       expect(find.text(S.weekProgressTitle), findsOneWidget);
       expect(find.text('05/10 – 10/10'), findsOneWidget);
       final back = find.ancestor(
-        of: find.text(S.tabSchedule),
+        of: find.text(S.tabTraining),
         matching: find.byWidgetPredicate((w) => w is TextButton),
       );
       expect(back, findsOneWidget);

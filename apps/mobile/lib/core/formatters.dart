@@ -69,6 +69,37 @@ abstract final class Fmt {
     MuscleGroup.biceps => S.muscleBiceps,
   };
 
+  /// Tên vùng cơ (03 Bản 2 §6.10).
+  static String region(MuscleRegion r) => switch (r) {
+    MuscleRegion.chestUpper => S.regionChestUpper,
+    MuscleRegion.chestMid => S.regionChestMid,
+    MuscleRegion.chestLower => S.regionChestLower,
+    MuscleRegion.lats => S.regionLats,
+    MuscleRegion.backMid => S.regionBackMid,
+    MuscleRegion.backLower => S.regionBackLower,
+    MuscleRegion.deltFront => S.regionDeltFront,
+    MuscleRegion.deltSide => S.regionDeltSide,
+    MuscleRegion.deltRear => S.regionDeltRear,
+    MuscleRegion.biceps => S.regionBiceps,
+    MuscleRegion.brachialisForearm => S.regionBrachialisForearm,
+    MuscleRegion.tricepsLong => S.regionTricepsLong,
+    MuscleRegion.tricepsLateralMedial => S.regionTricepsLateralMedial,
+    MuscleRegion.absLower => S.regionAbsLower,
+    MuscleRegion.absMid => S.regionAbsMid,
+    MuscleRegion.obliques => S.regionObliques,
+  };
+
+  /// Nhãn dụng cụ (04 Bản 2 §6.10).
+  static String equipment(Equipment e) => switch (e) {
+    Equipment.machine => S.equipmentMachine,
+    Equipment.freeWeight => S.equipmentFreeWeight,
+    Equipment.bodyweight => S.equipmentBodyweight,
+  };
+
+  /// Độ dài video: 48 → `0:48`, 62 → `1:02`.
+  static String videoDuration(int seconds) =>
+      '${seconds ~/ 60}:${_two(seconds % 60)}';
+
   /// Nhiều nhóm cơ thành chữ (04 §6.13.4): `Ngực và tay sau`,
   /// `Ngực, vai và tay sau`. [capitalize] = false khi đứng giữa câu
   /// (`Hôm nay tập ngực và tay sau`, F04-R3).

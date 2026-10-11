@@ -8,6 +8,7 @@ import '../features/auth/application/auth_controller.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/register_screen.dart';
 import '../features/auth/presentation/welcome_screen.dart';
+import '../features/library/presentation/exercise_screen.dart';
 import '../features/me/presentation/about_reference_screen.dart';
 import '../features/me/presentation/account_data_screen.dart';
 import '../features/me/presentation/budget_screen.dart';
@@ -22,10 +23,10 @@ import '../features/onboarding/presentation/profile_step_screen.dart';
 import '../features/onboarding/presentation/reminder_step_screen.dart';
 import '../features/onboarding/presentation/schedule_step_screen.dart';
 import '../features/restore/presentation/restore_screen.dart';
-import '../features/schedule/presentation/schedule_screen.dart';
 import '../features/schedule/presentation/weekly_schedule_screen.dart';
 import '../features/today/presentation/today_screen.dart';
 import '../features/today/presentation/week_progress_screen.dart';
+import '../features/training/presentation/training_screen.dart';
 import '../features/weight/presentation/weight_screen.dart';
 import 'shell/app_shell.dart';
 import 'shell/app_tab.dart';
@@ -168,11 +169,22 @@ final routerProvider = Provider<GoRouter>((ref) {
                         ),
                       ),
                     // S-22 (chế độ sửa) mở từ nút "Lịch tuần" ở S-20.
-                    if (tab == AppTab.schedule)
+                    if (tab == AppTab.schedule) ...[
                       GoRoute(
                         path: 'weekly',
                         builder: (_, _) => const WeeklyScheduleScreen(),
                       ),
+                      // S-67 mở từ thư viện, buổi tập, tiến bộ (NAV-10).
+                      GoRoute(
+                        path: 'exercise/:id',
+                        builder: (_, state) => ExerciseScreen(
+                          id: state.pathParameters['id']!,
+                          from: ExerciseFrom.parse(
+                            state.uri.queryParameters['from'],
+                          ),
+                        ),
+                      ),
+                    ],
                     // S-56 nằm trong tab Tôi, thanh tab vẫn hiện.
                     if (tab == AppTab.me) ...[
                       GoRoute(
@@ -205,7 +217,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 });
 
 Widget _tabScreen(AppTab tab) => switch (tab) {
-  AppTab.schedule => const ScheduleScreen(),
+  AppTab.schedule => const TrainingScreen(),
   AppTab.menu => const MenuScreen(),
   AppTab.today => const TodayScreen(),
   AppTab.weight => const WeightScreen(),

@@ -2,8 +2,8 @@
 # Khóa = tên hằng trong S.catalog (lib/app/strings_vi.dart).
 # Test: test/app/spec_strings_test.dart.
 
-# 04 §6.3.1, UR-01
-tabSchedule: "Lịch tập"
+# 04 §6.3.1, UR-01; Bản 2: tab thứ nhất đổi tên (04 Bản 2 UR2-02, §6.3.1)
+tabTraining: "Tập luyện"
 tabMenu: "Thực đơn"
 tabToday: "Hôm nay"
 tabWeight: "Cân nặng"
@@ -274,3 +274,51 @@ restored: "Đã khôi phục dữ liệu" # 04 S-07
 
 # 03 Bản 2 F12-E2; 05 Bản 2 §6.8.3 (dish_image_quota_exhausted)
 dishImageQuotaExhausted: "Bạn đã xem đủ 3 hình mới hôm nay."
+
+# 04 Bản 2 §6.3.2 — thanh chọn mục của tab Tập luyện
+sectionSchedule: "Lịch"
+sectionLibrary: "Bài tập"
+sectionProgress: "Tiến bộ"
+
+# 03 Bản 2 §6.10 — 16 vùng cơ
+regionChestUpper: "Ngực trên"
+regionChestMid: "Ngực giữa"
+regionChestLower: "Ngực dưới"
+regionLats: "Lưng xô"
+regionBackMid: "Lưng giữa"
+regionBackLower: "Lưng dưới"
+regionDeltFront: "Vai trước"
+regionDeltSide: "Vai giữa"
+regionDeltRear: "Vai sau"
+regionBiceps: "Bắp tay"
+regionBrachialisForearm: "Cơ cánh tay và cẳng tay"
+regionTricepsLong: "Đầu dài"
+regionTricepsLateralMedial: "Đầu ngoài và đầu trong"
+regionAbsLower: "Bụng dưới"
+regionAbsMid: "Bụng giữa"
+regionObliques: "Hai bên"
+
+# 04 Bản 2 §6.10 — nhãn dụng cụ
+equipmentMachine: "Máy"
+equipmentFreeWeight: "Tạ"
+equipmentBodyweight: "Không dụng cụ"
+
+# 04 Bản 2 S-66, S-67, §6.12; 03 Bản 2 F10-R21, F18-E1 → E3, F19-E2
+libraryFootnote: "Thư viện gồm các bài và video Bạn đã duyệt. Không cần mạng, trừ video."
+backLibrary: "Thư viện" # S-67 nút quay lại
+backSession: "Buổi tập"
+backProgress: "Tiến bộ"
+mainRegion: "Vùng cơ chịu tác động chính"
+howTo: "Cách tập"
+safetyNotes: "Lưu ý an toàn"
+exerciseGuideNote: "Hướng dẫn tham khảo cho người khỏe mạnh, không thay huấn luyện viên."
+notInLibrary: "Không còn trong thư viện"
+videoLoading: "Đang tải video…"
+videoUnavailable: "Video không khả dụng"
+videoOffline: "Cần kết nối internet để xem video."
+videoLoadFailed: "Không tải được video. Kiểm tra kết nối rồi thử lại."
+playVideo: "Phát video" # GIẢ ĐỊNH — nhãn VoiceOver của nút phát, spec không ghi câu
+
+# 04 Bản 2 S-68 (trạng thái trống), 03 Bản 2 F23-R4
+progressEmptyTitle: "Chưa có mức tạ nào"
+progressEmptyBody: "Chưa có mức tạ nào. Ghi mức tạ trong buổi tập để theo dõi tiến bộ."

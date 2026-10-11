@@ -60,7 +60,7 @@ void main() {
     await tester.tap(
       find.descendant(
         of: find.byType(AppTabBar),
-        matching: find.text(S.tabSchedule),
+        matching: find.text(S.tabTraining),
       ),
     );
     await tester.pumpAndSettle();
@@ -68,6 +68,20 @@ void main() {
 
   Future<void> tapKey(WidgetTester tester, String key) async {
     final f = find.byKey(ValueKey(key));
+    // S-20 tự cuộn tới hôm nay; phần đầu (tiêu đề, thanh chọn mục, nút "Lịch
+    // tuần") có thể đã ra khỏi vùng dựng sẵn của danh sách → cuộn lên.
+    if (f.evaluate().isEmpty) {
+      await tester.scrollUntilVisible(
+        f,
+        -300,
+        scrollable: find
+            .descendant(
+              of: find.byType(ScheduleScreen),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+    }
     await tester.ensureVisible(f);
     await tester.pumpAndSettle();
     await tester.tap(f);

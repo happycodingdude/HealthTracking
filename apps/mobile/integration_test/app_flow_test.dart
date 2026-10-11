@@ -114,7 +114,7 @@ void main() {
       await tester.tap(find.widgetWithText(OutlinedButton, S.later));
       await pumpUntil(tester, tabLabel(S.tabToday));
       for (final label in [
-        S.tabSchedule,
+        S.tabTraining,
         S.tabMenu,
         S.tabToday,
         S.tabWeight,
@@ -126,13 +126,34 @@ void main() {
 
       // S-20: tháng hiện tại, bắt đầu từ hôm nay (F03-R5).
       final now = clock.now();
-      await tester.tap(tabLabel(S.tabSchedule));
+      await tester.tap(tabLabel(S.tabTraining));
       await tester.pumpAndSettle();
       expect(find.text(S.monthTitle(now.month, now.year)), findsOneWidget);
       expect(
         find.text(Fmt.shortWeekdayDate(LocalDate.fromDateTime(now))),
         findsOneWidget,
       );
+
+      // VS-23: mục Bài tập. Thư viện về máy qua pull (dòng dùng chung, AP-7),
+      // mặc định nhóm cơ của buổi hôm nay (Ngực, F18-R9); chạm bài → S-67 có
+      // khu video chưa phát, hình vùng cơ, hướng dẫn; "‹ Thư viện" quay lại.
+      await tester.tap(find.byKey(const ValueKey('section-library')));
+      await pumpUntil(tester, find.byKey(const ValueKey('region-chest_upper')));
+      const press = 'exercise-chest-upper-machine-incline-machine-chest-press';
+      await tapVisible(tester, find.byKey(const ValueKey(press)));
+      expect(find.byKey(const ValueKey('video-play')), findsOneWidget);
+      expect(find.text(S.mainRegion), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('body-map-male_front-chest_upper')),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const ValueKey('exercise-back')));
+      await tester.pumpAndSettle();
+      // Chạm lại tab đang mở → mục đang mở cuộn lên đầu, thấy thanh chọn mục.
+      await tester.tap(tabLabel(S.tabTraining));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('section-schedule')));
+      await tester.pumpAndSettle();
 
       await tester.tap(tabLabel(S.tabMe));
       await tester.pumpAndSettle();

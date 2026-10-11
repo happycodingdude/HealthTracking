@@ -39,7 +39,7 @@ void main() {
     (tester) async {
       await pumpApp(tester);
       final labels = [
-        S.tabSchedule,
+        S.tabTraining,
         S.tabMenu,
         S.tabToday,
         S.tabWeight,

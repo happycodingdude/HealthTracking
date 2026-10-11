@@ -15,6 +15,7 @@ class TabPage extends ConsumerWidget {
     required this.title,
     this.subtitle,
     this.trailing,
+    this.scrollController,
     this.children = const [],
   });
 
@@ -27,6 +28,10 @@ class TabPage extends ConsumerWidget {
   /// Thành phần ở góc phải tiêu đề (ví dụ chỉ báo "Chưa đồng bộ").
   final Widget? trailing;
 
+  /// Controller cuộn; mặc định là controller của [tab] (tab Tập luyện truyền
+  /// controller của từng mục).
+  final ScrollController? scrollController;
+
   final List<Widget> children;
 
   @override
@@ -35,7 +40,9 @@ class TabPage extends ConsumerWidget {
       body: SafeArea(
         bottom: false,
         child: ListView(
-          controller: ref.watch(tabScrollControllersProvider).of(tab),
+          controller:
+              scrollController ??
+              ref.watch(tabScrollControllersProvider).of(tab),
           padding: EdgeInsets.fromLTRB(
             16,
             24,
