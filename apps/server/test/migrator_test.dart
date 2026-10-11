@@ -10,7 +10,7 @@ void main() {
   final log = CapturingLogger();
 
   setUp(() async {
-    tdb = await TestDatabase.create(migrate: false);
+    tdb = await TestDatabase.create(schema: false);
     dir = Directory.systemTemp.createTempSync('migrations_');
   });
 
@@ -83,12 +83,13 @@ void main() {
     },
   );
 
-  test('migration thật của repo chạy được từ database trống', () async {
+  test('IR2-13: trong lúc dev, migrations/ của repo chưa có file .sql nào '
+      '(cấu trúc nằm trong db/schema.sql) → khởi động không chạy gì', () async {
     final applied = await Migrator(
       tdb.pool,
       Directory('migrations'),
       log.logger,
     ).migrate();
-    expect(applied, isA<List<String>>());
+    expect(applied, isEmpty);
   });
 }

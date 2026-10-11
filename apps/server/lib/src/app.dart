@@ -20,12 +20,14 @@ import 'sync/account_handler.dart';
 import 'sync/menu_handlers.dart';
 import 'sync/profile_handler.dart';
 import 'sync/schedule_handlers.dart';
+import 'sync/shared_handlers.dart';
 import 'sync/sync_entity_handler.dart';
 import 'sync/sync_routes.dart';
 import 'sync/sync_service.dart';
 import 'sync/weight_handler.dart';
 
-/// Entity đồng bộ của Bản 1 (06 §6.5.1). Slice sau thêm handler vào đây.
+/// Entity đồng bộ (06 §6.5.1, 06 Bản 2 §6.5.1). Slice sau thêm handler vào
+/// đây.
 const defaultSyncHandlers = <SyncEntityHandler>[
   AccountHandler(),
   ProfileHandler(),
@@ -35,6 +37,9 @@ const defaultSyncHandlers = <SyncEntityHandler>[
   DayHandler(),
   MenuHandler(),
   AiDailyUsageHandler(),
+  // Bản 2: dòng dùng chung, chỉ pull (VS20-T08).
+  ExerciseHandler(),
+  DishImageHandler(),
 ];
 
 /// Các thành phần dùng chung của API, tạo một lần khi khởi động.

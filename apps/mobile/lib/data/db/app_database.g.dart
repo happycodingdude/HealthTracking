@@ -51,8 +51,25 @@ class $SyncStateTable extends SyncState
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _knownEntitiesMeta = const VerificationMeta(
+    'knownEntities',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, cursor, lastSyncedAt, aiBudget];
+  late final GeneratedColumn<String> knownEntities = GeneratedColumn<String>(
+    'known_entities',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    cursor,
+    lastSyncedAt,
+    aiBudget,
+    knownEntities,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -89,6 +106,15 @@ class $SyncStateTable extends SyncState
         aiBudget.isAcceptableOrUnknown(data['ai_budget']!, _aiBudgetMeta),
       );
     }
+    if (data.containsKey('known_entities')) {
+      context.handle(
+        _knownEntitiesMeta,
+        knownEntities.isAcceptableOrUnknown(
+          data['known_entities']!,
+          _knownEntitiesMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -114,6 +140,10 @@ class $SyncStateTable extends SyncState
         DriftSqlType.string,
         data['${effectivePrefix}ai_budget'],
       ),
+      knownEntities: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}known_entities'],
+      ),
     );
   }
 
@@ -130,11 +160,16 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
 
   /// `meta.aiBudget` của lần pull gần nhất, JSON (VS-12, ED-04).
   final String? aiBudget;
+
+  /// Bộ entity app đã biết lúc pull, cách nhau bởi dấu phẩy (06 Bản 2 ED2-14).
+  /// App mới biết thêm entity → đặt lại cursor về 0 và pull lại toàn bộ.
+  final String? knownEntities;
   const SyncStateRow({
     required this.id,
     required this.cursor,
     this.lastSyncedAt,
     this.aiBudget,
+    this.knownEntities,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -146,6 +181,9 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
     }
     if (!nullToAbsent || aiBudget != null) {
       map['ai_budget'] = Variable<String>(aiBudget);
+    }
+    if (!nullToAbsent || knownEntities != null) {
+      map['known_entities'] = Variable<String>(knownEntities);
     }
     return map;
   }
@@ -160,6 +198,9 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
       aiBudget: aiBudget == null && nullToAbsent
           ? const Value.absent()
           : Value(aiBudget),
+      knownEntities: knownEntities == null && nullToAbsent
+          ? const Value.absent()
+          : Value(knownEntities),
     );
   }
 
@@ -173,6 +214,7 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
       cursor: serializer.fromJson<int>(json['cursor']),
       lastSyncedAt: serializer.fromJson<DateTime?>(json['lastSyncedAt']),
       aiBudget: serializer.fromJson<String?>(json['aiBudget']),
+      knownEntities: serializer.fromJson<String?>(json['knownEntities']),
     );
   }
   @override
@@ -183,6 +225,7 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
       'cursor': serializer.toJson<int>(cursor),
       'lastSyncedAt': serializer.toJson<DateTime?>(lastSyncedAt),
       'aiBudget': serializer.toJson<String?>(aiBudget),
+      'knownEntities': serializer.toJson<String?>(knownEntities),
     };
   }
 
@@ -191,11 +234,15 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
     int? cursor,
     Value<DateTime?> lastSyncedAt = const Value.absent(),
     Value<String?> aiBudget = const Value.absent(),
+    Value<String?> knownEntities = const Value.absent(),
   }) => SyncStateRow(
     id: id ?? this.id,
     cursor: cursor ?? this.cursor,
     lastSyncedAt: lastSyncedAt.present ? lastSyncedAt.value : this.lastSyncedAt,
     aiBudget: aiBudget.present ? aiBudget.value : this.aiBudget,
+    knownEntities: knownEntities.present
+        ? knownEntities.value
+        : this.knownEntities,
   );
   SyncStateRow copyWithCompanion(SyncStateCompanion data) {
     return SyncStateRow(
@@ -205,6 +252,9 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
           ? data.lastSyncedAt.value
           : this.lastSyncedAt,
       aiBudget: data.aiBudget.present ? data.aiBudget.value : this.aiBudget,
+      knownEntities: data.knownEntities.present
+          ? data.knownEntities.value
+          : this.knownEntities,
     );
   }
 
@@ -214,13 +264,15 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
           ..write('id: $id, ')
           ..write('cursor: $cursor, ')
           ..write('lastSyncedAt: $lastSyncedAt, ')
-          ..write('aiBudget: $aiBudget')
+          ..write('aiBudget: $aiBudget, ')
+          ..write('knownEntities: $knownEntities')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, cursor, lastSyncedAt, aiBudget);
+  int get hashCode =>
+      Object.hash(id, cursor, lastSyncedAt, aiBudget, knownEntities);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -228,7 +280,8 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
           other.id == this.id &&
           other.cursor == this.cursor &&
           other.lastSyncedAt == this.lastSyncedAt &&
-          other.aiBudget == this.aiBudget);
+          other.aiBudget == this.aiBudget &&
+          other.knownEntities == this.knownEntities);
 }
 
 class SyncStateCompanion extends UpdateCompanion<SyncStateRow> {
@@ -236,29 +289,34 @@ class SyncStateCompanion extends UpdateCompanion<SyncStateRow> {
   final Value<int> cursor;
   final Value<DateTime?> lastSyncedAt;
   final Value<String?> aiBudget;
+  final Value<String?> knownEntities;
   const SyncStateCompanion({
     this.id = const Value.absent(),
     this.cursor = const Value.absent(),
     this.lastSyncedAt = const Value.absent(),
     this.aiBudget = const Value.absent(),
+    this.knownEntities = const Value.absent(),
   });
   SyncStateCompanion.insert({
     this.id = const Value.absent(),
     this.cursor = const Value.absent(),
     this.lastSyncedAt = const Value.absent(),
     this.aiBudget = const Value.absent(),
+    this.knownEntities = const Value.absent(),
   });
   static Insertable<SyncStateRow> custom({
     Expression<int>? id,
     Expression<int>? cursor,
     Expression<DateTime>? lastSyncedAt,
     Expression<String>? aiBudget,
+    Expression<String>? knownEntities,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (cursor != null) 'cursor': cursor,
       if (lastSyncedAt != null) 'last_synced_at': lastSyncedAt,
       if (aiBudget != null) 'ai_budget': aiBudget,
+      if (knownEntities != null) 'known_entities': knownEntities,
     });
   }
 
@@ -267,12 +325,14 @@ class SyncStateCompanion extends UpdateCompanion<SyncStateRow> {
     Value<int>? cursor,
     Value<DateTime?>? lastSyncedAt,
     Value<String?>? aiBudget,
+    Value<String?>? knownEntities,
   }) {
     return SyncStateCompanion(
       id: id ?? this.id,
       cursor: cursor ?? this.cursor,
       lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
       aiBudget: aiBudget ?? this.aiBudget,
+      knownEntities: knownEntities ?? this.knownEntities,
     );
   }
 
@@ -291,6 +351,9 @@ class SyncStateCompanion extends UpdateCompanion<SyncStateRow> {
     if (aiBudget.present) {
       map['ai_budget'] = Variable<String>(aiBudget.value);
     }
+    if (knownEntities.present) {
+      map['known_entities'] = Variable<String>(knownEntities.value);
+    }
     return map;
   }
 
@@ -300,7 +363,8 @@ class SyncStateCompanion extends UpdateCompanion<SyncStateRow> {
           ..write('id: $id, ')
           ..write('cursor: $cursor, ')
           ..write('lastSyncedAt: $lastSyncedAt, ')
-          ..write('aiBudget: $aiBudget')
+          ..write('aiBudget: $aiBudget, ')
+          ..write('knownEntities: $knownEntities')
           ..write(')'))
         .toString();
   }
@@ -1157,6 +1221,18 @@ class $ProfilesTable extends Profiles
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _scheduleStartedOnMeta = const VerificationMeta(
+    'scheduleStartedOn',
+  );
+  @override
+  late final GeneratedColumn<String> scheduleStartedOn =
+      GeneratedColumn<String>(
+        'schedule_started_on',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _disclaimerAcceptedAtMeta =
       const VerificationMeta('disclaimerAcceptedAt');
   @override
@@ -1257,6 +1333,7 @@ class $ProfilesTable extends Profiles
     sex,
     activityLevel,
     setupDate,
+    scheduleStartedOn,
     disclaimerAcceptedAt,
     onboardingCompletedAt,
     calorieMode,
@@ -1328,6 +1405,15 @@ class $ProfilesTable extends Profiles
       context.handle(
         _setupDateMeta,
         setupDate.isAcceptableOrUnknown(data['setup_date']!, _setupDateMeta),
+      );
+    }
+    if (data.containsKey('schedule_started_on')) {
+      context.handle(
+        _scheduleStartedOnMeta,
+        scheduleStartedOn.isAcceptableOrUnknown(
+          data['schedule_started_on']!,
+          _scheduleStartedOnMeta,
+        ),
       );
     }
     if (data.containsKey('disclaimer_accepted_at')) {
@@ -1436,6 +1522,10 @@ class $ProfilesTable extends Profiles
         DriftSqlType.string,
         data['${effectivePrefix}setup_date'],
       ),
+      scheduleStartedOn: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}schedule_started_on'],
+      ),
       disclaimerAcceptedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}disclaimer_accepted_at'],
@@ -1487,6 +1577,9 @@ class ProfileRow extends DataClass implements Insertable<ProfileRow> {
 
   /// `YYYY-MM-DD`.
   final String? setupDate;
+
+  /// `YYYY-MM-DD`, Bản 2 (05 Bản 2 §6.6.5).
+  final String? scheduleStartedOn;
   final DateTime? disclaimerAcceptedAt;
   final DateTime? onboardingCompletedAt;
   final String? calorieMode;
@@ -1503,6 +1596,7 @@ class ProfileRow extends DataClass implements Insertable<ProfileRow> {
     this.sex,
     this.activityLevel,
     this.setupDate,
+    this.scheduleStartedOn,
     this.disclaimerAcceptedAt,
     this.onboardingCompletedAt,
     this.calorieMode,
@@ -1531,6 +1625,9 @@ class ProfileRow extends DataClass implements Insertable<ProfileRow> {
     }
     if (!nullToAbsent || setupDate != null) {
       map['setup_date'] = Variable<String>(setupDate);
+    }
+    if (!nullToAbsent || scheduleStartedOn != null) {
+      map['schedule_started_on'] = Variable<String>(scheduleStartedOn);
     }
     if (!nullToAbsent || disclaimerAcceptedAt != null) {
       map['disclaimer_accepted_at'] = Variable<DateTime>(disclaimerAcceptedAt);
@@ -1576,6 +1673,9 @@ class ProfileRow extends DataClass implements Insertable<ProfileRow> {
       setupDate: setupDate == null && nullToAbsent
           ? const Value.absent()
           : Value(setupDate),
+      scheduleStartedOn: scheduleStartedOn == null && nullToAbsent
+          ? const Value.absent()
+          : Value(scheduleStartedOn),
       disclaimerAcceptedAt: disclaimerAcceptedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(disclaimerAcceptedAt),
@@ -1614,6 +1714,9 @@ class ProfileRow extends DataClass implements Insertable<ProfileRow> {
       sex: serializer.fromJson<String?>(json['sex']),
       activityLevel: serializer.fromJson<String?>(json['activityLevel']),
       setupDate: serializer.fromJson<String?>(json['setupDate']),
+      scheduleStartedOn: serializer.fromJson<String?>(
+        json['scheduleStartedOn'],
+      ),
       disclaimerAcceptedAt: serializer.fromJson<DateTime?>(
         json['disclaimerAcceptedAt'],
       ),
@@ -1641,6 +1744,7 @@ class ProfileRow extends DataClass implements Insertable<ProfileRow> {
       'sex': serializer.toJson<String?>(sex),
       'activityLevel': serializer.toJson<String?>(activityLevel),
       'setupDate': serializer.toJson<String?>(setupDate),
+      'scheduleStartedOn': serializer.toJson<String?>(scheduleStartedOn),
       'disclaimerAcceptedAt': serializer.toJson<DateTime?>(
         disclaimerAcceptedAt,
       ),
@@ -1664,6 +1768,7 @@ class ProfileRow extends DataClass implements Insertable<ProfileRow> {
     Value<String?> sex = const Value.absent(),
     Value<String?> activityLevel = const Value.absent(),
     Value<String?> setupDate = const Value.absent(),
+    Value<String?> scheduleStartedOn = const Value.absent(),
     Value<DateTime?> disclaimerAcceptedAt = const Value.absent(),
     Value<DateTime?> onboardingCompletedAt = const Value.absent(),
     Value<String?> calorieMode = const Value.absent(),
@@ -1682,6 +1787,9 @@ class ProfileRow extends DataClass implements Insertable<ProfileRow> {
         ? activityLevel.value
         : this.activityLevel,
     setupDate: setupDate.present ? setupDate.value : this.setupDate,
+    scheduleStartedOn: scheduleStartedOn.present
+        ? scheduleStartedOn.value
+        : this.scheduleStartedOn,
     disclaimerAcceptedAt: disclaimerAcceptedAt.present
         ? disclaimerAcceptedAt.value
         : this.disclaimerAcceptedAt,
@@ -1712,6 +1820,9 @@ class ProfileRow extends DataClass implements Insertable<ProfileRow> {
           ? data.activityLevel.value
           : this.activityLevel,
       setupDate: data.setupDate.present ? data.setupDate.value : this.setupDate,
+      scheduleStartedOn: data.scheduleStartedOn.present
+          ? data.scheduleStartedOn.value
+          : this.scheduleStartedOn,
       disclaimerAcceptedAt: data.disclaimerAcceptedAt.present
           ? data.disclaimerAcceptedAt.value
           : this.disclaimerAcceptedAt,
@@ -1747,6 +1858,7 @@ class ProfileRow extends DataClass implements Insertable<ProfileRow> {
           ..write('sex: $sex, ')
           ..write('activityLevel: $activityLevel, ')
           ..write('setupDate: $setupDate, ')
+          ..write('scheduleStartedOn: $scheduleStartedOn, ')
           ..write('disclaimerAcceptedAt: $disclaimerAcceptedAt, ')
           ..write('onboardingCompletedAt: $onboardingCompletedAt, ')
           ..write('calorieMode: $calorieMode, ')
@@ -1768,6 +1880,7 @@ class ProfileRow extends DataClass implements Insertable<ProfileRow> {
     sex,
     activityLevel,
     setupDate,
+    scheduleStartedOn,
     disclaimerAcceptedAt,
     onboardingCompletedAt,
     calorieMode,
@@ -1788,6 +1901,7 @@ class ProfileRow extends DataClass implements Insertable<ProfileRow> {
           other.sex == this.sex &&
           other.activityLevel == this.activityLevel &&
           other.setupDate == this.setupDate &&
+          other.scheduleStartedOn == this.scheduleStartedOn &&
           other.disclaimerAcceptedAt == this.disclaimerAcceptedAt &&
           other.onboardingCompletedAt == this.onboardingCompletedAt &&
           other.calorieMode == this.calorieMode &&
@@ -1806,6 +1920,7 @@ class ProfilesCompanion extends UpdateCompanion<ProfileRow> {
   final Value<String?> sex;
   final Value<String?> activityLevel;
   final Value<String?> setupDate;
+  final Value<String?> scheduleStartedOn;
   final Value<DateTime?> disclaimerAcceptedAt;
   final Value<DateTime?> onboardingCompletedAt;
   final Value<String?> calorieMode;
@@ -1823,6 +1938,7 @@ class ProfilesCompanion extends UpdateCompanion<ProfileRow> {
     this.sex = const Value.absent(),
     this.activityLevel = const Value.absent(),
     this.setupDate = const Value.absent(),
+    this.scheduleStartedOn = const Value.absent(),
     this.disclaimerAcceptedAt = const Value.absent(),
     this.onboardingCompletedAt = const Value.absent(),
     this.calorieMode = const Value.absent(),
@@ -1841,6 +1957,7 @@ class ProfilesCompanion extends UpdateCompanion<ProfileRow> {
     this.sex = const Value.absent(),
     this.activityLevel = const Value.absent(),
     this.setupDate = const Value.absent(),
+    this.scheduleStartedOn = const Value.absent(),
     this.disclaimerAcceptedAt = const Value.absent(),
     this.onboardingCompletedAt = const Value.absent(),
     this.calorieMode = const Value.absent(),
@@ -1860,6 +1977,7 @@ class ProfilesCompanion extends UpdateCompanion<ProfileRow> {
     Expression<String>? sex,
     Expression<String>? activityLevel,
     Expression<String>? setupDate,
+    Expression<String>? scheduleStartedOn,
     Expression<DateTime>? disclaimerAcceptedAt,
     Expression<DateTime>? onboardingCompletedAt,
     Expression<String>? calorieMode,
@@ -1878,6 +1996,7 @@ class ProfilesCompanion extends UpdateCompanion<ProfileRow> {
       if (sex != null) 'sex': sex,
       if (activityLevel != null) 'activity_level': activityLevel,
       if (setupDate != null) 'setup_date': setupDate,
+      if (scheduleStartedOn != null) 'schedule_started_on': scheduleStartedOn,
       if (disclaimerAcceptedAt != null)
         'disclaimer_accepted_at': disclaimerAcceptedAt,
       if (onboardingCompletedAt != null)
@@ -1902,6 +2021,7 @@ class ProfilesCompanion extends UpdateCompanion<ProfileRow> {
     Value<String?>? sex,
     Value<String?>? activityLevel,
     Value<String?>? setupDate,
+    Value<String?>? scheduleStartedOn,
     Value<DateTime?>? disclaimerAcceptedAt,
     Value<DateTime?>? onboardingCompletedAt,
     Value<String?>? calorieMode,
@@ -1920,6 +2040,7 @@ class ProfilesCompanion extends UpdateCompanion<ProfileRow> {
       sex: sex ?? this.sex,
       activityLevel: activityLevel ?? this.activityLevel,
       setupDate: setupDate ?? this.setupDate,
+      scheduleStartedOn: scheduleStartedOn ?? this.scheduleStartedOn,
       disclaimerAcceptedAt: disclaimerAcceptedAt ?? this.disclaimerAcceptedAt,
       onboardingCompletedAt:
           onboardingCompletedAt ?? this.onboardingCompletedAt,
@@ -1956,6 +2077,9 @@ class ProfilesCompanion extends UpdateCompanion<ProfileRow> {
     }
     if (setupDate.present) {
       map['setup_date'] = Variable<String>(setupDate.value);
+    }
+    if (scheduleStartedOn.present) {
+      map['schedule_started_on'] = Variable<String>(scheduleStartedOn.value);
     }
     if (disclaimerAcceptedAt.present) {
       map['disclaimer_accepted_at'] = Variable<DateTime>(
@@ -2003,6 +2127,7 @@ class ProfilesCompanion extends UpdateCompanion<ProfileRow> {
           ..write('sex: $sex, ')
           ..write('activityLevel: $activityLevel, ')
           ..write('setupDate: $setupDate, ')
+          ..write('scheduleStartedOn: $scheduleStartedOn, ')
           ..write('disclaimerAcceptedAt: $disclaimerAcceptedAt, ')
           ..write('onboardingCompletedAt: $onboardingCompletedAt, ')
           ..write('calorieMode: $calorieMode, ')
@@ -4743,6 +4868,2282 @@ class AiDailyUsageCompanion extends UpdateCompanion<AiDailyUsageRow> {
   }
 }
 
+class $DishImagesTable extends DishImages
+    with TableInfo<$DishImagesTable, DishImageRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DishImagesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _nameKeyMeta = const VerificationMeta(
+    'nameKey',
+  );
+  @override
+  late final GeneratedColumn<String> nameKey = GeneratedColumn<String>(
+    'name_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _displayNameMeta = const VerificationMeta(
+    'displayName',
+  );
+  @override
+  late final GeneratedColumn<String> displayName = GeneratedColumn<String>(
+    'display_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _widthMeta = const VerificationMeta('width');
+  @override
+  late final GeneratedColumn<int> width = GeneratedColumn<int>(
+    'width',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _heightMeta = const VerificationMeta('height');
+  @override
+  late final GeneratedColumn<int> height = GeneratedColumn<int>(
+    'height',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bytesMeta = const VerificationMeta('bytes');
+  @override
+  late final GeneratedColumn<int> bytes = GeneratedColumn<int>(
+    'bytes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _cachedPathMeta = const VerificationMeta(
+    'cachedPath',
+  );
+  @override
+  late final GeneratedColumn<String> cachedPath = GeneratedColumn<String>(
+    'cached_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    nameKey,
+    id,
+    displayName,
+    width,
+    height,
+    bytes,
+    createdAt,
+    cachedPath,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'dish_images';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DishImageRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('name_key')) {
+      context.handle(
+        _nameKeyMeta,
+        nameKey.isAcceptableOrUnknown(data['name_key']!, _nameKeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameKeyMeta);
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('display_name')) {
+      context.handle(
+        _displayNameMeta,
+        displayName.isAcceptableOrUnknown(
+          data['display_name']!,
+          _displayNameMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_displayNameMeta);
+    }
+    if (data.containsKey('width')) {
+      context.handle(
+        _widthMeta,
+        width.isAcceptableOrUnknown(data['width']!, _widthMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_widthMeta);
+    }
+    if (data.containsKey('height')) {
+      context.handle(
+        _heightMeta,
+        height.isAcceptableOrUnknown(data['height']!, _heightMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_heightMeta);
+    }
+    if (data.containsKey('bytes')) {
+      context.handle(
+        _bytesMeta,
+        bytes.isAcceptableOrUnknown(data['bytes']!, _bytesMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bytesMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('cached_path')) {
+      context.handle(
+        _cachedPathMeta,
+        cachedPath.isAcceptableOrUnknown(data['cached_path']!, _cachedPathMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {nameKey};
+  @override
+  DishImageRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DishImageRow(
+      nameKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name_key'],
+      )!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      displayName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}display_name'],
+      )!,
+      width: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}width'],
+      )!,
+      height: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}height'],
+      )!,
+      bytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}bytes'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      cachedPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cached_path'],
+      ),
+    );
+  }
+
+  @override
+  $DishImagesTable createAlias(String alias) {
+    return $DishImagesTable(attachedDatabase, alias);
+  }
+}
+
+class DishImageRow extends DataClass implements Insertable<DishImageRow> {
+  final String nameKey;
+  final String id;
+  final String displayName;
+  final int width;
+  final int height;
+  final int bytes;
+  final DateTime createdAt;
+  final String? cachedPath;
+  const DishImageRow({
+    required this.nameKey,
+    required this.id,
+    required this.displayName,
+    required this.width,
+    required this.height,
+    required this.bytes,
+    required this.createdAt,
+    this.cachedPath,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['name_key'] = Variable<String>(nameKey);
+    map['id'] = Variable<String>(id);
+    map['display_name'] = Variable<String>(displayName);
+    map['width'] = Variable<int>(width);
+    map['height'] = Variable<int>(height);
+    map['bytes'] = Variable<int>(bytes);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || cachedPath != null) {
+      map['cached_path'] = Variable<String>(cachedPath);
+    }
+    return map;
+  }
+
+  DishImagesCompanion toCompanion(bool nullToAbsent) {
+    return DishImagesCompanion(
+      nameKey: Value(nameKey),
+      id: Value(id),
+      displayName: Value(displayName),
+      width: Value(width),
+      height: Value(height),
+      bytes: Value(bytes),
+      createdAt: Value(createdAt),
+      cachedPath: cachedPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cachedPath),
+    );
+  }
+
+  factory DishImageRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DishImageRow(
+      nameKey: serializer.fromJson<String>(json['nameKey']),
+      id: serializer.fromJson<String>(json['id']),
+      displayName: serializer.fromJson<String>(json['displayName']),
+      width: serializer.fromJson<int>(json['width']),
+      height: serializer.fromJson<int>(json['height']),
+      bytes: serializer.fromJson<int>(json['bytes']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      cachedPath: serializer.fromJson<String?>(json['cachedPath']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'nameKey': serializer.toJson<String>(nameKey),
+      'id': serializer.toJson<String>(id),
+      'displayName': serializer.toJson<String>(displayName),
+      'width': serializer.toJson<int>(width),
+      'height': serializer.toJson<int>(height),
+      'bytes': serializer.toJson<int>(bytes),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'cachedPath': serializer.toJson<String?>(cachedPath),
+    };
+  }
+
+  DishImageRow copyWith({
+    String? nameKey,
+    String? id,
+    String? displayName,
+    int? width,
+    int? height,
+    int? bytes,
+    DateTime? createdAt,
+    Value<String?> cachedPath = const Value.absent(),
+  }) => DishImageRow(
+    nameKey: nameKey ?? this.nameKey,
+    id: id ?? this.id,
+    displayName: displayName ?? this.displayName,
+    width: width ?? this.width,
+    height: height ?? this.height,
+    bytes: bytes ?? this.bytes,
+    createdAt: createdAt ?? this.createdAt,
+    cachedPath: cachedPath.present ? cachedPath.value : this.cachedPath,
+  );
+  DishImageRow copyWithCompanion(DishImagesCompanion data) {
+    return DishImageRow(
+      nameKey: data.nameKey.present ? data.nameKey.value : this.nameKey,
+      id: data.id.present ? data.id.value : this.id,
+      displayName: data.displayName.present
+          ? data.displayName.value
+          : this.displayName,
+      width: data.width.present ? data.width.value : this.width,
+      height: data.height.present ? data.height.value : this.height,
+      bytes: data.bytes.present ? data.bytes.value : this.bytes,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      cachedPath: data.cachedPath.present
+          ? data.cachedPath.value
+          : this.cachedPath,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DishImageRow(')
+          ..write('nameKey: $nameKey, ')
+          ..write('id: $id, ')
+          ..write('displayName: $displayName, ')
+          ..write('width: $width, ')
+          ..write('height: $height, ')
+          ..write('bytes: $bytes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('cachedPath: $cachedPath')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    nameKey,
+    id,
+    displayName,
+    width,
+    height,
+    bytes,
+    createdAt,
+    cachedPath,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DishImageRow &&
+          other.nameKey == this.nameKey &&
+          other.id == this.id &&
+          other.displayName == this.displayName &&
+          other.width == this.width &&
+          other.height == this.height &&
+          other.bytes == this.bytes &&
+          other.createdAt == this.createdAt &&
+          other.cachedPath == this.cachedPath);
+}
+
+class DishImagesCompanion extends UpdateCompanion<DishImageRow> {
+  final Value<String> nameKey;
+  final Value<String> id;
+  final Value<String> displayName;
+  final Value<int> width;
+  final Value<int> height;
+  final Value<int> bytes;
+  final Value<DateTime> createdAt;
+  final Value<String?> cachedPath;
+  final Value<int> rowid;
+  const DishImagesCompanion({
+    this.nameKey = const Value.absent(),
+    this.id = const Value.absent(),
+    this.displayName = const Value.absent(),
+    this.width = const Value.absent(),
+    this.height = const Value.absent(),
+    this.bytes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.cachedPath = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DishImagesCompanion.insert({
+    required String nameKey,
+    required String id,
+    required String displayName,
+    required int width,
+    required int height,
+    required int bytes,
+    required DateTime createdAt,
+    this.cachedPath = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : nameKey = Value(nameKey),
+       id = Value(id),
+       displayName = Value(displayName),
+       width = Value(width),
+       height = Value(height),
+       bytes = Value(bytes),
+       createdAt = Value(createdAt);
+  static Insertable<DishImageRow> custom({
+    Expression<String>? nameKey,
+    Expression<String>? id,
+    Expression<String>? displayName,
+    Expression<int>? width,
+    Expression<int>? height,
+    Expression<int>? bytes,
+    Expression<DateTime>? createdAt,
+    Expression<String>? cachedPath,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (nameKey != null) 'name_key': nameKey,
+      if (id != null) 'id': id,
+      if (displayName != null) 'display_name': displayName,
+      if (width != null) 'width': width,
+      if (height != null) 'height': height,
+      if (bytes != null) 'bytes': bytes,
+      if (createdAt != null) 'created_at': createdAt,
+      if (cachedPath != null) 'cached_path': cachedPath,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DishImagesCompanion copyWith({
+    Value<String>? nameKey,
+    Value<String>? id,
+    Value<String>? displayName,
+    Value<int>? width,
+    Value<int>? height,
+    Value<int>? bytes,
+    Value<DateTime>? createdAt,
+    Value<String?>? cachedPath,
+    Value<int>? rowid,
+  }) {
+    return DishImagesCompanion(
+      nameKey: nameKey ?? this.nameKey,
+      id: id ?? this.id,
+      displayName: displayName ?? this.displayName,
+      width: width ?? this.width,
+      height: height ?? this.height,
+      bytes: bytes ?? this.bytes,
+      createdAt: createdAt ?? this.createdAt,
+      cachedPath: cachedPath ?? this.cachedPath,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (nameKey.present) {
+      map['name_key'] = Variable<String>(nameKey.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (displayName.present) {
+      map['display_name'] = Variable<String>(displayName.value);
+    }
+    if (width.present) {
+      map['width'] = Variable<int>(width.value);
+    }
+    if (height.present) {
+      map['height'] = Variable<int>(height.value);
+    }
+    if (bytes.present) {
+      map['bytes'] = Variable<int>(bytes.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (cachedPath.present) {
+      map['cached_path'] = Variable<String>(cachedPath.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DishImagesCompanion(')
+          ..write('nameKey: $nameKey, ')
+          ..write('id: $id, ')
+          ..write('displayName: $displayName, ')
+          ..write('width: $width, ')
+          ..write('height: $height, ')
+          ..write('bytes: $bytes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('cachedPath: $cachedPath, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $MuscleRegionsTable extends MuscleRegions
+    with TableInfo<$MuscleRegionsTable, MuscleRegionRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MuscleRegionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _muscleGroupMeta = const VerificationMeta(
+    'muscleGroup',
+  );
+  @override
+  late final GeneratedColumn<String> muscleGroup = GeneratedColumn<String>(
+    'muscle_group',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _viewMeta = const VerificationMeta('view');
+  @override
+  late final GeneratedColumn<String> view = GeneratedColumn<String>(
+    'view',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sortOrderMeta = const VerificationMeta(
+    'sortOrder',
+  );
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+    'sort_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, muscleGroup, view, sortOrder];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'muscle_regions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MuscleRegionRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('muscle_group')) {
+      context.handle(
+        _muscleGroupMeta,
+        muscleGroup.isAcceptableOrUnknown(
+          data['muscle_group']!,
+          _muscleGroupMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_muscleGroupMeta);
+    }
+    if (data.containsKey('view')) {
+      context.handle(
+        _viewMeta,
+        view.isAcceptableOrUnknown(data['view']!, _viewMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_viewMeta);
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(
+        _sortOrderMeta,
+        sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sortOrderMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  MuscleRegionRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MuscleRegionRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      muscleGroup: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}muscle_group'],
+      )!,
+      view: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}view'],
+      )!,
+      sortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sort_order'],
+      )!,
+    );
+  }
+
+  @override
+  $MuscleRegionsTable createAlias(String alias) {
+    return $MuscleRegionsTable(attachedDatabase, alias);
+  }
+}
+
+class MuscleRegionRow extends DataClass implements Insertable<MuscleRegionRow> {
+  final String id;
+  final String muscleGroup;
+
+  /// `front` / `back`.
+  final String view;
+  final int sortOrder;
+  const MuscleRegionRow({
+    required this.id,
+    required this.muscleGroup,
+    required this.view,
+    required this.sortOrder,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['muscle_group'] = Variable<String>(muscleGroup);
+    map['view'] = Variable<String>(view);
+    map['sort_order'] = Variable<int>(sortOrder);
+    return map;
+  }
+
+  MuscleRegionsCompanion toCompanion(bool nullToAbsent) {
+    return MuscleRegionsCompanion(
+      id: Value(id),
+      muscleGroup: Value(muscleGroup),
+      view: Value(view),
+      sortOrder: Value(sortOrder),
+    );
+  }
+
+  factory MuscleRegionRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MuscleRegionRow(
+      id: serializer.fromJson<String>(json['id']),
+      muscleGroup: serializer.fromJson<String>(json['muscleGroup']),
+      view: serializer.fromJson<String>(json['view']),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'muscleGroup': serializer.toJson<String>(muscleGroup),
+      'view': serializer.toJson<String>(view),
+      'sortOrder': serializer.toJson<int>(sortOrder),
+    };
+  }
+
+  MuscleRegionRow copyWith({
+    String? id,
+    String? muscleGroup,
+    String? view,
+    int? sortOrder,
+  }) => MuscleRegionRow(
+    id: id ?? this.id,
+    muscleGroup: muscleGroup ?? this.muscleGroup,
+    view: view ?? this.view,
+    sortOrder: sortOrder ?? this.sortOrder,
+  );
+  MuscleRegionRow copyWithCompanion(MuscleRegionsCompanion data) {
+    return MuscleRegionRow(
+      id: data.id.present ? data.id.value : this.id,
+      muscleGroup: data.muscleGroup.present
+          ? data.muscleGroup.value
+          : this.muscleGroup,
+      view: data.view.present ? data.view.value : this.view,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MuscleRegionRow(')
+          ..write('id: $id, ')
+          ..write('muscleGroup: $muscleGroup, ')
+          ..write('view: $view, ')
+          ..write('sortOrder: $sortOrder')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, muscleGroup, view, sortOrder);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MuscleRegionRow &&
+          other.id == this.id &&
+          other.muscleGroup == this.muscleGroup &&
+          other.view == this.view &&
+          other.sortOrder == this.sortOrder);
+}
+
+class MuscleRegionsCompanion extends UpdateCompanion<MuscleRegionRow> {
+  final Value<String> id;
+  final Value<String> muscleGroup;
+  final Value<String> view;
+  final Value<int> sortOrder;
+  final Value<int> rowid;
+  const MuscleRegionsCompanion({
+    this.id = const Value.absent(),
+    this.muscleGroup = const Value.absent(),
+    this.view = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MuscleRegionsCompanion.insert({
+    required String id,
+    required String muscleGroup,
+    required String view,
+    required int sortOrder,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       muscleGroup = Value(muscleGroup),
+       view = Value(view),
+       sortOrder = Value(sortOrder);
+  static Insertable<MuscleRegionRow> custom({
+    Expression<String>? id,
+    Expression<String>? muscleGroup,
+    Expression<String>? view,
+    Expression<int>? sortOrder,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (muscleGroup != null) 'muscle_group': muscleGroup,
+      if (view != null) 'view': view,
+      if (sortOrder != null) 'sort_order': sortOrder,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MuscleRegionsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? muscleGroup,
+    Value<String>? view,
+    Value<int>? sortOrder,
+    Value<int>? rowid,
+  }) {
+    return MuscleRegionsCompanion(
+      id: id ?? this.id,
+      muscleGroup: muscleGroup ?? this.muscleGroup,
+      view: view ?? this.view,
+      sortOrder: sortOrder ?? this.sortOrder,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (muscleGroup.present) {
+      map['muscle_group'] = Variable<String>(muscleGroup.value);
+    }
+    if (view.present) {
+      map['view'] = Variable<String>(view.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MuscleRegionsCompanion(')
+          ..write('id: $id, ')
+          ..write('muscleGroup: $muscleGroup, ')
+          ..write('view: $view, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ExercisesTable extends Exercises
+    with TableInfo<$ExercisesTable, ExerciseRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ExercisesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _muscleGroupMeta = const VerificationMeta(
+    'muscleGroup',
+  );
+  @override
+  late final GeneratedColumn<String> muscleGroup = GeneratedColumn<String>(
+    'muscle_group',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _muscleRegionMeta = const VerificationMeta(
+    'muscleRegion',
+  );
+  @override
+  late final GeneratedColumn<String> muscleRegion = GeneratedColumn<String>(
+    'muscle_region',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _equipmentMeta = const VerificationMeta(
+    'equipment',
+  );
+  @override
+  late final GeneratedColumn<String> equipment = GeneratedColumn<String>(
+    'equipment',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _logsWeightMeta = const VerificationMeta(
+    'logsWeight',
+  );
+  @override
+  late final GeneratedColumn<bool> logsWeight = GeneratedColumn<bool>(
+    'logs_weight',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("logs_weight" IN (0, 1))',
+    ),
+  );
+  static const VerificationMeta _nameViMeta = const VerificationMeta('nameVi');
+  @override
+  late final GeneratedColumn<String> nameVi = GeneratedColumn<String>(
+    'name_vi',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameEnMeta = const VerificationMeta('nameEn');
+  @override
+  late final GeneratedColumn<String> nameEn = GeneratedColumn<String>(
+    'name_en',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _youtubeVideoIdMeta = const VerificationMeta(
+    'youtubeVideoId',
+  );
+  @override
+  late final GeneratedColumn<String> youtubeVideoId = GeneratedColumn<String>(
+    'youtube_video_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _videoChannelMeta = const VerificationMeta(
+    'videoChannel',
+  );
+  @override
+  late final GeneratedColumn<String> videoChannel = GeneratedColumn<String>(
+    'video_channel',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _videoDurationSMeta = const VerificationMeta(
+    'videoDurationS',
+  );
+  @override
+  late final GeneratedColumn<int> videoDurationS = GeneratedColumn<int>(
+    'video_duration_s',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _videoAvailableMeta = const VerificationMeta(
+    'videoAvailable',
+  );
+  @override
+  late final GeneratedColumn<bool> videoAvailable = GeneratedColumn<bool>(
+    'video_available',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("video_available" IN (0, 1))',
+    ),
+  );
+  static const VerificationMeta _videoCheckedAtMeta = const VerificationMeta(
+    'videoCheckedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> videoCheckedAt =
+      GeneratedColumn<DateTime>(
+        'video_checked_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _videoUnavailableReasonMeta =
+      const VerificationMeta('videoUnavailableReason');
+  @override
+  late final GeneratedColumn<String> videoUnavailableReason =
+      GeneratedColumn<String>(
+        'video_unavailable_reason',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _guideStepsMeta = const VerificationMeta(
+    'guideSteps',
+  );
+  @override
+  late final GeneratedColumn<String> guideSteps = GeneratedColumn<String>(
+    'guide_steps',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _guideSafetyMeta = const VerificationMeta(
+    'guideSafety',
+  );
+  @override
+  late final GeneratedColumn<String> guideSafety = GeneratedColumn<String>(
+    'guide_safety',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _approvedAtMeta = const VerificationMeta(
+    'approvedAt',
+  );
+  @override
+  late final GeneratedColumn<String> approvedAt = GeneratedColumn<String>(
+    'approved_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sortOrderMeta = const VerificationMeta(
+    'sortOrder',
+  );
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+    'sort_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _activeMeta = const VerificationMeta('active');
+  @override
+  late final GeneratedColumn<bool> active = GeneratedColumn<bool>(
+    'active',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("active" IN (0, 1))',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    muscleGroup,
+    muscleRegion,
+    equipment,
+    logsWeight,
+    nameVi,
+    nameEn,
+    youtubeVideoId,
+    videoChannel,
+    videoDurationS,
+    videoAvailable,
+    videoCheckedAt,
+    videoUnavailableReason,
+    guideSteps,
+    guideSafety,
+    approvedAt,
+    sortOrder,
+    active,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'exercises';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ExerciseRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('muscle_group')) {
+      context.handle(
+        _muscleGroupMeta,
+        muscleGroup.isAcceptableOrUnknown(
+          data['muscle_group']!,
+          _muscleGroupMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_muscleGroupMeta);
+    }
+    if (data.containsKey('muscle_region')) {
+      context.handle(
+        _muscleRegionMeta,
+        muscleRegion.isAcceptableOrUnknown(
+          data['muscle_region']!,
+          _muscleRegionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_muscleRegionMeta);
+    }
+    if (data.containsKey('equipment')) {
+      context.handle(
+        _equipmentMeta,
+        equipment.isAcceptableOrUnknown(data['equipment']!, _equipmentMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_equipmentMeta);
+    }
+    if (data.containsKey('logs_weight')) {
+      context.handle(
+        _logsWeightMeta,
+        logsWeight.isAcceptableOrUnknown(data['logs_weight']!, _logsWeightMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_logsWeightMeta);
+    }
+    if (data.containsKey('name_vi')) {
+      context.handle(
+        _nameViMeta,
+        nameVi.isAcceptableOrUnknown(data['name_vi']!, _nameViMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameViMeta);
+    }
+    if (data.containsKey('name_en')) {
+      context.handle(
+        _nameEnMeta,
+        nameEn.isAcceptableOrUnknown(data['name_en']!, _nameEnMeta),
+      );
+    }
+    if (data.containsKey('youtube_video_id')) {
+      context.handle(
+        _youtubeVideoIdMeta,
+        youtubeVideoId.isAcceptableOrUnknown(
+          data['youtube_video_id']!,
+          _youtubeVideoIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_youtubeVideoIdMeta);
+    }
+    if (data.containsKey('video_channel')) {
+      context.handle(
+        _videoChannelMeta,
+        videoChannel.isAcceptableOrUnknown(
+          data['video_channel']!,
+          _videoChannelMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_videoChannelMeta);
+    }
+    if (data.containsKey('video_duration_s')) {
+      context.handle(
+        _videoDurationSMeta,
+        videoDurationS.isAcceptableOrUnknown(
+          data['video_duration_s']!,
+          _videoDurationSMeta,
+        ),
+      );
+    }
+    if (data.containsKey('video_available')) {
+      context.handle(
+        _videoAvailableMeta,
+        videoAvailable.isAcceptableOrUnknown(
+          data['video_available']!,
+          _videoAvailableMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_videoAvailableMeta);
+    }
+    if (data.containsKey('video_checked_at')) {
+      context.handle(
+        _videoCheckedAtMeta,
+        videoCheckedAt.isAcceptableOrUnknown(
+          data['video_checked_at']!,
+          _videoCheckedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('video_unavailable_reason')) {
+      context.handle(
+        _videoUnavailableReasonMeta,
+        videoUnavailableReason.isAcceptableOrUnknown(
+          data['video_unavailable_reason']!,
+          _videoUnavailableReasonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('guide_steps')) {
+      context.handle(
+        _guideStepsMeta,
+        guideSteps.isAcceptableOrUnknown(data['guide_steps']!, _guideStepsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_guideStepsMeta);
+    }
+    if (data.containsKey('guide_safety')) {
+      context.handle(
+        _guideSafetyMeta,
+        guideSafety.isAcceptableOrUnknown(
+          data['guide_safety']!,
+          _guideSafetyMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_guideSafetyMeta);
+    }
+    if (data.containsKey('approved_at')) {
+      context.handle(
+        _approvedAtMeta,
+        approvedAt.isAcceptableOrUnknown(data['approved_at']!, _approvedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_approvedAtMeta);
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(
+        _sortOrderMeta,
+        sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sortOrderMeta);
+    }
+    if (data.containsKey('active')) {
+      context.handle(
+        _activeMeta,
+        active.isAcceptableOrUnknown(data['active']!, _activeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_activeMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ExerciseRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ExerciseRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      muscleGroup: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}muscle_group'],
+      )!,
+      muscleRegion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}muscle_region'],
+      )!,
+      equipment: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}equipment'],
+      )!,
+      logsWeight: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}logs_weight'],
+      )!,
+      nameVi: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name_vi'],
+      )!,
+      nameEn: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name_en'],
+      ),
+      youtubeVideoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}youtube_video_id'],
+      )!,
+      videoChannel: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}video_channel'],
+      )!,
+      videoDurationS: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}video_duration_s'],
+      ),
+      videoAvailable: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}video_available'],
+      )!,
+      videoCheckedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}video_checked_at'],
+      ),
+      videoUnavailableReason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}video_unavailable_reason'],
+      ),
+      guideSteps: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}guide_steps'],
+      )!,
+      guideSafety: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}guide_safety'],
+      )!,
+      approvedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}approved_at'],
+      )!,
+      sortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sort_order'],
+      )!,
+      active: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}active'],
+      )!,
+    );
+  }
+
+  @override
+  $ExercisesTable createAlias(String alias) {
+    return $ExercisesTable(attachedDatabase, alias);
+  }
+}
+
+class ExerciseRow extends DataClass implements Insertable<ExerciseRow> {
+  final String id;
+  final String muscleGroup;
+  final String muscleRegion;
+
+  /// `machine` / `free_weight` / `bodyweight`.
+  final String equipment;
+  final bool logsWeight;
+  final String nameVi;
+  final String? nameEn;
+  final String youtubeVideoId;
+  final String videoChannel;
+  final int? videoDurationS;
+  final bool videoAvailable;
+  final DateTime? videoCheckedAt;
+  final String? videoUnavailableReason;
+
+  /// Danh sách chuỗi dạng JSON.
+  final String guideSteps;
+  final String guideSafety;
+
+  /// `YYYY-MM-DD`.
+  final String approvedAt;
+  final int sortOrder;
+  final bool active;
+  const ExerciseRow({
+    required this.id,
+    required this.muscleGroup,
+    required this.muscleRegion,
+    required this.equipment,
+    required this.logsWeight,
+    required this.nameVi,
+    this.nameEn,
+    required this.youtubeVideoId,
+    required this.videoChannel,
+    this.videoDurationS,
+    required this.videoAvailable,
+    this.videoCheckedAt,
+    this.videoUnavailableReason,
+    required this.guideSteps,
+    required this.guideSafety,
+    required this.approvedAt,
+    required this.sortOrder,
+    required this.active,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['muscle_group'] = Variable<String>(muscleGroup);
+    map['muscle_region'] = Variable<String>(muscleRegion);
+    map['equipment'] = Variable<String>(equipment);
+    map['logs_weight'] = Variable<bool>(logsWeight);
+    map['name_vi'] = Variable<String>(nameVi);
+    if (!nullToAbsent || nameEn != null) {
+      map['name_en'] = Variable<String>(nameEn);
+    }
+    map['youtube_video_id'] = Variable<String>(youtubeVideoId);
+    map['video_channel'] = Variable<String>(videoChannel);
+    if (!nullToAbsent || videoDurationS != null) {
+      map['video_duration_s'] = Variable<int>(videoDurationS);
+    }
+    map['video_available'] = Variable<bool>(videoAvailable);
+    if (!nullToAbsent || videoCheckedAt != null) {
+      map['video_checked_at'] = Variable<DateTime>(videoCheckedAt);
+    }
+    if (!nullToAbsent || videoUnavailableReason != null) {
+      map['video_unavailable_reason'] = Variable<String>(
+        videoUnavailableReason,
+      );
+    }
+    map['guide_steps'] = Variable<String>(guideSteps);
+    map['guide_safety'] = Variable<String>(guideSafety);
+    map['approved_at'] = Variable<String>(approvedAt);
+    map['sort_order'] = Variable<int>(sortOrder);
+    map['active'] = Variable<bool>(active);
+    return map;
+  }
+
+  ExercisesCompanion toCompanion(bool nullToAbsent) {
+    return ExercisesCompanion(
+      id: Value(id),
+      muscleGroup: Value(muscleGroup),
+      muscleRegion: Value(muscleRegion),
+      equipment: Value(equipment),
+      logsWeight: Value(logsWeight),
+      nameVi: Value(nameVi),
+      nameEn: nameEn == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nameEn),
+      youtubeVideoId: Value(youtubeVideoId),
+      videoChannel: Value(videoChannel),
+      videoDurationS: videoDurationS == null && nullToAbsent
+          ? const Value.absent()
+          : Value(videoDurationS),
+      videoAvailable: Value(videoAvailable),
+      videoCheckedAt: videoCheckedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(videoCheckedAt),
+      videoUnavailableReason: videoUnavailableReason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(videoUnavailableReason),
+      guideSteps: Value(guideSteps),
+      guideSafety: Value(guideSafety),
+      approvedAt: Value(approvedAt),
+      sortOrder: Value(sortOrder),
+      active: Value(active),
+    );
+  }
+
+  factory ExerciseRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ExerciseRow(
+      id: serializer.fromJson<String>(json['id']),
+      muscleGroup: serializer.fromJson<String>(json['muscleGroup']),
+      muscleRegion: serializer.fromJson<String>(json['muscleRegion']),
+      equipment: serializer.fromJson<String>(json['equipment']),
+      logsWeight: serializer.fromJson<bool>(json['logsWeight']),
+      nameVi: serializer.fromJson<String>(json['nameVi']),
+      nameEn: serializer.fromJson<String?>(json['nameEn']),
+      youtubeVideoId: serializer.fromJson<String>(json['youtubeVideoId']),
+      videoChannel: serializer.fromJson<String>(json['videoChannel']),
+      videoDurationS: serializer.fromJson<int?>(json['videoDurationS']),
+      videoAvailable: serializer.fromJson<bool>(json['videoAvailable']),
+      videoCheckedAt: serializer.fromJson<DateTime?>(json['videoCheckedAt']),
+      videoUnavailableReason: serializer.fromJson<String?>(
+        json['videoUnavailableReason'],
+      ),
+      guideSteps: serializer.fromJson<String>(json['guideSteps']),
+      guideSafety: serializer.fromJson<String>(json['guideSafety']),
+      approvedAt: serializer.fromJson<String>(json['approvedAt']),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
+      active: serializer.fromJson<bool>(json['active']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'muscleGroup': serializer.toJson<String>(muscleGroup),
+      'muscleRegion': serializer.toJson<String>(muscleRegion),
+      'equipment': serializer.toJson<String>(equipment),
+      'logsWeight': serializer.toJson<bool>(logsWeight),
+      'nameVi': serializer.toJson<String>(nameVi),
+      'nameEn': serializer.toJson<String?>(nameEn),
+      'youtubeVideoId': serializer.toJson<String>(youtubeVideoId),
+      'videoChannel': serializer.toJson<String>(videoChannel),
+      'videoDurationS': serializer.toJson<int?>(videoDurationS),
+      'videoAvailable': serializer.toJson<bool>(videoAvailable),
+      'videoCheckedAt': serializer.toJson<DateTime?>(videoCheckedAt),
+      'videoUnavailableReason': serializer.toJson<String?>(
+        videoUnavailableReason,
+      ),
+      'guideSteps': serializer.toJson<String>(guideSteps),
+      'guideSafety': serializer.toJson<String>(guideSafety),
+      'approvedAt': serializer.toJson<String>(approvedAt),
+      'sortOrder': serializer.toJson<int>(sortOrder),
+      'active': serializer.toJson<bool>(active),
+    };
+  }
+
+  ExerciseRow copyWith({
+    String? id,
+    String? muscleGroup,
+    String? muscleRegion,
+    String? equipment,
+    bool? logsWeight,
+    String? nameVi,
+    Value<String?> nameEn = const Value.absent(),
+    String? youtubeVideoId,
+    String? videoChannel,
+    Value<int?> videoDurationS = const Value.absent(),
+    bool? videoAvailable,
+    Value<DateTime?> videoCheckedAt = const Value.absent(),
+    Value<String?> videoUnavailableReason = const Value.absent(),
+    String? guideSteps,
+    String? guideSafety,
+    String? approvedAt,
+    int? sortOrder,
+    bool? active,
+  }) => ExerciseRow(
+    id: id ?? this.id,
+    muscleGroup: muscleGroup ?? this.muscleGroup,
+    muscleRegion: muscleRegion ?? this.muscleRegion,
+    equipment: equipment ?? this.equipment,
+    logsWeight: logsWeight ?? this.logsWeight,
+    nameVi: nameVi ?? this.nameVi,
+    nameEn: nameEn.present ? nameEn.value : this.nameEn,
+    youtubeVideoId: youtubeVideoId ?? this.youtubeVideoId,
+    videoChannel: videoChannel ?? this.videoChannel,
+    videoDurationS: videoDurationS.present
+        ? videoDurationS.value
+        : this.videoDurationS,
+    videoAvailable: videoAvailable ?? this.videoAvailable,
+    videoCheckedAt: videoCheckedAt.present
+        ? videoCheckedAt.value
+        : this.videoCheckedAt,
+    videoUnavailableReason: videoUnavailableReason.present
+        ? videoUnavailableReason.value
+        : this.videoUnavailableReason,
+    guideSteps: guideSteps ?? this.guideSteps,
+    guideSafety: guideSafety ?? this.guideSafety,
+    approvedAt: approvedAt ?? this.approvedAt,
+    sortOrder: sortOrder ?? this.sortOrder,
+    active: active ?? this.active,
+  );
+  ExerciseRow copyWithCompanion(ExercisesCompanion data) {
+    return ExerciseRow(
+      id: data.id.present ? data.id.value : this.id,
+      muscleGroup: data.muscleGroup.present
+          ? data.muscleGroup.value
+          : this.muscleGroup,
+      muscleRegion: data.muscleRegion.present
+          ? data.muscleRegion.value
+          : this.muscleRegion,
+      equipment: data.equipment.present ? data.equipment.value : this.equipment,
+      logsWeight: data.logsWeight.present
+          ? data.logsWeight.value
+          : this.logsWeight,
+      nameVi: data.nameVi.present ? data.nameVi.value : this.nameVi,
+      nameEn: data.nameEn.present ? data.nameEn.value : this.nameEn,
+      youtubeVideoId: data.youtubeVideoId.present
+          ? data.youtubeVideoId.value
+          : this.youtubeVideoId,
+      videoChannel: data.videoChannel.present
+          ? data.videoChannel.value
+          : this.videoChannel,
+      videoDurationS: data.videoDurationS.present
+          ? data.videoDurationS.value
+          : this.videoDurationS,
+      videoAvailable: data.videoAvailable.present
+          ? data.videoAvailable.value
+          : this.videoAvailable,
+      videoCheckedAt: data.videoCheckedAt.present
+          ? data.videoCheckedAt.value
+          : this.videoCheckedAt,
+      videoUnavailableReason: data.videoUnavailableReason.present
+          ? data.videoUnavailableReason.value
+          : this.videoUnavailableReason,
+      guideSteps: data.guideSteps.present
+          ? data.guideSteps.value
+          : this.guideSteps,
+      guideSafety: data.guideSafety.present
+          ? data.guideSafety.value
+          : this.guideSafety,
+      approvedAt: data.approvedAt.present
+          ? data.approvedAt.value
+          : this.approvedAt,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+      active: data.active.present ? data.active.value : this.active,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExerciseRow(')
+          ..write('id: $id, ')
+          ..write('muscleGroup: $muscleGroup, ')
+          ..write('muscleRegion: $muscleRegion, ')
+          ..write('equipment: $equipment, ')
+          ..write('logsWeight: $logsWeight, ')
+          ..write('nameVi: $nameVi, ')
+          ..write('nameEn: $nameEn, ')
+          ..write('youtubeVideoId: $youtubeVideoId, ')
+          ..write('videoChannel: $videoChannel, ')
+          ..write('videoDurationS: $videoDurationS, ')
+          ..write('videoAvailable: $videoAvailable, ')
+          ..write('videoCheckedAt: $videoCheckedAt, ')
+          ..write('videoUnavailableReason: $videoUnavailableReason, ')
+          ..write('guideSteps: $guideSteps, ')
+          ..write('guideSafety: $guideSafety, ')
+          ..write('approvedAt: $approvedAt, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('active: $active')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    muscleGroup,
+    muscleRegion,
+    equipment,
+    logsWeight,
+    nameVi,
+    nameEn,
+    youtubeVideoId,
+    videoChannel,
+    videoDurationS,
+    videoAvailable,
+    videoCheckedAt,
+    videoUnavailableReason,
+    guideSteps,
+    guideSafety,
+    approvedAt,
+    sortOrder,
+    active,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ExerciseRow &&
+          other.id == this.id &&
+          other.muscleGroup == this.muscleGroup &&
+          other.muscleRegion == this.muscleRegion &&
+          other.equipment == this.equipment &&
+          other.logsWeight == this.logsWeight &&
+          other.nameVi == this.nameVi &&
+          other.nameEn == this.nameEn &&
+          other.youtubeVideoId == this.youtubeVideoId &&
+          other.videoChannel == this.videoChannel &&
+          other.videoDurationS == this.videoDurationS &&
+          other.videoAvailable == this.videoAvailable &&
+          other.videoCheckedAt == this.videoCheckedAt &&
+          other.videoUnavailableReason == this.videoUnavailableReason &&
+          other.guideSteps == this.guideSteps &&
+          other.guideSafety == this.guideSafety &&
+          other.approvedAt == this.approvedAt &&
+          other.sortOrder == this.sortOrder &&
+          other.active == this.active);
+}
+
+class ExercisesCompanion extends UpdateCompanion<ExerciseRow> {
+  final Value<String> id;
+  final Value<String> muscleGroup;
+  final Value<String> muscleRegion;
+  final Value<String> equipment;
+  final Value<bool> logsWeight;
+  final Value<String> nameVi;
+  final Value<String?> nameEn;
+  final Value<String> youtubeVideoId;
+  final Value<String> videoChannel;
+  final Value<int?> videoDurationS;
+  final Value<bool> videoAvailable;
+  final Value<DateTime?> videoCheckedAt;
+  final Value<String?> videoUnavailableReason;
+  final Value<String> guideSteps;
+  final Value<String> guideSafety;
+  final Value<String> approvedAt;
+  final Value<int> sortOrder;
+  final Value<bool> active;
+  final Value<int> rowid;
+  const ExercisesCompanion({
+    this.id = const Value.absent(),
+    this.muscleGroup = const Value.absent(),
+    this.muscleRegion = const Value.absent(),
+    this.equipment = const Value.absent(),
+    this.logsWeight = const Value.absent(),
+    this.nameVi = const Value.absent(),
+    this.nameEn = const Value.absent(),
+    this.youtubeVideoId = const Value.absent(),
+    this.videoChannel = const Value.absent(),
+    this.videoDurationS = const Value.absent(),
+    this.videoAvailable = const Value.absent(),
+    this.videoCheckedAt = const Value.absent(),
+    this.videoUnavailableReason = const Value.absent(),
+    this.guideSteps = const Value.absent(),
+    this.guideSafety = const Value.absent(),
+    this.approvedAt = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.active = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ExercisesCompanion.insert({
+    required String id,
+    required String muscleGroup,
+    required String muscleRegion,
+    required String equipment,
+    required bool logsWeight,
+    required String nameVi,
+    this.nameEn = const Value.absent(),
+    required String youtubeVideoId,
+    required String videoChannel,
+    this.videoDurationS = const Value.absent(),
+    required bool videoAvailable,
+    this.videoCheckedAt = const Value.absent(),
+    this.videoUnavailableReason = const Value.absent(),
+    required String guideSteps,
+    required String guideSafety,
+    required String approvedAt,
+    required int sortOrder,
+    required bool active,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       muscleGroup = Value(muscleGroup),
+       muscleRegion = Value(muscleRegion),
+       equipment = Value(equipment),
+       logsWeight = Value(logsWeight),
+       nameVi = Value(nameVi),
+       youtubeVideoId = Value(youtubeVideoId),
+       videoChannel = Value(videoChannel),
+       videoAvailable = Value(videoAvailable),
+       guideSteps = Value(guideSteps),
+       guideSafety = Value(guideSafety),
+       approvedAt = Value(approvedAt),
+       sortOrder = Value(sortOrder),
+       active = Value(active);
+  static Insertable<ExerciseRow> custom({
+    Expression<String>? id,
+    Expression<String>? muscleGroup,
+    Expression<String>? muscleRegion,
+    Expression<String>? equipment,
+    Expression<bool>? logsWeight,
+    Expression<String>? nameVi,
+    Expression<String>? nameEn,
+    Expression<String>? youtubeVideoId,
+    Expression<String>? videoChannel,
+    Expression<int>? videoDurationS,
+    Expression<bool>? videoAvailable,
+    Expression<DateTime>? videoCheckedAt,
+    Expression<String>? videoUnavailableReason,
+    Expression<String>? guideSteps,
+    Expression<String>? guideSafety,
+    Expression<String>? approvedAt,
+    Expression<int>? sortOrder,
+    Expression<bool>? active,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (muscleGroup != null) 'muscle_group': muscleGroup,
+      if (muscleRegion != null) 'muscle_region': muscleRegion,
+      if (equipment != null) 'equipment': equipment,
+      if (logsWeight != null) 'logs_weight': logsWeight,
+      if (nameVi != null) 'name_vi': nameVi,
+      if (nameEn != null) 'name_en': nameEn,
+      if (youtubeVideoId != null) 'youtube_video_id': youtubeVideoId,
+      if (videoChannel != null) 'video_channel': videoChannel,
+      if (videoDurationS != null) 'video_duration_s': videoDurationS,
+      if (videoAvailable != null) 'video_available': videoAvailable,
+      if (videoCheckedAt != null) 'video_checked_at': videoCheckedAt,
+      if (videoUnavailableReason != null)
+        'video_unavailable_reason': videoUnavailableReason,
+      if (guideSteps != null) 'guide_steps': guideSteps,
+      if (guideSafety != null) 'guide_safety': guideSafety,
+      if (approvedAt != null) 'approved_at': approvedAt,
+      if (sortOrder != null) 'sort_order': sortOrder,
+      if (active != null) 'active': active,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ExercisesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? muscleGroup,
+    Value<String>? muscleRegion,
+    Value<String>? equipment,
+    Value<bool>? logsWeight,
+    Value<String>? nameVi,
+    Value<String?>? nameEn,
+    Value<String>? youtubeVideoId,
+    Value<String>? videoChannel,
+    Value<int?>? videoDurationS,
+    Value<bool>? videoAvailable,
+    Value<DateTime?>? videoCheckedAt,
+    Value<String?>? videoUnavailableReason,
+    Value<String>? guideSteps,
+    Value<String>? guideSafety,
+    Value<String>? approvedAt,
+    Value<int>? sortOrder,
+    Value<bool>? active,
+    Value<int>? rowid,
+  }) {
+    return ExercisesCompanion(
+      id: id ?? this.id,
+      muscleGroup: muscleGroup ?? this.muscleGroup,
+      muscleRegion: muscleRegion ?? this.muscleRegion,
+      equipment: equipment ?? this.equipment,
+      logsWeight: logsWeight ?? this.logsWeight,
+      nameVi: nameVi ?? this.nameVi,
+      nameEn: nameEn ?? this.nameEn,
+      youtubeVideoId: youtubeVideoId ?? this.youtubeVideoId,
+      videoChannel: videoChannel ?? this.videoChannel,
+      videoDurationS: videoDurationS ?? this.videoDurationS,
+      videoAvailable: videoAvailable ?? this.videoAvailable,
+      videoCheckedAt: videoCheckedAt ?? this.videoCheckedAt,
+      videoUnavailableReason:
+          videoUnavailableReason ?? this.videoUnavailableReason,
+      guideSteps: guideSteps ?? this.guideSteps,
+      guideSafety: guideSafety ?? this.guideSafety,
+      approvedAt: approvedAt ?? this.approvedAt,
+      sortOrder: sortOrder ?? this.sortOrder,
+      active: active ?? this.active,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (muscleGroup.present) {
+      map['muscle_group'] = Variable<String>(muscleGroup.value);
+    }
+    if (muscleRegion.present) {
+      map['muscle_region'] = Variable<String>(muscleRegion.value);
+    }
+    if (equipment.present) {
+      map['equipment'] = Variable<String>(equipment.value);
+    }
+    if (logsWeight.present) {
+      map['logs_weight'] = Variable<bool>(logsWeight.value);
+    }
+    if (nameVi.present) {
+      map['name_vi'] = Variable<String>(nameVi.value);
+    }
+    if (nameEn.present) {
+      map['name_en'] = Variable<String>(nameEn.value);
+    }
+    if (youtubeVideoId.present) {
+      map['youtube_video_id'] = Variable<String>(youtubeVideoId.value);
+    }
+    if (videoChannel.present) {
+      map['video_channel'] = Variable<String>(videoChannel.value);
+    }
+    if (videoDurationS.present) {
+      map['video_duration_s'] = Variable<int>(videoDurationS.value);
+    }
+    if (videoAvailable.present) {
+      map['video_available'] = Variable<bool>(videoAvailable.value);
+    }
+    if (videoCheckedAt.present) {
+      map['video_checked_at'] = Variable<DateTime>(videoCheckedAt.value);
+    }
+    if (videoUnavailableReason.present) {
+      map['video_unavailable_reason'] = Variable<String>(
+        videoUnavailableReason.value,
+      );
+    }
+    if (guideSteps.present) {
+      map['guide_steps'] = Variable<String>(guideSteps.value);
+    }
+    if (guideSafety.present) {
+      map['guide_safety'] = Variable<String>(guideSafety.value);
+    }
+    if (approvedAt.present) {
+      map['approved_at'] = Variable<String>(approvedAt.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
+    }
+    if (active.present) {
+      map['active'] = Variable<bool>(active.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExercisesCompanion(')
+          ..write('id: $id, ')
+          ..write('muscleGroup: $muscleGroup, ')
+          ..write('muscleRegion: $muscleRegion, ')
+          ..write('equipment: $equipment, ')
+          ..write('logsWeight: $logsWeight, ')
+          ..write('nameVi: $nameVi, ')
+          ..write('nameEn: $nameEn, ')
+          ..write('youtubeVideoId: $youtubeVideoId, ')
+          ..write('videoChannel: $videoChannel, ')
+          ..write('videoDurationS: $videoDurationS, ')
+          ..write('videoAvailable: $videoAvailable, ')
+          ..write('videoCheckedAt: $videoCheckedAt, ')
+          ..write('videoUnavailableReason: $videoUnavailableReason, ')
+          ..write('guideSteps: $guideSteps, ')
+          ..write('guideSafety: $guideSafety, ')
+          ..write('approvedAt: $approvedAt, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('active: $active, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LiftLogsTable extends LiftLogs
+    with TableInfo<$LiftLogsTable, LiftLogRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LiftLogsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _dateMeta = const VerificationMeta('date');
+  @override
+  late final GeneratedColumn<String> date = GeneratedColumn<String>(
+    'date',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _exerciseIdMeta = const VerificationMeta(
+    'exerciseId',
+  );
+  @override
+  late final GeneratedColumn<String> exerciseId = GeneratedColumn<String>(
+    'exercise_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _startKgX10Meta = const VerificationMeta(
+    'startKgX10',
+  );
+  @override
+  late final GeneratedColumn<int> startKgX10 = GeneratedColumn<int>(
+    'start_kg_x10',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _endKgX10Meta = const VerificationMeta(
+    'endKgX10',
+  );
+  @override
+  late final GeneratedColumn<int> endKgX10 = GeneratedColumn<int>(
+    'end_kg_x10',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _loggedAtMeta = const VerificationMeta(
+    'loggedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> loggedAt = GeneratedColumn<DateTime>(
+    'logged_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    date,
+    exerciseId,
+    startKgX10,
+    endKgX10,
+    loggedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'lift_logs';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LiftLogRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('date')) {
+      context.handle(
+        _dateMeta,
+        date.isAcceptableOrUnknown(data['date']!, _dateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dateMeta);
+    }
+    if (data.containsKey('exercise_id')) {
+      context.handle(
+        _exerciseIdMeta,
+        exerciseId.isAcceptableOrUnknown(data['exercise_id']!, _exerciseIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_exerciseIdMeta);
+    }
+    if (data.containsKey('start_kg_x10')) {
+      context.handle(
+        _startKgX10Meta,
+        startKgX10.isAcceptableOrUnknown(
+          data['start_kg_x10']!,
+          _startKgX10Meta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_startKgX10Meta);
+    }
+    if (data.containsKey('end_kg_x10')) {
+      context.handle(
+        _endKgX10Meta,
+        endKgX10.isAcceptableOrUnknown(data['end_kg_x10']!, _endKgX10Meta),
+      );
+    } else if (isInserting) {
+      context.missing(_endKgX10Meta);
+    }
+    if (data.containsKey('logged_at')) {
+      context.handle(
+        _loggedAtMeta,
+        loggedAt.isAcceptableOrUnknown(data['logged_at']!, _loggedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_loggedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {date, exerciseId};
+  @override
+  LiftLogRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LiftLogRow(
+      date: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}date'],
+      )!,
+      exerciseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}exercise_id'],
+      )!,
+      startKgX10: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}start_kg_x10'],
+      )!,
+      endKgX10: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}end_kg_x10'],
+      )!,
+      loggedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}logged_at'],
+      )!,
+    );
+  }
+
+  @override
+  $LiftLogsTable createAlias(String alias) {
+    return $LiftLogsTable(attachedDatabase, alias);
+  }
+}
+
+class LiftLogRow extends DataClass implements Insertable<LiftLogRow> {
+  /// `YYYY-MM-DD`.
+  final String date;
+  final String exerciseId;
+  final int startKgX10;
+  final int endKgX10;
+  final DateTime loggedAt;
+  const LiftLogRow({
+    required this.date,
+    required this.exerciseId,
+    required this.startKgX10,
+    required this.endKgX10,
+    required this.loggedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['date'] = Variable<String>(date);
+    map['exercise_id'] = Variable<String>(exerciseId);
+    map['start_kg_x10'] = Variable<int>(startKgX10);
+    map['end_kg_x10'] = Variable<int>(endKgX10);
+    map['logged_at'] = Variable<DateTime>(loggedAt);
+    return map;
+  }
+
+  LiftLogsCompanion toCompanion(bool nullToAbsent) {
+    return LiftLogsCompanion(
+      date: Value(date),
+      exerciseId: Value(exerciseId),
+      startKgX10: Value(startKgX10),
+      endKgX10: Value(endKgX10),
+      loggedAt: Value(loggedAt),
+    );
+  }
+
+  factory LiftLogRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LiftLogRow(
+      date: serializer.fromJson<String>(json['date']),
+      exerciseId: serializer.fromJson<String>(json['exerciseId']),
+      startKgX10: serializer.fromJson<int>(json['startKgX10']),
+      endKgX10: serializer.fromJson<int>(json['endKgX10']),
+      loggedAt: serializer.fromJson<DateTime>(json['loggedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'date': serializer.toJson<String>(date),
+      'exerciseId': serializer.toJson<String>(exerciseId),
+      'startKgX10': serializer.toJson<int>(startKgX10),
+      'endKgX10': serializer.toJson<int>(endKgX10),
+      'loggedAt': serializer.toJson<DateTime>(loggedAt),
+    };
+  }
+
+  LiftLogRow copyWith({
+    String? date,
+    String? exerciseId,
+    int? startKgX10,
+    int? endKgX10,
+    DateTime? loggedAt,
+  }) => LiftLogRow(
+    date: date ?? this.date,
+    exerciseId: exerciseId ?? this.exerciseId,
+    startKgX10: startKgX10 ?? this.startKgX10,
+    endKgX10: endKgX10 ?? this.endKgX10,
+    loggedAt: loggedAt ?? this.loggedAt,
+  );
+  LiftLogRow copyWithCompanion(LiftLogsCompanion data) {
+    return LiftLogRow(
+      date: data.date.present ? data.date.value : this.date,
+      exerciseId: data.exerciseId.present
+          ? data.exerciseId.value
+          : this.exerciseId,
+      startKgX10: data.startKgX10.present
+          ? data.startKgX10.value
+          : this.startKgX10,
+      endKgX10: data.endKgX10.present ? data.endKgX10.value : this.endKgX10,
+      loggedAt: data.loggedAt.present ? data.loggedAt.value : this.loggedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LiftLogRow(')
+          ..write('date: $date, ')
+          ..write('exerciseId: $exerciseId, ')
+          ..write('startKgX10: $startKgX10, ')
+          ..write('endKgX10: $endKgX10, ')
+          ..write('loggedAt: $loggedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(date, exerciseId, startKgX10, endKgX10, loggedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LiftLogRow &&
+          other.date == this.date &&
+          other.exerciseId == this.exerciseId &&
+          other.startKgX10 == this.startKgX10 &&
+          other.endKgX10 == this.endKgX10 &&
+          other.loggedAt == this.loggedAt);
+}
+
+class LiftLogsCompanion extends UpdateCompanion<LiftLogRow> {
+  final Value<String> date;
+  final Value<String> exerciseId;
+  final Value<int> startKgX10;
+  final Value<int> endKgX10;
+  final Value<DateTime> loggedAt;
+  final Value<int> rowid;
+  const LiftLogsCompanion({
+    this.date = const Value.absent(),
+    this.exerciseId = const Value.absent(),
+    this.startKgX10 = const Value.absent(),
+    this.endKgX10 = const Value.absent(),
+    this.loggedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LiftLogsCompanion.insert({
+    required String date,
+    required String exerciseId,
+    required int startKgX10,
+    required int endKgX10,
+    required DateTime loggedAt,
+    this.rowid = const Value.absent(),
+  }) : date = Value(date),
+       exerciseId = Value(exerciseId),
+       startKgX10 = Value(startKgX10),
+       endKgX10 = Value(endKgX10),
+       loggedAt = Value(loggedAt);
+  static Insertable<LiftLogRow> custom({
+    Expression<String>? date,
+    Expression<String>? exerciseId,
+    Expression<int>? startKgX10,
+    Expression<int>? endKgX10,
+    Expression<DateTime>? loggedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (date != null) 'date': date,
+      if (exerciseId != null) 'exercise_id': exerciseId,
+      if (startKgX10 != null) 'start_kg_x10': startKgX10,
+      if (endKgX10 != null) 'end_kg_x10': endKgX10,
+      if (loggedAt != null) 'logged_at': loggedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LiftLogsCompanion copyWith({
+    Value<String>? date,
+    Value<String>? exerciseId,
+    Value<int>? startKgX10,
+    Value<int>? endKgX10,
+    Value<DateTime>? loggedAt,
+    Value<int>? rowid,
+  }) {
+    return LiftLogsCompanion(
+      date: date ?? this.date,
+      exerciseId: exerciseId ?? this.exerciseId,
+      startKgX10: startKgX10 ?? this.startKgX10,
+      endKgX10: endKgX10 ?? this.endKgX10,
+      loggedAt: loggedAt ?? this.loggedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (date.present) {
+      map['date'] = Variable<String>(date.value);
+    }
+    if (exerciseId.present) {
+      map['exercise_id'] = Variable<String>(exerciseId.value);
+    }
+    if (startKgX10.present) {
+      map['start_kg_x10'] = Variable<int>(startKgX10.value);
+    }
+    if (endKgX10.present) {
+      map['end_kg_x10'] = Variable<int>(endKgX10.value);
+    }
+    if (loggedAt.present) {
+      map['logged_at'] = Variable<DateTime>(loggedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LiftLogsCompanion(')
+          ..write('date: $date, ')
+          ..write('exerciseId: $exerciseId, ')
+          ..write('startKgX10: $startKgX10, ')
+          ..write('endKgX10: $endKgX10, ')
+          ..write('loggedAt: $loggedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -4761,6 +7162,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $DaysTable days = $DaysTable(this);
   late final $MenusTable menus = $MenusTable(this);
   late final $AiDailyUsageTable aiDailyUsage = $AiDailyUsageTable(this);
+  late final $DishImagesTable dishImages = $DishImagesTable(this);
+  late final $MuscleRegionsTable muscleRegions = $MuscleRegionsTable(this);
+  late final $ExercisesTable exercises = $ExercisesTable(this);
+  late final $LiftLogsTable liftLogs = $LiftLogsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4777,6 +7182,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     days,
     menus,
     aiDailyUsage,
+    dishImages,
+    muscleRegions,
+    exercises,
+    liftLogs,
   ];
   @override
   DriftDatabaseOptions get options =>
@@ -4789,6 +7198,7 @@ typedef $$SyncStateTableCreateCompanionBuilder =
       Value<int> cursor,
       Value<DateTime?> lastSyncedAt,
       Value<String?> aiBudget,
+      Value<String?> knownEntities,
     });
 typedef $$SyncStateTableUpdateCompanionBuilder =
     SyncStateCompanion Function({
@@ -4796,6 +7206,7 @@ typedef $$SyncStateTableUpdateCompanionBuilder =
       Value<int> cursor,
       Value<DateTime?> lastSyncedAt,
       Value<String?> aiBudget,
+      Value<String?> knownEntities,
     });
 
 class $$SyncStateTableFilterComposer
@@ -4824,6 +7235,11 @@ class $$SyncStateTableFilterComposer
 
   ColumnFilters<String> get aiBudget => $composableBuilder(
     column: $table.aiBudget,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get knownEntities => $composableBuilder(
+    column: $table.knownEntities,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -4856,6 +7272,11 @@ class $$SyncStateTableOrderingComposer
     column: $table.aiBudget,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get knownEntities => $composableBuilder(
+    column: $table.knownEntities,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$SyncStateTableAnnotationComposer
@@ -4880,6 +7301,11 @@ class $$SyncStateTableAnnotationComposer
 
   GeneratedColumn<String> get aiBudget =>
       $composableBuilder(column: $table.aiBudget, builder: (column) => column);
+
+  GeneratedColumn<String> get knownEntities => $composableBuilder(
+    column: $table.knownEntities,
+    builder: (column) => column,
+  );
 }
 
 class $$SyncStateTableTableManager
@@ -4917,11 +7343,13 @@ class $$SyncStateTableTableManager
                 Value<int> cursor = const Value.absent(),
                 Value<DateTime?> lastSyncedAt = const Value.absent(),
                 Value<String?> aiBudget = const Value.absent(),
+                Value<String?> knownEntities = const Value.absent(),
               }) => SyncStateCompanion(
                 id: id,
                 cursor: cursor,
                 lastSyncedAt: lastSyncedAt,
                 aiBudget: aiBudget,
+                knownEntities: knownEntities,
               ),
           createCompanionCallback:
               ({
@@ -4929,11 +7357,13 @@ class $$SyncStateTableTableManager
                 Value<int> cursor = const Value.absent(),
                 Value<DateTime?> lastSyncedAt = const Value.absent(),
                 Value<String?> aiBudget = const Value.absent(),
+                Value<String?> knownEntities = const Value.absent(),
               }) => SyncStateCompanion.insert(
                 id: id,
                 cursor: cursor,
                 lastSyncedAt: lastSyncedAt,
                 aiBudget: aiBudget,
+                knownEntities: knownEntities,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -5379,6 +7809,7 @@ typedef $$ProfilesTableCreateCompanionBuilder =
       Value<String?> sex,
       Value<String?> activityLevel,
       Value<String?> setupDate,
+      Value<String?> scheduleStartedOn,
       Value<DateTime?> disclaimerAcceptedAt,
       Value<DateTime?> onboardingCompletedAt,
       Value<String?> calorieMode,
@@ -5398,6 +7829,7 @@ typedef $$ProfilesTableUpdateCompanionBuilder =
       Value<String?> sex,
       Value<String?> activityLevel,
       Value<String?> setupDate,
+      Value<String?> scheduleStartedOn,
       Value<DateTime?> disclaimerAcceptedAt,
       Value<DateTime?> onboardingCompletedAt,
       Value<String?> calorieMode,
@@ -5450,6 +7882,11 @@ class $$ProfilesTableFilterComposer
 
   ColumnFilters<String> get setupDate => $composableBuilder(
     column: $table.setupDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get scheduleStartedOn => $composableBuilder(
+    column: $table.scheduleStartedOn,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5538,6 +7975,11 @@ class $$ProfilesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get scheduleStartedOn => $composableBuilder(
+    column: $table.scheduleStartedOn,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get disclaimerAcceptedAt => $composableBuilder(
     column: $table.disclaimerAcceptedAt,
     builder: (column) => ColumnOrderings(column),
@@ -5612,6 +8054,11 @@ class $$ProfilesTableAnnotationComposer
 
   GeneratedColumn<String> get setupDate =>
       $composableBuilder(column: $table.setupDate, builder: (column) => column);
+
+  GeneratedColumn<String> get scheduleStartedOn => $composableBuilder(
+    column: $table.scheduleStartedOn,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get disclaimerAcceptedAt => $composableBuilder(
     column: $table.disclaimerAcceptedAt,
@@ -5690,6 +8137,7 @@ class $$ProfilesTableTableManager
                 Value<String?> sex = const Value.absent(),
                 Value<String?> activityLevel = const Value.absent(),
                 Value<String?> setupDate = const Value.absent(),
+                Value<String?> scheduleStartedOn = const Value.absent(),
                 Value<DateTime?> disclaimerAcceptedAt = const Value.absent(),
                 Value<DateTime?> onboardingCompletedAt = const Value.absent(),
                 Value<String?> calorieMode = const Value.absent(),
@@ -5707,6 +8155,7 @@ class $$ProfilesTableTableManager
                 sex: sex,
                 activityLevel: activityLevel,
                 setupDate: setupDate,
+                scheduleStartedOn: scheduleStartedOn,
                 disclaimerAcceptedAt: disclaimerAcceptedAt,
                 onboardingCompletedAt: onboardingCompletedAt,
                 calorieMode: calorieMode,
@@ -5726,6 +8175,7 @@ class $$ProfilesTableTableManager
                 Value<String?> sex = const Value.absent(),
                 Value<String?> activityLevel = const Value.absent(),
                 Value<String?> setupDate = const Value.absent(),
+                Value<String?> scheduleStartedOn = const Value.absent(),
                 Value<DateTime?> disclaimerAcceptedAt = const Value.absent(),
                 Value<DateTime?> onboardingCompletedAt = const Value.absent(),
                 Value<String?> calorieMode = const Value.absent(),
@@ -5743,6 +8193,7 @@ class $$ProfilesTableTableManager
                 sex: sex,
                 activityLevel: activityLevel,
                 setupDate: setupDate,
+                scheduleStartedOn: scheduleStartedOn,
                 disclaimerAcceptedAt: disclaimerAcceptedAt,
                 onboardingCompletedAt: onboardingCompletedAt,
                 calorieMode: calorieMode,
@@ -7232,6 +9683,1122 @@ typedef $$AiDailyUsageTableProcessedTableManager =
       AiDailyUsageRow,
       PrefetchHooks Function()
     >;
+typedef $$DishImagesTableCreateCompanionBuilder =
+    DishImagesCompanion Function({
+      required String nameKey,
+      required String id,
+      required String displayName,
+      required int width,
+      required int height,
+      required int bytes,
+      required DateTime createdAt,
+      Value<String?> cachedPath,
+      Value<int> rowid,
+    });
+typedef $$DishImagesTableUpdateCompanionBuilder =
+    DishImagesCompanion Function({
+      Value<String> nameKey,
+      Value<String> id,
+      Value<String> displayName,
+      Value<int> width,
+      Value<int> height,
+      Value<int> bytes,
+      Value<DateTime> createdAt,
+      Value<String?> cachedPath,
+      Value<int> rowid,
+    });
+
+class $$DishImagesTableFilterComposer
+    extends Composer<_$AppDatabase, $DishImagesTable> {
+  $$DishImagesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get nameKey => $composableBuilder(
+    column: $table.nameKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get displayName => $composableBuilder(
+    column: $table.displayName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get width => $composableBuilder(
+    column: $table.width,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get height => $composableBuilder(
+    column: $table.height,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get bytes => $composableBuilder(
+    column: $table.bytes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cachedPath => $composableBuilder(
+    column: $table.cachedPath,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$DishImagesTableOrderingComposer
+    extends Composer<_$AppDatabase, $DishImagesTable> {
+  $$DishImagesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get nameKey => $composableBuilder(
+    column: $table.nameKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get displayName => $composableBuilder(
+    column: $table.displayName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get width => $composableBuilder(
+    column: $table.width,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get height => $composableBuilder(
+    column: $table.height,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get bytes => $composableBuilder(
+    column: $table.bytes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cachedPath => $composableBuilder(
+    column: $table.cachedPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$DishImagesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DishImagesTable> {
+  $$DishImagesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get nameKey =>
+      $composableBuilder(column: $table.nameKey, builder: (column) => column);
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get displayName => $composableBuilder(
+    column: $table.displayName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get width =>
+      $composableBuilder(column: $table.width, builder: (column) => column);
+
+  GeneratedColumn<int> get height =>
+      $composableBuilder(column: $table.height, builder: (column) => column);
+
+  GeneratedColumn<int> get bytes =>
+      $composableBuilder(column: $table.bytes, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cachedPath => $composableBuilder(
+    column: $table.cachedPath,
+    builder: (column) => column,
+  );
+}
+
+class $$DishImagesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DishImagesTable,
+          DishImageRow,
+          $$DishImagesTableFilterComposer,
+          $$DishImagesTableOrderingComposer,
+          $$DishImagesTableAnnotationComposer,
+          $$DishImagesTableCreateCompanionBuilder,
+          $$DishImagesTableUpdateCompanionBuilder,
+          (
+            DishImageRow,
+            BaseReferences<_$AppDatabase, $DishImagesTable, DishImageRow>,
+          ),
+          DishImageRow,
+          PrefetchHooks Function()
+        > {
+  $$DishImagesTableTableManager(_$AppDatabase db, $DishImagesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DishImagesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DishImagesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DishImagesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> nameKey = const Value.absent(),
+                Value<String> id = const Value.absent(),
+                Value<String> displayName = const Value.absent(),
+                Value<int> width = const Value.absent(),
+                Value<int> height = const Value.absent(),
+                Value<int> bytes = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<String?> cachedPath = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DishImagesCompanion(
+                nameKey: nameKey,
+                id: id,
+                displayName: displayName,
+                width: width,
+                height: height,
+                bytes: bytes,
+                createdAt: createdAt,
+                cachedPath: cachedPath,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String nameKey,
+                required String id,
+                required String displayName,
+                required int width,
+                required int height,
+                required int bytes,
+                required DateTime createdAt,
+                Value<String?> cachedPath = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DishImagesCompanion.insert(
+                nameKey: nameKey,
+                id: id,
+                displayName: displayName,
+                width: width,
+                height: height,
+                bytes: bytes,
+                createdAt: createdAt,
+                cachedPath: cachedPath,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$DishImagesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DishImagesTable,
+      DishImageRow,
+      $$DishImagesTableFilterComposer,
+      $$DishImagesTableOrderingComposer,
+      $$DishImagesTableAnnotationComposer,
+      $$DishImagesTableCreateCompanionBuilder,
+      $$DishImagesTableUpdateCompanionBuilder,
+      (
+        DishImageRow,
+        BaseReferences<_$AppDatabase, $DishImagesTable, DishImageRow>,
+      ),
+      DishImageRow,
+      PrefetchHooks Function()
+    >;
+typedef $$MuscleRegionsTableCreateCompanionBuilder =
+    MuscleRegionsCompanion Function({
+      required String id,
+      required String muscleGroup,
+      required String view,
+      required int sortOrder,
+      Value<int> rowid,
+    });
+typedef $$MuscleRegionsTableUpdateCompanionBuilder =
+    MuscleRegionsCompanion Function({
+      Value<String> id,
+      Value<String> muscleGroup,
+      Value<String> view,
+      Value<int> sortOrder,
+      Value<int> rowid,
+    });
+
+class $$MuscleRegionsTableFilterComposer
+    extends Composer<_$AppDatabase, $MuscleRegionsTable> {
+  $$MuscleRegionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get muscleGroup => $composableBuilder(
+    column: $table.muscleGroup,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get view => $composableBuilder(
+    column: $table.view,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$MuscleRegionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $MuscleRegionsTable> {
+  $$MuscleRegionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get muscleGroup => $composableBuilder(
+    column: $table.muscleGroup,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get view => $composableBuilder(
+    column: $table.view,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$MuscleRegionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MuscleRegionsTable> {
+  $$MuscleRegionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get muscleGroup => $composableBuilder(
+    column: $table.muscleGroup,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get view =>
+      $composableBuilder(column: $table.view, builder: (column) => column);
+
+  GeneratedColumn<int> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+}
+
+class $$MuscleRegionsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MuscleRegionsTable,
+          MuscleRegionRow,
+          $$MuscleRegionsTableFilterComposer,
+          $$MuscleRegionsTableOrderingComposer,
+          $$MuscleRegionsTableAnnotationComposer,
+          $$MuscleRegionsTableCreateCompanionBuilder,
+          $$MuscleRegionsTableUpdateCompanionBuilder,
+          (
+            MuscleRegionRow,
+            BaseReferences<_$AppDatabase, $MuscleRegionsTable, MuscleRegionRow>,
+          ),
+          MuscleRegionRow,
+          PrefetchHooks Function()
+        > {
+  $$MuscleRegionsTableTableManager(_$AppDatabase db, $MuscleRegionsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MuscleRegionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MuscleRegionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MuscleRegionsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> muscleGroup = const Value.absent(),
+                Value<String> view = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MuscleRegionsCompanion(
+                id: id,
+                muscleGroup: muscleGroup,
+                view: view,
+                sortOrder: sortOrder,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String muscleGroup,
+                required String view,
+                required int sortOrder,
+                Value<int> rowid = const Value.absent(),
+              }) => MuscleRegionsCompanion.insert(
+                id: id,
+                muscleGroup: muscleGroup,
+                view: view,
+                sortOrder: sortOrder,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$MuscleRegionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $MuscleRegionsTable,
+      MuscleRegionRow,
+      $$MuscleRegionsTableFilterComposer,
+      $$MuscleRegionsTableOrderingComposer,
+      $$MuscleRegionsTableAnnotationComposer,
+      $$MuscleRegionsTableCreateCompanionBuilder,
+      $$MuscleRegionsTableUpdateCompanionBuilder,
+      (
+        MuscleRegionRow,
+        BaseReferences<_$AppDatabase, $MuscleRegionsTable, MuscleRegionRow>,
+      ),
+      MuscleRegionRow,
+      PrefetchHooks Function()
+    >;
+typedef $$ExercisesTableCreateCompanionBuilder =
+    ExercisesCompanion Function({
+      required String id,
+      required String muscleGroup,
+      required String muscleRegion,
+      required String equipment,
+      required bool logsWeight,
+      required String nameVi,
+      Value<String?> nameEn,
+      required String youtubeVideoId,
+      required String videoChannel,
+      Value<int?> videoDurationS,
+      required bool videoAvailable,
+      Value<DateTime?> videoCheckedAt,
+      Value<String?> videoUnavailableReason,
+      required String guideSteps,
+      required String guideSafety,
+      required String approvedAt,
+      required int sortOrder,
+      required bool active,
+      Value<int> rowid,
+    });
+typedef $$ExercisesTableUpdateCompanionBuilder =
+    ExercisesCompanion Function({
+      Value<String> id,
+      Value<String> muscleGroup,
+      Value<String> muscleRegion,
+      Value<String> equipment,
+      Value<bool> logsWeight,
+      Value<String> nameVi,
+      Value<String?> nameEn,
+      Value<String> youtubeVideoId,
+      Value<String> videoChannel,
+      Value<int?> videoDurationS,
+      Value<bool> videoAvailable,
+      Value<DateTime?> videoCheckedAt,
+      Value<String?> videoUnavailableReason,
+      Value<String> guideSteps,
+      Value<String> guideSafety,
+      Value<String> approvedAt,
+      Value<int> sortOrder,
+      Value<bool> active,
+      Value<int> rowid,
+    });
+
+class $$ExercisesTableFilterComposer
+    extends Composer<_$AppDatabase, $ExercisesTable> {
+  $$ExercisesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get muscleGroup => $composableBuilder(
+    column: $table.muscleGroup,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get muscleRegion => $composableBuilder(
+    column: $table.muscleRegion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get equipment => $composableBuilder(
+    column: $table.equipment,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get logsWeight => $composableBuilder(
+    column: $table.logsWeight,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nameVi => $composableBuilder(
+    column: $table.nameVi,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nameEn => $composableBuilder(
+    column: $table.nameEn,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get youtubeVideoId => $composableBuilder(
+    column: $table.youtubeVideoId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get videoChannel => $composableBuilder(
+    column: $table.videoChannel,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get videoDurationS => $composableBuilder(
+    column: $table.videoDurationS,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get videoAvailable => $composableBuilder(
+    column: $table.videoAvailable,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get videoCheckedAt => $composableBuilder(
+    column: $table.videoCheckedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get videoUnavailableReason => $composableBuilder(
+    column: $table.videoUnavailableReason,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get guideSteps => $composableBuilder(
+    column: $table.guideSteps,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get guideSafety => $composableBuilder(
+    column: $table.guideSafety,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get approvedAt => $composableBuilder(
+    column: $table.approvedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get active => $composableBuilder(
+    column: $table.active,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ExercisesTableOrderingComposer
+    extends Composer<_$AppDatabase, $ExercisesTable> {
+  $$ExercisesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get muscleGroup => $composableBuilder(
+    column: $table.muscleGroup,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get muscleRegion => $composableBuilder(
+    column: $table.muscleRegion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get equipment => $composableBuilder(
+    column: $table.equipment,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get logsWeight => $composableBuilder(
+    column: $table.logsWeight,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nameVi => $composableBuilder(
+    column: $table.nameVi,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nameEn => $composableBuilder(
+    column: $table.nameEn,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get youtubeVideoId => $composableBuilder(
+    column: $table.youtubeVideoId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get videoChannel => $composableBuilder(
+    column: $table.videoChannel,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get videoDurationS => $composableBuilder(
+    column: $table.videoDurationS,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get videoAvailable => $composableBuilder(
+    column: $table.videoAvailable,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get videoCheckedAt => $composableBuilder(
+    column: $table.videoCheckedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get videoUnavailableReason => $composableBuilder(
+    column: $table.videoUnavailableReason,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get guideSteps => $composableBuilder(
+    column: $table.guideSteps,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get guideSafety => $composableBuilder(
+    column: $table.guideSafety,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get approvedAt => $composableBuilder(
+    column: $table.approvedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get active => $composableBuilder(
+    column: $table.active,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ExercisesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ExercisesTable> {
+  $$ExercisesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get muscleGroup => $composableBuilder(
+    column: $table.muscleGroup,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get muscleRegion => $composableBuilder(
+    column: $table.muscleRegion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get equipment =>
+      $composableBuilder(column: $table.equipment, builder: (column) => column);
+
+  GeneratedColumn<bool> get logsWeight => $composableBuilder(
+    column: $table.logsWeight,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get nameVi =>
+      $composableBuilder(column: $table.nameVi, builder: (column) => column);
+
+  GeneratedColumn<String> get nameEn =>
+      $composableBuilder(column: $table.nameEn, builder: (column) => column);
+
+  GeneratedColumn<String> get youtubeVideoId => $composableBuilder(
+    column: $table.youtubeVideoId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get videoChannel => $composableBuilder(
+    column: $table.videoChannel,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get videoDurationS => $composableBuilder(
+    column: $table.videoDurationS,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get videoAvailable => $composableBuilder(
+    column: $table.videoAvailable,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get videoCheckedAt => $composableBuilder(
+    column: $table.videoCheckedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get videoUnavailableReason => $composableBuilder(
+    column: $table.videoUnavailableReason,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get guideSteps => $composableBuilder(
+    column: $table.guideSteps,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get guideSafety => $composableBuilder(
+    column: $table.guideSafety,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get approvedAt => $composableBuilder(
+    column: $table.approvedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+
+  GeneratedColumn<bool> get active =>
+      $composableBuilder(column: $table.active, builder: (column) => column);
+}
+
+class $$ExercisesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ExercisesTable,
+          ExerciseRow,
+          $$ExercisesTableFilterComposer,
+          $$ExercisesTableOrderingComposer,
+          $$ExercisesTableAnnotationComposer,
+          $$ExercisesTableCreateCompanionBuilder,
+          $$ExercisesTableUpdateCompanionBuilder,
+          (
+            ExerciseRow,
+            BaseReferences<_$AppDatabase, $ExercisesTable, ExerciseRow>,
+          ),
+          ExerciseRow,
+          PrefetchHooks Function()
+        > {
+  $$ExercisesTableTableManager(_$AppDatabase db, $ExercisesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ExercisesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ExercisesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ExercisesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> muscleGroup = const Value.absent(),
+                Value<String> muscleRegion = const Value.absent(),
+                Value<String> equipment = const Value.absent(),
+                Value<bool> logsWeight = const Value.absent(),
+                Value<String> nameVi = const Value.absent(),
+                Value<String?> nameEn = const Value.absent(),
+                Value<String> youtubeVideoId = const Value.absent(),
+                Value<String> videoChannel = const Value.absent(),
+                Value<int?> videoDurationS = const Value.absent(),
+                Value<bool> videoAvailable = const Value.absent(),
+                Value<DateTime?> videoCheckedAt = const Value.absent(),
+                Value<String?> videoUnavailableReason = const Value.absent(),
+                Value<String> guideSteps = const Value.absent(),
+                Value<String> guideSafety = const Value.absent(),
+                Value<String> approvedAt = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+                Value<bool> active = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ExercisesCompanion(
+                id: id,
+                muscleGroup: muscleGroup,
+                muscleRegion: muscleRegion,
+                equipment: equipment,
+                logsWeight: logsWeight,
+                nameVi: nameVi,
+                nameEn: nameEn,
+                youtubeVideoId: youtubeVideoId,
+                videoChannel: videoChannel,
+                videoDurationS: videoDurationS,
+                videoAvailable: videoAvailable,
+                videoCheckedAt: videoCheckedAt,
+                videoUnavailableReason: videoUnavailableReason,
+                guideSteps: guideSteps,
+                guideSafety: guideSafety,
+                approvedAt: approvedAt,
+                sortOrder: sortOrder,
+                active: active,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String muscleGroup,
+                required String muscleRegion,
+                required String equipment,
+                required bool logsWeight,
+                required String nameVi,
+                Value<String?> nameEn = const Value.absent(),
+                required String youtubeVideoId,
+                required String videoChannel,
+                Value<int?> videoDurationS = const Value.absent(),
+                required bool videoAvailable,
+                Value<DateTime?> videoCheckedAt = const Value.absent(),
+                Value<String?> videoUnavailableReason = const Value.absent(),
+                required String guideSteps,
+                required String guideSafety,
+                required String approvedAt,
+                required int sortOrder,
+                required bool active,
+                Value<int> rowid = const Value.absent(),
+              }) => ExercisesCompanion.insert(
+                id: id,
+                muscleGroup: muscleGroup,
+                muscleRegion: muscleRegion,
+                equipment: equipment,
+                logsWeight: logsWeight,
+                nameVi: nameVi,
+                nameEn: nameEn,
+                youtubeVideoId: youtubeVideoId,
+                videoChannel: videoChannel,
+                videoDurationS: videoDurationS,
+                videoAvailable: videoAvailable,
+                videoCheckedAt: videoCheckedAt,
+                videoUnavailableReason: videoUnavailableReason,
+                guideSteps: guideSteps,
+                guideSafety: guideSafety,
+                approvedAt: approvedAt,
+                sortOrder: sortOrder,
+                active: active,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ExercisesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ExercisesTable,
+      ExerciseRow,
+      $$ExercisesTableFilterComposer,
+      $$ExercisesTableOrderingComposer,
+      $$ExercisesTableAnnotationComposer,
+      $$ExercisesTableCreateCompanionBuilder,
+      $$ExercisesTableUpdateCompanionBuilder,
+      (
+        ExerciseRow,
+        BaseReferences<_$AppDatabase, $ExercisesTable, ExerciseRow>,
+      ),
+      ExerciseRow,
+      PrefetchHooks Function()
+    >;
+typedef $$LiftLogsTableCreateCompanionBuilder =
+    LiftLogsCompanion Function({
+      required String date,
+      required String exerciseId,
+      required int startKgX10,
+      required int endKgX10,
+      required DateTime loggedAt,
+      Value<int> rowid,
+    });
+typedef $$LiftLogsTableUpdateCompanionBuilder =
+    LiftLogsCompanion Function({
+      Value<String> date,
+      Value<String> exerciseId,
+      Value<int> startKgX10,
+      Value<int> endKgX10,
+      Value<DateTime> loggedAt,
+      Value<int> rowid,
+    });
+
+class $$LiftLogsTableFilterComposer
+    extends Composer<_$AppDatabase, $LiftLogsTable> {
+  $$LiftLogsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get exerciseId => $composableBuilder(
+    column: $table.exerciseId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get startKgX10 => $composableBuilder(
+    column: $table.startKgX10,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get endKgX10 => $composableBuilder(
+    column: $table.endKgX10,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get loggedAt => $composableBuilder(
+    column: $table.loggedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LiftLogsTableOrderingComposer
+    extends Composer<_$AppDatabase, $LiftLogsTable> {
+  $$LiftLogsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get exerciseId => $composableBuilder(
+    column: $table.exerciseId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get startKgX10 => $composableBuilder(
+    column: $table.startKgX10,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get endKgX10 => $composableBuilder(
+    column: $table.endKgX10,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get loggedAt => $composableBuilder(
+    column: $table.loggedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LiftLogsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LiftLogsTable> {
+  $$LiftLogsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get date =>
+      $composableBuilder(column: $table.date, builder: (column) => column);
+
+  GeneratedColumn<String> get exerciseId => $composableBuilder(
+    column: $table.exerciseId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get startKgX10 => $composableBuilder(
+    column: $table.startKgX10,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get endKgX10 =>
+      $composableBuilder(column: $table.endKgX10, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get loggedAt =>
+      $composableBuilder(column: $table.loggedAt, builder: (column) => column);
+}
+
+class $$LiftLogsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LiftLogsTable,
+          LiftLogRow,
+          $$LiftLogsTableFilterComposer,
+          $$LiftLogsTableOrderingComposer,
+          $$LiftLogsTableAnnotationComposer,
+          $$LiftLogsTableCreateCompanionBuilder,
+          $$LiftLogsTableUpdateCompanionBuilder,
+          (
+            LiftLogRow,
+            BaseReferences<_$AppDatabase, $LiftLogsTable, LiftLogRow>,
+          ),
+          LiftLogRow,
+          PrefetchHooks Function()
+        > {
+  $$LiftLogsTableTableManager(_$AppDatabase db, $LiftLogsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LiftLogsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LiftLogsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LiftLogsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> date = const Value.absent(),
+                Value<String> exerciseId = const Value.absent(),
+                Value<int> startKgX10 = const Value.absent(),
+                Value<int> endKgX10 = const Value.absent(),
+                Value<DateTime> loggedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LiftLogsCompanion(
+                date: date,
+                exerciseId: exerciseId,
+                startKgX10: startKgX10,
+                endKgX10: endKgX10,
+                loggedAt: loggedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String date,
+                required String exerciseId,
+                required int startKgX10,
+                required int endKgX10,
+                required DateTime loggedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => LiftLogsCompanion.insert(
+                date: date,
+                exerciseId: exerciseId,
+                startKgX10: startKgX10,
+                endKgX10: endKgX10,
+                loggedAt: loggedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LiftLogsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LiftLogsTable,
+      LiftLogRow,
+      $$LiftLogsTableFilterComposer,
+      $$LiftLogsTableOrderingComposer,
+      $$LiftLogsTableAnnotationComposer,
+      $$LiftLogsTableCreateCompanionBuilder,
+      $$LiftLogsTableUpdateCompanionBuilder,
+      (LiftLogRow, BaseReferences<_$AppDatabase, $LiftLogsTable, LiftLogRow>),
+      LiftLogRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -7257,4 +10824,12 @@ class $AppDatabaseManager {
       $$MenusTableTableManager(_db, _db.menus);
   $$AiDailyUsageTableTableManager get aiDailyUsage =>
       $$AiDailyUsageTableTableManager(_db, _db.aiDailyUsage);
+  $$DishImagesTableTableManager get dishImages =>
+      $$DishImagesTableTableManager(_db, _db.dishImages);
+  $$MuscleRegionsTableTableManager get muscleRegions =>
+      $$MuscleRegionsTableTableManager(_db, _db.muscleRegions);
+  $$ExercisesTableTableManager get exercises =>
+      $$ExercisesTableTableManager(_db, _db.exercises);
+  $$LiftLogsTableTableManager get liftLogs =>
+      $$LiftLogsTableTableManager(_db, _db.liftLogs);
 }

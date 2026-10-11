@@ -6,6 +6,19 @@ import '../app/strings_vi.dart';
 /// (05 §6.8.3).
 enum ErrorScreen { register, login, menu }
 
+/// Mã lỗi Bản 2 không bao giờ hiện câu nào (06 Bản 2 §6.4): chỉ có trong kết
+/// quả push; app hoàn bản ghi về trạng thái server và báo lỗi (TA-12), vì UI
+/// đã chặn trước các trường hợp này.
+const silentErrorCodes = {
+  ErrorCode.sessionLocked,
+  ErrorCode.extraSessionLocked,
+  ErrorCode.noSchedule,
+  ErrorCode.liftNoSession,
+  ErrorCode.liftWindowClosed,
+  ErrorCode.liftNotAllowedForExercise,
+  ErrorCode.liftExerciseNotInSession,
+};
+
 /// Hàm duy nhất đổi lỗi thành câu tiếng Việt (06 §6.4.3, AP-6).
 ///
 /// [error] = null nghĩa là không kết nối được server. Mã kỹ thuật
@@ -29,6 +42,14 @@ String errorMessage(ApiError? error, ErrorScreen screen, {int? nextMonth}) {
     ErrorCode.generationInProgress => S.menuGenerating,
     ErrorCode.aiInvalidOutput => S.menuInvalidOutput,
     ErrorCode.aiProviderError => S.menuProviderError,
+    ErrorCode.dishImageQuotaExhausted => S.dishImageQuotaExhausted,
+    ErrorCode.sessionLocked ||
+    ErrorCode.extraSessionLocked ||
+    ErrorCode.noSchedule ||
+    ErrorCode.liftNoSession ||
+    ErrorCode.liftWindowClosed ||
+    ErrorCode.liftNotAllowedForExercise ||
+    ErrorCode.liftExerciseNotInSession => offline,
     ErrorCode.unauthorized ||
     ErrorCode.profileIncomplete ||
     ErrorCode.notFound ||

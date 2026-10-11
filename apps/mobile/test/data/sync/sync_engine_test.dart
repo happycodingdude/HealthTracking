@@ -1,5 +1,6 @@
 import 'package:api_contract/api_contract.dart';
 import 'package:domain/domain.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart' hide pumpEventQueue;
 import 'package:mobile/data/api/api_client.dart';
@@ -9,6 +10,7 @@ import 'package:mobile/data/sync/outbox_writer.dart';
 import 'package:mobile/data/sync/sync_engine.dart';
 import 'package:mobile/data/sync/sync_scheduler.dart';
 import 'package:mobile/features/me/data/account_repository.dart';
+import 'package:mobile/features/weight/data/weight_repository.dart';
 
 import '../../support/fake_sync.dart';
 
@@ -322,5 +324,67 @@ void main() {
     expect(b.delay(2), const Duration(seconds: 4));
     expect(b.delay(9), const Duration(minutes: 5));
     expect(b.delay(50), const Duration(minutes: 5));
+  });
+
+  group('06 Bản 2 ED2-14, TA2-12: app biết thêm entity → pull lại từ đầu', () {
+    Future<void> setState({required int cursor, String? known}) => db
+        .update(db.syncState)
+        .write(
+          SyncStateCompanion(
+            cursor: Value(cursor),
+            knownEntities: Value(known),
+          ),
+        );
+
+    Future<SyncStateRow> state() => db.select(db.syncState).getSingle();
+
+    test(
+      'TAC2-16 (cơ chế): bộ entity đã biết thiếu một entity, outbox còn 2 '
+      'mutation → cursor = 0, pull lại từ đầu, 2 mutation vẫn được gửi',
+      () async {
+        engine = SyncEngine(
+          db: db,
+          api: api,
+          stores: {
+            SyncEntities.account: AccountStore(accounts),
+            SyncEntities.weight: WeightStore(WeightRepository(db)),
+          },
+          clock: clock,
+          reporter: reporter,
+          scheduler: scheduler,
+        );
+        await setState(cursor: 120, known: 'account');
+        await rename('A');
+        await outbox.enqueue('weight', '2026-10-05', SyncOp.upsert, {
+          'weightKgX10': 725,
+        });
+        expect(await pending(), 2);
+
+        expect(await engine.syncNow(), SyncOutcome.synced);
+        expect(api.pulls.first, 0, reason: 'pull lại từ cursor 0');
+        expect(api.pushes.single.mutations, hasLength(2));
+        expect(await pending(), 0);
+        expect((await state()).knownEntities, 'account,weight');
+        expect(await accounts.watchDisplayName().first, 'A');
+      },
+    );
+
+    test('bộ entity đã biết đủ → giữ cursor, không pull lại', () async {
+      await setState(cursor: 120, known: 'account');
+      await engine.syncNow();
+      expect(api.pulls.single, 120);
+    });
+
+    test('máy mới (chưa lưu bộ entity) → lưu bộ hiện tại, pull từ 0', () async {
+      await engine.syncNow();
+      expect(api.pulls.single, 0);
+      expect((await state()).knownEntities, 'account');
+    });
+
+    test('khôi phục trên máy mới (S-07) cũng áp dụng', () async {
+      await setState(cursor: 50, known: '');
+      await engine.restore();
+      expect(api.pulls.single, 0);
+    });
   });
 }

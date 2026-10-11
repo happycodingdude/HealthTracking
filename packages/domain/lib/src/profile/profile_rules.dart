@@ -122,6 +122,10 @@ abstract final class ProfileRules {
         (p.onboardingStep != onboardingSteps || p.setupDate == null)) {
       return 'onboardingCompletedAt';
     }
+    // "Chưa có lịch" chỉ có sau khi hoàn tất thiết lập (03 Bản 2 §6.1).
+    if (p.scheduleStartedOn != null && p.onboardingCompletedAt == null) {
+      return 'scheduleStartedOn';
+    }
     final tz = p.timezone;
     if (tz != null && (tz.isEmpty || tz.length > 64)) return 'timezone';
     return null;

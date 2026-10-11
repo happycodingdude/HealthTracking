@@ -1,3 +1,4 @@
+import 'package:domain/domain.dart' show MuscleRegion;
 import 'package:drift/drift.dart';
 
 part 'app_database.g.dart';
@@ -15,6 +16,10 @@ class SyncState extends Table {
 
   /// `meta.aiBudget` của lần pull gần nhất, JSON (VS-12, ED-04).
   TextColumn get aiBudget => text().nullable()();
+
+  /// Bộ entity app đã biết lúc pull, cách nhau bởi dấu phẩy (06 Bản 2 ED2-14).
+  /// App mới biết thêm entity → đặt lại cursor về 0 và pull lại toàn bộ.
+  TextColumn get knownEntities => text().nullable()();
 
   @override
   Set<Column<Object>> get primaryKey => {id};
@@ -71,6 +76,9 @@ class Profiles extends Table {
 
   /// `YYYY-MM-DD`.
   TextColumn get setupDate => text().nullable()();
+
+  /// `YYYY-MM-DD`, Bản 2 (05 Bản 2 §6.6.5).
+  TextColumn get scheduleStartedOn => text().nullable()();
   DateTimeColumn get disclaimerAcceptedAt => dateTime().nullable()();
   DateTimeColumn get onboardingCompletedAt => dateTime().nullable()();
   TextColumn get calorieMode => text().nullable()();
@@ -217,8 +225,103 @@ class AiDailyUsage extends Table {
   Set<Column<Object>> get primaryKey => {key};
 }
 
-/// SQLite trên máy (TD-04). Mỗi slice tăng `schemaVersion` tối đa 1 bước
-/// (ED-05, 06 §6.5.2).
+/// Bản sao entity `dish_image` (chỉ pull, dòng dùng chung, 05 Bản 2 §6.5),
+/// khóa = tên món chuẩn hóa. [cachedPath] chỉ có trên máy: file hình đã tải
+/// về thư mục Application Support (TD2-10, 05 Bản 2 §6.4.8).
+@DataClassName('DishImageRow')
+class DishImages extends Table {
+  @override
+  String get tableName => 'dish_images';
+
+  TextColumn get nameKey => text()();
+  TextColumn get id => text()();
+  TextColumn get displayName => text()();
+  IntColumn get width => integer()();
+  IntColumn get height => integer()();
+  IntColumn get bytes => integer()();
+  DateTimeColumn get createdAt => dateTime()();
+  TextColumn get cachedPath => text().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {nameKey};
+}
+
+/// 16 vùng cơ (05 Bản 2 §6.10.4), nạp sẵn lúc tạo database từ
+/// [MuscleRegion]; không đồng bộ.
+@DataClassName('MuscleRegionRow')
+class MuscleRegions extends Table {
+  @override
+  String get tableName => 'muscle_regions';
+
+  TextColumn get id => text()();
+  TextColumn get muscleGroup => text()();
+
+  /// `front` / `back`.
+  TextColumn get view => text()();
+  IntColumn get sortOrder => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+/// Bản sao chỉ đọc entity `exercise` (dòng dùng chung, AP-7). Cột giống bảng
+/// `exercises` của server trừ `library_version` (06 Bản 2 §6.5.1).
+@DataClassName('ExerciseRow')
+class Exercises extends Table {
+  @override
+  String get tableName => 'exercises';
+
+  TextColumn get id => text()();
+  TextColumn get muscleGroup => text()();
+  TextColumn get muscleRegion => text()();
+
+  /// `machine` / `free_weight` / `bodyweight`.
+  TextColumn get equipment => text()();
+  BoolColumn get logsWeight => boolean()();
+  TextColumn get nameVi => text()();
+  TextColumn get nameEn => text().nullable()();
+  TextColumn get youtubeVideoId => text()();
+  TextColumn get videoChannel => text()();
+  IntColumn get videoDurationS => integer().nullable()();
+  BoolColumn get videoAvailable => boolean()();
+  DateTimeColumn get videoCheckedAt => dateTime().nullable()();
+  TextColumn get videoUnavailableReason => text().nullable()();
+
+  /// Danh sách chuỗi dạng JSON.
+  TextColumn get guideSteps => text()();
+  TextColumn get guideSafety => text()();
+
+  /// `YYYY-MM-DD`.
+  TextColumn get approvedAt => text()();
+  IntColumn get sortOrder => integer()();
+  BoolColumn get active => boolean()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+/// Bản sao entity `lift_log` (key `YYYY-MM-DD:exerciseId`, 05 Bản 2 §6.6.2),
+/// ghi qua outbox. Mức tạ lưu kg × 10 như cân nặng.
+@DataClassName('LiftLogRow')
+class LiftLogs extends Table {
+  @override
+  String get tableName => 'lift_logs';
+
+  /// `YYYY-MM-DD`.
+  TextColumn get date => text()();
+  TextColumn get exerciseId => text()();
+  IntColumn get startKgX10 => integer()();
+  IntColumn get endKgX10 => integer()();
+  DateTimeColumn get loggedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {date, exerciseId};
+}
+
+/// SQLite trên máy (TD-04). Trong lúc dev (06 Bản 2 IR2-13, ED2-18): giữ
+/// `schemaVersion = 1` và chỉ có `onCreate`; đổi bảng thì sửa thẳng ở đây và
+/// cài lại app. Từ bản phát hành đầu tiên có dữ liệu thật, mỗi lần đổi cấu
+/// trúc tăng `schemaVersion` và có bước nâng cấp, chỉ thêm (ED-05).
 @DriftDatabase(
   tables: [
     SyncState,
@@ -232,20 +335,27 @@ class AiDailyUsage extends Table {
     Days,
     Menus,
     AiDailyUsage,
+    DishImages,
+    MuscleRegions,
+    Exercises,
+    LiftLogs,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 1;
 
   /// Đăng nhập tài khoản khác trên máy này (05 §6.6.6): xóa toàn bộ dữ liệu
   /// của tài khoản cũ (kể cả thay đổi chưa gửi), đặt lại cursor để khôi phục
   /// tài khoản mới từ đầu.
   Future<void> wipe() => transaction(() async {
     for (final table in allTables) {
-      if (table != syncState) await delete(table).go();
+      // Vùng cơ là dữ liệu nạp sẵn của app, không thuộc tài khoản nào.
+      if (table != syncState && table != muscleRegions) {
+        await delete(table).go();
+      }
     }
     await update(syncState).write(
       const SyncStateCompanion(
@@ -263,35 +373,17 @@ class AppDatabase extends _$AppDatabase {
       await into(
         syncState,
       ).insert(SyncStateCompanion.insert(id: const Value(1)));
-    },
-    onUpgrade: (m, from, to) async {
-      if (from < 2) {
-        // VS-02: outbox và account.
-        await m.createTable(outbox);
-        await m.createTable(account);
-      }
-      if (from < 3) {
-        // VS-03: hồ sơ, cân nặng, nháp thiết lập.
-        await m.createTable(profiles);
-        await m.createTable(weights);
-        await m.createTable(onboardingDraft);
-      }
-      if (from == 3) {
-        // VS-04: nháp lịch tuần (bảng nháp tạo mới ở v4 đã có cột này).
-        await m.addColumn(onboardingDraft, onboardingDraft.template);
-      }
-      if (from < 4) {
-        // VS-04: lịch tuần, lịch tháng, ngày trong lịch.
-        await m.createTable(weeklyTemplates);
-        await m.createTable(monthPlans);
-        await m.createTable(days);
-      }
-      if (from < 5) {
-        // VS-12: thực đơn AI, lượt trong ngày, ngân sách AI của tháng.
-        await m.addColumn(syncState, syncState.aiBudget);
-        await m.createTable(menus);
-        await m.createTable(aiDailyUsage);
-      }
+      await batch((b) {
+        b.insertAll(muscleRegions, [
+          for (final r in MuscleRegion.values)
+            MuscleRegionsCompanion.insert(
+              id: r.id,
+              muscleGroup: r.group.name,
+              view: r.view.name,
+              sortOrder: r.sortOrder,
+            ),
+        ]);
+      });
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');

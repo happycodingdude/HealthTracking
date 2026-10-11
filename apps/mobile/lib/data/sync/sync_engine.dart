@@ -125,6 +125,7 @@ final class SyncEngine {
 
   Future<SyncOutcome> _runOnce() async {
     try {
+      await _resetCursorIfNewEntities();
       await _pushAll();
       await _pullAll();
       await (_db.update(_db.syncState)..where((s) => s.id.equals(1))).write(
@@ -224,6 +225,7 @@ final class SyncEngine {
   /// [ApiFailure]; gọi lại thì tiếp tục từ cursor đã nhận (mỗi trang ghi
   /// cursor trong cùng transaction với dữ liệu).
   Future<void> restore({void Function(double progress)? onProgress}) async {
+    await _resetCursorIfNewEntities();
     var received = 0;
     while (true) {
       final page = await _pullPage();
@@ -234,6 +236,24 @@ final class SyncEngine {
     }
     await (_db.update(_db.syncState)..where((s) => s.id.equals(1))).write(
       SyncStateCompanion(lastSyncedAt: Value(_clock.now())),
+    );
+  }
+
+  /// 06 Bản 2 ED2-14, TA2-12: bộ entity app này biết ([_stores]) rộng hơn bộ
+  /// đã lưu ở lần pull trước (app vừa được cập nhật lên bản có entity mới)
+  /// → đặt lại cursor về 0 để pull lại toàn bộ một lần. Outbox không bị động
+  /// tới; bản ghi còn chờ gửi vẫn được ưu tiên khi pull ([_hasPending]). Không
+  /// phải khôi phục trên máy mới nên không có thông báo nào cho Bạn.
+  Future<void> _resetCursorIfNewEntities() async {
+    final current = _stores.keys.toSet();
+    final state = await _db.select(_db.syncState).getSingle();
+    final known = state.knownEntities?.split(',').toSet() ?? const <String>{};
+    if (known.containsAll(current)) return;
+    await (_db.update(_db.syncState)..where((s) => s.id.equals(1))).write(
+      SyncStateCompanion(
+        cursor: const Value(0),
+        knownEntities: Value((current.toList()..sort()).join(',')),
+      ),
     );
   }
 

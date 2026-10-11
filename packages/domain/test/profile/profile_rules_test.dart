@@ -235,5 +235,23 @@ void main() {
       expect(check(done), 'onboardingCompletedAt');
       expect(check(done.copyWith(setupDate: LocalDate(2026, 10, 7))), isNull);
     });
+
+    test('Bản 2: ngày bắt đầu lịch chỉ có sau khi hoàn tất thiết lập '
+        '(03 Bản 2 §6.1, 05 Bản 2 §6.6.5)', () {
+      expect(
+        check(step3.copyWith(scheduleStartedOn: LocalDate(2026, 10, 14))),
+        'scheduleStartedOn',
+      );
+      final done = step3.copyWith(
+        onboardingStep: 5,
+        calorieMode: CalorieMode.auto,
+        calorieKcal: 2210,
+        setupDate: LocalDate(2026, 10, 7),
+        onboardingCompletedAt: at,
+        scheduleStartedOn: LocalDate(2026, 10, 14),
+      );
+      expect(check(done), isNull);
+      expect(done.scheduleStart, LocalDate(2026, 10, 14));
+    });
   });
 }

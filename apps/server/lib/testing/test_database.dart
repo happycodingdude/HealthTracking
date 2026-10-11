@@ -11,19 +11,19 @@ String get testAdminUrl =>
     Platform.environment['TEST_DATABASE_URL'] ??
     'postgres://health:***REMOVED***@localhost:55432/postgres';
 
-/// Thư mục `apps/server/migrations`, dùng được khi chạy test từ
-/// `apps/server` lẫn từ `apps/mobile` (sync_e2e).
-Directory serverMigrationsDir() {
+/// File `apps/server/db/schema.sql` (cấu trúc database trong lúc dev, ED2-18),
+/// dùng được khi chạy test từ `apps/server` lẫn từ `apps/mobile` (sync_e2e).
+File serverSchemaFile() {
   for (final path in [
-    'migrations',
-    '../server/migrations',
-    'apps/server/migrations',
+    'db/schema.sql',
+    '../server/db/schema.sql',
+    'apps/server/db/schema.sql',
   ]) {
-    final dir = Directory(path);
-    if (File('${dir.path}/0001_auth.sql').existsSync()) return dir;
+    final file = File(path);
+    if (file.existsSync()) return file;
   }
   throw StateError(
-    'Không tìm thấy apps/server/migrations từ ${Directory.current.path}',
+    'Không tìm thấy apps/server/db/schema.sql từ ${Directory.current.path}',
   );
 }
 
@@ -31,15 +31,19 @@ Directory serverMigrationsDir() {
 final class TestDatabase {
   TestDatabase._(this.name, this.url, this.db);
 
-  /// Tạo database trống. [migrate] = true thì chạy toàn bộ `migrations/`.
-  static Future<TestDatabase> create({bool migrate = true}) async {
+  /// Tạo database trống. [schema] = true thì tạo cấu trúc từ `schema.sql`
+  /// (06 Bản 2 ED2-18: trong lúc dev, test tạo database từ file này).
+  static Future<TestDatabase> create({bool schema = true}) async {
     final name = 'test_${const Uuid().v4().replaceAll('-', '')}';
     await _admin((conn) => conn.execute('CREATE DATABASE "$name"'));
     final admin = Uri.parse(testAdminUrl);
     final url = admin.replace(path: '/$name').toString();
     final db = Database.open(url);
-    if (migrate) {
-      await Migrator(db.pool, serverMigrationsDir(), Logger((_) {})).migrate();
+    if (schema) {
+      await db.pool.execute(
+        serverSchemaFile().readAsStringSync(),
+        queryMode: QueryMode.simple,
+      );
     }
     return TestDatabase._(name, url, db);
   }

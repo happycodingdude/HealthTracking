@@ -32,6 +32,7 @@ final class Profile {
     this.sex,
     this.activityLevel,
     this.setupDate,
+    this.scheduleStartedOn,
     this.disclaimerAcceptedAt,
     this.onboardingCompletedAt,
     this.calorieMode,
@@ -49,8 +50,16 @@ final class Profile {
   final Sex? sex;
   final ActivityLevel? activityLevel;
 
-  /// Ngày hoàn tất thiết lập (F06-R5, F07-R2).
+  /// Ngày hoàn tất thiết lập (F06-R5, F07-R2). Ghi một lần (05 Bản 2 TA2-11).
   final LocalDate? setupDate;
+
+  /// Bản 2: ngày lưu lịch tuần lần đầu của tài khoản đã "Để sau" lịch tuần
+  /// (05 Bản 2 §6.6.5). null với tài khoản xếp lịch ngay khi thiết lập.
+  final LocalDate? scheduleStartedOn;
+
+  /// Mốc bắt đầu của lịch tháng và tiến độ tuần (F06-R22, UA-12):
+  /// `COALESCE(scheduleStartedOn, setupDate)`.
+  LocalDate? get scheduleStart => scheduleStartedOn ?? setupDate;
 
   /// Thời điểm bấm "Tôi đã hiểu" (F10-AC1).
   final DateTime? disclaimerAcceptedAt;
@@ -82,6 +91,7 @@ final class Profile {
     Sex? sex,
     ActivityLevel? activityLevel,
     LocalDate? setupDate,
+    LocalDate? scheduleStartedOn,
     DateTime? disclaimerAcceptedAt,
     DateTime? onboardingCompletedAt,
     CalorieMode? calorieMode,
@@ -95,6 +105,7 @@ final class Profile {
     sex: sex ?? this.sex,
     activityLevel: activityLevel ?? this.activityLevel,
     setupDate: setupDate ?? this.setupDate,
+    scheduleStartedOn: scheduleStartedOn ?? this.scheduleStartedOn,
     disclaimerAcceptedAt: disclaimerAcceptedAt ?? this.disclaimerAcceptedAt,
     onboardingCompletedAt: onboardingCompletedAt ?? this.onboardingCompletedAt,
     calorieMode: calorieMode ?? this.calorieMode,
@@ -114,6 +125,7 @@ final class Profile {
     sex: sex,
     activityLevel: activityLevel,
     setupDate: setupDate,
+    scheduleStartedOn: scheduleStartedOn,
     disclaimerAcceptedAt: disclaimerAcceptedAt,
     onboardingCompletedAt: onboardingCompletedAt,
     calorieMode: calorieMode,
@@ -133,6 +145,7 @@ final class Profile {
       other.sex == sex &&
       other.activityLevel == activityLevel &&
       other.setupDate == setupDate &&
+      other.scheduleStartedOn == scheduleStartedOn &&
       other.disclaimerAcceptedAt == disclaimerAcceptedAt &&
       other.onboardingCompletedAt == onboardingCompletedAt &&
       other.calorieMode == calorieMode &&
@@ -150,6 +163,7 @@ final class Profile {
     sex,
     activityLevel,
     setupDate,
+    scheduleStartedOn,
     disclaimerAcceptedAt,
     onboardingCompletedAt,
     calorieMode,

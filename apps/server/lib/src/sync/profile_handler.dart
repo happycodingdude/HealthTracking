@@ -5,6 +5,10 @@ import 'package:postgres/postgres.dart';
 import 'sync_entity_handler.dart';
 
 /// Entity `profile` (key `me`) = bảng `profiles` (06 VS03-T05).
+///
+/// Bản 2 (05 Bản 2 TA2-11, §6.6.5): `setup_date` và `schedule_started_on` ghi
+/// một lần — đã có thì giữ, bỏ qua giá trị mới (kể cả null từ app Bản 1 không
+/// biết `scheduleStartedOn`).
 final class ProfileHandler implements SyncEntityHandler {
   const ProfileHandler();
 
@@ -67,12 +71,12 @@ final class ProfileHandler implements SyncEntityHandler {
       Sql.named('''
         INSERT INTO profiles (
           user_id, height_cm, birth_year, sex, activity_level, setup_date,
-          onboarding_step, disclaimer_accepted_at, onboarding_completed_at,
+          schedule_started_on, onboarding_step, disclaimer_accepted_at, onboarding_completed_at,
           calorie_mode, calorie_kcal, calorie_pending_kcal, calorie_pending_reason,
           reminders_enabled, timezone, server_version, client_updated_at)
         VALUES (
           @user, @height, @birthYear, @sex::sex, @activity::activity_level, @setupDate::date,
-          @step, @disclaimerAt, @completedAt,
+          @scheduleStartedOn::date, @step, @disclaimerAt, @completedAt,
           @mode::calorie_mode, @kcal, @pendingKcal, @pendingReason::calorie_pending_reason,
           @reminders, @timezone, @version, @clientUpdatedAt)
         ON CONFLICT (user_id) DO UPDATE SET
@@ -80,7 +84,8 @@ final class ProfileHandler implements SyncEntityHandler {
           birth_year = EXCLUDED.birth_year,
           sex = EXCLUDED.sex,
           activity_level = EXCLUDED.activity_level,
-          setup_date = EXCLUDED.setup_date,
+          setup_date = COALESCE(profiles.setup_date, EXCLUDED.setup_date),
+          schedule_started_on = COALESCE(profiles.schedule_started_on, EXCLUDED.schedule_started_on),
           onboarding_step = EXCLUDED.onboarding_step,
           disclaimer_accepted_at = EXCLUDED.disclaimer_accepted_at,
           onboarding_completed_at = EXCLUDED.onboarding_completed_at,
@@ -101,6 +106,7 @@ final class ProfileHandler implements SyncEntityHandler {
         'sex': ProfileWire.sex[p.sex],
         'activity': ProfileWire.activityLevel[p.activityLevel],
         'setupDate': p.setupDate?.toKey(),
+        'scheduleStartedOn': p.scheduleStartedOn?.toKey(),
         'step': p.onboardingStep,
         'disclaimerAt': p.disclaimerAcceptedAt,
         'completedAt': p.onboardingCompletedAt,
@@ -139,6 +145,7 @@ final class ProfileHandler implements SyncEntityHandler {
              'sex', sex::text,
              'activityLevel', activity_level::text,
              'setupDate', to_char(setup_date, 'YYYY-MM-DD'),
+             'scheduleStartedOn', to_char(schedule_started_on, 'YYYY-MM-DD'),
              'onboardingStep', onboarding_step,
              'disclaimerAcceptedAt', ${_instant('disclaimer_accepted_at')},
              'onboardingCompletedAt', ${_instant('onboarding_completed_at')},

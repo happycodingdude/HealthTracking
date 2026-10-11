@@ -6,7 +6,7 @@ import 'package:test/test.dart';
 void main() {
   late TestDatabase tdb;
   setUpAll(() async {
-    tdb = await TestDatabase.create(migrate: false);
+    tdb = await TestDatabase.create(schema: false);
     await tdb.pool.execute('CREATE TABLE t (id int PRIMARY KEY)');
   });
   tearDownAll(() => tdb.dispose());

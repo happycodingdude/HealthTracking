@@ -12,6 +12,7 @@ import 'package:drift/drift.dart'
         driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:mobile/data/api/api_client.dart';
+import 'package:mobile/data/api/app_version_interceptor.dart';
 import 'package:mobile/data/auth/auth_interceptor.dart';
 import 'package:mobile/data/auth/auth_repository.dart';
 import 'package:mobile/data/auth/session_store.dart';
@@ -89,14 +90,17 @@ final class E2eDevice {
     // Mỗi máy có executor riêng nên không tranh chấp; tắt cảnh báo của Drift
     // về việc tạo AppDatabase nhiều lần.
     driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
-    final public = ApiClient.create(server.baseUrl);
+    final public = ApiClient.create(server.baseUrl)
+      ..dio.interceptors.add(AppVersionInterceptor(AppVersion.v2));
     tokens = TokenManager(
       store: store,
       clock: clock,
       refreshCall: (rt) => AuthRepository.refreshWith(public, rt),
     );
     api = ApiClient.create(server.baseUrl);
-    api.dio.interceptors.add(AuthInterceptor(api.dio, tokens));
+    api.dio.interceptors
+      ..add(AppVersionInterceptor(AppVersion.v2))
+      ..add(AuthInterceptor(api.dio, tokens));
     auth = AuthRepository(api: api, tokens: tokens, store: store);
     accounts = AccountRepository(db);
     profiles = ProfileRepository(db);

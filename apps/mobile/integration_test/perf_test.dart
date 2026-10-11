@@ -17,6 +17,7 @@ import 'package:mobile/features/me/data/profile_repository.dart';
 import 'package:mobile/features/schedule/data/schedule_repository.dart';
 import 'package:mobile/features/weight/data/weight_repository.dart';
 import 'package:mobile/main.dart' as app;
+import 'package:package_info_plus/package_info_plus.dart';
 
 import 'flow_helpers.dart';
 
@@ -128,7 +129,12 @@ void main() {
     );
     // Tài khoản thật trên server thử, phiên lưu trong Keychain như sau đăng ký.
     final auth = ProviderContainer(
-      overrides: [clockProvider.overrideWithValue(clock)],
+      overrides: [
+        clockProvider.overrideWithValue(clock),
+        appVersionProvider.overrideWithValue(
+          AppVersion.parse((await PackageInfo.fromPlatform()).version),
+        ),
+      ],
     );
     await auth
         .read(authRepositoryProvider)

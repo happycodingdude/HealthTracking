@@ -36,6 +36,7 @@ final class ProfileRepository {
           sex: Value(ProfileWire.sex[p.sex]),
           activityLevel: Value(ProfileWire.activityLevel[p.activityLevel]),
           setupDate: Value(p.setupDate?.toKey()),
+          scheduleStartedOn: Value(p.scheduleStartedOn?.toKey()),
           disclaimerAcceptedAt: Value(p.disclaimerAcceptedAt),
           onboardingCompletedAt: Value(p.onboardingCompletedAt),
           calorieMode: Value(ProfileWire.calorieMode[p.calorieMode]),
@@ -64,6 +65,9 @@ final class ProfileRepository {
       'activityLevel',
     ),
     setupDate: r.setupDate == null ? null : LocalDate.parse(r.setupDate!),
+    scheduleStartedOn: r.scheduleStartedOn == null
+        ? null
+        : LocalDate.parse(r.scheduleStartedOn!),
     disclaimerAcceptedAt: r.disclaimerAcceptedAt,
     onboardingCompletedAt: r.onboardingCompletedAt,
     calorieMode: ProfileWire.parse(

@@ -1,8 +1,10 @@
+import 'package:api_contract/api_contract.dart' show AppVersion;
 import 'package:domain/domain.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/error_reporting.dart';
 import '../data/api/api_client.dart';
+import '../data/api/app_version_interceptor.dart';
 import '../data/auth/auth_interceptor.dart';
 import '../data/auth/auth_repository.dart';
 import '../data/auth/session_store.dart';
@@ -19,6 +21,14 @@ final envProvider = Provider<AppEnv>((ref) => AppEnv.fromEnvironment());
 /// Nguồn thời gian duy nhất (IS-5).
 final clockProvider = Provider<Clock>((ref) => const SystemClock());
 
+/// Phiên bản app (`package_info`, đọc lúc khởi động trong `main.dart`), gửi
+/// trong header `X-App-Version` (06 Bản 2 ED2-02).
+final appVersionProvider = Provider<AppVersion>(
+  (ref) => throw UnimplementedError(
+    'appVersionProvider must be overridden at startup',
+  ),
+);
+
 final databaseProvider = Provider<AppDatabase>(
   (ref) => throw UnimplementedError(
     'databaseProvider must be overridden at startup',
@@ -32,9 +42,13 @@ final sessionStoreProvider = Provider<SessionStore>(
 
 /// ApiClient không gắn access token, chỉ dùng để làm mới token. Tách riêng để
 /// [tokenManagerProvider] không phụ thuộc vòng vào [apiClientProvider].
-final publicApiClientProvider = Provider<ApiClient>(
-  (ref) => ApiClient.create(ref.watch(envProvider).apiBaseUrl),
-);
+final publicApiClientProvider = Provider<ApiClient>((ref) {
+  final api = ApiClient.create(ref.watch(envProvider).apiBaseUrl);
+  api.dio.interceptors.add(
+    AppVersionInterceptor(ref.watch(appVersionProvider)),
+  );
+  return api;
+});
 
 final tokenManagerProvider = Provider<TokenManager>((ref) {
   final api = ref.watch(publicApiClientProvider);
@@ -51,9 +65,9 @@ final tokenManagerProvider = Provider<TokenManager>((ref) {
 /// ApiClient có interceptor gắn access token và tự làm mới token (VS01-T08).
 final apiClientProvider = Provider<ApiClient>((ref) {
   final api = ApiClient.create(ref.watch(envProvider).apiBaseUrl);
-  api.dio.interceptors.add(
-    AuthInterceptor(api.dio, ref.watch(tokenManagerProvider)),
-  );
+  api.dio.interceptors
+    ..add(AppVersionInterceptor(ref.watch(appVersionProvider)))
+    ..add(AuthInterceptor(api.dio, ref.watch(tokenManagerProvider)));
   return api;
 });
 
