@@ -24,6 +24,7 @@ import 'package:mobile/data/sync/outbox_writer.dart';
 import 'package:mobile/data/sync/sync_api.dart';
 import 'package:mobile/data/sync/sync_engine.dart';
 import 'package:mobile/data/sync/sync_status.dart';
+import 'package:mobile/features/library/data/exercise_repository.dart';
 import 'package:mobile/features/me/application/calorie_updates.dart';
 import 'package:mobile/features/me/application/update_display_name.dart';
 import 'package:mobile/features/me/data/account_repository.dart';
@@ -107,6 +108,7 @@ final class E2eDevice {
     weights = WeightRepository(db);
     schedule = ScheduleRepository(db);
     menus = MenuRepository(db);
+    exercises = ExerciseRepository(db);
     final outbox = OutboxWriter(db, clock);
     onboarding = OnboardingSteps(
       db: db,
@@ -164,6 +166,7 @@ final class E2eDevice {
         SyncEntities.day: DayStore(schedule),
         SyncEntities.menu: MenuStore(menus),
         SyncEntities.aiDailyUsage: AiDailyUsageStore(menus),
+        SyncEntities.exercise: ExerciseStore(exercises),
       },
       clock: clock,
       reporter: reporter,
@@ -184,6 +187,7 @@ final class E2eDevice {
   late final WeightRepository weights;
   late final ScheduleRepository schedule;
   late final MenuRepository menus;
+  late final ExerciseRepository exercises;
   late final MarkSession markSession;
   late final LogExtraSession logExtra;
   late final MonthMaterializer materializer;
@@ -256,6 +260,7 @@ final class E2eDevice {
         db.days,
         db.menus,
         db.aiDailyUsage,
+        db.exercises,
       ])
         t.actualTableName: await rows(t),
       'aiBudget': (await db.select(db.syncState).getSingle()).aiBudget,

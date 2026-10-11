@@ -2,4 +2,5 @@
 /// logger ghi lại.
 library;
 
+export 'testing/library_fixtures.dart';
 export 'testing/test_database.dart';

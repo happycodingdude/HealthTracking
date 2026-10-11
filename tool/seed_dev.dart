@@ -13,10 +13,14 @@
 //   đánh dấu, buổi chờ đánh dấu, vài số cân.
 // - 0900000002 "Lan": đã hoàn tất thiết lập nhưng "Để sau" lịch tuần (chưa có
 //   lịch, 03 Bản 2 §6.1), công tắc nhắc bật.
+//
+// Thư viện bài tập: nạp data/v2__exercises.json (29 bài Bạn đã duyệt) bằng
+// cùng LibraryImporter của `admin library import` (06 Bản 2 VS21-T08).
 import 'dart:io';
 
 import 'package:domain/domain.dart';
 import 'package:postgres/postgres.dart';
+import 'package:server/server.dart';
 
 const _password = 'matkhau123';
 const _timezone = 'Asia/Ho_Chi_Minh';
@@ -39,6 +43,7 @@ Future<void> main() async {
     // Giờ trên iPhone của Bạn (giờ Việt Nam), không phụ thuộc múi giờ của Mac.
     final now = DateTime.now().toUtc().add(_vnOffset);
     final local = DateTime(now.year, now.month, now.day, now.hour, now.minute);
+    await _seedLibrary(conn);
     await _seedScheduled(conn, local);
     await _seedNoSchedule(conn, local);
   } finally {
@@ -70,6 +75,14 @@ String _withSslMode(String url) {
               queryParameters: {...uri.queryParameters, 'sslmode': 'disable'},
             )
             .toString();
+}
+
+Future<void> _seedLibrary(Connection c) async {
+  final report = await LibraryImporter(
+    c,
+  ).run(LibraryFile.parse(File('data/v2__exercises.json').readAsStringSync()));
+  stdout.writeln('Thư viện: ${report.describe()}');
+  if (!report.ok) exitCode = 1;
 }
 
 /// Tạo tài khoản; null khi số đã có (bỏ qua, giữ dữ liệu cũ).

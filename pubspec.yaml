@@ -12,8 +12,10 @@ workspace:
   - apps/mobile
 
 dev_dependencies:
-  # Công cụ trong tool/ (seed_dev.dart, 06 Bản 2 ED2-18).
+  # Công cụ trong tool/ (seed_dev.dart ED2-18, video_durations.dart ED2-19).
   domain:
     path: packages/domain
   lints: ^5.1.1
   postgres: ^3.5.7
+  server:
+    path: apps/server

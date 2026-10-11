@@ -2,6 +2,7 @@ import 'package:api_contract/api_contract.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
+import '../../features/library/data/exercise_repository.dart';
 import '../../features/me/data/account_repository.dart';
 import '../../features/me/data/profile_repository.dart';
 import '../../features/menu/data/menu_repository.dart';
@@ -34,6 +35,10 @@ final menuRepositoryProvider = Provider<MenuRepository>(
   (ref) => MenuRepository(ref.watch(databaseProvider)),
 );
 
+final exerciseRepositoryProvider = Provider<ExerciseRepository>(
+  (ref) => ExerciseRepository(ref.watch(databaseProvider)),
+);
+
 final outboxWriterProvider = Provider<OutboxWriter>(
   (ref) => OutboxWriter(ref.watch(databaseProvider), ref.watch(clockProvider)),
 );
@@ -61,6 +66,9 @@ final syncEngineProvider = Provider<SyncEngine>((ref) {
       SyncEntities.menu: MenuStore(ref.watch(menuRepositoryProvider)),
       SyncEntities.aiDailyUsage: AiDailyUsageStore(
         ref.watch(menuRepositoryProvider),
+      ),
+      SyncEntities.exercise: ExerciseStore(
+        ref.watch(exerciseRepositoryProvider),
       ),
     },
     clock: ref.watch(clockProvider),
