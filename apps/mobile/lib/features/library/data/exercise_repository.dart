@@ -50,6 +50,13 @@ final class ExerciseRepository {
           .watch()
           .map((rows) => [for (final r in rows) _toExercise(r)]);
 
+  /// Mọi bài, kể cả bài đã rời thư viện, thứ tự F18-R9 (buổi tập, Tiến bộ).
+  Stream<List<Exercise>> watchAll() =>
+      (_db.select(_db.exercises)
+            ..orderBy([(x) => OrderingTerm.asc(x.sortOrder)]))
+          .watch()
+          .map((rows) => [for (final r in rows) _toExercise(r)]);
+
   /// Một bài, kể cả bài đã rời thư viện (F19-E2). null khi chưa có.
   Stream<Exercise?> watch(String id) =>
       (_db.select(_db.exercises)..where((x) => x.id.equals(id)))

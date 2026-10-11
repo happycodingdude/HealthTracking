@@ -13,6 +13,7 @@ import '../../../core/widgets/primary_button.dart';
 import '../../../core/widgets/toast.dart';
 import '../../../core/widgets/unsaved_changes.dart';
 import '../../today/application/mark_session.dart';
+import '../../workout/presentation/session_screen.dart';
 import '../application/schedule_providers.dart';
 import 'muscle_picker.dart';
 import 'session_marking.dart';
@@ -68,9 +69,18 @@ class _ExtraSessionSheetState extends ConsumerState<ExtraSessionSheet> {
       await reporter.report(e, st, reason: 'extra_session');
       return;
     }
-    // Nút "Ghi mức tạ" của thông báo này làm ở VS-27 (FA2-11).
-    if (widget.host.mounted) {
-      showToast(widget.host, S.extraLogged(Fmt.muscles(muscles)));
+    // Lưu cho hôm nay: cửa sổ ghi tạ mở từ lúc lưu (FA2-11), thông báo nhanh
+    // có nút "Ghi mức tạ" → S-63 của buổi vừa thêm.
+    final host = widget.host;
+    if (host.mounted) {
+      showToast(
+        host,
+        S.extraLogged(Fmt.muscles(muscles)),
+        action: widget.date == today ? S.logLift : null,
+        onAction: () {
+          if (host.mounted) openSession(host, widget.date);
+        },
+      );
     }
   }
 

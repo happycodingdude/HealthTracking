@@ -108,13 +108,27 @@ abstract final class SessionMarking {
     if (host.mounted) showToast(host, S.markedDone(muscles));
   }
 
-  /// "Không tập" cho buổi [day].
-  static Future<void> skipped(BuildContext context, PlanDay day) async {
+  /// "Không tập" cho buổi [day]. Buổi đã có mức tạ: hộp "Buổi này đã có mức
+  /// tạ của {N} bài." với "Tiếp tục" · "Hủy" trên [context] trước khi lưu
+  /// (F05-R28); mức tạ giữ nguyên (FD2-02). [onConfirmed] chạy ngay trước khi
+  /// lưu (S-21 đóng bảng).
+  static Future<void> skipped(
+    BuildContext context,
+    PlanDay day, {
+    VoidCallback? onConfirmed,
+  }) async {
     final host = _stable(context);
     final container = ProviderScope.containerOf(host, listen: false);
+    final skip = container.read(markSessionSkippedProvider);
+    final lifts = await skip.liftLogCount(day.date);
+    if (lifts > 0) {
+      if (!context.mounted) return;
+      if (!await _confirmLiftsKept(context, lifts)) return;
+    }
+    onConfirmed?.call();
     final PlanDay updated;
     try {
-      updated = await container.read(markSessionSkippedProvider).call(day.date);
+      updated = await skip.call(day.date);
     } on MarkException catch (e, st) {
       await container
           .read(errorReporterProvider)
@@ -132,6 +146,31 @@ abstract final class SessionMarking {
     );
   }
 }
+
+/// F05-R28: "Buổi này đã có mức tạ của {N} bài." · "Tiếp tục" · "Hủy". true =
+/// tiếp tục lưu "Không tập".
+Future<bool> _confirmLiftsKept(BuildContext context, int n) async =>
+    await showAppDialog<bool>(
+      context,
+      builder: (dialogContext) => AlertDialog(
+        key: const ValueKey('lifts-kept-confirm'),
+        scrollable: true,
+        title: Text(S.liftLogsExist(n), textAlign: TextAlign.center),
+        actions: [
+          OutlinedButton(
+            key: const ValueKey('lifts-kept-cancel'),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text(S.cancel),
+          ),
+          FilledButton(
+            key: const ValueKey('lifts-kept-continue'),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text(S.continueLabel),
+          ),
+        ],
+      ),
+    ) ??
+    false;
 
 /// "Đã tập" (nút chính) · "Không tập" (nút phụ cùng kích thước, 04 §6.7.1).
 class MarkButtons extends StatelessWidget {

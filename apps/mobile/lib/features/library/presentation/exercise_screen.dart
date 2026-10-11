@@ -1,3 +1,4 @@
+import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +8,8 @@ import '../../../app/theme.dart';
 import '../../../core/formatters.dart';
 import '../../../core/widgets/heading.dart';
 import '../../../core/widgets/reference_tag.dart';
+import '../../workout/application/session_providers.dart';
+import '../../workout/presentation/lift_log_sheet.dart';
 import '../application/library_providers.dart';
 import 'body_map.dart';
 import 'video_area.dart';
@@ -35,12 +38,20 @@ String exercisePath(String id, ExerciseFrom from) =>
 /// dụng cụ, hình vùng cơ (nam/nữ theo hồ sơ), Cách tập, Lưu ý an toàn, nhãn
 /// "tham khảo" của hướng dẫn (F10-R21). Tên, hình, hướng dẫn hiện được khi
 /// không có mạng; chỉ video cần mạng (F19-R2). Hướng dẫn hiện đúng nội dung
-/// Bạn đã duyệt (F19-R5). Khu mức tạ thêm ở VS-27, VS-28.
+/// Bạn đã duyệt (F19-R5). Cuối màn là khu mức tạ ([_LiftArea]).
 class ExerciseScreen extends ConsumerWidget {
-  const ExerciseScreen({super.key, required this.id, required this.from});
+  const ExerciseScreen({
+    super.key,
+    required this.id,
+    required this.from,
+    this.session,
+  });
 
   final String id;
   final ExerciseFrom from;
+
+  /// Ngày của buổi khi mở từ S-63 (F19-R3).
+  final LocalDate? session;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -131,6 +142,7 @@ class ExerciseScreen extends ConsumerWidget {
                 _GuideLine(marker: '•', text: note),
               const SizedBox(height: 16),
               const _GuideNote(),
+              _LiftArea(exercise: exercise, session: session),
             ],
           ],
         ),
@@ -244,6 +256,130 @@ class _GuideNote extends StatelessWidget {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Khu mức tạ (04 Bản 2 S-67, 6 tình huống): ghi hoặc sửa mức tạ của buổi khi
+/// mở từ S-63 trong cửa sổ ghi tạ; chỉ đọc khi ngoài cửa sổ; nơi khác hiện
+/// bản ghi gần nhất. Ẩn khi bài chưa có bản ghi nào (F19-AC3) và với bài bụng
+/// (F19-R4). Bài đã rời thư viện không có "Ghi mức tạ" (UA2-18).
+class _LiftArea extends ConsumerWidget {
+  const _LiftArea({required this.exercise, required this.session});
+
+  final Exercise exercise;
+  final LocalDate? session;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (!exercise.logsWeight) return const SizedBox.shrink();
+    final logs = ref.watch(allLiftLogsProvider).value;
+    if (logs == null) return const SizedBox.shrink();
+    final date = session;
+    final view = date == null ? null : ref.watch(sessionProvider(date));
+    final inWindow = view?.canLog ?? false;
+    LiftLog? latest;
+    LiftLog? thisSession;
+    for (final l in logs) {
+      if (l.exerciseId != exercise.id) continue;
+      if (latest == null || l.date.isAfter(latest.date)) latest = l;
+      if (l.date == date) thisSession = l;
+    }
+    final secondary = context.text.bodyLarge?.copyWith(
+      color: context.palette.textSecondary,
+    );
+
+    final List<Widget> content;
+    if (date != null && inWindow && thisSession == null && exercise.active) {
+      final previous = LiftLogRules.previousSession(logs, exercise.id, date);
+      content = [
+        if (previous != null) ...[
+          Text(
+            S.liftPrevious(
+              Fmt.dayMonth(previous.date),
+              Fmt.kgNumber(previous.startKgX10),
+              Fmt.kgNumber(previous.endKgX10),
+            ),
+            style: secondary,
+          ),
+          const SizedBox(height: 12),
+        ],
+        FilledButton(
+          key: const ValueKey('exercise-log-lift'),
+          onPressed: () =>
+              showLiftLogSheet(context, date: date, exercise: exercise),
+          child: const Text(S.logLift),
+        ),
+      ];
+    } else if (date != null && thisSession != null) {
+      final value = Text(
+        S.liftThisSession(
+          Fmt.kgNumber(thisSession.startKgX10),
+          Fmt.kgNumber(thisSession.endKgX10),
+        ),
+        key: const ValueKey('exercise-lift-this-session'),
+        style: context.text.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+      );
+      final log = thisSession;
+      content = [
+        if (inWindow)
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 12,
+            children: [
+              value,
+              OutlinedButton(
+                key: const ValueKey('exercise-edit-lift'),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(64, 44),
+                ),
+                onPressed: () => showLiftLogSheet(
+                  context,
+                  date: date,
+                  exercise: exercise,
+                  existing: log,
+                ),
+                child: const Text(S.edit),
+              ),
+            ],
+          )
+        else
+          value,
+      ];
+    } else if (latest != null) {
+      content = [
+        Text(
+          S.liftLatest(
+            Fmt.dayMonth(latest.date),
+            Fmt.kgNumber(latest.startKgX10),
+            Fmt.kgNumber(latest.endKgX10),
+          ),
+          key: const ValueKey('exercise-lift-latest'),
+          style: secondary,
+        ),
+      ];
+    } else {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 20),
+      child: Container(
+        key: const ValueKey('exercise-lift-area'),
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: context.palette.card,
+          borderRadius: BorderRadius.circular(20),
+          // Thẻ viền đậm để thấy ngay khi cuộn tới (04 Bản 2 S-67).
+          border: Border.all(color: context.colors.primary, width: 2),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: content,
         ),
       ),
     );

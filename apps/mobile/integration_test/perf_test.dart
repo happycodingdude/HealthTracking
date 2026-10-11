@@ -1,5 +1,6 @@
 // Đo hiệu năng (06 VS15-T08, IA-04) với 1 năm dữ liệu: mở app tới Hôm nay,
-// đánh dấu "Đã tập" tới khi giao diện cập nhật, cuộn S-20 và S-40.
+// đánh dấu "Đã tập" tới khi giao diện cập nhật, lưu mức tạ tới khi dòng bài
+// cập nhật (06 Bản 2 IA2-05), cuộn S-20 và S-40.
 //
 // Chạy trong tool/integration_test.sh: trên simulator là bản debug nên số đo
 // là cận trên. Số đo trên iPhone thật làm ở bản RC.
@@ -156,6 +157,35 @@ void main() {
     final startupMs = startWatch.elapsedMilliseconds;
     await tester.pumpAndSettle();
 
+    // Ghi mức tạ (06 Bản 2 IA2-05): S-63 → "Ghi" → S-64 nhập hai ô; đo từ lúc
+    // chạm "Lưu" tới khi dòng bài hiện con số. Đo trước khi đánh dấu: server
+    // thử chưa có lịch nên lần gửi sau đó bị từ chối và ngày bị hoàn về.
+    // Bài đầu tiên ghi được của buổi (buổi thay đổi theo ngày chạy test).
+    final logButton = find.byWidgetPredicate(
+      (w) =>
+          w.key is ValueKey<String> &&
+          (w.key! as ValueKey<String>).value.startsWith('lift-log-'),
+    );
+    await tester.tap(find.byKey(const ValueKey('session-view-exercises')));
+    await pumpUntil(tester, logButton);
+    final exerciseId = (tester.widget(logButton.first).key! as ValueKey<String>)
+        .value
+        .substring('lift-log-'.length);
+    await tester.tap(logButton.first);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('lift-start-input')),
+      '30',
+    );
+    await tester.enterText(find.byKey(const ValueKey('lift-end-input')), '35');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('lift-save')));
+    final value = find.byKey(ValueKey('lift-value-$exerciseId'));
+    final liftMs = await _msUntil(tester, () => value.evaluate().isNotEmpty);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('session-back')));
+    await tester.pumpAndSettle();
+
     // Đánh dấu: chạm "Đã tập" → hộp S-65; đo từ lúc chạm "Lưu" tới khi thẻ
     // đổi sang "đã tập" (nút biến mất).
     await tester.tap(done);
@@ -190,10 +220,12 @@ void main() {
       ...?binding.reportData,
       'startup_ms': startupMs,
       'mark_ms': markMs,
+      'lift_ms': liftMs,
     };
     // ignore: avoid_print
     print('PERF ${binding.reportData}');
     expect(startupMs, lessThan(2000), reason: 'IA-04: mở app dưới 2 giây');
     expect(markMs, lessThan(100), reason: 'IA-04: đánh dấu dưới 100 ms');
+    expect(liftMs, lessThan(100), reason: 'IA2-05: lưu mức tạ dưới 100 ms');
   });
 }

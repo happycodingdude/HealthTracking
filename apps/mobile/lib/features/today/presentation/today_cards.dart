@@ -20,6 +20,8 @@ import '../../schedule/application/schedule_providers.dart';
 import '../../schedule/presentation/day_sheet.dart';
 import '../../schedule/presentation/extra_session_sheet.dart';
 import '../../schedule/presentation/session_marking.dart';
+import '../../workout/application/session_providers.dart';
+import '../../workout/presentation/session_screen.dart';
 import '../application/progress_view.dart';
 import '../application/today_view.dart';
 import 'week_progress_screen.dart';
@@ -85,11 +87,19 @@ class TodayCard extends StatelessWidget {
 
 /// Liên kết chữ (nút phụ dạng chữ, căn trái).
 class _Link extends StatelessWidget {
-  const _Link({required this.id, required this.label, required this.onTap});
+  const _Link({
+    required this.id,
+    required this.label,
+    required this.onTap,
+    this.chevron = false,
+  });
 
   final Key id;
   final String label;
   final VoidCallback onTap;
+
+  /// Mũi tên "›" sau chữ (mock S-10-2 Bản 2).
+  final bool chevron;
 
   @override
   Widget build(BuildContext context) => Align(
@@ -102,13 +112,71 @@ class _Link extends StatelessWidget {
         textStyle: context.text.titleMedium,
       ),
       onPressed: onTap,
-      child: Text(label),
+      child: chevron
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(child: Text(label)),
+                const Icon(Icons.chevron_right, size: 22),
+              ],
+            )
+          : Text(label),
     ),
   );
 }
 
+/// Phần bài tập của thẻ buổi tập hôm nay (04 Bản 2 §6.6.1, UA2-08): dòng
+/// vùng cơ ([regions]), liên kết → S-63 ("Xem bài tập · Ghi mức tạ" khi buổi
+/// đang chờ đánh dấu hoặc là buổi tập thêm), "Đã ghi mức tạ {n} bài" khi đã
+/// ghi.
+class _ExercisesPart extends ConsumerWidget {
+  const _ExercisesPart({
+    required this.day,
+    required this.regions,
+    required this.withLog,
+  });
+
+  final PlanDay day;
+  final bool regions;
+  final bool withLog;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final n = ref.watch(dayLiftLogsProvider(day.date)).value?.length ?? 0;
+    final secondary = context.text.bodyLarge?.copyWith(
+      color: context.palette.textSecondary,
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (regions)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              Fmt.regions(day.sessionMuscles),
+              key: const ValueKey('session-regions'),
+              style: secondary,
+            ),
+          ),
+        _Link(
+          id: const ValueKey('session-view-exercises'),
+          label: withLog ? S.viewExercisesAndLog : S.viewExercises,
+          chevron: true,
+          onTap: () => openSession(context, day.date),
+        ),
+        if (n > 0)
+          Text(
+            S.liftLoggedCount(n),
+            key: const ValueKey('session-lift-count'),
+            style: secondary,
+          ),
+      ],
+    );
+  }
+}
+
 /// Thẻ buổi tập hôm nay (04 Bản 2 §6.6.1). Buổi đã chốt (Đã tập, buổi tập
-/// thêm) không có nút sửa ở đâu cả (UR2-06). Phần bài tập làm ở VS-27.
+/// thêm) không có nút sửa ở đâu cả (UR2-06).
 class SessionCard extends ConsumerWidget {
   const SessionCard({super.key});
 
@@ -159,6 +227,7 @@ class SessionCard extends ConsumerWidget {
             Heading(S.extraSessionLine(Fmt.muscles(extra)), style: title),
             const SizedBox(height: 8),
             const LockedOnSaveLine(),
+            _ExercisesPart(day: day!, regions: false, withLog: true),
           ] else ...[
             Heading(today.isSunday ? S.sundayRest : S.todayRest, style: title),
             nextLine(),
@@ -183,6 +252,7 @@ class SessionCard extends ConsumerWidget {
       children: switch (status.state) {
         SessionState.upcoming => [
           Heading(planned, style: title),
+          _ExercisesPart(day: day, regions: true, withLog: false),
           const SizedBox(height: 8),
           Text(S.markableFrom(Fmt.time(day.time!)), style: secondary),
           // 04 §6.7.1: "Sửa buổi hôm nay" → S-21.
@@ -195,6 +265,7 @@ class SessionCard extends ConsumerWidget {
         ],
         SessionState.awaitingMark => [
           Heading(planned, style: title),
+          _ExercisesPart(day: day, regions: true, withLog: true),
           const SizedBox(height: 16),
           MarkButtons(
             day: day,
@@ -209,6 +280,7 @@ class SessionCard extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           const LockedOnSaveLine(),
+          _ExercisesPart(day: day, regions: false, withLog: false),
         ],
         SessionState.skipped || SessionState.autoSkipped => [
           Heading(planned, style: title),
@@ -219,6 +291,7 @@ class SessionCard extends ConsumerWidget {
             ),
             style: secondary,
           ),
+          _ExercisesPart(day: day, regions: false, withLog: false),
           const SizedBox(height: 16),
           ChangeToDoneButton(
             day: day,

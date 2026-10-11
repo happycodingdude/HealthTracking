@@ -110,6 +110,7 @@ void main() {
       await pump(tester, v, await seed(), DateTime(2026, 10, 7, 18, 5));
       final done = find.byKey(ValueKey('mark-done-${wed.toKey()}'));
       await tester.ensureVisible(done);
+      await tester.pumpAndSettle();
       await tester.tap(done);
       await tester.pumpAndSettle();
       await snap('s65_today_${v.name}');
@@ -120,6 +121,7 @@ void main() {
       await pump(tester, v, await seed(), DateTime(2026, 10, 7, 18, 5));
       final done = find.byKey(ValueKey('mark-done-${wed.toKey()}'));
       await tester.ensureVisible(done);
+      await tester.pumpAndSettle();
       await tester.tap(done);
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('lock-confirm-save')));
@@ -133,6 +135,7 @@ void main() {
       await pump(tester, v, await seed(), DateTime(2026, 10, 7, 18, 5));
       final skipped = find.byKey(ValueKey('mark-skipped-${wed.toKey()}'));
       await tester.ensureVisible(skipped);
+      await tester.pumpAndSettle();
       await tester.tap(skipped);
       await tester.pumpAndSettle();
       await snap('s10_skipped_${v.name}');

@@ -14,6 +14,7 @@ import '../../../core/widgets/session_tag.dart';
 import '../../../core/widgets/settings_card.dart';
 import '../../../core/widgets/toast.dart';
 import '../../../core/widgets/unsaved_changes.dart';
+import '../../workout/presentation/session_screen.dart';
 import '../application/schedule_edits.dart';
 import '../application/schedule_providers.dart';
 import 'extra_session_sheet.dart';
@@ -158,6 +159,26 @@ class _DaySheetState extends ConsumerState<DaySheet> {
               const SizedBox(height: 4),
               _summaryLine(context, day, now),
             ],
+            // Ngày có buổi: "Xem bài tập" → S-63 ở mọi trạng thái (F20-R4).
+            if (_mode == _Mode.actions && LiftLogRules.isSession(day))
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                  key: const ValueKey('day-view-exercises'),
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    textStyle: context.text.titleMedium,
+                  ),
+                  onPressed: () => _open((h) => openSession(h, _date)),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(child: Text(S.viewExercises)),
+                      Icon(Icons.chevron_right, size: 22),
+                    ],
+                  ),
+                ),
+              ),
             const SizedBox(height: 20),
             ...switch (_mode) {
               _Mode.actions => _actions(context, situation, day, now),
@@ -299,10 +320,8 @@ class _DaySheetState extends ConsumerState<DaySheet> {
         MarkButtons(
           day: day!,
           onDone: () => SessionMarking.done(context, day, onConfirmed: close),
-          onSkipped: () {
-            close();
-            SessionMarking.skipped(widget.host, day);
-          },
+          onSkipped: () =>
+              SessionMarking.skipped(context, day, onConfirmed: close),
         ),
       ],
       DaySituation.done => [

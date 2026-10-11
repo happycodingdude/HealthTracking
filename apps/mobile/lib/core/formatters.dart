@@ -112,6 +112,25 @@ abstract final class Fmt {
     return '${names.sublist(0, names.length - 1).join(', ')} ${S.and} ${names.last}';
   }
 
+  /// Tiêu đề buổi tập (04 Bản 2 S-63): mỗi nhóm cơ viết hoa chữ đầu,
+  /// `Ngực và Tay sau`, `Vai và Bụng`.
+  static String musclesTitle(List<MuscleGroup> groups) {
+    final names = [for (final m in MuscleGroup.ordered(groups)) muscle(m)];
+    if (names.length <= 1) return names.join();
+    return '${names.sublist(0, names.length - 1).join(', ')} ${S.and} ${names.last}';
+  }
+
+  /// Các vùng cơ của buổi (04 Bản 2 §6.6.1): `Ngực trên · Ngực giữa · Ngực
+  /// dưới`.
+  static String regions(List<MuscleGroup> groups) => [
+    for (final g in MuscleGroup.ordered(groups))
+      for (final r in MuscleRegion.of(g)) region(r),
+  ].join(' · ');
+
+  /// Mức tạ của một bản ghi: `12 → 14 kg`, `72,5 → 75 kg`.
+  static String lift(LiftLog l) =>
+      S.liftValue(kgNumber(l.startKgX10), kgNumber(l.endKgX10));
+
   /// `T4 07/10` (S-20).
   static String shortWeekdayDate(LocalDate date) =>
       '${S.weekdaysShort[date.weekday - 1]} ${dayMonth(date)}';

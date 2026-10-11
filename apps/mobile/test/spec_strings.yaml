@@ -333,3 +333,27 @@ playVideo: "Phát video" # GIẢ ĐỊNH — nhãn VoiceOver của nút phát, s
 # 04 Bản 2 S-68 (trạng thái trống), 03 Bản 2 F23-R4
 progressEmptyTitle: "Chưa có mức tạ nào"
 progressEmptyBody: "Chưa có mức tạ nào. Ghi mức tạ trong buổi tập để theo dõi tiến bộ."
+
+# 04 Bản 2 §6.6.1, S-21, S-63, S-64, S-67, §6.12; 03 Bản 2 F21-V1 → V4, F21-R12
+viewExercises: "Xem bài tập"
+viewExercisesAndLog: "Xem bài tập · Ghi mức tạ"
+logLift: "Ghi mức tạ"
+logLiftShort: "Ghi" # S-63 nút trên dòng bài
+extraSaved: "Đã lưu" # S-63 dòng phụ buổi tập thêm
+readOnlyFuture: "Chỉ xem · Buổi chưa đến"
+readOnlyLocked: "Chỉ xem · Mức tạ của buổi này đã khóa"
+readOnlyPastExtra: "Chỉ xem · Buổi tập thêm cho ngày đã qua không ghi mức tạ"
+liftStart: "Bắt đầu"
+liftEnd: "Kết thúc"
+liftStepHint: "Bước 0,5 kg · chạm vào số để gõ"
+liftFirstTime: "Lần ghi đầu tiên của bài này"
+deleteLift: "Xóa mức tạ"
+deleteLiftConfirm: "Xóa mức tạ của bài này?"
+liftDeleted: "Đã xóa mức tạ"
+liftLockedAtMidnight: "Mức tạ của buổi này đã khóa lúc 00:00."
+liftMissing: "Vui lòng nhập cả mức tạ bắt đầu và kết thúc"
+liftOutOfRange: "Mức tạ cần từ 0,5 đến 300 kg"
+liftNotStep: "Mức tạ nhập theo bước 0,5 kg"
+liftNotNumber: "Mức tạ chưa đúng"
+liftDecrease: "Giảm 0,5 kg" # GIẢ ĐỊNH — nhãn VoiceOver của nút −, spec không ghi câu
+liftIncrease: "Tăng 0,5 kg" # GIẢ ĐỊNH — nhãn VoiceOver của nút +, spec không ghi câu
