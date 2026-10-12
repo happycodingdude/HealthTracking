@@ -10,12 +10,12 @@ import 'package:mobile/features/library/data/video_player_gateway.dart';
 /// Độ dài video dùng trong test và golden (file thư viện chưa đo, B2-1).
 const fixtureVideoSeconds = 48;
 
-/// 29 bài của thư viện thật (`data/v2__exercises.json`, Bạn đã duyệt), thứ tự
+/// 29 bài của thư viện thật (`data/exercises.json`, Bạn đã duyệt), thứ tự
 /// F18-R9 như `library import`. Độ dài video cố định [fixtureVideoSeconds]
 /// để golden không đổi khi file được đo.
 List<Exercise> realLibrary() {
   final json =
-      jsonDecode(File('../../data/v2__exercises.json').readAsStringSync())
+      jsonDecode(File('../../data/exercises.json').readAsStringSync())
           as Map<String, Object?>;
   return LibraryRules.sorted([
     for (final raw in json['exercises']! as List)

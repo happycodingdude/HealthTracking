@@ -349,7 +349,7 @@ INSERT INTO muscle_regions (id, muscle_group, view, sort_order) VALUES
   ('obliques',               'abs',       'front', 16);
 
 -- Entity `exercise` (chỉ pull, key = id). Dòng dùng chung, chỉ server ghi
--- (AP-7), nạp từ data/v2__exercises.json bằng `admin library import` (TD2-05).
+-- (AP-7), nạp từ data/exercises.json bằng `admin library import` (TD2-05).
 -- Bài rời thư viện giữ dòng với active = false, không bao giờ xóa (TA2-10).
 CREATE TABLE exercises (
   -- Slug ổn định; thay video không đổi id (FA2-14).

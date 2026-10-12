@@ -14,7 +14,7 @@
 // - 0900000002 "Lan": đã hoàn tất thiết lập nhưng "Để sau" lịch tuần (chưa có
 //   lịch, 03 Bản 2 §6.1), công tắc nhắc bật.
 //
-// Thư viện bài tập: nạp data/v2__exercises.json (29 bài Bạn đã duyệt) bằng
+// Thư viện bài tập: nạp data/exercises.json (29 bài Bạn đã duyệt) bằng
 // cùng LibraryImporter của `admin library import` (06 Bản 2 VS21-T08).
 import 'dart:io';
 
@@ -82,7 +82,7 @@ String _withSslMode(String url) {
 
 Future<List<Exercise>> _seedLibrary(Connection c) async {
   final file = LibraryFile.parse(
-    File('data/v2__exercises.json').readAsStringSync(),
+    File('data/exercises.json').readAsStringSync(),
   );
   final report = await LibraryImporter(c).run(file);
   stdout.writeln('Thư viện: ${report.describe()}');
