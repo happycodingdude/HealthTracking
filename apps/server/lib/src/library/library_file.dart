@@ -13,7 +13,7 @@ final class LibraryFileException implements Exception {
   String toString() => 'LibraryFileException(${issues.join('; ')})';
 }
 
-/// Nội dung `data/v2__exercises.json` — nguồn duy nhất của thư viện
+/// Nội dung `data/exercises.json` — nguồn duy nhất của thư viện
 /// (TD2-05). Trường ngoài lược đồ (kể cả `guideDraft`, `video.title`,
 /// `videoBackup`) bị từ chối (06 Bản 2 VS21-T03, C2-3, ED2-12).
 final class LibraryFile {
