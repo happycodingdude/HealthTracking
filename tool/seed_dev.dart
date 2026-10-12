@@ -4,9 +4,8 @@
 //   tool/reset_dev_db.sh            # xóa, tạo lại, rồi chạy file này
 //   dart run tool/seed_dev.dart     # chỉ nạp (bỏ qua tài khoản đã có)
 //
-// Kết nối: DATABASE_URL của tiến trình, rồi apps/server/.env, rồi mặc định
-// database dev trong deploy/docker-compose.dev.yml. CHỈ dùng cho dev: mật khẩu
-// thử in ra màn hình.
+// Kết nối: DATABASE_URL của tiến trình, rồi apps/server/.env (code không chứa
+// tài khoản database). CHỈ dùng cho dev: mật khẩu thử in ra màn hình.
 //
 // Tài khoản thử (mật khẩu `***REMOVED***`):
 // - 0900000001 "Minh": như Bản 1 — đã xếp lịch từ 40 ngày trước (trải qua 2
@@ -64,7 +63,10 @@ String _databaseUrl() {
       }
     }
   }
-  return 'postgres://health:***REMOVED***@localhost:55432/health';
+  throw StateError(
+    'Thiếu DATABASE_URL (biến môi trường hoặc apps/server/.env, xem '
+    'docs/runbook.md)',
+  );
 }
 
 String _withSslMode(String url) {

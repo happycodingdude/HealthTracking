@@ -5,11 +5,14 @@
 #   tool/test_db.sh reset    xóa sạch dữ liệu dev
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$ROOT/tool/dev_env.sh"
 COMPOSE=(docker compose -f "$ROOT/deploy/docker-compose.dev.yml")
+
+[ -n "${CI:-}" ] || dev_env_require POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB
 
 case "${1:-ensure}" in
   ensure)
-    if [ -n "${CI:-}" ]; then exit 0; fi  # CI dùng service container riêng
+    if [ -n "${CI:-}" ]; then exit 0; fi  # CI tự bật PostgreSQL riêng (ci.yml)
     "${COMPOSE[@]}" up -d --wait db >/dev/null
     ;;
   stop)

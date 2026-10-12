@@ -7,6 +7,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FILE="${1:-$ROOT/data/v2__exercises.json}"
 cd "$ROOT/apps/server"
-DATABASE_URL="${DATABASE_URL:-postgres://health:***REMOVED***@localhost:55432/health}" \
-JWT_SECRET="${JWT_SECRET:-library-check-library-check-library-check}" \
+# --check-only không kết nối database; hai biến dưới chỉ để cấu hình server hợp lệ.
+DATABASE_URL="${DATABASE_URL:-postgres://localhost/library-check}" \
+JWT_SECRET="${JWT_SECRET:-$(openssl rand -base64 48 | tr -d '\n')}" \
   dart run bin/admin.dart library import --check-only "$FILE"

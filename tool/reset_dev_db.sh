@@ -7,9 +7,11 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT/tool/flutter_sdk.sh"
-DB="${DEV_DB_NAME:-health}"
+source "$ROOT/tool/dev_env.sh"
+dev_env_require POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB
+DB="${DEV_DB_NAME:-$POSTGRES_DB}"
 SCHEMA="$ROOT/apps/server/db/schema.sql"
-PSQL=(docker compose -f "$ROOT/deploy/docker-compose.dev.yml" exec -T db psql -U health -v ON_ERROR_STOP=1 -q)
+PSQL=(docker compose -f "$ROOT/deploy/docker-compose.dev.yml" exec -T db psql -U "$POSTGRES_USER" -v ON_ERROR_STOP=1 -q)
 
 "$ROOT/tool/test_db.sh" ensure
 "${PSQL[@]}" -d postgres -c "DROP DATABASE IF EXISTS \"$DB\" WITH (FORCE)"
@@ -21,6 +23,6 @@ HASH="$(shasum -a 256 "$SCHEMA" | cut -d' ' -f1)"
 echo "Đã tạo lại database $DB từ apps/server/db/schema.sql."
 
 if [ "${1:-}" != "--no-seed" ]; then
-  (cd "$ROOT" && DATABASE_URL="postgres://health:***REMOVED***@localhost:55432/$DB" dart run tool/seed_dev.dart)
+  (cd "$ROOT" && DATABASE_URL="$(dev_db_url "$DB")" dart run tool/seed_dev.dart)
 fi
 echo "Nhớ cài lại app dev trên simulator/iPhone (database trên máy dùng cấu trúc cũ)."
