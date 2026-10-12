@@ -32,6 +32,7 @@ import '../features/weight/presentation/weight_screen.dart';
 import '../features/workout/presentation/session_screen.dart';
 import 'shell/app_shell.dart';
 import 'shell/app_tab.dart';
+import 'shell/tab_stacks.dart';
 
 /// Quy tắc chuyển hướng theo trạng thái đăng nhập và thiết lập lần đầu
 /// (VS01-T10, VS03-T07, VS03-T11, OB-3, OB-6, NAV-1, NAV-7).
@@ -97,6 +98,7 @@ const onboardingSteps = {
 final routerProvider = Provider<GoRouter>((ref) {
   final auth = ValueNotifier<AuthState>(ref.read(authControllerProvider));
   final setup = ValueNotifier<SetupState>(ref.read(initialSetupProvider));
+  final stacks = ref.read(tabStacksProvider);
   ref
     ..listen(authControllerProvider, (_, next) => auth.value = next)
     ..listen(setupStateProvider, (_, next) {
@@ -153,6 +155,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         branches: [
           for (final tab in AppTab.values)
             StatefulShellBranch(
+              observers: [stacks.observer(tab)],
               routes: [
                 GoRoute(
                   path: tab.path,

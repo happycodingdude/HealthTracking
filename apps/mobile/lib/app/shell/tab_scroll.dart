@@ -8,8 +8,9 @@ import '../../features/training/application/training_section.dart';
 import 'app_tab.dart';
 
 /// Mỗi tab có một [ScrollController] riêng để chạm lại tab đang mở thì cuộn
-/// về đầu (NAV-3). Vị trí cuộn được giữ khi đổi tab (NAV-8). Tab Tập luyện có
-/// một controller cho mỗi mục (04 Bản 2 §6.3.2): đổi mục giữ vị trí cuộn.
+/// về đầu (NAV-3). Rời tab thì tab đó về đầu trang (NAV-16, thay NAV-8). Tab
+/// Tập luyện có một controller cho mỗi mục (04 Bản 2 §6.3.2): đổi mục trong
+/// tab giữ vị trí cuộn.
 final class TabScrollControllers {
   final _controllers = {for (final t in AppTab.values) t: ScrollController()};
   final _sections = {
@@ -44,6 +45,18 @@ final class TabScrollControllers {
       );
     } else {
       c.jumpTo(0);
+    }
+  }
+
+  /// Đưa tab [tab] về đầu trang, không hiệu ứng (tab đang ẩn hoặc đang bị màn
+  /// con che); với tab Tập luyện là mọi mục (NAV-16).
+  void reset(AppTab tab) {
+    for (final c in [
+      _controllers[tab]!,
+      if (tab == AppTab.schedule) ..._sections.values.nonNulls,
+    ]) {
+      // Trang chưa dựng xong lần nào (chưa có kích thước) vẫn đang ở đầu.
+      if (c.hasClients && c.position.hasContentDimensions) c.jumpTo(0);
     }
   }
 
