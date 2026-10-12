@@ -18,3 +18,17 @@ CLAUDE.md
 .flutter-plugins-dependencies
 # SDK Flutter riêng của dự án trên máy (tool/flutter_sdk.sh)
 .flutter-sdk
+# File env và config môi trường: không bao giờ commit, kể cả file mẫu.
+# Tên biến môi trường cần có ghi trong docs/runbook.md.
+.env.*
+.sentryclirc
+*.p8
+*.p12
+*.mobileprovision
+# File truyền vào --dart-define-from-file, config dev/prod, khóa giải mã sao lưu age
+dart-define*.json
+dart_define*.json
+config.dev.*
+config.prod.*
+*.agekey
+age-key*

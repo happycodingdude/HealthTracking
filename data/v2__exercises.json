@@ -11,7 +11,7 @@
       "video": {
         "youtubeId": "TrTSvn5-MTk",
         "channel": "Renaissance Periodization",
-        "durationSeconds": null
+        "durationSeconds": 13
       },
       "guide": {
         "steps": [
@@ -39,7 +39,7 @@
       "video": {
         "youtubeId": "PZecKOpWOrk",
         "channel": "Barbell Logic",
-        "durationSeconds": null
+        "durationSeconds": 44
       },
       "guide": {
         "steps": [
@@ -68,7 +68,7 @@
       "video": {
         "youtubeId": "XZg28DIf1oc",
         "channel": "Andrew Kwong (DeltaBolic)",
-        "durationSeconds": null
+        "durationSeconds": 16
       },
       "guide": {
         "steps": [
@@ -96,7 +96,7 @@
       "video": {
         "youtubeId": "t3f2L7NRRUY",
         "channel": "Barbell Logic",
-        "durationSeconds": null
+        "durationSeconds": 55
       },
       "guide": {
         "steps": [
@@ -125,7 +125,7 @@
       "video": {
         "youtubeId": "hhruLxo9yZU",
         "channel": "PureGym",
-        "durationSeconds": null
+        "durationSeconds": 12
       },
       "guide": {
         "steps": [
@@ -151,9 +151,9 @@
       "nameVi": "Đẩy ngực với thanh đòn trên ghế dốc xuống",
       "nameEn": "Decline Barbell Bench Press",
       "video": {
-        "youtubeId": "LfyQBUKR8SE",
-        "channel": "ScottHermanFitness",
-        "durationSeconds": null
+        "youtubeId": "a-UFQE4oxWY",
+        "channel": "Andrew Kwong (DeltaBolic)",
+        "durationSeconds": 11
       },
       "guide": {
         "steps": [
@@ -169,7 +169,7 @@
           "Ngồi dậy từ từ sau khi xong; nếu chóng mặt khi đầu thấp, đổi sang bài thay thế."
         ]
       },
-      "approvedAt": "2026-10-11"
+      "approvedAt": "2026-10-12"
     },
     {
       "id": "lats-machine-lat-pulldown",
@@ -179,9 +179,9 @@
       "nameVi": "Kéo xô với máy",
       "nameEn": "Lat Pulldown",
       "video": {
-        "youtubeId": "oMJmAHRZXBk",
-        "channel": "UC Davis Health",
-        "durationSeconds": null
+        "youtubeId": "hnSqbBk15tw",
+        "channel": "Jeff Nippard",
+        "durationSeconds": 48
       },
       "guide": {
         "steps": [
@@ -197,7 +197,7 @@
           "Không để thanh bật ngược lên nhanh khi trả về."
         ]
       },
-      "approvedAt": "2026-10-11"
+      "approvedAt": "2026-10-12"
     },
     {
       "id": "lats-free-weight-one-arm-dumbbell-row",
@@ -207,9 +207,9 @@
       "nameVi": "Kéo tạ đơn một tay",
       "nameEn": "One-Arm Dumbbell Row",
       "video": {
-        "youtubeId": "aFtWSOruuhs",
-        "channel": "Buff Dudes Workouts",
-        "durationSeconds": null
+        "youtubeId": "q65uDGJ9ZPs",
+        "channel": "ATHLEAN-X",
+        "durationSeconds": 30
       },
       "guide": {
         "steps": [
@@ -225,7 +225,7 @@
           "Không giật tạ; nếu phải vặn người mới kéo được, mức tạ đang quá nặng."
         ]
       },
-      "approvedAt": "2026-10-11"
+      "approvedAt": "2026-10-12"
     },
     {
       "id": "back-mid-machine-seated-cable-row",
@@ -235,9 +235,9 @@
       "nameVi": "Kéo cáp ngồi",
       "nameEn": "Seated Cable Row",
       "video": {
-        "youtubeId": "jqYQOQqLNgQ",
-        "channel": "Dorian Yates Nutrition",
-        "durationSeconds": null
+        "youtubeId": "8QuMq1GMMng",
+        "channel": "Colossus Fitness",
+        "durationSeconds": 15
       },
       "guide": {
         "steps": [
@@ -253,7 +253,7 @@
           "Không để vai nhô lên khi kéo; bả vai hạ xuống và ép vào nhau."
         ]
       },
-      "approvedAt": "2026-10-11"
+      "approvedAt": "2026-10-12"
     },
     {
       "id": "back-mid-free-weight-barbell-bent-over-row",
@@ -265,7 +265,7 @@
       "video": {
         "youtubeId": "Nqh7q3zDCoQ",
         "channel": "Jeremy Ethier Shorts",
-        "durationSeconds": null
+        "durationSeconds": 53
       },
       "guide": {
         "steps": [
@@ -291,9 +291,9 @@
       "nameVi": "Duỗi lưng với máy",
       "nameEn": "Back Extension Machine / 45° Hyperextension",
       "video": {
-        "youtubeId": "VH4Bqn1FUhM",
-        "channel": "ATG Exercise Coaching",
-        "durationSeconds": null
+        "youtubeId": "P489_62b8JU",
+        "channel": "Nuffield Health",
+        "durationSeconds": 46
       },
       "guide": {
         "steps": [
@@ -309,7 +309,7 @@
           "Nếu đau lưng dưới, dừng lại; không cố thêm tạ."
         ]
       },
-      "approvedAt": "2026-10-11"
+      "approvedAt": "2026-10-12"
     },
     {
       "id": "back-lower-free-weight-romanian-deadlift",
@@ -321,7 +321,7 @@
       "video": {
         "youtubeId": "KO2MtN_4xbc",
         "channel": "Chris Schaum",
-        "durationSeconds": null
+        "durationSeconds": 51
       },
       "guide": {
         "steps": [
@@ -349,7 +349,7 @@
       "video": {
         "youtubeId": "6v4nrRVySj0",
         "channel": "Andrew Kwong (DeltaBolic)",
-        "durationSeconds": null
+        "durationSeconds": 11
       },
       "guide": {
         "steps": [
@@ -377,7 +377,7 @@
       "video": {
         "youtubeId": "JmJzqda_0XQ",
         "channel": "Chris Schaum",
-        "durationSeconds": null
+        "durationSeconds": 43
       },
       "guide": {
         "steps": [
@@ -405,7 +405,7 @@
       "video": {
         "youtubeId": "HCfU6LGpgMk",
         "channel": "Nelson Lee",
-        "durationSeconds": null
+        "durationSeconds": 60
       },
       "guide": {
         "steps": [
@@ -433,7 +433,7 @@
       "video": {
         "youtubeId": "TM6se0vr1VA",
         "channel": "Barbell Logic",
-        "durationSeconds": null
+        "durationSeconds": 38
       },
       "guide": {
         "steps": [
@@ -461,7 +461,7 @@
       "video": {
         "youtubeId": "H5UxZFl0lgk",
         "channel": "Andrew Kwong (DeltaBolic)",
-        "durationSeconds": null
+        "durationSeconds": 11
       },
       "guide": {
         "steps": [
@@ -489,7 +489,7 @@
       "video": {
         "youtubeId": "JeSlI2s4XfM",
         "channel": "V Shred",
-        "durationSeconds": null
+        "durationSeconds": 51
       },
       "guide": {
         "steps": [
@@ -517,7 +517,7 @@
       "video": {
         "youtubeId": "S4dDLfp3e8w",
         "channel": "Andrew Kwong (DeltaBolic)",
-        "durationSeconds": null
+        "durationSeconds": 9
       },
       "guide": {
         "steps": [
@@ -545,7 +545,7 @@
       "video": {
         "youtubeId": "e_XV8NV7xm0",
         "channel": "Barbell Logic",
-        "durationSeconds": null
+        "durationSeconds": 42
       },
       "guide": {
         "steps": [
@@ -573,7 +573,7 @@
       "video": {
         "youtubeId": "vsarApmqJmo",
         "channel": "Bodybuilding.com",
-        "durationSeconds": null
+        "durationSeconds": 46
       },
       "guide": {
         "steps": [
@@ -599,9 +599,9 @@
       "nameVi": "Cuốn tạ đơn kiểu búa",
       "nameEn": "Dumbbell Hammer Curl",
       "video": {
-        "youtubeId": "zC3nLlEvin4",
-        "channel": "ScottHermanFitness",
-        "durationSeconds": null
+        "youtubeId": "NyW2fT2gQhM",
+        "channel": "CHRISTINA DORNER",
+        "durationSeconds": 60
       },
       "guide": {
         "steps": [
@@ -617,7 +617,7 @@
           "Không xoay cổ tay trong lúc cuốn."
         ]
       },
-      "approvedAt": "2026-10-11"
+      "approvedAt": "2026-10-12"
     },
     {
       "id": "triceps-long-machine-overhead-cable-triceps-extension",
@@ -629,7 +629,7 @@
       "video": {
         "youtubeId": "NTk0Igxqcsk",
         "channel": "Andrew Kwong (DeltaBolic)",
-        "durationSeconds": null
+        "durationSeconds": 12
       },
       "guide": {
         "steps": [
@@ -657,7 +657,7 @@
       "video": {
         "youtubeId": "b_r_LW4HEcM",
         "channel": "Andrew Kwong (DeltaBolic)",
-        "durationSeconds": null
+        "durationSeconds": 11
       },
       "guide": {
         "steps": [
@@ -685,7 +685,7 @@
       "video": {
         "youtubeId": "-PqzEk57xiw",
         "channel": "Andrew Kwong (DeltaBolic)",
-        "durationSeconds": null
+        "durationSeconds": 10
       },
       "guide": {
         "steps": [
@@ -713,7 +713,7 @@
       "video": {
         "youtubeId": "hWEpF7lFR9Q",
         "channel": "Barbell Logic",
-        "durationSeconds": null
+        "durationSeconds": 50
       },
       "guide": {
         "steps": [
@@ -741,7 +741,7 @@
       "video": {
         "youtubeId": "9g3mmngdbpE",
         "channel": "V Shred",
-        "durationSeconds": null
+        "durationSeconds": 27
       },
       "guide": {
         "steps": [
@@ -769,7 +769,7 @@
       "video": {
         "youtubeId": "6xWUlLvltvQ",
         "channel": "FitnessBlender",
-        "durationSeconds": null
+        "durationSeconds": 54
       },
       "guide": {
         "steps": [
@@ -797,7 +797,7 @@
       "video": {
         "youtubeId": "V2cUr7zG4hw",
         "channel": "SWEAT (Kayla Itsines)",
-        "durationSeconds": null
+        "durationSeconds": 21
       },
       "guide": {
         "steps": [
