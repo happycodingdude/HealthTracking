@@ -1,21 +1,18 @@
-# Môi trường dev/test trên Mac (06 VS00-T05). KHÔNG dùng cho production.
-# Server dev không có sao lưu: chỉ chứa dữ liệu thử (06 §6.13).
 name: health-dev
 
 services:
   db:
     image: postgres:16
     environment:
-      POSTGRES_USER: health
-      POSTGRES_PASSWORD: ***REMOVED***
-      POSTGRES_DB: health
-    # Chỉ mở cho máy Mac (localhost). Cổng 55432 để không đụng PostgreSQL khác.
+      POSTGRES_USER: ${POSTGRES_USER:?}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      POSTGRES_DB: ${POSTGRES_DB:?}
     ports:
       - "127.0.0.1:55432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U health -d health"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 2s
       timeout: 3s
       retries: 30

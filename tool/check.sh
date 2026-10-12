@@ -5,13 +5,19 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT/tool/flutter_sdk.sh"
+source "$ROOT/tool/dev_env.sh"
 cd "$ROOT"
 
 step() { printf '\n\033[1;36m==> %s\033[0m\n' "$*"; }
 has_tests() { [ -n "$(find "$1/test" -name '*_test.dart' 2>/dev/null | head -1)" ]; }
 
-# PostgreSQL cho test server và test E2E đồng bộ của app (sync_e2e).
-export TEST_DATABASE_URL="${TEST_DATABASE_URL:-postgres://health:***REMOVED***@localhost:55432/postgres}"
+# PostgreSQL cho test server và test E2E đồng bộ của app (sync_e2e). CI đặt sẵn
+# TEST_DATABASE_URL; trên Mac dựng từ .env ở gốc repo.
+if [ -z "${TEST_DATABASE_URL:-}" ]; then
+  dev_env_require POSTGRES_USER POSTGRES_PASSWORD
+  TEST_DATABASE_URL="$(dev_db_url postgres)"
+  export TEST_DATABASE_URL
+fi
 
 step "pub get"
 flutter pub get >/dev/null

@@ -121,9 +121,7 @@ void main() {
     });
 
     test('503 khi không kết nối được database', () async {
-      final db = Database.open(
-        'postgres://health:***REMOVED***@localhost:1/none?connect_timeout=1',
-      );
+      final db = Database.open('postgres://localhost:1/none?connect_timeout=1');
       addTearDown(db.close);
       final res = await call(buildApp(_deps(db, log)), '/healthz');
       expect(res.statusCode, 503);

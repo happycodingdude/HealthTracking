@@ -12,6 +12,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT/tool/flutter_sdk.sh"
+source "$ROOT/tool/dev_env.sh"
 
 MODE="--profile"; DEVICE=""; SIM=0; SERVER=1; PORT=8080
 while [ $# -gt 0 ]; do
@@ -27,12 +28,11 @@ while [ $# -gt 0 ]; do
 done
 
 # 1. Database + server dev
+# apps/server/.env không có trong git và không có file mẫu.
 ENV_FILE="$ROOT/apps/server/.env"
 if [ ! -f "$ENV_FILE" ]; then
-  sed -e 's/^HOST=.*/HOST=0.0.0.0/' \
-      -e "s|^JWT_SECRET=.*|JWT_SECRET=$(openssl rand -base64 48 | tr -d '\n')|" \
-      "$ROOT/.env.example" > "$ENV_FILE"
-  echo "Đã tạo apps/server/.env cho server dev."
+  echo "Thiếu apps/server/.env cho server dev: tạo theo danh sách biến trong docs/runbook.md." >&2
+  exit 1
 fi
 
 SERVER_PID=""
@@ -40,13 +40,14 @@ cleanup() { [ -n "$SERVER_PID" ] && kill "$SERVER_PID" 2>/dev/null || true; }
 trap cleanup EXIT
 
 if [ "$SERVER" = 1 ]; then
+  dev_env_require POSTGRES_USER POSTGRES_DB
   "$ROOT/tool/test_db.sh" ensure
   # Database dev phải được tạo từ đúng bản apps/server/db/schema.sql (ED2-18).
-  PSQL=(docker compose -f "$ROOT/deploy/docker-compose.dev.yml" exec -T db psql -U health -tA)
+  PSQL=(docker compose -f "$ROOT/deploy/docker-compose.dev.yml" exec -T db psql -U "$POSTGRES_USER" -tA)
   HASH="schema:$(shasum -a 256 "$ROOT/apps/server/db/schema.sql" | cut -d' ' -f1)"
-  CURRENT="$("${PSQL[@]}" -d postgres -c "SELECT shobj_description(oid, 'pg_database') FROM pg_database WHERE datname = 'health'")"
+  CURRENT="$("${PSQL[@]}" -d postgres -c "SELECT shobj_description(oid, 'pg_database') FROM pg_database WHERE datname = '$POSTGRES_DB'")"
   if [ "$CURRENT" != "$HASH" ]; then
-    TABLES="$("${PSQL[@]}" -d health -c "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public'")"
+    TABLES="$("${PSQL[@]}" -d "$POSTGRES_DB" -c "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public'")"
     if [ "$TABLES" = 0 ]; then
       "$ROOT/tool/reset_dev_db.sh"
     else

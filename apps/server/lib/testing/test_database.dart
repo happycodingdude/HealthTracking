@@ -5,11 +5,18 @@ import 'package:uuid/uuid.dart';
 
 import '../server.dart';
 
-/// URL quản trị PostgreSQL cho test (CI: service container; local:
-/// deploy/docker-compose.dev.yml).
-String get testAdminUrl =>
-    Platform.environment['TEST_DATABASE_URL'] ??
-    'postgres://health:***REMOVED***@localhost:55432/postgres';
+/// URL quản trị PostgreSQL cho test, từ biến `TEST_DATABASE_URL` (CI: đặt
+/// trong ci.yml; local: tool/check.sh dựng từ `.env` ở gốc repo). Code không
+/// chứa tài khoản database.
+String get testAdminUrl {
+  final url = Platform.environment['TEST_DATABASE_URL'];
+  if (url == null || url.isEmpty) {
+    throw StateError(
+      'Thiếu TEST_DATABASE_URL: chạy test qua tool/check.sh (xem docs/runbook.md)',
+    );
+  }
+  return url;
+}
 
 /// File `apps/server/db/schema.sql` (cấu trúc database trong lúc dev, ED2-18),
 /// dùng được khi chạy test từ `apps/server` lẫn từ `apps/mobile` (sync_e2e).

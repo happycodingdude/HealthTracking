@@ -17,30 +17,29 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
 
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: health
-          POSTGRES_PASSWORD: ***REMOVED***
-          POSTGRES_DB: health
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U health -d health"
-          --health-interval 2s
-          --health-timeout 3s
-          --health-retries 30
-
     env:
       CI: "true"
-      TEST_DATABASE_URL: postgres://health:***REMOVED***@localhost:5432/postgres
 
     steps:
       - uses: actions/checkout@v4
         with:
           # Cần lịch sử để biết PR có đổi file thư viện không (VS21-T09).
           fetch-depth: 0
+
+      # PostgreSQL 16 cho test: database tạm, chỉ mở trên localhost của máy chạy
+      # CI, không dùng mật khẩu nên repo và GitHub không chứa giá trị nào. Không
+      # xác thực SCRAM cũng giữ test 10 kết nối đồng thời (TAC-05) trong giới hạn
+      # thời gian.
+      - name: PostgreSQL 16
+        run: |
+          docker run -d --name test-db -p 127.0.0.1:5432:5432 \
+            -e POSTGRES_HOST_AUTH_METHOD=trust postgres:16
+          for _ in $(seq 1 60); do
+            docker exec test-db pg_isready -h 127.0.0.1 -U postgres >/dev/null 2>&1 && break
+            sleep 1
+          done
+          docker exec test-db pg_isready -h 127.0.0.1 -U postgres
+          echo "TEST_DATABASE_URL=postgres://postgres@localhost:5432/postgres" >> "$GITHUB_ENV"
 
       - uses: subosito/flutter-action@v2
         with:
