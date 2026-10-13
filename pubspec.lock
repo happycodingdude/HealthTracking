@@ -808,10 +808,10 @@ packages:
     dependency: "direct dev"
     description:
       name: postgres
-      sha256: "013c6dc668eaab9771c4d3f5fc3e87ed4b3cd4ab3587ac6943cc1f38509ff723"
+      sha256: f2571f6f4256e94d87334d7189fcf28407500c34cd0ebcb74cff21fab5f4e988
       url: "https://pub.dev"
     source: hosted
-    version: "3.5.7"
+    version: "3.5.20"
   process:
     dependency: transitive
     description:
@@ -852,22 +852,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.4.3"
-  sasl_scram:
-    dependency: transitive
-    description:
-      name: sasl_scram
-      sha256: "5c27fd6058d53075c032539ba3cc7fa95006bb1d51a0db63a81b05756c265a83"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.2"
-  saslprep:
-    dependency: transitive
-    description:
-      name: saslprep
-      sha256: "3d421d10be9513bf4459c17c5e70e7b8bc718c9fc5ad4ba5eb4f5fd27396f740"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.3"
   sentry:
     dependency: transitive
     description:
@@ -1089,14 +1073,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.0"
-  unorm_dart:
-    dependency: transitive
-    description:
-      name: unorm_dart
-      sha256: b4f4d2aff27d65a5fc37f400d4c09e55d7535359315acbe3b895a9add4de3a23
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.3.3"
   url_launcher:
     dependency: transitive
     description:

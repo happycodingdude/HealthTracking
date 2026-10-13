@@ -16,6 +16,6 @@ dev_dependencies:
   domain:
     path: packages/domain
   lints: ^5.1.1
-  postgres: ^3.5.7
+  postgres: ^3.5.20
   server:
     path: apps/server

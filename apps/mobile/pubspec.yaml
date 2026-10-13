@@ -54,7 +54,7 @@ dev_dependencies:
   integration_test:
     sdk: flutter
   # Server test thật cho test E2E đồng bộ (sync_e2e, 06 §6.9.1).
-  postgres: ^3.5.7
+  postgres: ^3.5.20
   server:
     path: ../server
   shelf: ^1.4.2
