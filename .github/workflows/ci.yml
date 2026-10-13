@@ -21,7 +21,7 @@ jobs:
       CI: "true"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # Cần lịch sử để biết PR có đổi file thư viện không (VS21-T09).
           fetch-depth: 0
