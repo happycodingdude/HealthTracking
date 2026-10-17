@@ -72,7 +72,7 @@ void main() {
     );
     addTearDown(container.dispose);
     await tester.pumpWidget(
-      UncontrolledProviderScope(container: container, child: const HealthApp()),
+      UncontrolledProviderScope(container: container, child: const IronlyApp()),
     );
     for (var i = 0; i < 20 && gateway.waiting == 0; i++) {
       await tester.pump(const Duration(milliseconds: 50));

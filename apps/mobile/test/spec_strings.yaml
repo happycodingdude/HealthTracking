@@ -26,7 +26,7 @@ menuProviderError: "Chưa tạo được thực đơn. Thử lại."
 menuGenerating: "Đang lên thực đơn…"
 
 # 04 S-01 (mock S-01-1)
-appName: "Health Tracking" # TẠM — Q-1: tên app chưa chốt, mock ghi "[Tên app]"
+appName: "Ironly" # SỬA NGAY 17/10 — tên chính thức của app (FX2-04), Bạn Chốt 17/10
 welcomeTagline: "Nhắc Bạn tập đúng lịch, gợi ý ăn gì mỗi ngày, cho Bạn thấy mình tiến bộ."
 welcomeFootnote: "Tài khoản giúp giữ dữ liệu khi Bạn đổi điện thoại."
 register: "Đăng ký"

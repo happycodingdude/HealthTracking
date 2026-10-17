@@ -153,7 +153,7 @@ void main() {
     // Mở app: từ lúc gọi tới khi Hôm nay hiện buổi tập có nút "Đã tập".
     final done = find.byKey(ValueKey('mark-done-${_today.toKey()}'));
     final startWatch = Stopwatch()..start();
-    await app.runHealthApp(overrides: [clockProvider.overrideWithValue(clock)]);
+    await app.runIronlyApp(overrides: [clockProvider.overrideWithValue(clock)]);
     await _msUntil(tester, () => done.evaluate().isNotEmpty);
     final startupMs = startWatch.elapsedMilliseconds;
     await tester.pumpAndSettle();

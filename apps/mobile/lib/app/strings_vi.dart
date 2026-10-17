@@ -16,8 +16,8 @@ abstract final class S {
   static const understood = 'Đã hiểu';
 
   // S-01 Chào mừng.
-  /// Tên app chưa được chốt (Q-1 trong docs/progress.md); mock S-01 ghi "[Tên app]".
-  static const appName = 'Health Tracking';
+  /// Tên chính thức của app (Bạn quyết 17/10/2026, FX2-04); mock S-01 ghi "[Tên app]".
+  static const appName = 'Ironly';
   static const welcomeTagline =
       'Nhắc Bạn tập đúng lịch, gợi ý ăn gì mỗi ngày, cho Bạn thấy mình tiến bộ.';
   static const welcomeFootnote =

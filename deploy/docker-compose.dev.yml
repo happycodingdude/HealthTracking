@@ -1,4 +1,4 @@
-name: health-dev
+name: ironly-dev
 
 services:
   db:

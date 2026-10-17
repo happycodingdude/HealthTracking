@@ -1,5 +1,5 @@
 name: mobile
-description: App iPhone Health Tracking (Flutter).
+description: App iPhone Ironly (Flutter).
 publish_to: none
 # Bản 2 (05 Bản 2 TR2-13): app gửi phiên bản này trong header X-App-Version.
 version: 2.0.0+1

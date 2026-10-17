@@ -28,7 +28,7 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const HealthApp(),
+          child: const IronlyApp(),
         ),
       );
       await tester.pumpAndSettle();

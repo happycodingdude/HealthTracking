@@ -15,11 +15,11 @@ import 'features/auth/application/auth_controller.dart';
 import 'features/me/data/profile_repository.dart';
 import 'features/onboarding/application/setup_state.dart';
 
-Future<void> main() => runHealthApp();
+Future<void> main() => runIronlyApp();
 
 /// Khởi động app. [overrides], [database] chỉ dùng cho integration test (ví
 /// dụ đồng hồ, database trống như iPhone mới).
-Future<void> runHealthApp({
+Future<void> runIronlyApp({
   List<Override> overrides = const [],
   AppDatabase? database,
 }) async {
@@ -59,7 +59,7 @@ Future<void> runHealthApp({
           ),
           ...overrides,
         ],
-        child: const HealthApp(),
+        child: const IronlyApp(),
       ),
     );
   });

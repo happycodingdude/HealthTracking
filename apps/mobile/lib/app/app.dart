@@ -8,8 +8,8 @@ import 'sync_coordinator.dart';
 import 'theme.dart';
 
 /// Gốc của app: theme sáng/tối theo iPhone (UR-05), tiếng Việt.
-class HealthApp extends ConsumerWidget {
-  const HealthApp({super.key});
+class IronlyApp extends ConsumerWidget {
+  const IronlyApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

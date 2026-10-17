@@ -42,7 +42,7 @@ void main() {
     );
     addTearDown(container.dispose);
     await tester.pumpWidget(
-      UncontrolledProviderScope(container: container, child: const HealthApp()),
+      UncontrolledProviderScope(container: container, child: const IronlyApp()),
     );
     container.read(routerProvider).go(location);
     await tester.pumpAndSettle();

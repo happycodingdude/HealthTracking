@@ -33,7 +33,7 @@ final clock = ShiftedClock(
 /// Mật khẩu của tài khoản đăng ký ở đầu luồng, dùng lại khi đăng nhập khôi phục.
 final password = randomTestPassword();
 
-Future<void> launch({AppDatabase? database}) => app.runHealthApp(
+Future<void> launch({AppDatabase? database}) => app.runIronlyApp(
   overrides: [clockProvider.overrideWithValue(clock)],
   database: database,
 );

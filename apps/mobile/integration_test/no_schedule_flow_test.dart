@@ -16,7 +16,7 @@ import 'flow_helpers.dart';
 final clock = ShiftedClock(Duration.zero);
 
 Future<void> launch() =>
-    app.runHealthApp(overrides: [clockProvider.overrideWithValue(clock)]);
+    app.runIronlyApp(overrides: [clockProvider.overrideWithValue(clock)]);
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();

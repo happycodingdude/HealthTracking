@@ -51,7 +51,7 @@ void main() {
     );
     addTearDown(container.dispose);
     await tester.pumpWidget(
-      UncontrolledProviderScope(container: container, child: const HealthApp()),
+      UncontrolledProviderScope(container: container, child: const IronlyApp()),
     );
     await tester.pumpAndSettle();
     return container;
@@ -484,7 +484,7 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const HealthApp(),
+          child: const IronlyApp(),
         ),
       );
       await tester.pumpAndSettle();

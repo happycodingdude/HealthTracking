@@ -6,7 +6,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # Cùng phiên bản Flutter với dự án; ảnh dựng một lần từ tool/golden.Dockerfile.
 FLUTTER_VERSION="$(sed -n 's/^  flutter: *\([0-9.]*\).*/\1/p' "$ROOT/apps/mobile/pubspec.yaml")"
-IMAGE="health-golden:flutter-$FLUTTER_VERSION"
+IMAGE="ironly-golden:flutter-$FLUTTER_VERSION"
 if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
   docker build --platform linux/amd64 --build-arg FLUTTER_VERSION="$FLUTTER_VERSION" \
     -t "$IMAGE" -f "$ROOT/tool/golden.Dockerfile" "$ROOT/tool"
@@ -17,7 +17,7 @@ UPDATE=""
 docker run --rm --platform linux/amd64 \
   -v "$ROOT":/src:ro \
   -v "$ROOT/apps/mobile/test":/out \
-  -v health-golden-pub-cache:/pub-cache \
+  -v ironly-golden-pub-cache:/pub-cache \
   -e PUB_CACHE=/pub-cache \
   "$IMAGE" bash -c "
     set -euo pipefail

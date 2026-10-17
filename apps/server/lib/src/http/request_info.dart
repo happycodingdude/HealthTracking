@@ -15,7 +15,7 @@ final class RequestInfo {
   String? userId;
 }
 
-const _infoKey = 'health.request_info';
+const _infoKey = 'ironly.request_info';
 
 extension RequestInfoAccess on Request {
   RequestInfo get info => context[_infoKey]! as RequestInfo;

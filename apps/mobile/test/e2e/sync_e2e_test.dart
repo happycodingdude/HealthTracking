@@ -100,7 +100,7 @@ void main() {
     'TAC-02 / F09-AC2: tắt app khi còn thay đổi chưa đồng bộ, mở lại khi có mạng → outbox tự rỗng, server có dữ liệu',
     () async {
       final file = File(
-        '${Directory.systemTemp.createTempSync('e2e_').path}/health.db',
+        '${Directory.systemTemp.createTempSync('e2e_').path}/ironly.db',
       );
       final a = E2eDevice(
         server,

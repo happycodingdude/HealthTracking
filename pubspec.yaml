@@ -1,5 +1,5 @@
-name: health_tracking_workspace
-description: Monorepo Health Tracking (TD-01) — app Flutter, server Dart, package dùng chung.
+name: ironly_workspace
+description: Monorepo Ironly (TD-01) — app Flutter, server Dart, package dùng chung.
 publish_to: none
 
 environment:
