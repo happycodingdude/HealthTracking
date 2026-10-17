@@ -19,6 +19,9 @@ if [ -z "${TEST_DATABASE_URL:-}" ]; then
   export TEST_DATABASE_URL
 fi
 
+step "file cấm và chuỗi giống khóa trong git"
+"$ROOT/tool/scan_repo.sh"
+
 step "pub get"
 flutter pub get >/dev/null
 

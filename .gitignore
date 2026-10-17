@@ -21,6 +21,9 @@ CLAUDE.md
 # File env và config môi trường: không bao giờ commit, kể cả file mẫu.
 # Tên biến môi trường cần có ghi trong docs/runbook.md.
 .env.*
+*.example
+*.sample
+*.template
 .sentryclirc
 *.p8
 *.p12
