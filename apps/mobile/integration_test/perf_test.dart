@@ -6,6 +6,7 @@
 // là cận trên. Số đo trên iPhone thật làm ở bản RC.
 import 'package:api_contract/api_contract.dart';
 import 'package:domain/domain.dart';
+import 'package:domain/testing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -140,10 +141,10 @@ void main() {
     await auth
         .read(authRepositoryProvider)
         .register(
-          const RegisterRequest(
+          RegisterRequest(
             displayName: 'Minh',
             phone: '0933333333',
-            password: '***REMOVED***',
+            password: randomTestPassword(),
           ),
         );
     auth.dispose();

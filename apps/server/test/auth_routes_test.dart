@@ -1,4 +1,5 @@
 import 'package:api_contract/api_contract.dart';
+import 'package:server/testing.dart';
 import 'package:test/test.dart';
 
 import 'support/test_app.dart';
@@ -14,7 +15,7 @@ void main() {
       final res = await app.post('/v1/auth/register', {
         'displayName': 'Minh',
         'phone': '0912 345 678',
-        'password': '***REMOVED***',
+        'password': testPassword,
       });
       expect(res.status, 201);
       final pair = TokenPair.fromJson(res.json);
@@ -27,7 +28,7 @@ void main() {
       final res = await app.post('/v1/auth/register', {
         'displayName': 'Lan',
         'phone': '0912345678',
-        'password': '***REMOVED***',
+        'password': randomTestPassword(),
       });
       expect(res.status, 409);
       expect(res.errorCode, 'phone_taken');
@@ -40,7 +41,7 @@ void main() {
         var res = await app.post('/v1/auth/register', {
           'displayName': 'Minh',
           'phone': '0912345678',
-          'password': '***REMOVED***',
+          'password': randomTestPassword(length: 3),
         });
         expect(
           (res.status, res.errorCode, res.errorField),
@@ -48,7 +49,7 @@ void main() {
         );
         res = await app.post('/v1/auth/register', {
           'displayName': 'Minh',
-          'password': '***REMOVED***',
+          'password': randomTestPassword(length: 8),
         });
         expect((res.status, res.errorField), (422, 'phone'));
         res = await app.post('/v1/auth/register', '{not json');
@@ -62,13 +63,13 @@ void main() {
       await app.register();
       final ok = await app.post('/v1/auth/login', {
         'phone': '0912345678',
-        'password': '***REMOVED***',
+        'password': testPassword,
       });
       expect(ok.status, 200);
       expect(TokenPair.fromJson(ok.json).accessToken, isNotEmpty);
       final bad = await app.post('/v1/auth/login', {
         'phone': '0912345678',
-        'password': '***REMOVED***',
+        'password': randomTestPassword(),
       });
       expect((bad.status, bad.errorCode), (401, 'invalid_credentials'));
     });
@@ -80,13 +81,13 @@ void main() {
         for (var i = 1; i <= 5; i++) {
           final r = await app.post('/v1/auth/login', {
             'phone': '0912345678',
-            'password': '***REMOVED***',
+            'password': randomTestPassword(),
           });
           expect(r.errorCode, 'invalid_credentials', reason: 'lần $i');
         }
         final sixth = await app.post('/v1/auth/login', {
           'phone': '0912345678',
-          'password': '***REMOVED***',
+          'password': testPassword,
         });
         expect((sixth.status, sixth.errorCode), (429, 'too_many_attempts'));
       },
@@ -96,13 +97,13 @@ void main() {
       for (var i = 0; i < 5; i++) {
         await app.post(
           '/v1/auth/login',
-          {'phone': '090000000$i', 'password': '***REMOVED***'},
+          {'phone': '090000000$i', 'password': randomTestPassword()},
           headers: {'x-forwarded-for': '1.2.3.4, 5.6.7.8'},
         );
       }
       final blocked = await app.post(
         '/v1/auth/login',
-        {'phone': '0912345678', 'password': '***REMOVED***'},
+        {'phone': '0912345678', 'password': randomTestPassword()},
         headers: {'x-forwarded-for': '9.9.9.9, 5.6.7.8'},
       );
       expect(
@@ -112,7 +113,7 @@ void main() {
       );
       final other = await app.post(
         '/v1/auth/login',
-        {'phone': '0912345678', 'password': '***REMOVED***'},
+        {'phone': '0912345678', 'password': randomTestPassword()},
         headers: {'x-forwarded-for': '7.7.7.7'},
       );
       expect(other.errorCode, 'invalid_credentials');
@@ -151,7 +152,7 @@ void main() {
     test('cần token: thiếu, sai, hết hạn → 401', () async {
       final pair = await app.register();
       expect((await app.get('/v1/me')).status, 401);
-      expect((await app.get('/v1/me', token: '***REMOVED***')).status, 401);
+      expect((await app.get('/v1/me', token: randomTestSecret())).status, 401);
       app.clock.advance(const Duration(minutes: 15));
       final expired = await app.get('/v1/me', token: pair.accessToken);
       expect((expired.status, expired.errorCode), (401, 'unauthorized'));
@@ -185,15 +186,16 @@ void main() {
   });
 
   test('06 §6.4.4: log không chứa mật khẩu, token, số điện thoại', () async {
-    final pair = await app.register(password: '***REMOVED***');
+    final password = randomTestPassword();
+    final pair = await app.register(password: password);
     await app.post('/v1/auth/login', {
       'phone': '0912345678',
-      'password': '***REMOVED***',
+      'password': password,
     });
     await app.post('/v1/auth/refresh', {'refreshToken': pair.refreshToken});
     await app.get('/v1/me', token: pair.accessToken);
     final all = app.log.lines.join('\n');
-    expect(all, isNot(contains('***REMOVED***')));
+    expect(all, isNot(contains(password)));
     expect(all, isNot(contains(pair.refreshToken)));
     expect(all, isNot(contains(pair.accessToken)));
     expect(all, isNot(contains('0912345678')));

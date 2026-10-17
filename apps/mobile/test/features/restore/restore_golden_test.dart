@@ -3,6 +3,7 @@ library;
 
 import 'dart:async';
 
+import 'package:domain/testing.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -67,10 +68,10 @@ void main() {
         ...appOverrides(
           db: db,
           server: server,
-          session: const StoredSession(
+          session: StoredSession(
             userId: 'u1',
             phone: '0912345678',
-            refreshToken: '***REMOVED***',
+            refreshToken: randomTestSecret(),
           ),
           onboarded: false,
           scheduler: FakeScheduler(),

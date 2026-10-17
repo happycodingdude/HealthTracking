@@ -10,6 +10,7 @@ import 'package:server/testing.dart';
 import 'package:test/test.dart';
 
 final secret = randomTestSecret();
+final password = randomTestPassword();
 
 void main() {
   late TestDatabase tdb;
@@ -32,10 +33,10 @@ void main() {
     );
   });
 
-  const minh = RegisterRequest(
+  final minh = RegisterRequest(
     displayName: ' Minh ',
     phone: '0912 345 678',
-    password: '***REMOVED***',
+    password: password,
   );
 
   Matcher apiError(ErrorCode code, [String? field]) => isA<ApiException>()
@@ -56,7 +57,7 @@ void main() {
       expect(row[0], '0912345678');
       expect(row[1], 'Minh');
       expect(row[2], startsWith(r'$2a$04$'));
-      expect(row[2], isNot(contains('***REMOVED***')));
+      expect(row[2], isNot(contains(password)));
       expect(
         pair.accessTokenExpiresAt,
         clock.now().add(const Duration(minutes: 15)),
@@ -81,10 +82,10 @@ void main() {
       await auth.register(minh);
       await expectLater(
         auth.register(
-          const RegisterRequest(
+          RegisterRequest(
             displayName: 'Lan',
             phone: '0912345678',
-            password: '***REMOVED***',
+            password: randomTestPassword(),
           ),
         ),
         throwsA(apiError(ErrorCode.phoneTaken, 'phone')),
@@ -96,30 +97,30 @@ void main() {
       () async {
         await expectLater(
           auth.register(
-            const RegisterRequest(
+            RegisterRequest(
               displayName: '',
               phone: '0912345678',
-              password: '***REMOVED***',
+              password: password,
             ),
           ),
           throwsA(apiError(ErrorCode.validationFailed, 'displayName')),
         );
         await expectLater(
           auth.register(
-            const RegisterRequest(
+            RegisterRequest(
               displayName: 'Minh',
               phone: '912345678',
-              password: '***REMOVED***',
+              password: password,
             ),
           ),
           throwsA(apiError(ErrorCode.validationFailed, 'phone')),
         );
         await expectLater(
           auth.register(
-            const RegisterRequest(
+            RegisterRequest(
               displayName: 'Minh',
               phone: '0912345678',
-              password: '***REMOVED***',
+              password: randomTestPassword(length: 7),
             ),
           ),
           throwsA(apiError(ErrorCode.validationFailed, 'password')),
@@ -132,7 +133,7 @@ void main() {
     test('đúng mật khẩu (nhận cả số có khoảng trắng) → cặp token', () async {
       await auth.register(minh);
       final pair = await auth.login(
-        const LoginRequest(phone: '0912 345 678', password: '***REMOVED***'),
+        LoginRequest(phone: '0912 345 678', password: password),
         ip: '1.1.1.1',
       );
       expect(tokens.verifyAccessToken(pair.accessToken), isNotNull);
@@ -144,14 +145,14 @@ void main() {
         await auth.register(minh);
         await expectLater(
           auth.login(
-            const LoginRequest(phone: '0912345678', password: '***REMOVED***'),
+            LoginRequest(phone: '0912345678', password: randomTestPassword()),
             ip: '1.1.1.1',
           ),
           throwsA(apiError(ErrorCode.invalidCredentials)),
         );
         await expectLater(
           auth.login(
-            const LoginRequest(phone: '0999999999', password: '***REMOVED***'),
+            LoginRequest(phone: '0999999999', password: password),
             ip: '1.1.1.1',
           ),
           throwsA(apiError(ErrorCode.invalidCredentials)),
@@ -166,7 +167,7 @@ void main() {
         for (var i = 1; i <= 5; i++) {
           await expectLater(
             auth.login(
-              LoginRequest(phone: '0912345678', password: '***REMOVED***'),
+              LoginRequest(phone: '0912345678', password: randomTestPassword()),
               ip: '1.1.1.1',
             ),
             throwsA(apiError(ErrorCode.invalidCredentials)),
@@ -174,14 +175,14 @@ void main() {
         }
         await expectLater(
           auth.login(
-            const LoginRequest(phone: '0912345678', password: '***REMOVED***'),
+            LoginRequest(phone: '0912345678', password: randomTestPassword()),
             ip: '1.1.1.1',
           ),
           throwsA(apiError(ErrorCode.tooManyAttempts)),
         );
         await expectLater(
           auth.login(
-            const LoginRequest(phone: '0912345678', password: '***REMOVED***'),
+            LoginRequest(phone: '0912345678', password: password),
             ip: '8.8.8.8',
           ),
           throwsA(apiError(ErrorCode.tooManyAttempts)),
@@ -189,7 +190,7 @@ void main() {
         clock.advance(const Duration(minutes: 15));
         expect(
           await auth.login(
-            const LoginRequest(phone: '0912345678', password: '***REMOVED***'),
+            LoginRequest(phone: '0912345678', password: password),
             ip: '8.8.8.8',
           ),
           isA<TokenPair>(),
@@ -210,7 +211,12 @@ void main() {
     test('chữ ký sai, khóa khác, alg none → không hợp lệ', () async {
       final pair = await auth.register(minh);
       final parts = pair.accessToken.split('.');
-      expect(tokens.verifyAccessToken('${parts[0]}.${parts[1]}.***REMOVED***'), isNull);
+      expect(
+        tokens.verifyAccessToken(
+          '${parts[0]}.${parts[1]}.${randomTestSecret()}',
+        ),
+        isNull,
+      );
       final other = TokenService(secret: randomTestSecret(), clock: clock);
       expect(other.verifyAccessToken(pair.accessToken), isNull);
       final none = JWT({
@@ -218,7 +224,7 @@ void main() {
         'exp': 9999999999,
       }).sign(SecretKey(randomTestSecret()), algorithm: JWTAlgorithm.HS512);
       expect(tokens.verifyAccessToken(none), isNull);
-      expect(tokens.verifyAccessToken('***REMOVED***'), isNull);
+      expect(tokens.verifyAccessToken(randomTestSecret()), isNull);
     });
   });
 
@@ -278,7 +284,7 @@ void main() {
     test('token lạ → unauthorized; chỉ lưu SHA-256 32 byte', () async {
       final pair = await auth.register(minh);
       await expectLater(
-        auth.refresh(const RefreshRequest(refreshToken: '***REMOVED***')),
+        auth.refresh(RefreshRequest(refreshToken: randomTestSecret())),
         throwsA(apiError(ErrorCode.unauthorized)),
       );
       final stored =

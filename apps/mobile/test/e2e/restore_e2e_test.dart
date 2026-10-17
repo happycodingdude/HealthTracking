@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:api_contract/api_contract.dart';
 import 'package:domain/domain.dart';
+import 'package:domain/testing.dart';
 import 'package:flutter_test/flutter_test.dart' hide pumpEventQueue;
 import 'package:mobile/data/api/api_client.dart';
 import 'package:mobile/data/sync/outbox_writer.dart';
@@ -308,7 +309,7 @@ void main() {
       await server.tdb.pool.execute('DELETE FROM refresh_tokens');
       a.tokens.setPair(
         TokenPair(
-          accessToken: '***REMOVED***',
+          accessToken: randomTestSecret(),
           refreshToken: (await a.store.read())!.refreshToken!,
           accessTokenExpiresAt: DateTime.utc(2020),
         ),

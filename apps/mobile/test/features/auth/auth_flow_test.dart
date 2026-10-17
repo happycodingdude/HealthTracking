@@ -1,4 +1,5 @@
 import 'package:api_contract/api_contract.dart';
+import 'package:domain/testing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,9 +17,12 @@ import '../../support/app_harness.dart';
 import '../../support/fake_server.dart';
 import '../../support/schedule_fixture.dart';
 
+/// Refresh token server giả cấp khi đăng ký/đăng nhập.
+final _refreshToken = randomTestSecret();
+
 Map<String, Object?> _pair() => {
-  'accessToken': '***REMOVED***',
-  'refreshToken': '***REMOVED***',
+  'accessToken': randomTestSecret(),
+  'refreshToken': _refreshToken,
   'accessTokenExpiresAt': '2099-01-01T00:00:00.000Z',
 };
 
@@ -79,13 +83,14 @@ void main() {
     WidgetTester tester, {
     String name = 'Minh',
     String phone = '0912345678',
-    String password = '***REMOVED***',
+    String? password,
     String? confirm,
   }) async {
+    final pw = password ?? randomTestPassword();
     await tester.enterText(input(S.fieldDisplayName), name);
     await tester.enterText(input(S.fieldPhone), phone);
-    await tester.enterText(input(S.fieldPassword), password);
-    await tester.enterText(input(S.fieldPasswordConfirm), confirm ?? password);
+    await tester.enterText(input(S.fieldPassword), pw);
+    await tester.enterText(input(S.fieldPasswordConfirm), confirm ?? pw);
   }
 
   Future<void> tapRegisterButton(WidgetTester tester) async {
@@ -133,8 +138,8 @@ void main() {
           tester,
           name: '',
           phone: '0912',
-          password: '***REMOVED***',
-          confirm: '***REMOVED***',
+          password: randomTestPassword(length: 7),
+          confirm: randomTestPassword(length: 3),
         );
         await tapRegisterButton(tester);
         expect(find.text(S.invalidDisplayName), findsOneWidget);
@@ -183,7 +188,7 @@ void main() {
       await tapRegisterButton(tester);
       expect(find.text(S.disclaimerTitle), findsOneWidget);
       final store = container.read(sessionStoreProvider) as MemorySessionStore;
-      expect(store.session!.refreshToken, '***REMOVED***');
+      expect(store.session!.refreshToken, _refreshToken);
       expect(store.session!.userId, 'u1');
     });
 
@@ -255,10 +260,13 @@ void main() {
     Future<void> login(
       WidgetTester tester, {
       String phone = '0912345678',
-      String password = '***REMOVED***',
+      String? password,
     }) async {
       await tester.enterText(input(S.fieldPhone), phone);
-      await tester.enterText(input(S.fieldPassword), password);
+      await tester.enterText(
+        input(S.fieldPassword),
+        password ?? randomTestPassword(),
+      );
       await tester.tap(find.widgetWithText(FilledButton, S.login));
     }
 

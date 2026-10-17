@@ -48,6 +48,9 @@ import '../support/fake_sync.dart';
 
 /// Bộ khung `sync_e2e` (06 VS02-T13): server thật (PostgreSQL + HTTP) và nhiều
 /// "máy" chạy SyncEngine thật với Drift. Slice sau thêm entity vào [E2eDevice].
+/// Mật khẩu chung của các tài khoản thử (mọi máy đăng nhập cùng tài khoản).
+final _password = randomTestPassword();
+
 final class E2eServer {
   E2eServer._(this.tdb, this._http);
 
@@ -233,14 +236,14 @@ final class E2eDevice {
     String name = 'Minh',
   }) async {
     final me = await auth.register(
-      RegisterRequest(displayName: name, phone: phone, password: '***REMOVED***'),
+      RegisterRequest(displayName: name, phone: phone, password: _password),
     );
     await accounts.put(me.displayName);
   }
 
   Future<MeResponse> login({String phone = '0912345678'}) async {
     final me = await auth.login(
-      LoginRequest(phone: phone, password: '***REMOVED***'),
+      LoginRequest(phone: phone, password: _password),
     );
     await accounts.put(me.displayName);
     return me;

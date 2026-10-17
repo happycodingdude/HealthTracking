@@ -1,4 +1,5 @@
 import 'package:domain/domain.dart';
+import 'package:domain/testing.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -51,20 +52,32 @@ void main() {
 
   group('UA-19: mật khẩu ít nhất 8 ký tự', () {
     test('7 ký tự sai, 8 ký tự đúng', () {
-      expect(AccountValidators.isValidPassword('***REMOVED***'), isFalse);
-      expect(AccountValidators.isValidPassword('***REMOVED***'), isTrue);
-      expect(AccountValidators.isValidPassword('***REMOVED***'), isTrue);
+      expect(
+        AccountValidators.isValidPassword(randomTestPassword(length: 7)),
+        isFalse,
+      );
+      expect(
+        AccountValidators.isValidPassword(randomTestPassword(length: 8)),
+        isTrue,
+      );
+      expect(
+        AccountValidators.isValidPassword(
+          randomTestPassword(length: 8, vietnamese: true),
+        ),
+        isTrue,
+      );
     });
   });
 
   group('S-01a: bảng kiểm tra khi đăng ký', () {
     test('hợp lệ → không có ô lỗi', () {
+      final password = randomTestPassword();
       expect(
         AccountValidators.validateRegistration(
           displayName: 'Minh',
           phone: '0912 345 678',
-          password: '***REMOVED***',
-          passwordConfirm: '***REMOVED***',
+          password: password,
+          passwordConfirm: password,
         ),
         isEmpty,
       );
@@ -75,8 +88,8 @@ void main() {
         AccountValidators.validateRegistration(
           displayName: '',
           phone: '123',
-          password: '***REMOVED***',
-          passwordConfirm: '***REMOVED***',
+          password: randomTestPassword(length: 6),
+          passwordConfirm: randomTestPassword(length: 5),
         ),
         [
           AccountField.displayName,
@@ -92,8 +105,8 @@ void main() {
         AccountValidators.validateRegistration(
           displayName: 'Minh',
           phone: '0912345678',
-          password: '***REMOVED***',
-          passwordConfirm: '***REMOVED***',
+          password: randomTestPassword(),
+          passwordConfirm: randomTestPassword(),
         ),
         [AccountField.passwordConfirm],
       );

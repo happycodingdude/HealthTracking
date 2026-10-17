@@ -3,3 +3,4 @@
 library;
 
 export 'src/testing/legacy_done_days.dart';
+export 'src/testing/test_credentials.dart';

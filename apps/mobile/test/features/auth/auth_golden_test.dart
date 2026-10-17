@@ -1,6 +1,7 @@
 @Tags(['golden'])
 library;
 
+import 'package:domain/testing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -89,8 +90,9 @@ void main() {
         await pump(tester, v, '/welcome/register');
         await tester.enterText(input(S.fieldDisplayName), 'Minh');
         await tester.enterText(input(S.fieldPhone), '0912345678');
-        await tester.enterText(input(S.fieldPassword), '***REMOVED***');
-        await tester.enterText(input(S.fieldPasswordConfirm), '***REMOVED***');
+        final password = randomTestPassword();
+        await tester.enterText(input(S.fieldPassword), password);
+        await tester.enterText(input(S.fieldPasswordConfirm), password);
         await tester.tap(find.widgetWithText(FilledButton, S.register));
         await tester.pumpAndSettle();
         await snap('s01a_phone_taken_${v.name}');

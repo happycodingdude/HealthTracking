@@ -37,7 +37,7 @@ void main() {
   Future<String> login(String phone) async {
     final res = await app.post('/v1/auth/login', {
       'phone': phone,
-      'password': '***REMOVED***',
+      'password': testPassword,
     });
     return TokenPair.fromJson(res.json).accessToken;
   }

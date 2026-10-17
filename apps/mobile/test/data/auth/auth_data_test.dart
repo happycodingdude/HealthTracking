@@ -1,5 +1,6 @@
 import 'package:api_contract/api_contract.dart';
 import 'package:domain/domain.dart';
+import 'package:domain/testing.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/data/api/api_client.dart';
 import 'package:mobile/data/auth/auth_interceptor.dart';
@@ -17,7 +18,10 @@ void main() {
   late ApiClient api;
   late AuthRepository repo;
   var refreshCount = 0;
-  var validAccess = '***REMOVED***';
+  late String validAccess;
+  // Token ngẫu nhiên theo lần cấp: [1] lúc đăng ký/đăng nhập, [n + 1] sau lần làm mới thứ n.
+  final accessTokens = [for (var i = 0; i < 5; i++) randomTestSecret()];
+  final refreshTokens = [for (var i = 0; i < 5; i++) randomTestSecret()];
 
   Map<String, Object?> pair(String access, String refresh) => TokenPair(
     accessToken: access,
@@ -30,7 +34,7 @@ void main() {
     clock = FixedClock(DateTime.utc(2026, 10, 7, 10));
     store = MemorySessionStore();
     refreshCount = 0;
-    validAccess = '***REMOVED***';
+    validAccess = accessTokens[1];
     api = server.client();
     tokens = TokenManager(
       store: store,
@@ -41,15 +45,23 @@ void main() {
     repo = AuthRepository(api: api, tokens: tokens, store: store);
 
     server
-      ..on('POST', '/v1/auth/register', (_) => (201, pair('***REMOVED***', '***REMOVED***')))
-      ..on('POST', '/v1/auth/login', (_) => (200, pair('***REMOVED***', '***REMOVED***')))
+      ..on(
+        'POST',
+        '/v1/auth/register',
+        (_) => (201, pair(accessTokens[1], refreshTokens[1])),
+      )
+      ..on(
+        'POST',
+        '/v1/auth/login',
+        (_) => (200, pair(accessTokens[1], refreshTokens[1])),
+      )
       ..on('POST', '/v1/auth/refresh', (req) async {
         refreshCount++;
         await Future<void>.delayed(const Duration(milliseconds: 10));
         final rt = (req.body! as Map)['refreshToken'];
-        if (rt != '***REMOVED***') return (401, unauthorizedBody());
-        validAccess = '***REMOVED***';
-        return (200, pair(validAccess, '***REMOVED***'));
+        if (rt != refreshTokens[refreshCount]) return (401, unauthorizedBody());
+        validAccess = accessTokens[refreshCount + 1];
+        return (200, pair(validAccess, refreshTokens[refreshCount + 1]));
       })
       ..on('GET', '/v1/me', (req) {
         if (req.authorization != 'Bearer $validAccess') {
@@ -71,21 +83,24 @@ void main() {
     'register: lưu phiên (userId, số, refresh token); endpoint auth không gửi Authorization',
     () async {
       final me = await repo.register(
-        const RegisterRequest(
+        RegisterRequest(
           displayName: 'Minh',
           phone: '0912345678',
-          password: '***REMOVED***',
+          password: randomTestPassword(),
         ),
       );
       expect(me.userId, 'u1');
       expect(store.session!.userId, 'u1');
       expect(store.session!.phone, '0912345678');
-      expect(store.session!.refreshToken, '***REMOVED***');
+      expect(store.session!.refreshToken, refreshTokens[1]);
       expect(
         server.calls('POST', '/v1/auth/register').single.authorization,
         isNull,
       );
-      expect(server.calls('GET', '/v1/me').single.authorization, 'Bearer ***REMOVED***');
+      expect(
+        server.calls('GET', '/v1/me').single.authorization,
+        'Bearer ${accessTokens[1]}',
+      );
       expect(refreshCount, 0);
     },
   );
@@ -94,9 +109,9 @@ void main() {
     'VS01-T08: nhiều request cùng 401 → chỉ làm mới token một lần, tất cả gửi lại thành công',
     () async {
       await repo.login(
-        const LoginRequest(phone: '0912345678', password: '***REMOVED***'),
+        LoginRequest(phone: '0912345678', password: randomTestPassword()),
       );
-      validAccess = '***REMOVED***'; // token A1 bị server từ chối
+      validAccess = randomTestSecret(); // token cũ bị server từ chối
       final results = await Future.wait([
         repo.fetchMe(),
         repo.fetchMe(),
@@ -106,7 +121,7 @@ void main() {
       expect(refreshCount, 1);
       expect(
         store.session!.refreshToken,
-        '***REMOVED***',
+        refreshTokens[2],
         reason: 'refresh token mới được lưu',
       );
     },
@@ -115,10 +130,10 @@ void main() {
   test(
     'UA-23: mở lại app chỉ có refresh token → tự làm mới một lần rồi gọi API',
     () async {
-      store.session = const StoredSession(
+      store.session = StoredSession(
         userId: 'u1',
         phone: '0912345678',
-        refreshToken: '***REMOVED***',
+        refreshToken: refreshTokens[1],
       );
       final results = await Future.wait([repo.fetchMe(), repo.fetchMe()]);
       expect(results, hasLength(2));
@@ -128,21 +143,24 @@ void main() {
 
   test('access token sắp hết hạn → làm mới trước khi gọi', () async {
     await repo.login(
-      const LoginRequest(phone: '0912345678', password: '***REMOVED***'),
+      LoginRequest(phone: '0912345678', password: randomTestPassword()),
     );
     clock.advance(const Duration(minutes: 14, seconds: 45));
     await repo.fetchMe();
     expect(refreshCount, 1);
-    expect(server.calls('GET', '/v1/me').last.authorization, 'Bearer ***REMOVED***');
+    expect(
+      server.calls('GET', '/v1/me').last.authorization,
+      'Bearer ${accessTokens[2]}',
+    );
   });
 
   test(
     'TA-10: refresh bị từ chối → phiên hết hạn: báo onExpired, bỏ refresh token, giữ userId',
     () async {
-      store.session = const StoredSession(
+      store.session = StoredSession(
         userId: 'u1',
         phone: '0912345678',
-        refreshToken: '***REMOVED***',
+        refreshToken: randomTestSecret(),
       );
       final expired = tokens.onExpired.first;
       await expectLater(
@@ -162,14 +180,14 @@ void main() {
   );
 
   test('mất mạng khi làm mới → NetworkFailure, phiên vẫn giữ', () async {
-    store.session = const StoredSession(
+    store.session = StoredSession(
       userId: 'u1',
       phone: '0912345678',
-      refreshToken: '***REMOVED***',
+      refreshToken: refreshTokens[1],
     );
     server.offline = true;
     await expectLater(repo.fetchMe(), throwsA(isA<NetworkFailure>()));
-    expect(store.session!.refreshToken, '***REMOVED***');
+    expect(store.session!.refreshToken, refreshTokens[1]);
   });
 
   test(

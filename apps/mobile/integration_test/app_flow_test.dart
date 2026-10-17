@@ -4,6 +4,7 @@
 // `flutter test` gỡ app sau mỗi file, nên "mở lại app" (UX-AC3) được làm trong
 // cùng file: test sau gọi lại `app.main()`, đọc database và Keychain đã lưu.
 import 'package:domain/domain.dart';
+import 'package:domain/testing.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -29,6 +30,9 @@ final clock = ShiftedClock(
   DateTime.now().difference(testDay.atTime(LocalTime(16, 50))),
 );
 
+/// Mật khẩu của tài khoản đăng ký ở đầu luồng, dùng lại khi đăng nhập khôi phục.
+final password = randomTestPassword();
+
 Future<void> launch({AppDatabase? database}) => app.runHealthApp(
   overrides: [clockProvider.overrideWithValue(clock)],
   database: database,
@@ -47,8 +51,8 @@ void main() {
     await tester.pumpAndSettle();
     await enter(tester, S.fieldDisplayName, 'Minh');
     await enter(tester, S.fieldPhone, '0912345678');
-    await enter(tester, S.fieldPassword, '***REMOVED***');
-    await enter(tester, S.fieldPasswordConfirm, '***REMOVED***');
+    await enter(tester, S.fieldPassword, password);
+    await enter(tester, S.fieldPasswordConfirm, password);
     await reveal(tester, find.widgetWithText(FilledButton, S.register));
     await tester.tap(find.widgetWithText(FilledButton, S.register));
     await pumpUntil(tester, find.text(S.disclaimerTitle));
@@ -418,7 +422,7 @@ void main() {
       await tester.tap(find.widgetWithText(OutlinedButton, S.login));
       await tester.pumpAndSettle();
       await enter(tester, S.fieldPhone, '0912345678');
-      await enter(tester, S.fieldPassword, '***REMOVED***');
+      await enter(tester, S.fieldPassword, password);
       await reveal(tester, find.widgetWithText(FilledButton, S.login));
       await tester.tap(find.widgetWithText(FilledButton, S.login));
       await pumpUntil(tester, find.text(S.restored));
@@ -449,7 +453,7 @@ void main() {
       await tester.tap(find.widgetWithText(OutlinedButton, S.login));
       await tester.pumpAndSettle();
       await enter(tester, S.fieldPhone, '0987654321');
-      await enter(tester, S.fieldPassword, '***REMOVED***');
+      await enter(tester, S.fieldPassword, randomTestPassword());
       for (var attempt = 1; attempt <= 6; attempt++) {
         await reveal(tester, find.widgetWithText(FilledButton, S.login));
         await tester.tap(find.widgetWithText(FilledButton, S.login));

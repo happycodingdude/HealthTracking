@@ -1,12 +1,13 @@
 import 'package:api_contract/api_contract.dart';
+import 'package:domain/testing.dart';
 import 'package:test/test.dart';
 
 void main() {
   test('RegisterRequest khứ hồi JSON', () {
-    const r = RegisterRequest(
+    final r = RegisterRequest(
       displayName: 'Minh',
       phone: '0912345678',
-      password: '***REMOVED***',
+      password: randomTestPassword(),
     );
     final back = RegisterRequest.fromJson(r.toJson());
     expect(back.toJson(), r.toJson());
@@ -14,16 +15,17 @@ void main() {
   });
 
   test('LoginRequest, RefreshRequest khứ hồi JSON', () {
-    const l = LoginRequest(phone: '0912345678', password: '***REMOVED***');
+    final l = LoginRequest(phone: '0912345678', password: randomTestPassword());
     expect(LoginRequest.fromJson(l.toJson()).toJson(), l.toJson());
-    const f = RefreshRequest(refreshToken: '***REMOVED***');
-    expect(RefreshRequest.fromJson(f.toJson()).refreshToken, '***REMOVED***');
+    final refreshToken = randomTestSecret();
+    final f = RefreshRequest(refreshToken: refreshToken);
+    expect(RefreshRequest.fromJson(f.toJson()).refreshToken, refreshToken);
   });
 
   test('TokenPair khứ hồi JSON, thời điểm UTC', () {
     final t = TokenPair(
-      accessToken: '***REMOVED***',
-      refreshToken: '***REMOVED***',
+      accessToken: randomTestSecret(),
+      refreshToken: randomTestSecret(),
       accessTokenExpiresAt: DateTime.utc(2026, 10, 7, 11, 57),
     );
     expect(t.toJson()['accessTokenExpiresAt'], '2026-10-07T11:57:00.000Z');
@@ -63,7 +65,7 @@ void main() {
         () => RegisterRequest.fromJson({
           'displayName': 'Minh',
           'phone': 912345678,
-          'password': '***REMOVED***',
+          'password': randomTestPassword(),
         }),
         throwsA(
           isA<ContractFormatException>().having(

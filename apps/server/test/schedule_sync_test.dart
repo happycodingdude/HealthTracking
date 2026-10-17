@@ -289,7 +289,7 @@ void main() {
       app.clock.set(atUtc);
       final res = await app.post('/v1/auth/login', {
         'phone': '0912345678',
-        'password': '***REMOVED***',
+        'password': testPassword,
       });
       token = TokenPair.fromJson(res.json).accessToken;
     }

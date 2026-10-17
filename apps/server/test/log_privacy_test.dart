@@ -1,6 +1,7 @@
 import 'package:api_contract/api_contract.dart';
 import 'package:domain/domain.dart';
 import 'package:server/server.dart';
+import 'package:server/testing.dart';
 import 'package:test/test.dart';
 import 'package:uuid/uuid.dart';
 
@@ -13,8 +14,8 @@ void main() {
   final t0 = DateTime.utc(2026, 10, 7, 3);
   final today = LocalDate(2026, 10, 7);
   const phone = '0912345678';
-  const password = '***REMOVED***';
-  const wrongPassword = '***REMOVED***';
+  final password = randomTestPassword();
+  final wrongPassword = randomTestPassword();
   const name = 'Nguyễn Minh Anh';
   const uuid = Uuid();
 
@@ -97,7 +98,7 @@ void main() {
     ]);
     await app.pull(token);
     await app.get('/v1/me', token: token);
-    await app.get('/v1/me', token: '***REMOVED***');
+    await app.get('/v1/me', token: randomTestSecret());
 
     Future<TestResponse> generate() => app.post('/v1/ai/menus', {
       'localDate': today.toKey(),

@@ -7,7 +7,8 @@
 // Kết nối: DATABASE_URL của tiến trình, rồi apps/server/.env (code không chứa
 // tài khoản database). CHỈ dùng cho dev: mật khẩu thử in ra màn hình.
 //
-// Tài khoản thử (mật khẩu `***REMOVED***`):
+// Tài khoản thử (mật khẩu chung: DEV_SEED_PASSWORD của tiến trình, rồi .env ở
+// gốc repo; code không chứa mật khẩu, kể cả mật khẩu thử):
 // - 0900000001 "Minh": như Bản 1 — đã xếp lịch từ 40 ngày trước (trải qua 2
 //   tháng), có buổi đã đánh dấu, buổi chờ đánh dấu, vài số cân; mức tạ của
 //   các buổi trước tuần này, tăng dần theo từng buổi (06 Bản 2 §6.5.2).
@@ -22,7 +23,7 @@ import 'package:domain/domain.dart';
 import 'package:postgres/postgres.dart';
 import 'package:server/server.dart';
 
-const _password = '***REMOVED***';
+final _password = _seedPassword();
 const _timezone = 'Asia/Ho_Chi_Minh';
 const _vnOffset = Duration(hours: 7);
 
@@ -67,6 +68,23 @@ String _databaseUrl() {
     'Thiếu DATABASE_URL (biến môi trường hoặc apps/server/.env, xem '
     'docs/runbook.md)',
   );
+}
+
+String _seedPassword() {
+  var value = Platform.environment['DEV_SEED_PASSWORD'];
+  final env = File('.env');
+  if ((value == null || value.isEmpty) && env.existsSync()) {
+    value = ServerConfig.parseDotEnv(
+      env.readAsStringSync(),
+    )['DEV_SEED_PASSWORD'];
+  }
+  if (value == null || !AccountValidators.isValidPassword(value)) {
+    throw StateError(
+      'Thiếu DEV_SEED_PASSWORD (ít nhất ${AccountValidators.passwordMin} ký tự; '
+      'biến môi trường hoặc .env ở gốc repo, xem docs/runbook.md)',
+    );
+  }
+  return value;
 }
 
 String _withSslMode(String url) {

@@ -18,13 +18,14 @@ void main() {
   test(
     'TR-09: reset-password → mật khẩu cũ hết hiệu lực, mật khẩu tạm đăng nhập được, phiên cũ bị thu hồi',
     () async {
+      const phone = '0912 345 678';
       final before = await app.register();
-      final temp = await admin.resetPassword('0912 345 678');
+      final temp = await admin.resetPassword(phone);
       expect(temp.length, greaterThanOrEqualTo(8), reason: 'UA-19');
 
       final old = await app.post('/v1/auth/login', {
         'phone': '0912345678',
-        'password': '***REMOVED***',
+        'password': testPassword,
       });
       expect(old.errorCode, 'invalid_credentials');
       final login = await app.post('/v1/auth/login', {
@@ -42,14 +43,13 @@ void main() {
   );
 
   test('số không có tài khoản hoặc sai định dạng → AdminException', () async {
-    await expectLater(
-      admin.resetPassword('0999999999'),
-      throwsA(isA<AdminException>()),
-    );
-    await expectLater(
-      admin.resetPassword('123'),
-      throwsA(isA<AdminException>()),
-    );
+    for (final phone in ['0999999999', '123']) {
+      await expectLater(
+        admin.resetPassword(phone),
+        throwsA(isA<AdminException>()),
+        reason: phone,
+      );
+    }
   });
 
   test('mật khẩu tạm không có ký tự dễ nhầm, mỗi lần khác nhau', () {

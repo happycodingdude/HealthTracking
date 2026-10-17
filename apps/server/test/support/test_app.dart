@@ -11,6 +11,9 @@ import 'test_item_handler.dart';
 
 final testJwtSecret = randomTestSecret();
 
+/// Mật khẩu của tài khoản do [TestApp.register] tạo.
+final testPassword = randomTestPassword();
+
 /// Phản hồi đã giải mã JSON.
 final class TestResponse {
   TestResponse(this.status, this.json, this.headers);
@@ -110,12 +113,12 @@ final class TestApp {
   Future<TokenPair> register({
     String phone = '0912345678',
     String name = 'Minh',
-    String password = '***REMOVED***',
+    String? password,
   }) async {
     final res = await post('/v1/auth/register', {
       'displayName': name,
       'phone': phone,
-      'password': password,
+      'password': password ?? testPassword,
     });
     if (res.status != 201) {
       throw StateError('register ${res.status} ${res.json}');

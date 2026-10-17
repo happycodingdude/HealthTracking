@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:api_contract/api_contract.dart';
 import 'package:domain/domain.dart';
+import 'package:domain/testing.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -109,8 +110,8 @@ void main() {
         (_) => (
           200,
           {
-            'accessToken': '***REMOVED***',
-            'refreshToken': '***REMOVED***',
+            'accessToken': randomTestSecret(),
+            'refreshToken': randomTestSecret(),
             'accessTokenExpiresAt': '2099-01-01T00:00:00.000Z',
           },
         ),
@@ -174,15 +175,15 @@ void main() {
       matching: find.byType(TextField),
     );
     await tester.enterText(input(S.fieldPhone), '0912345678');
-    await tester.enterText(input(S.fieldPassword), '***REMOVED***');
+    await tester.enterText(input(S.fieldPassword), randomTestPassword());
     await tester.tap(find.widgetWithText(FilledButton, S.login));
     await tester.pumpAndSettle();
   }
 
-  const session = StoredSession(
+  final session = StoredSession(
     userId: 'u1',
     phone: '0912345678',
-    refreshToken: '***REMOVED***',
+    refreshToken: randomTestSecret(),
   );
 
   testWidgets('UX-AC4, 05 §6.6.5: có phiên mà máy chưa có dữ liệu (cài lại '

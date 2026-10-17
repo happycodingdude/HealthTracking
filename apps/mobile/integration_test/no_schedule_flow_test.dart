@@ -2,6 +2,7 @@
 // bước lịch tuần, thoát app ở bước 5 → mở lại đúng bước 5 (F03-E21); hoàn tất
 // → Chưa có lịch; xếp lịch tuần lần đầu từ mục Lịch → đồng bộ với server thật
 // (server chỉ nhận lịch tháng sau khi đã có lịch tuần, VS25-T04).
+import 'package:domain/testing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -30,8 +31,9 @@ void main() {
     await tester.pumpAndSettle();
     await enter(tester, S.fieldDisplayName, 'Lan');
     await enter(tester, S.fieldPhone, '0955555555');
-    await enter(tester, S.fieldPassword, '***REMOVED***');
-    await enter(tester, S.fieldPasswordConfirm, '***REMOVED***');
+    final password = randomTestPassword();
+    await enter(tester, S.fieldPassword, password);
+    await enter(tester, S.fieldPasswordConfirm, password);
     await reveal(tester, find.widgetWithText(FilledButton, S.register));
     await tester.tap(find.widgetWithText(FilledButton, S.register));
     await pumpUntil(tester, find.text(S.disclaimerTitle));

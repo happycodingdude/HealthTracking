@@ -40,7 +40,7 @@ void main() {
       expect(server.calls('GET', '/v1/sync/pull'), hasLength(1));
       expect(
         server.calls('GET', '/v1/sync/pull').single.authorization,
-        'Bearer ***REMOVED***',
+        'Bearer $refreshedAccessToken',
       );
     },
   );

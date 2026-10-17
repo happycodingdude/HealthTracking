@@ -13,7 +13,7 @@ final class AuthInterceptor extends Interceptor {
   final TokenManager _tokens;
 
   static const _retried = 'auth.retried';
-  static const _sentToken = 'auth.sentToken';
+  static const _sentTokenKey = 'auth.sentToken';
 
   @override
   Future<void> onRequest(
@@ -24,7 +24,7 @@ final class AuthInterceptor extends Interceptor {
     try {
       final token = await _tokens.validAccessToken();
       options.headers['authorization'] = 'Bearer $token';
-      options.extra[_sentToken] = token;
+      options.extra[_sentTokenKey] = token;
       handler.next(options);
     } on SessionExpired {
       handler.reject(_unauthorized(options));
@@ -51,12 +51,12 @@ final class AuthInterceptor extends Interceptor {
     }
     try {
       final token = await _tokens.refresh(
-        failedToken: options.extra[_sentToken] as String?,
+        failedToken: options.extra[_sentTokenKey] as String?,
       );
       options
         ..headers['authorization'] = 'Bearer $token'
         ..extra[_retried] = true
-        ..extra[_sentToken] = token;
+        ..extra[_sentTokenKey] = token;
       handler.resolve(await _dio.fetch<Object?>(options));
     } on SessionExpired {
       handler.next(err);

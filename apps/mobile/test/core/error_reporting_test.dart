@@ -1,3 +1,4 @@
+import 'package:domain/testing.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/error_reporting.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -6,6 +7,7 @@ void main() {
   test(
     'TD-13: bỏ user, request, extra, tên máy; lọc số trong message và exception',
     () {
+      final password = randomTestPassword();
       final event = SentryEvent(
         contexts: Contexts(
           device: SentryDevice(name: 'iPhone của Minh', model: 'iPhone17,1'),
@@ -13,7 +15,7 @@ void main() {
         user: SentryUser(id: 'u1', username: 'Minh'),
         request: SentryRequest(
           url: 'https://api.x/v1/auth/login',
-          data: {'phone': '0901234567', 'password': '***REMOVED***'},
+          data: {'phone': '0901234567', 'password': password},
         ),
         serverName: "Minh's iPhone",
         // ignore: deprecated_member_use
@@ -31,7 +33,7 @@ void main() {
           Breadcrumb(
             message: 'phone 0901234567',
             category: 'console',
-            data: {'body': '{"password":"***REMOVED***"}'},
+            data: {'body': '{"password":"$password"}'},
           ),
         ],
       );
@@ -56,7 +58,7 @@ void main() {
       expect(console.message, 'phone <n>');
       expect(console.data, isEmpty);
       expect(out.toJson().toString(), isNot(contains('0901234567')));
-      expect(out.toJson().toString(), isNot(contains('***REMOVED***')));
+      expect(out.toJson().toString(), isNot(contains(password)));
     },
   );
 

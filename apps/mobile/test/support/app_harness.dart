@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:api_contract/api_contract.dart' show AppVersion;
 import 'package:domain/domain.dart';
+import 'package:domain/testing.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
@@ -24,16 +25,23 @@ import 'fake_notifications.dart';
 import 'fake_server.dart';
 import 'fake_sync.dart';
 
-/// Phiên thử đã đăng nhập.
-const signedInSession = StoredSession(
+/// Phiên thử đã đăng nhập (refresh token ngẫu nhiên mỗi lần chạy test).
+final signedInSession = StoredSession(
   userId: 'u1',
   phone: '0912345678',
-  refreshToken: '***REMOVED***',
+  refreshToken: randomTestSecret(),
 );
+
+/// Access token mà server giả trả về khi làm mới phiên mặc định.
+final refreshedAccessToken = randomTestSecret();
+
+/// Mặc định của [appOverrides] `session` (đã đăng nhập, [signedInSession]);
+/// truyền `null` = chưa đăng nhập.
+const _signedInByDefault = StoredSession(userId: '', phone: '');
 
 /// Override chung cho test dựng cả app: không chạm Keychain, mạng thật hay file.
 List<Override> appOverrides({
-  StoredSession? session = signedInSession,
+  StoredSession? session = _signedInByDefault,
   FakeServer? server,
   AppDatabase? db,
   String flavor = 'prod',
@@ -45,7 +53,10 @@ List<Override> appOverrides({
   NotificationGateway? notifications,
   LocalMarks? marks,
 }) {
-  final store = MemorySessionStore(session);
+  final initial = identical(session, _signedInByDefault)
+      ? signedInSession
+      : session;
+  final store = MemorySessionStore(initial);
   final database = db ?? AppDatabase(NativeDatabase.memory());
   addTearDown(database.close);
   final fake = server ?? FakeServer();
@@ -56,8 +67,8 @@ List<Override> appOverrides({
         (_) => (
           200,
           {
-            'accessToken': '***REMOVED***',
-            'refreshToken': '***REMOVED***',
+            'accessToken': refreshedAccessToken,
+            'refreshToken': randomTestSecret(),
             'accessTokenExpiresAt': '2099-01-01T00:00:00.000Z',
           },
         ),
@@ -97,11 +108,11 @@ List<Override> appOverrides({
       AppEnv(flavor: flavor, apiBaseUrl: 'http://server.test'),
     ),
     sessionStoreProvider.overrideWithValue(store),
-    initialSessionProvider.overrideWithValue(session),
+    initialSessionProvider.overrideWithValue(initial),
     // Đã đăng nhập: mặc định coi như đã thiết lập xong (test các tab). Test
     // thiết lập lần đầu truyền `onboarded: false` để đọc trạng thái thật từ
     // database.
-    if (onboarded && session != null) ...[
+    if (onboarded && initial != null) ...[
       initialSetupProvider.overrideWithValue(SetupState.completed),
       setupStateProvider.overrideWith(
         (ref) => Stream.value(SetupState.completed),
