@@ -173,11 +173,9 @@ void main() {
         .substring('lift-log-'.length);
     await tester.tap(logButton.first);
     await tester.pumpAndSettle();
-    await tester.enterText(
-      find.byKey(const ValueKey('lift-start-input')),
-      '30',
-    );
-    await tester.enterText(find.byKey(const ValueKey('lift-end-input')), '35');
+    // Số hợp lệ cho cả kg lẫn số thanh (bài máy, 1–30).
+    await tester.enterText(find.byKey(const ValueKey('lift-start-input')), '7');
+    await tester.enterText(find.byKey(const ValueKey('lift-end-input')), '8');
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('lift-save')));
     final value = find.byKey(ValueKey('lift-value-$exerciseId'));

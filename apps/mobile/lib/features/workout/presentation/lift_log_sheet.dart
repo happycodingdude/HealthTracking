@@ -125,6 +125,7 @@ class _LiftLogSheetState extends ConsumerState<LiftLogSheet> {
       return S.liftSaved(
         Fmt.kgNumber(log.startKgX10),
         Fmt.kgNumber(log.endKgX10),
+        Fmt.liftUnit(draft.unit),
       );
     });
   }
@@ -208,9 +209,11 @@ class _LiftLogSheetState extends ConsumerState<LiftLogSheet> {
     final stacked = MediaQuery.textScalerOf(context).scale(1) >= _stackedScale;
     final error = draft.error;
     final warning = draft.warning;
+    final unit = draft.unit;
     Widget box(LiftField f) => _KgBox(
       key: ValueKey('lift-box-${f.name}'),
       field: f,
+      unit: unit,
       controller: _controllers[f]!,
       focusNode: _focus[f]!,
       active: _active == f,
@@ -241,6 +244,7 @@ class _LiftLogSheetState extends ConsumerState<LiftLogSheet> {
                       Fmt.dayMonth(previous.date),
                       Fmt.kgNumber(previous.startKgX10),
                       Fmt.kgNumber(previous.endKgX10),
+                      Fmt.liftUnit(unit),
                     ),
               key: const ValueKey('lift-previous'),
               style: context.text.bodyLarge?.copyWith(
@@ -268,7 +272,7 @@ class _LiftLogSheetState extends ConsumerState<LiftLogSheet> {
               Semantics(
                 liveRegion: true,
                 child: Text(
-                  _errorText(error),
+                  _errorText(error, unit),
                   key: const ValueKey('lift-error'),
                   style: context.text.bodyLarge?.copyWith(
                     color: context.colors.error,
@@ -277,14 +281,14 @@ class _LiftLogSheetState extends ConsumerState<LiftLogSheet> {
               )
             else
               Text(
-                S.liftStepHint,
+                unit == LiftUnit.plates ? S.liftStepHintPlates : S.liftStepHint,
                 style: context.text.bodyMedium?.copyWith(
                   color: palette.textSecondary,
                 ),
               ),
             if (warning != null) ...[
               const SizedBox(height: 16),
-              _WarningBox(warning),
+              _WarningBox(warning, unit),
             ],
             const SizedBox(height: 20),
             PrimaryButton(
@@ -311,21 +315,27 @@ class _LiftLogSheetState extends ConsumerState<LiftLogSheet> {
     );
   }
 
-  static String _errorText(LiftInputError e) => switch (e) {
-    LiftInputError.missing => S.liftMissing,
-    LiftInputError.outOfRange => S.liftOutOfRange,
-    LiftInputError.notStep => S.liftNotStep,
-    LiftInputError.notNumber => S.liftNotNumber,
-  };
+  static String _errorText(LiftInputError e, LiftUnit unit) {
+    final plates = unit == LiftUnit.plates;
+    return switch (e) {
+      LiftInputError.missing => S.liftMissing,
+      LiftInputError.outOfRange =>
+        plates ? S.liftPlatesOutOfRange : S.liftOutOfRange,
+      LiftInputError.notStep => plates ? S.liftPlatesNotStep : S.liftNotStep,
+      LiftInputError.notNumber => S.liftNotNumber,
+    };
+  }
 }
 
 /// Ô số "Bắt đầu" / "Kết thúc": nút −, con số lớn kèm "kg", nút + (04 Bản 2
 /// §6.10). Chạm con số để gõ bằng bàn phím số có dấu phẩy; nhận "," và ".",
-/// luôn hiện "," (UR-10).
+/// luôn hiện "," (UR-10). Bài với máy: con số kèm "thanh", bàn phím số không
+/// có dấu phẩy, chỉ nhận chữ số.
 class _KgBox extends StatelessWidget {
   const _KgBox({
     super.key,
     required this.field,
+    required this.unit,
     required this.controller,
     required this.focusNode,
     required this.active,
@@ -335,6 +345,7 @@ class _KgBox extends StatelessWidget {
   });
 
   final LiftField field;
+  final LiftUnit unit;
   final TextEditingController controller;
   final FocusNode focusNode;
   final bool active;
@@ -346,6 +357,7 @@ class _KgBox extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final label = field == LiftField.start ? S.liftStart : S.liftEnd;
+    final plates = unit == LiftUnit.plates;
     final numberStyle = context.text.headlineMedium?.copyWith(
       fontWeight: FontWeight.w700,
     );
@@ -376,7 +388,9 @@ class _KgBox extends StatelessWidget {
               _StepButton(
                 key: ValueKey('lift-${field.name}-minus'),
                 icon: Icons.remove,
-                label: '$label, ${S.liftDecrease}',
+                label:
+                    '$label, '
+                    '${plates ? S.liftDecreasePlates : S.liftDecrease}',
                 onStep: canStep ? () => onStep(-1) : null,
               ),
               Expanded(
@@ -415,7 +429,7 @@ class _KgBox extends StatelessWidget {
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
-                                    S.unitKg,
+                                    Fmt.liftUnit(unit),
                                     style: context.text.bodyLarge?.copyWith(
                                       color: secondary,
                                     ),
@@ -442,14 +456,18 @@ class _KgBox extends StatelessWidget {
                             style: numberStyle?.copyWith(
                               color: Colors.transparent,
                             ),
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
+                            keyboardType: TextInputType.numberWithOptions(
+                              decimal: !plates,
                             ),
                             inputFormatters: [
-                              FilteringTextInputFormatter.allow(
-                                RegExp('[0-9.,]'),
-                              ),
-                              _CommaFormatter(),
+                              if (plates)
+                                FilteringTextInputFormatter.digitsOnly
+                              else ...[
+                                FilteringTextInputFormatter.allow(
+                                  RegExp('[0-9.,]'),
+                                ),
+                                _CommaFormatter(),
+                              ],
                             ],
                             decoration: const InputDecoration(
                               border: InputBorder.none,
@@ -468,7 +486,9 @@ class _KgBox extends StatelessWidget {
               _StepButton(
                 key: ValueKey('lift-${field.name}-plus'),
                 icon: Icons.add,
-                label: '$label, ${S.liftIncrease}',
+                label:
+                    '$label, '
+                    '${plates ? S.liftIncreasePlates : S.liftIncrease}',
                 onStep: canStep ? () => onStep(1) : null,
               ),
             ],
@@ -489,7 +509,7 @@ class _CommaFormatter extends TextInputFormatter {
 }
 
 /// Nút − / + tròn tối thiểu 44 điểm (04 Bản 2 §6.10, §6.13); giữ để chạy
-/// nhanh. null = chưa có số (UA2-10).
+/// nhanh. null = chưa có số (UA2-10): biểu tượng mờ như "‹" ở S-69.
 class _StepButton extends StatefulWidget {
   const _StepButton({
     super.key,
@@ -529,6 +549,7 @@ class _StepButtonState extends State<_StepButton> {
   @override
   Widget build(BuildContext context) {
     final onStep = widget.onStep;
+    final color = context.colors.primary;
     return Semantics(
       button: true,
       enabled: onStep != null,
@@ -548,9 +569,11 @@ class _StepButtonState extends State<_StepButton> {
             padding: EdgeInsets.zero,
             style: IconButton.styleFrom(
               side: BorderSide(color: context.palette.border),
+              foregroundColor: color,
+              disabledForegroundColor: color.withAlpha(70),
             ),
             onPressed: onStep,
-            icon: Icon(widget.icon, color: context.colors.primary),
+            icon: Icon(widget.icon),
           ),
         ),
       ),
@@ -561,13 +584,15 @@ class _StepButtonState extends State<_StepButton> {
 /// Khu cảnh báo (04 Bản 2 §6.10, UA2-11): nền vàng nhạt, viền vàng, chữ tối,
 /// không có nút, câu nguyên văn F21-R8. Không dùng đỏ (UA-15).
 class _WarningBox extends StatelessWidget {
-  const _WarningBox(this.warning);
+  const _WarningBox(this.warning, this.unit);
 
   final EndWarning warning;
+  final LiftUnit unit;
 
   @override
   Widget build(BuildContext context) {
     final n = Fmt.kgNumber(warning.diffX10);
+    final u = Fmt.liftUnit(unit);
     return Semantics(
       liveRegion: true,
       child: Container(
@@ -580,8 +605,8 @@ class _WarningBox extends StatelessWidget {
         ),
         child: Text(
           warning.kind == EndWarningKind.lower
-              ? S.liftEndLower(n)
-              : S.liftEndMuchHigher(n),
+              ? S.liftEndLower(n, u)
+              : S.liftEndMuchHigher(n, u),
           style: context.text.bodyLarge?.copyWith(
             color: context.colors.onSurface,
           ),

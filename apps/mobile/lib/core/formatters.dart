@@ -127,9 +127,13 @@ abstract final class Fmt {
       for (final r in MuscleRegion.of(g)) region(r),
   ].join(' · ');
 
-  /// Mức tạ của một bản ghi: `12 → 14 kg`, `72,5 → 75 kg`.
-  static String lift(LiftLog l) =>
-      S.liftValue(kgNumber(l.startKgX10), kgNumber(l.endKgX10));
+  /// Đơn vị mức tạ: `kg` (bài với tạ), `thanh` (bài với máy).
+  static String liftUnit(LiftUnit unit) =>
+      unit == LiftUnit.plates ? S.unitPlates : S.unitKg;
+
+  /// Mức tạ của một bản ghi: `12 → 14 kg`, `72,5 → 75 kg`, `7 → 8 thanh`.
+  static String lift(LiftLog l, LiftUnit unit) =>
+      S.liftValue(kgNumber(l.startKgX10), kgNumber(l.endKgX10), liftUnit(unit));
 
   /// `T4 07/10` (S-20).
   static String shortWeekdayDate(LocalDate date) =>

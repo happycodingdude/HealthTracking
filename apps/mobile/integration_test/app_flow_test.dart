@@ -219,19 +219,17 @@ void main() {
       await tester.pumpAndSettle();
       await tester.enterText(
         find.byKey(const ValueKey('lift-start-input')),
-        '30',
+        '7',
       );
-      await tester.enterText(
-        find.byKey(const ValueKey('lift-end-input')),
-        '35',
-      );
+      await tester.enterText(find.byKey(const ValueKey('lift-end-input')), '8');
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('lift-save')));
       await pumpUntil(
         tester,
         find.byKey(const ValueKey('lift-value-$pressId')),
       );
-      expect(find.text('30 → 35 kg'), findsOneWidget);
+      // Bài với máy ghi số thanh (BR2-24 sửa 13/10/2026).
+      expect(find.text('7 → 8 thanh'), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('session-back')));
       await tester.pumpAndSettle();
       await pumpUntilGone(tester, find.byKey(const ValueKey('sync-indicator')));

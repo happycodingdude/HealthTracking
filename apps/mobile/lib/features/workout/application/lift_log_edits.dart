@@ -74,7 +74,9 @@ final class SaveLiftLog extends _LiftWrite {
     required String start,
     required String end,
   }) async {
-    final input = LiftInput.of(start, end);
+    // Đơn vị theo dụng cụ của bài; bài không có thì [_check] từ chối sau.
+    final unit = (await _exercises.get(exerciseId))?.liftUnit ?? LiftUnit.kg;
+    final input = LiftInput.of(start, end, unit);
     if (!input.isValid) throw LiftInputException(input);
     return _db.transaction(() async {
       await _check(

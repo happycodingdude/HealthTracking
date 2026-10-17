@@ -32,29 +32,35 @@ void main() {
 
   group('LiftKg: nhập con số (F21-R6, F21-V1 → V4)', () {
     test('F21-E9: "72,5" và "72.5" đều là 72,5 kg', () {
-      expect(LiftKg.check('72,5'), (725, null));
-      expect(LiftKg.check('72.5'), (725, null));
-      expect(LiftKg.check(' 12 '), (120, null));
-      expect(LiftKg.check('72,50'), (725, null));
+      expect(LiftKg.check('72,5', LiftUnit.kg), (725, null));
+      expect(LiftKg.check('72.5', LiftUnit.kg), (725, null));
+      expect(LiftKg.check(' 12 ', LiftUnit.kg), (120, null));
+      expect(LiftKg.check('72,50', LiftUnit.kg), (725, null));
     });
 
     test('F21-AC7: 0; 300,5; 72,3 bị từ chối với lỗi tương ứng; 0,5; 300; '
         '72,5 được', () {
-      expect(LiftKg.check('0'), (null, LiftInputError.outOfRange));
-      expect(LiftKg.check('300,5'), (null, LiftInputError.outOfRange));
-      expect(LiftKg.check('72,3'), (null, LiftInputError.notStep));
-      expect(LiftKg.check('72,25'), (null, LiftInputError.notStep));
-      expect(LiftKg.check('0,5'), (5, null));
-      expect(LiftKg.check('300'), (3000, null));
-      expect(LiftKg.check('72,5'), (725, null));
+      expect(LiftKg.check('0', LiftUnit.kg), (null, LiftInputError.outOfRange));
+      expect(LiftKg.check('300,5', LiftUnit.kg), (
+        null,
+        LiftInputError.outOfRange,
+      ));
+      expect(LiftKg.check('72,3', LiftUnit.kg), (null, LiftInputError.notStep));
+      expect(LiftKg.check('72,25', LiftUnit.kg), (
+        null,
+        LiftInputError.notStep,
+      ));
+      expect(LiftKg.check('0,5', LiftUnit.kg), (5, null));
+      expect(LiftKg.check('300', LiftUnit.kg), (3000, null));
+      expect(LiftKg.check('72,5', LiftUnit.kg), (725, null));
     });
 
     test('F21-V1, V4: trống → thiếu; chữ, dấu âm, hai dấu thập phân → không '
         'phải số', () {
-      expect(LiftKg.check(''), (null, LiftInputError.missing));
-      expect(LiftKg.check('  '), (null, LiftInputError.missing));
+      expect(LiftKg.check('', LiftUnit.kg), (null, LiftInputError.missing));
+      expect(LiftKg.check('  ', LiftUnit.kg), (null, LiftInputError.missing));
       for (final bad in ['abc', '-5', '7,2,5', '12kg', '1e2', ',5']) {
-        expect(LiftKg.check(bad), (
+        expect(LiftKg.check(bad, LiftUnit.kg), (
           null,
           LiftInputError.notNumber,
         ), reason: bad);
@@ -62,22 +68,62 @@ void main() {
     });
 
     test('F21-AC8: thiếu mức kết thúc → ô kết thúc báo thiếu', () {
-      final input = LiftInput.of('12', '');
+      final input = LiftInput.of('12', '', LiftUnit.kg);
       expect(input.isValid, isFalse);
       expect(input.startError, isNull);
       expect(input.endError, LiftInputError.missing);
-      final ok = LiftInput.of('12', '14');
+      final ok = LiftInput.of('12', '14', LiftUnit.kg);
       expect((ok.startX10, ok.endX10, ok.isValid), (120, 140, true));
     });
 
     test('UA2-10: − / + theo bước 0,5, chặn ở 0,5 và 300', () {
-      expect(LiftKg.stepped(120, 1), 125);
-      expect(LiftKg.stepped(120, -1), 115);
-      expect(LiftKg.stepped(5, -1), 5);
-      expect(LiftKg.stepped(3000, 1), 3000);
+      expect(LiftKg.stepped(120, 1, LiftUnit.kg), 125);
+      expect(LiftKg.stepped(120, -1, LiftUnit.kg), 115);
+      expect(LiftKg.stepped(5, -1, LiftUnit.kg), 5);
+      expect(LiftKg.stepped(3000, 1, LiftUnit.kg), 3000);
       expect(LiftKg.format(725), '72,5');
       expect(LiftKg.format(120), '12');
       expect(LiftKg.format(5), '0,5');
+    });
+
+    test('BR2-24 sửa 13/10: bài với máy ghi số thanh, bài với tạ ghi kg', () {
+      expect(shoulderPress.liftUnit, LiftUnit.plates);
+      expect(chestPress.liftUnit, LiftUnit.kg);
+    });
+
+    test('số thanh: số nguyên 1–30, không có số lẻ', () {
+      const u = LiftUnit.plates;
+      expect(LiftKg.check('7', u), (70, null));
+      expect(LiftKg.check('1', u), (10, null));
+      expect(LiftKg.check('30', u), (300, null));
+      expect(LiftKg.check('0', u), (null, LiftInputError.outOfRange));
+      expect(LiftKg.check('31', u), (null, LiftInputError.outOfRange));
+      expect(LiftKg.check('7,5', u), (null, LiftInputError.notStep));
+      expect(LiftKg.check('', u), (null, LiftInputError.missing));
+      final input = LiftInput.of('7', '8,5', u);
+      expect((input.startX10, input.endError), (70, LiftInputError.notStep));
+    });
+
+    test('số thanh: − / + mỗi lần 1 thanh, chặn ở 1 và 30', () {
+      const u = LiftUnit.plates;
+      expect(LiftKg.stepped(70, 1, u), 80);
+      expect(LiftKg.stepped(70, -1, u), 60);
+      expect(LiftKg.stepped(10, -1, u), 10);
+      expect(LiftKg.stepped(300, 1, u), 300);
+      expect(LiftKg.format(70), '7');
+    });
+
+    test('bản ghi kiểm tra theo đơn vị của bài (app và server cùng dùng)', () {
+      LiftLog of(int start, int end) => LiftLog(
+        date: LocalDate(2026, 10, 14),
+        exerciseId: 'x',
+        startKgX10: start,
+        endKgX10: end,
+      );
+      expect(of(70, 80).invalidField(LiftUnit.plates), isNull);
+      expect(of(75, 80).invalidField(LiftUnit.plates), 'startKgX10');
+      expect(of(70, 310).invalidField(LiftUnit.plates), 'endKgX10');
+      expect(of(75, 310).invalidField(LiftUnit.kg), isNull);
     });
   });
 
@@ -302,11 +348,11 @@ void main() {
 
     test('F21-AC4: buổi trước 14 kg, hôm nay 12 → thấp hơn 2 kg', () {
       expect(
-        EndWarning.of(140, 120),
+        EndWarning.of(140, 120, LiftUnit.kg),
         const EndWarning(EndWarningKind.lower, 20),
       );
       expect(
-        EndWarning.of(140, 135),
+        EndWarning.of(140, 135, LiftUnit.kg),
         const EndWarning(EndWarningKind.lower, 5),
       );
     });
@@ -314,19 +360,34 @@ void main() {
     test('F21-AC5: 14 → 26 cảnh báo cao hơn 12 kg; 14 → 24 không cảnh báo; '
         'bằng nhau không cảnh báo', () {
       expect(
-        EndWarning.of(140, 260),
+        EndWarning.of(140, 260, LiftUnit.kg),
         const EndWarning(EndWarningKind.muchHigher, 120),
       );
-      expect(EndWarning.of(140, 240), isNull);
+      expect(EndWarning.of(140, 240, LiftUnit.kg), isNull);
       expect(
-        EndWarning.of(140, 245),
+        EndWarning.of(140, 245, LiftUnit.kg),
         const EndWarning(EndWarningKind.muchHigher, 105),
       );
-      expect(EndWarning.of(140, 140), isNull);
+      expect(EndWarning.of(140, 140, LiftUnit.kg), isNull);
+    });
+
+    test('bài với máy: cao hơn buổi trước quá 3 thanh mới cảnh báo; thấp hơn '
+        'bất kỳ mức nào thì cảnh báo', () {
+      const u = LiftUnit.plates;
+      expect(EndWarning.of(70, 100, u), isNull);
+      expect(
+        EndWarning.of(70, 110, u),
+        const EndWarning(EndWarningKind.muchHigher, 40),
+      );
+      expect(
+        EndWarning.of(70, 60, u),
+        const EndWarning(EndWarningKind.lower, 10),
+      );
+      expect(EndWarning.of(70, 70, u), isNull);
     });
 
     test('F21-AC6: lần ghi đầu tiên → không cảnh báo', () {
-      expect(EndWarning.of(null, 5), isNull);
+      expect(EndWarning.of(null, 5, LiftUnit.kg), isNull);
     });
 
     test('F21-AC3: ghi lại cùng bài cùng buổi là ghi đè (khóa ngày + bài)', () {

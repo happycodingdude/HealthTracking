@@ -1,3 +1,4 @@
+import '../lift_log/lift_kg.dart';
 import '../schedule/weekly_template.dart';
 import '../time/local_date.dart';
 import 'muscle_region.dart';
@@ -98,6 +99,11 @@ final class Exercise {
 
   /// FR2-12: bài bụng không ghi mức tạ, không có biểu đồ.
   bool get logsWeight => group != MuscleGroup.abs;
+
+  /// Đơn vị mức tạ (BR2-24, sửa 13/10/2026): bài với máy ghi số thanh tạ,
+  /// bài với tạ ghi kg.
+  LiftUnit get liftUnit =>
+      equipment == Equipment.machine ? LiftUnit.plates : LiftUnit.kg;
 
   Exercise copyWith({
     int? sortOrder,

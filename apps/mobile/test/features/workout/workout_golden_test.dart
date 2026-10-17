@@ -123,8 +123,8 @@ void main() {
         db,
         mon,
         ex(MuscleRegion.chestUpper, Equipment.machine),
-        300,
-        350,
+        70,
+        80,
       );
       await log(
         db,
@@ -148,13 +148,7 @@ void main() {
     testWidgets('S-63-3 buổi tập thêm Vai và Bụng ${v.name}', (tester) async {
       final db = await seeded();
       await seedExtra(db, tue, const [MuscleGroup.shoulders, MuscleGroup.abs]);
-      await log(
-        db,
-        tue,
-        ex(MuscleRegion.deltFront, Equipment.machine),
-        250,
-        300,
-      );
+      await log(db, tue, ex(MuscleRegion.deltFront, Equipment.machine), 50, 60);
       final c = await pump(tester, v, db, DateTime(2026, 10, 13, 20, 30));
       await go(tester, c, sessionPath(AppTab.today, tue));
       await snap('s63_extra_${v.name}');
@@ -168,7 +162,7 @@ void main() {
       await tapRow(tester, 'lift-log-${e.id}');
       await tester.enterText(
         find.byKey(const ValueKey('lift-start-input')),
-        '35',
+        '7',
       );
       await tester.pumpAndSettle();
       FocusManager.instance.primaryFocus?.unfocus();
@@ -197,11 +191,11 @@ void main() {
       await tapRow(tester, 'lift-log-${e.id}');
       await tester.enterText(
         find.byKey(const ValueKey('lift-start-input')),
-        '35',
+        '7',
       );
       await tester.enterText(
         find.byKey(const ValueKey('lift-end-input')),
-        '72,3',
+        '31',
       );
       await tester.pumpAndSettle();
       await tapKey(tester, 'lift-save');
@@ -218,12 +212,9 @@ void main() {
       await tapRow(tester, 'lift-log-${e.id}');
       await tester.enterText(
         find.byKey(const ValueKey('lift-start-input')),
-        '35',
+        '7',
       );
-      await tester.enterText(
-        find.byKey(const ValueKey('lift-end-input')),
-        '40',
-      );
+      await tester.enterText(find.byKey(const ValueKey('lift-end-input')), '8');
       await tester.pumpAndSettle();
       FocusManager.instance.primaryFocus?.unfocus();
       await tester.pumpAndSettle();
@@ -257,8 +248,8 @@ void main() {
         db,
         mon,
         ex(MuscleRegion.chestUpper, Equipment.machine),
-        300,
-        350,
+        70,
+        80,
       );
       await log(db, mon, ex(MuscleRegion.tricepsLong), 100, 125);
       await pump(tester, v, db, DateTime(2026, 10, 12, 18, 30));

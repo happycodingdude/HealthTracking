@@ -275,7 +275,7 @@ class _ExerciseLine extends StatelessWidget {
           ),
         ),
         onPressed: openSheet,
-        child: Text(Fmt.lift(l)),
+        child: Text(Fmt.lift(l, e.liftUnit)),
       ),
       (true, null) when e.active => OutlinedButton(
         key: ValueKey('lift-log-${e.id}'),
@@ -291,7 +291,7 @@ class _ExerciseLine extends StatelessWidget {
         child: const Text(S.logLiftShort),
       ),
       (false, final LiftLog l) => Text(
-        Fmt.lift(l),
+        Fmt.lift(l, e.liftUnit),
         key: ValueKey('lift-readonly-${e.id}'),
         style: context.text.titleMedium,
       ),

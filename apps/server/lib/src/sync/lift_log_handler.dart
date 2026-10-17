@@ -80,9 +80,10 @@ final class LiftLogHandler implements SyncEntityHandler {
     final userId = ctx.userId;
     final (date, exerciseId) = LiftLog.parseKey(m.key)!;
     final existing = await read(s, userId, m.key);
+    final exercise = await _exercise(s, exerciseId);
     final error = LiftLogRules.check(
       day: await _day(s, userId, date),
-      exercise: await _exercise(s, exerciseId),
+      exercise: exercise,
       now: await deviceNow(s, userId, m.clientUpdatedAt) ?? m.clientUpdatedAt,
       exists: existing != null && !existing.deleted,
     );
@@ -110,9 +111,9 @@ final class LiftLogHandler implements SyncEntityHandler {
       );
       return;
     }
-    // Bước 5: F21-V2, F21-V3.
+    // Bước 5: F21-V2, F21-V3 theo đơn vị của bài (kg; thanh với bài máy).
     final log = _codec.decode(m.key, m.data!);
-    final invalid = log.invalidField;
+    final invalid = log.invalidField(exercise!.liftUnit);
     if (invalid != null) throw SyncRejection(invalid);
     await s.execute(
       Sql.named('''

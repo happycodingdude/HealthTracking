@@ -69,6 +69,8 @@ class _LiftChartScreenState extends ConsumerState<LiftChartScreen> {
     final palette = context.palette;
     final earliest = view?.earliest;
     final chart = view?.chart;
+    // Đơn vị theo dụng cụ của bài: kg, hoặc số thanh với bài máy.
+    final unit = exercise?.liftUnit;
 
     return Scaffold(
       body: SafeArea(
@@ -143,7 +145,7 @@ class _LiftChartScreenState extends ConsumerState<LiftChartScreen> {
                   : null,
             ),
             const SizedBox(height: 12),
-            if (chart != null) ...[
+            if (chart != null && unit != null) ...[
               Container(
                 key: const ValueKey('chart-card'),
                 padding: const EdgeInsets.fromLTRB(8, 16, 16, 12),
@@ -177,6 +179,7 @@ class _LiftChartScreenState extends ConsumerState<LiftChartScreen> {
                               child: _LiftChart(
                                 key: ValueKey('chart-${month.toKey()}'),
                                 chart: chart,
+                                unit: unit,
                               ),
                             ),
                           ),
@@ -229,7 +232,7 @@ class _LiftChartScreenState extends ConsumerState<LiftChartScreen> {
                                 ),
                               ),
                               Text(
-                                Fmt.lift(l),
+                                Fmt.lift(l, unit),
                                 key: ValueKey('chart-row-${l.date.toKey()}'),
                                 style: context.text.titleMedium?.copyWith(
                                   fontWeight: FontWeight.w700,
@@ -301,14 +304,16 @@ class _MonthBar extends StatelessWidget {
   }
 }
 
-/// Biểu đồ một tháng (UA2-13): trục ngang cả tháng, trục dọc kg tự co giãn
-/// có khoảng dư; Bắt đầu tròn rỗng nét đứt, Kết thúc tròn đặc nét liền, cùng
-/// màu chủ đạo; bằng nhau → điểm đặc to, viền đậm (F22-E3). Ngày trống ngắt
-/// đường (F22-R9). Chạm một ngày → "{dd/mm} · {a} → {b} kg".
+/// Biểu đồ một tháng (UA2-13): trục ngang cả tháng, trục dọc kg (bài máy:
+/// số thanh) tự co giãn có khoảng dư; Bắt đầu tròn rỗng nét đứt, Kết thúc
+/// tròn đặc nét liền, cùng màu chủ đạo; bằng nhau → điểm đặc to, viền đậm
+/// (F22-E3). Ngày trống ngắt đường (F22-R9). Chạm một ngày → "{dd/mm} · {a}
+/// → {b} kg".
 class _LiftChart extends StatefulWidget {
-  const _LiftChart({super.key, required this.chart});
+  const _LiftChart({super.key, required this.chart, required this.unit});
 
   final MonthlyLiftChart chart;
+  final LiftUnit unit;
 
   @override
   State<_LiftChart> createState() => _LiftChartState();
@@ -323,6 +328,9 @@ class _LiftChartState extends State<_LiftChart> {
   /// Bước chia trục kg (đơn vị kg).
   static const _steps = [0.5, 1.0, 2.0, 2.5, 5.0, 10.0, 20.0, 25.0, 50.0];
 
+  /// Bước chia trục số thanh: chỉ số nguyên.
+  static const _plateSteps = [1.0, 2.0, 5.0, 10.0];
+
   @override
   Widget build(BuildContext context) {
     final chart = widget.chart;
@@ -333,7 +341,8 @@ class _LiftChartState extends State<_LiftChart> {
     final pad = math.max(10, (high - low) * 0.25) / 10;
     var minY = math.max(0, low / 10 - pad).toDouble();
     var maxY = high / 10 + pad;
-    final step = _steps.firstWhere(
+    final unit = widget.unit;
+    final step = (unit == LiftUnit.plates ? _plateSteps : _steps).firstWhere(
       (s) => (maxY - minY) / s <= 5,
       orElse: () => 100,
     );
@@ -435,6 +444,7 @@ class _LiftChartState extends State<_LiftChart> {
                                 Fmt.dayMonth(l.date),
                                 Fmt.kgNumber(l.startKgX10),
                                 Fmt.kgNumber(l.endKgX10),
+                                Fmt.liftUnit(unit),
                               ),
                               context.text.bodyMedium!.copyWith(
                                 color: colors.onInverseSurface,

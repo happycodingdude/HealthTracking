@@ -50,10 +50,10 @@ void main() {
     await log(press, 10, 5, 120, 140);
     await log(press, 10, 7, 100, 120);
     await log(press, 10, 9, 120, 120);
-    await log(ex(MuscleRegion.chestUpper, Equipment.machine), 10, 7, 300, 350);
-    await log(ex(MuscleRegion.lats, Equipment.machine), 10, 5, 400, 450);
+    await log(ex(MuscleRegion.chestUpper, Equipment.machine), 10, 7, 70, 80);
+    await log(ex(MuscleRegion.lats, Equipment.machine), 10, 5, 90, 100);
     await log(ex(MuscleRegion.backMid, Equipment.freeWeight), 10, 5, 160, 180);
-    await log(ex(MuscleRegion.deltFront, Equipment.machine), 10, 2, 250, 300);
+    await log(ex(MuscleRegion.deltFront, Equipment.machine), 10, 2, 50, 60);
     final gone = ex(MuscleRegion.lats, Equipment.freeWeight);
     await log(gone, 9, 28, 200, 200);
     await ExerciseRepository(db).put(gone.copyWith(active: false));

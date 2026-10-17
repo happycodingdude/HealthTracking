@@ -19,7 +19,7 @@ final class LiftLog {
   final LocalDate date;
   final String exerciseId;
 
-  /// Mức tạ bắt đầu, kết thúc (kg × 10).
+  /// Mức tạ bắt đầu, kết thúc × 10, theo [LiftUnit] của bài (kg hoặc thanh).
   final int startKgX10;
   final int endKgX10;
 
@@ -37,10 +37,10 @@ final class LiftLog {
     return date == null ? null : (date, key.substring(i + 1));
   }
 
-  /// Trường sai theo F21-V2, F21-V3; null = hợp lệ.
-  String? get invalidField {
-    if (LiftKg.validate(startKgX10) != null) return 'startKgX10';
-    if (LiftKg.validate(endKgX10) != null) return 'endKgX10';
+  /// Trường sai theo F21-V2, F21-V3 với đơn vị [unit] của bài; null = hợp lệ.
+  String? invalidField(LiftUnit unit) {
+    if (LiftKg.validate(startKgX10, unit) != null) return 'startKgX10';
+    if (LiftKg.validate(endKgX10, unit) != null) return 'endKgX10';
     return null;
   }
 
@@ -101,28 +101,28 @@ enum EndWarningKind {
   /// Thấp hơn buổi trước (bất kỳ mức nào).
   lower,
 
-  /// Cao hơn buổi trước quá 10 kg.
+  /// Cao hơn buổi trước quá 10 kg; bài với máy: quá 3 thanh
+  /// ([LiftUnit.maxRise]).
   muchHigher,
 }
 
 final class EndWarning {
   const EndWarning(this.kind, this.diffX10);
 
-  /// Cao hơn quá 10 kg mới cảnh báo.
-  static const maxRiseX10 = 100;
-
   final EndWarningKind kind;
 
-  /// Chênh lệch (kg × 10), hiển thị theo bước 0,5 ([LiftKg.format]).
+  /// Chênh lệch × 10 theo đơn vị của bài, hiển thị bằng [LiftKg.format].
   final int diffX10;
 
   /// null khi chưa có buổi trước ([previousEndX10] null, F21-AC6), bằng,
-  /// hoặc cao hơn từ 0 đến 10 kg.
-  static EndWarning? of(int? previousEndX10, int endX10) {
+  /// hoặc cao hơn không quá [LiftUnit.maxRise] (10 kg; 3 thanh).
+  static EndWarning? of(int? previousEndX10, int endX10, LiftUnit unit) {
     if (previousEndX10 == null) return null;
     final diff = endX10 - previousEndX10;
     if (diff < 0) return EndWarning(EndWarningKind.lower, -diff);
-    if (diff > maxRiseX10) return EndWarning(EndWarningKind.muchHigher, diff);
+    if (diff > unit.maxRise) {
+      return EndWarning(EndWarningKind.muchHigher, diff);
+    }
     return null;
   }
 

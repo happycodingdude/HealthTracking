@@ -96,6 +96,9 @@ abstract final class S {
   static const goalFatLoss = 'Giảm mỡ';
   static const unitCm = 'cm';
   static const unitKg = 'kg';
+
+  /// Đơn vị mức tạ của bài với máy (BR2-24, sửa 13/10/2026).
+  static const unitPlates = 'thanh';
   static const unitKcal = 'kcal';
   static const done = 'Xong';
   static const invalidHeight = 'Chiều cao cần từ 120 đến 230 cm';
@@ -604,6 +607,7 @@ abstract final class S {
   static const liftStart = 'Bắt đầu';
   static const liftEnd = 'Kết thúc';
   static const liftStepHint = 'Bước 0,5 kg · chạm vào số để gõ';
+  static const liftStepHintPlates = 'Bước 1 thanh · chạm vào số để gõ';
   static const liftFirstTime = 'Lần ghi đầu tiên của bài này';
   static const deleteLift = 'Xóa mức tạ';
   static const deleteLiftConfirm = 'Xóa mức tạ của bài này?';
@@ -612,11 +616,15 @@ abstract final class S {
   static const liftMissing = 'Vui lòng nhập cả mức tạ bắt đầu và kết thúc';
   static const liftOutOfRange = 'Mức tạ cần từ 0,5 đến 300 kg';
   static const liftNotStep = 'Mức tạ nhập theo bước 0,5 kg';
+  static const liftPlatesOutOfRange = 'Số thanh cần từ 1 đến 30';
+  static const liftPlatesNotStep = 'Số thanh không có số lẻ';
   static const liftNotNumber = 'Mức tạ chưa đúng';
 
   /// Nhãn VoiceOver của nút − / + (giả định câu chữ, chờ Bạn xem).
   static const liftDecrease = 'Giảm 0,5 kg';
   static const liftIncrease = 'Tăng 0,5 kg';
+  static const liftDecreasePlates = 'Giảm 1 thanh';
+  static const liftIncreasePlates = 'Tăng 1 thanh';
 
   /// "Buổi tập · Ngực và Tay sau".
   static String sessionTitle(String muscles) => 'Buổi tập · $muscles';
@@ -633,22 +641,31 @@ abstract final class S {
   /// Thẻ buổi tập ở Hôm nay (UA2-08).
   static String liftLoggedCount(int n) => 'Đã ghi mức tạ $n bài';
 
-  /// "12 → 14 kg".
-  static String liftValue(String start, String end) => '$start → $end kg';
-  static String liftSaved(String start, String end) =>
-      'Đã lưu $start → $end kg';
-  static String liftPrevious(String date, String start, String end) =>
-      'Buổi trước ($date): $start → $end kg';
-  static String liftThisSession(String start, String end) =>
-      'Buổi này: $start → $end kg';
-  static String liftLatest(String date, String start, String end) =>
-      'Gần nhất ($date): $start → $end kg';
+  /// "12 → 14 kg", "7 → 8 thanh" ([unit] là [unitKg] hoặc [unitPlates]).
+  static String liftValue(String start, String end, String unit) =>
+      '$start → $end $unit';
+  static String liftSaved(String start, String end, String unit) =>
+      'Đã lưu $start → $end $unit';
+  static String liftPrevious(
+    String date,
+    String start,
+    String end,
+    String unit,
+  ) => 'Buổi trước ($date): $start → $end $unit';
+  static String liftThisSession(String start, String end, String unit) =>
+      'Buổi này: $start → $end $unit';
+  static String liftLatest(
+    String date,
+    String start,
+    String end,
+    String unit,
+  ) => 'Gần nhất ($date): $start → $end $unit';
 
-  /// F21-R8 (nguyên văn `03`); {n} theo bước 0,5.
-  static String liftEndLower(String n) =>
-      'Mức tạ kết thúc thấp hơn buổi trước $n kg. Bạn kiểm tra lại con số nhé.';
-  static String liftEndMuchHigher(String n) =>
-      'Mức tạ kết thúc cao hơn buổi trước $n kg. Bạn kiểm tra lại con số, và nhớ tập trong sức mình nhé.';
+  /// F21-R8 (nguyên văn `03`); {n} theo bước của đơn vị.
+  static String liftEndLower(String n, String unit) =>
+      'Mức tạ kết thúc thấp hơn buổi trước $n $unit. Bạn kiểm tra lại con số nhé.';
+  static String liftEndMuchHigher(String n, String unit) =>
+      'Mức tạ kết thúc cao hơn buổi trước $n $unit. Bạn kiểm tra lại con số, và nhớ tập trong sức mình nhé.';
 
   /// F05-R28.
   static String liftLogsExist(int n) => 'Buổi này đã có mức tạ của $n bài.';
@@ -681,9 +698,13 @@ abstract final class S {
   static String chartSemantics(int month, int sessions) =>
       'Biểu đồ mức tạ tháng ${month.toString().padLeft(2, '0')}, $sessions buổi';
 
-  /// Ô nhỏ khi chạm một ngày: "07/10 · 10 → 12 kg".
-  static String chartTooltip(String date, String start, String end) =>
-      '$date · $start → $end kg';
+  /// Ô nhỏ khi chạm một ngày: "07/10 · 10 → 12 kg", "07/10 · 7 → 8 thanh".
+  static String chartTooltip(
+    String date,
+    String start,
+    String end,
+    String unit,
+  ) => '$date · $start → $end $unit';
 
   // Hình món ăn (03 Bản 2 F12-E2, 05 Bản 2 §6.8.3).
   static const dishImageQuotaExhausted = 'Bạn đã xem đủ 3 hình mới hôm nay.';
@@ -774,6 +795,7 @@ abstract final class S {
     'goalFatLoss': goalFatLoss,
     'unitCm': unitCm,
     'unitKg': unitKg,
+    'unitPlates': unitPlates,
     'unitKcal': unitKcal,
     'done': done,
     'invalidHeight': invalidHeight,
@@ -974,6 +996,7 @@ abstract final class S {
     'liftStart': liftStart,
     'liftEnd': liftEnd,
     'liftStepHint': liftStepHint,
+    'liftStepHintPlates': liftStepHintPlates,
     'liftFirstTime': liftFirstTime,
     'deleteLift': deleteLift,
     'deleteLiftConfirm': deleteLiftConfirm,
@@ -982,9 +1005,13 @@ abstract final class S {
     'liftMissing': liftMissing,
     'liftOutOfRange': liftOutOfRange,
     'liftNotStep': liftNotStep,
+    'liftPlatesOutOfRange': liftPlatesOutOfRange,
+    'liftPlatesNotStep': liftPlatesNotStep,
     'liftNotNumber': liftNotNumber,
     'liftDecrease': liftDecrease,
     'liftIncrease': liftIncrease,
+    'liftDecreasePlates': liftDecreasePlates,
+    'liftIncreasePlates': liftIncreasePlates,
     'progressHint': progressHint,
     'viewExercise': viewExercise,
     'viewChart': viewChart,

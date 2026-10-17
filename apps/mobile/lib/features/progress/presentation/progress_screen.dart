@@ -78,8 +78,9 @@ class ProgressScreen extends ConsumerWidget {
   }
 }
 
-/// Một dòng: tên bài · "{Nhóm cơ} · {Vùng cơ}" · "{a} → {b} kg" (đậm) và ngày
-/// bản ghi gần nhất · ›. Bài đã rời thư viện có ghi chú nhỏ (F23-R5).
+/// Một dòng: tên bài · "{Nhóm cơ} · {Vùng cơ}" · "{a} → {b} kg" (bài máy:
+/// "thanh"; đậm) và ngày bản ghi gần nhất · ›. Bài đã rời thư viện có ghi chú
+/// nhỏ (F23-R5).
 class _ProgressRow extends StatelessWidget {
   const _ProgressRow({required this.item, required this.onTap});
 
@@ -97,7 +98,7 @@ class _ProgressRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Text(
-          Fmt.lift(item.latest),
+          Fmt.lift(item.latest, e.liftUnit),
           style: context.text.titleMedium?.copyWith(
             fontWeight: FontWeight.w700,
           ),

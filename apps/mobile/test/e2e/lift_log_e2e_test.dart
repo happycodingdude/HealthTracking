@@ -83,7 +83,8 @@ void main() {
       final ids = await setUpDevice(a);
       a.clock.set(DateTime(2026, 9, 14, 8));
       for (final (i, id) in ids.indexed) {
-        await a.saveLift(monday, id, start: '${40 + i * 5}', end: '${50 + i}');
+        // Số hợp lệ cho cả kg lẫn số thanh (bài máy, 1–30).
+        await a.saveLift(monday, id, start: '${4 + i * 5}', end: '${5 + i}');
       }
       expect((await a.status()).pending, 3, reason: 'chưa gọi sync = mất mạng');
       expect(await a.sync(), SyncOutcome.synced);
@@ -112,13 +113,13 @@ void main() {
     await b.restore();
 
     a.clock.set(DateTime(2026, 9, 14, 8));
-    await a.saveLift(monday, id, start: '50', end: '60');
+    await a.saveLift(monday, id, start: '5', end: '6');
     b.clock.set(DateTime(2026, 9, 14, 8, 5));
-    await b.saveLift(monday, id, start: '50', end: '70');
+    await b.saveLift(monday, id, start: '5', end: '7');
     expect(await b.sync(), SyncOutcome.synced);
     expect(await a.sync(), SyncOutcome.synced);
     expect(a.reporter.reasons, ['sync_ignored_stale']);
-    expect((await a.liftLogs.get(monday, id))!.endKgX10, 700);
+    expect((await a.liftLogs.get(monday, id))!.endKgX10, 70);
 
     a.clock.set(DateTime(2026, 9, 14, 9));
     await a.deleteLift(monday, id);

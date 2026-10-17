@@ -295,6 +295,7 @@ class _LiftArea extends ConsumerWidget {
     final secondary = context.text.bodyLarge?.copyWith(
       color: context.palette.textSecondary,
     );
+    final unit = Fmt.liftUnit(exercise.liftUnit);
 
     final List<Widget> content;
     if (date != null && inWindow && thisSession == null && exercise.active) {
@@ -306,6 +307,7 @@ class _LiftArea extends ConsumerWidget {
               Fmt.dayMonth(previous.date),
               Fmt.kgNumber(previous.startKgX10),
               Fmt.kgNumber(previous.endKgX10),
+              unit,
             ),
             style: secondary,
           ),
@@ -323,6 +325,7 @@ class _LiftArea extends ConsumerWidget {
         S.liftThisSession(
           Fmt.kgNumber(thisSession.startKgX10),
           Fmt.kgNumber(thisSession.endKgX10),
+          unit,
         ),
         key: const ValueKey('exercise-lift-this-session'),
         style: context.text.titleMedium?.copyWith(fontWeight: FontWeight.w700),
@@ -361,6 +364,7 @@ class _LiftArea extends ConsumerWidget {
             Fmt.dayMonth(latest.date),
             Fmt.kgNumber(latest.startKgX10),
             Fmt.kgNumber(latest.endKgX10),
+            unit,
           ),
           key: const ValueKey('exercise-lift-latest'),
           style: secondary,

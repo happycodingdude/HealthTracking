@@ -108,6 +108,7 @@ void main() {
     String id,
     String region, {
     bool active = true,
+    String equipment = 'machine',
   }) async {
     final r = MuscleRegion.tryParse(region)!;
     await app.tdb.pool.execute(
@@ -116,13 +117,14 @@ void main() {
                                youtube_video_id, video_channel, video_duration_s, guide_steps,
                                guide_safety, approved_at, sort_order, active, library_version,
                                server_version)
-        VALUES (@id, @group::muscle_group, @region, 'machine', @logs, @id, 'TrTSvn5-MTk',
+        VALUES (@id, @group::muscle_group, @region, @equipment, @logs, @id, 'TrTSvn5-MTk',
                 'Renaissance Periodization', 48, ARRAY['a','b','c'], ARRAY['x','y'],
                 '2026-10-11', 1, @active, 1, nextval('sync_version_seq'))'''),
       parameters: {
         'id': id,
         'group': r.group.name,
         'region': region,
+        'equipment': equipment,
         'logs': r.group != MuscleGroup.abs,
         'active': active,
       },
@@ -175,6 +177,11 @@ void main() {
     setUp(() async {
       await setUpSchedule();
       await insertExercise('chest-upper-machine', 'chest_upper');
+      await insertExercise(
+        'chest-upper-free',
+        'chest_upper',
+        equipment: 'free_weight',
+      );
       await insertExercise('delt-side-machine', 'delt_side');
       await insertExercise('abs-lower-crunch', 'abs_lower');
     });
@@ -287,39 +294,70 @@ void main() {
       }
     });
 
-    test(
-      'F21-AC7: 0; 300,5; 72,3 → validation_failed; 0,5 và 300 → applied',
-      () async {
-        final at = DateTime.utc(2026, 10, 12, 12);
-        for (final (start, end, field) in [
-          (0, 140, 'startKgX10'),
-          (120, 3005, 'endKgX10'),
-          (723, 140, 'startKgX10'),
-        ]) {
-          final r = await liftAt(
-            monday,
-            'chest-upper-machine',
-            at,
-            start: start,
-            end: end,
-          );
-          expect(
-            (r.status, r.code, r.field),
-            (PushStatus.rejected, ErrorCode.validationFailed, field),
-          );
-        }
-        expect(
-          (await liftAt(
-            monday,
-            'chest-upper-machine',
-            at,
-            start: 5,
-            end: 3000,
-          )).status,
-          PushStatus.applied,
+    test('F21-AC7 (bài với tạ): 0; 300,5; 72,3 → validation_failed; 0,5 và 300 '
+        '→ applied', () async {
+      final at = DateTime.utc(2026, 10, 12, 12);
+      for (final (start, end, field) in [
+        (0, 140, 'startKgX10'),
+        (120, 3005, 'endKgX10'),
+        (723, 140, 'startKgX10'),
+      ]) {
+        final r = await liftAt(
+          monday,
+          'chest-upper-free',
+          at,
+          start: start,
+          end: end,
         );
-      },
-    );
+        expect(
+          (r.status, r.code, r.field),
+          (PushStatus.rejected, ErrorCode.validationFailed, field),
+        );
+      }
+      expect(
+        (await liftAt(
+          monday,
+          'chest-upper-free',
+          at,
+          start: 5,
+          end: 3000,
+        )).status,
+        PushStatus.applied,
+      );
+    });
+
+    test('bài với máy ghi số thanh: 0; 31; 7,5 → validation_failed; 1 và 30 '
+        '→ applied', () async {
+      final at = DateTime.utc(2026, 10, 12, 12);
+      for (final (start, end, field) in [
+        (0, 140, 'startKgX10'),
+        (120, 310, 'endKgX10'),
+        (75, 140, 'startKgX10'),
+      ]) {
+        final r = await liftAt(
+          monday,
+          'chest-upper-machine',
+          at,
+          start: start,
+          end: end,
+        );
+        expect(
+          (r.status, r.code, r.field),
+          (PushStatus.rejected, ErrorCode.validationFailed, field),
+          reason: '$start → $end',
+        );
+      }
+      expect(
+        (await liftAt(
+          monday,
+          'chest-upper-machine',
+          at,
+          start: 10,
+          end: 300,
+        )).status,
+        PushStatus.applied,
+      );
+    });
 
     test('mức tạ độc lập với trạng thái buổi (AP-9): buổi "Không tập" vẫn '
         'ghi được trong cửa sổ', () async {
