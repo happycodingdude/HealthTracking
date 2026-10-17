@@ -57,7 +57,7 @@ final class E2eServer {
       db: tdb.db,
       logger: Logger((_) {}),
       clock: const SystemClock(),
-      jwtSecret: '***REMOVED***',
+      jwtSecret: randomTestSecret(),
       bcryptCost: 4,
     );
     final http = await shelf_io.serve(

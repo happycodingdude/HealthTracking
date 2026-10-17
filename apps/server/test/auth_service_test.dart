@@ -9,7 +9,7 @@ import 'package:server/src/auth/token_service.dart';
 import 'package:server/testing.dart';
 import 'package:test/test.dart';
 
-const secret = '***REMOVED***';
+final secret = randomTestSecret();
 
 void main() {
   late TestDatabase tdb;
@@ -211,15 +211,12 @@ void main() {
       final pair = await auth.register(minh);
       final parts = pair.accessToken.split('.');
       expect(tokens.verifyAccessToken('${parts[0]}.${parts[1]}.***REMOVED***'), isNull);
-      final other = TokenService(
-        secret: '***REMOVED***',
-        clock: clock,
-      );
+      final other = TokenService(secret: randomTestSecret(), clock: clock);
       expect(other.verifyAccessToken(pair.accessToken), isNull);
       final none = JWT({
         'sub': 'x',
         'exp': 9999999999,
-      }).sign(SecretKey('***REMOVED***'), algorithm: JWTAlgorithm.HS512);
+      }).sign(SecretKey(randomTestSecret()), algorithm: JWTAlgorithm.HS512);
       expect(tokens.verifyAccessToken(none), isNull);
       expect(tokens.verifyAccessToken('***REMOVED***'), isNull);
     });

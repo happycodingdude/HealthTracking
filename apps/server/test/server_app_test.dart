@@ -15,7 +15,7 @@ void main() {
       final app = await ServerApp.start(
         ServerConfig(
           databaseUrl: tdb.url,
-          jwtSecret: '***REMOVED***',
+          jwtSecret: randomTestSecret(),
           port: 0,
         ),
         logger: log.logger,

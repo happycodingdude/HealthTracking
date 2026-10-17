@@ -25,5 +25,14 @@ if hits="$(git grep -lIE -e "$KEY_PATTERN" -- . ':!*.lock')"; then
   FAIL=1
 fi
 
+# Giá trị khóa viết thẳng cho tên chứa secret / api key (kể cả khóa giả trong test:
+# test dùng randomTestSecret() của package:server/testing.dart).
+HARDCODED="([Ss]ecret|[Aa]pi-?[Kk]ey|_SECRET|_KEY)['\"]?[[:space:]]*[:=][[:space:]]*['\"][^'\"\$]+['\"]|SecretKey\\([[:space:]]*['\"]"
+if hits="$(git grep -nIE -e "$HARDCODED" -- . ':!*.lock' | cut -d: -f1,2)"; then
+  echo "scan_repo: có giá trị khóa viết thẳng trong code (file:dòng):" >&2
+  printf '  %s\n' $hits >&2
+  FAIL=1
+fi
+
 [ "$FAIL" = 0 ] && echo "scan_repo: OK ($(git ls-files | wc -l | tr -d ' ') file)"
 exit "$FAIL"

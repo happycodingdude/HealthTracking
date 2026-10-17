@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:domain/domain.dart';
 import 'package:server/server.dart';
+import 'package:server/testing.dart';
 import 'package:test/test.dart';
 
 /// Nhà cung cấp thật được kiểm bằng HTTP server giả trên máy: không gọi model
@@ -13,6 +14,7 @@ void main() {
   late List<(Map<String, String>, Map<String, Object?>)> received;
   late List<FutureOr<void> Function(HttpResponse)> replies;
   late List<Duration> slept;
+  final apiKey = randomTestSecret();
 
   setUp(() async {
     received = [];
@@ -37,7 +39,7 @@ void main() {
 
   AnthropicProvider provider({Duration timeout = const Duration(seconds: 5)}) =>
       AnthropicProvider(
-        apiKey: '***REMOVED***',
+        apiKey: apiKey,
         model: AiConfig.defaultModel,
         timeout: timeout,
         endpoint: Uri.parse('http://127.0.0.1:${server.port}/v1/messages'),
@@ -83,10 +85,7 @@ void main() {
       ('{"meals": []}', 812, 1034),
     );
     final (headers, body) = received.single;
-    expect(headers, {
-      'x-api-key': '***REMOVED***',
-      'anthropic-version': '2023-06-01',
-    });
+    expect(headers, {'x-api-key': apiKey, 'anthropic-version': '2023-06-01'});
     expect(body['model'], 'claude-haiku-4-5-20251001');
     expect(body['max_tokens'], 2500);
     expect(body['system'], PromptBuilder.system);

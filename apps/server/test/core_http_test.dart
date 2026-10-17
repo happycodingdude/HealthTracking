@@ -156,5 +156,5 @@ AppDeps _deps(Database db, CapturingLogger log) => AppDeps(
   db: db,
   logger: log.logger,
   clock: const SystemClock(),
-  jwtSecret: '***REMOVED***',
+  jwtSecret: randomTestSecret(),
 );

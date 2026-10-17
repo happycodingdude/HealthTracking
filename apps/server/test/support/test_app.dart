@@ -9,7 +9,7 @@ import 'package:uuid/uuid.dart';
 
 import 'test_item_handler.dart';
 
-const testJwtSecret = '***REMOVED***';
+final testJwtSecret = randomTestSecret();
 
 /// Phản hồi đã giải mã JSON.
 final class TestResponse {

@@ -1,7 +1,8 @@
 import 'package:server/server.dart';
+import 'package:server/testing.dart';
 import 'package:test/test.dart';
 
-const secret = '***REMOVED***';
+final secret = randomTestSecret();
 
 void main() {
   test('đọc cấu hình từ biến môi trường, giá trị mặc định', () {
@@ -41,7 +42,7 @@ void main() {
       expect(
         () => ServerConfig.fromEnvironment({
           'DATABASE_URL': 'x',
-          'JWT_SECRET': '***REMOVED***',
+          'JWT_SECRET': secret.substring(0, 31),
         }),
         throwsA(isA<ConfigException>()),
       );
@@ -80,7 +81,7 @@ void main() {
 
   test('05 §6.9.1: AI mặc định là nhà cung cấp giả (ED-11); model, đơn giá, '
       'tỷ giá đọc từ cấu hình', () {
-    const base = {'DATABASE_URL': 'postgres://x', 'JWT_SECRET': secret};
+    final base = {'DATABASE_URL': 'postgres://x', 'JWT_SECRET': secret};
     final c = ServerConfig.fromEnvironment(base).ai;
     expect(
       (c.provider, c.model, c.inputUsdPerMTok, c.outputUsdPerMTok, c.vndPerUsd),
@@ -90,13 +91,14 @@ void main() {
       (c.maxTokens, c.timeout, c.capVnd),
       (2500, const Duration(seconds: 60), 50000),
     );
+    final apiKey = randomTestSecret();
     final a = ServerConfig.fromEnvironment({
       ...base,
       'AI_PROVIDER': 'anthropic',
-      'ANTHROPIC_API_KEY': '***REMOVED***',
+      'ANTHROPIC_API_KEY': apiKey,
       'AI_VND_PER_USD': '28000',
     }).ai;
-    expect((a.provider, a.apiKey, a.vndPerUsd), ('anthropic', '***REMOVED***', 28000.0));
+    expect((a.provider, a.apiKey, a.vndPerUsd), ('anthropic', apiKey, 28000.0));
     for (final bad in [
       {'AI_PROVIDER': 'anthropic'},
       {'AI_PROVIDER': 'openai'},
