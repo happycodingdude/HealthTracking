@@ -1,0 +1,16 @@
+# Build context cho apps/server/Dockerfile là gốc repo: chỉ giữ phần server cần.
+.git
+.github
+build
+**/build
+**/.dart_tool
+**/.flutter-plugins-dependencies
+.flutter-sdk
+docs
+CLAUDE.md
+.env
+.env.*
+deploy
+tool
+apps/mobile/*
+!apps/mobile/pubspec.yaml
