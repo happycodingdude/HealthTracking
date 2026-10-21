@@ -26,6 +26,10 @@ enum ErrorCode {
   liftNotAllowedForExercise('lift_not_allowed_for_exercise', 422),
   liftExerciseNotInSession('lift_exercise_not_in_session', 422),
 
+  /// Bản 3 (05 Bản 3 §6.6.3, TD3-05): bản ghi mức tạ cho bài chưa có đơn vị.
+  /// Chỉ trong kết quả push, không hiện câu nào (TA-12, 06 Bản 3 §6.4).
+  liftUnitMissing('lift_unit_missing', 422),
+
   /// Mã kỹ thuật: đường dẫn không tồn tại. App xử lý như lỗi kết nối.
   notFound('not_found', 404),
 

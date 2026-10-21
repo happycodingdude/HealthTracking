@@ -1,8 +1,8 @@
 name: mobile
 description: App iPhone Ironly (Flutter).
 publish_to: none
-# Bản 2 (05 Bản 2 TR2-13): app gửi phiên bản này trong header X-App-Version.
-version: 2.0.0+1
+# App gửi phiên bản này trong header X-App-Version (05 Bản 2 TR2-13); Bản 3 = 3.0.0 (05 Bản 3 §6.12).
+version: 3.0.0+1
 resolution: workspace
 
 environment:

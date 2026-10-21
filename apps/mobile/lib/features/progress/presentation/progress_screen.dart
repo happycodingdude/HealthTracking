@@ -12,6 +12,7 @@ import '../../../core/widgets/empty_card.dart';
 import '../../../core/widgets/tab_page.dart';
 import '../../training/application/training_section.dart';
 import '../../training/presentation/training_screen.dart';
+import '../../workout/application/lift_unit.dart';
 import '../application/progress_providers.dart';
 import 'lift_chart_screen.dart';
 

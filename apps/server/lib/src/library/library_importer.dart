@@ -36,8 +36,8 @@ final class ImportReport {
       ].join('\n');
     }
     if (checkOnly) {
-      return 'Đạt: $total bài, đủ 6 nhóm cơ (F18-R1), đủ điều kiện ra mắt '
-          '(LIB-AC1 → AC4). Chưa ghi gì vào database.';
+      return 'Đạt: $total bài, đủ điều kiện ra mắt (LIB-AC1 → AC4). Chưa '
+          'ghi gì vào database.';
     }
     return 'Đã nạp $total bài: thêm $added, sửa $updated, rời thư viện '
         '$deactivated.';
@@ -48,9 +48,10 @@ final class ImportReport {
 ///
 /// 1. Kiểm cấu trúc từng bài ([LibraryRules.entryErrors]; `--check-only`
 ///    thêm điều kiện ra mắt [LibraryRules.releaseErrors]).
-/// 2. Kiểm F18-R1, LIB-R8 trên trạng thái **sau khi nạp** (đúng tập bài trong
-///    file). Không đạt → từ chối toàn bộ, không đổi gì.
-/// 3. `sort_order` theo F18-R9.
+/// 2. Kiểm tập bài **sau khi nạp** (đúng tập bài trong file,
+///    [LibraryRules.coverageErrors]). Không đạt → từ chối toàn bộ, không đổi
+///    gì.
+/// 3. `sort_in_group`, `sort_order` theo TD3-07.
 /// 4. Một transaction: bài không còn trong file → `active = false` (không
 ///    xóa, TA2-10); upsert từng bài; chỉ dòng thay đổi được cấp
 ///    `server_version` mới. Thay video (`youtube_video_id` khác) thì trạng thái
@@ -93,7 +94,7 @@ final class LibraryImporter {
       for (final e in sorted) {
         final rows = await tx.execute(
           _upsert,
-          parameters: _params(e, file.libraryVersion),
+          parameters: _params(e, file.libraryVersion, file.equipment[e.id]),
         );
         if (rows.isEmpty) continue;
         if (rows.single[0] == true) {
@@ -120,11 +121,12 @@ final class LibraryImporter {
   static final _upsert = Sql.named('''
     INSERT INTO exercises AS x (id, muscle_group, muscle_region, equipment, logs_weight, name_vi,
                                 name_en, youtube_video_id, video_channel, video_duration_s,
-                                guide_steps, guide_safety, approved_at, sort_order, active,
-                                library_version, server_version)
+                                guide_steps, guide_safety, approved_at, sort_in_group, sort_order,
+                                active, library_version, server_version)
     VALUES (@id, @group::muscle_group, @region, @equipment::equipment, @logsWeight, @nameVi,
             @nameEn, @youtubeId, @channel, @duration, @steps::text[], @safety::text[],
-            @approvedAt::date, @sortOrder, true, @libraryVersion, nextval('sync_version_seq'))
+            @approvedAt::date, @sortInGroup, @sortOrder, true, @libraryVersion,
+            nextval('sync_version_seq'))
     ON CONFLICT (id) DO UPDATE SET
       muscle_group = EXCLUDED.muscle_group,
       muscle_region = EXCLUDED.muscle_region,
@@ -144,6 +146,7 @@ final class LibraryImporter {
       guide_steps = EXCLUDED.guide_steps,
       guide_safety = EXCLUDED.guide_safety,
       approved_at = EXCLUDED.approved_at,
+      sort_in_group = EXCLUDED.sort_in_group,
       sort_order = EXCLUDED.sort_order,
       active = true,
       library_version = EXCLUDED.library_version,
@@ -151,19 +154,24 @@ final class LibraryImporter {
       updated_at = now()
     WHERE (x.muscle_group, x.muscle_region, x.equipment, x.logs_weight, x.name_vi, x.name_en,
            x.youtube_video_id, x.video_channel, x.video_duration_s, x.guide_steps,
-           x.guide_safety, x.approved_at, x.sort_order, x.active)
+           x.guide_safety, x.approved_at, x.sort_in_group, x.sort_order, x.active)
           IS DISTINCT FROM
           (EXCLUDED.muscle_group, EXCLUDED.muscle_region, EXCLUDED.equipment,
            EXCLUDED.logs_weight, EXCLUDED.name_vi, EXCLUDED.name_en, EXCLUDED.youtube_video_id,
            EXCLUDED.video_channel, EXCLUDED.video_duration_s, EXCLUDED.guide_steps,
-           EXCLUDED.guide_safety, EXCLUDED.approved_at, EXCLUDED.sort_order, true)
+           EXCLUDED.guide_safety, EXCLUDED.approved_at, EXCLUDED.sort_in_group,
+           EXCLUDED.sort_order, true)
     RETURNING (xmax = 0) AS inserted''');
 
-  static Map<String, Object?> _params(Exercise e, int libraryVersion) => {
+  static Map<String, Object?> _params(
+    Exercise e,
+    int libraryVersion,
+    String? equipment,
+  ) => {
     'id': e.id,
     'group': e.group.name,
     'region': e.region.id,
-    'equipment': e.equipment.wire,
+    'equipment': equipment,
     'logsWeight': e.logsWeight,
     'nameVi': e.nameVi,
     'nameEn': e.nameEn,
@@ -173,6 +181,7 @@ final class LibraryImporter {
     'steps': e.guideSteps,
     'safety': e.guideSafety,
     'approvedAt': e.approvedAt.toKey(),
+    'sortInGroup': e.sortInGroup,
     'sortOrder': e.sortOrder,
     'libraryVersion': libraryVersion,
   };

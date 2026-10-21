@@ -65,6 +65,11 @@ abstract final class SyncEntities {
   static const dishImage = 'dish_image';
   static const liftLog = 'lift_log';
 
+  /// Bản 3 (06 Bản 3 §6.5.1): đơn vị mức tạ của bài (key `exerciseId`) và
+  /// ghi chú bài theo buổi (key `{date}:{exerciseId}`), push + pull.
+  static const exerciseUnit = 'exercise_unit';
+  static const exerciseNote = 'exercise_note';
+
   static const Map<String, EntityCodec<Object>> codecs = {
     account: AccountCodec(),
     profile: ProfileCodec(),

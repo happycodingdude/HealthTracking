@@ -166,7 +166,7 @@ void main() {
   test('bài đã rời thư viện không được kiểm', () async {
     final json = libraryMinJson();
     (json['exercises']! as List).add(
-      fixtureEntry(MuscleRegion.lats, Equipment.machine, suffix: 'b'),
+      fixtureEntry(MuscleRegion.lats, LegacyEquipment.machine, suffix: 'b'),
     );
     await LibraryImporter(
       app.tdb.pool,

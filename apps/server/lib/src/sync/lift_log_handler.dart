@@ -111,9 +111,10 @@ final class LiftLogHandler implements SyncEntityHandler {
       );
       return;
     }
-    // Bước 5: F21-V2, F21-V3 theo đơn vị của bài (kg; thanh với bài máy).
+    // Bước 5: khoảng, bước của mức tạ. Đơn vị theo bài (`exercise_units`)
+    // kiểm từ VS-35; tới lúc đó mọi bài theo kg như Bản 2 (F21-R6).
     final log = _codec.decode(m.key, m.data!);
-    final invalid = log.invalidField(exercise!.liftUnit);
+    final invalid = log.invalidField(LiftUnit.kg);
     if (invalid != null) throw SyncRejection(invalid);
     await s.execute(
       Sql.named('''
@@ -154,9 +155,10 @@ final class LiftLogHandler implements SyncEntityHandler {
     );
   }
 
+  /// Bài trong thư viện; bài bỏ ở Bản 3 (tombstone) coi như không có.
   Future<Exercise?> _exercise(Session s, String id) async {
     final change = await _exercises.read(s, '', id);
-    return change == null
+    return change == null || change.deleted
         ? null
         : _exerciseCodec.decode(change.key, change.data!);
   }

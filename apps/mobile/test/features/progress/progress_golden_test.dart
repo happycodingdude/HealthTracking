@@ -26,7 +26,7 @@ import '../../support/schedule_fixture.dart';
 void main() {
   late List<Exercise> library;
 
-  Exercise ex(MuscleRegion region, [Equipment? equipment]) =>
+  Exercise ex(MuscleRegion region, [String? equipment]) =>
       exerciseOf(library, region, equipment);
 
   Future<AppDatabase> seeded() async {
@@ -44,17 +44,17 @@ void main() {
             endKgX10: end,
           ),
         );
-    final press = ex(MuscleRegion.chestUpper, Equipment.freeWeight);
+    final press = ex(MuscleRegion.chestUpper, 'free-weight');
     await log(press, 8, 28, 90, 100);
     await log(press, 10, 2, 100, 120);
     await log(press, 10, 5, 120, 140);
     await log(press, 10, 7, 100, 120);
     await log(press, 10, 9, 120, 120);
-    await log(ex(MuscleRegion.chestUpper, Equipment.machine), 10, 7, 70, 80);
-    await log(ex(MuscleRegion.lats, Equipment.machine), 10, 5, 90, 100);
-    await log(ex(MuscleRegion.backMid, Equipment.freeWeight), 10, 5, 160, 180);
-    await log(ex(MuscleRegion.deltFront, Equipment.machine), 10, 2, 50, 60);
-    final gone = ex(MuscleRegion.lats, Equipment.freeWeight);
+    await log(ex(MuscleRegion.chestUpper, 'machine'), 10, 7, 70, 80);
+    await log(ex(MuscleRegion.lats, 'machine'), 10, 5, 90, 100);
+    await log(ex(MuscleRegion.backMid, 'free-weight'), 10, 5, 160, 180);
+    await log(ex(MuscleRegion.deltFront, 'machine'), 10, 2, 50, 60);
+    final gone = ex(MuscleRegion.lats, 'free-weight');
     await log(gone, 9, 28, 200, 200);
     await ExerciseRepository(db).put(gone.copyWith(active: false));
     return db;
@@ -103,9 +103,7 @@ void main() {
       final c = await pump(tester, v, await seeded());
       c
           .read(routerProvider)
-          .go(
-            liftChartPath(ex(MuscleRegion.chestUpper, Equipment.freeWeight).id),
-          );
+          .go(liftChartPath(ex(MuscleRegion.chestUpper, 'free-weight').id));
       await tester.pumpAndSettle();
       await snap('s69_month_${v.name}');
     });
@@ -114,9 +112,7 @@ void main() {
       final c = await pump(tester, v, await seeded());
       c
           .read(routerProvider)
-          .go(
-            liftChartPath(ex(MuscleRegion.chestUpper, Equipment.freeWeight).id),
-          );
+          .go(liftChartPath(ex(MuscleRegion.chestUpper, 'free-weight').id));
       await tester.pumpAndSettle();
       final previous = find.byKey(const ValueKey('chart-month-previous'));
       await tester.ensureVisible(previous);

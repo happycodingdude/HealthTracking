@@ -6,13 +6,12 @@ import 'package:test/test.dart';
 void main() {
   Exercise ex(
     MuscleRegion region,
-    Equipment equipment, {
+    String kind, {
     int order = 0,
     bool active = true,
   }) => Exercise(
-    id: '${region.id}-${equipment.wire}',
+    id: '${region.id}-$kind',
     region: region,
-    equipment: equipment,
     nameVi: 'Bài',
     youtubeVideoId: 'abcdefghijk',
     videoChannel: 'Kênh',
@@ -23,12 +22,12 @@ void main() {
     active: active,
   );
 
-  final press = ex(MuscleRegion.chestUpper, Equipment.freeWeight, order: 2);
-  final machine = ex(MuscleRegion.chestUpper, Equipment.machine, order: 1);
-  final lats = ex(MuscleRegion.lats, Equipment.machine, order: 7);
-  final row = ex(MuscleRegion.backMid, Equipment.freeWeight, order: 9);
-  final shoulder = ex(MuscleRegion.deltFront, Equipment.machine, order: 13);
-  final plank = ex(MuscleRegion.absMid, Equipment.bodyweight, order: 28);
+  final press = ex(MuscleRegion.chestUpper, 'free-weight', order: 2);
+  final machine = ex(MuscleRegion.chestUpper, 'machine', order: 1);
+  final lats = ex(MuscleRegion.lats, 'machine', order: 7);
+  final row = ex(MuscleRegion.backMid, 'free-weight', order: 9);
+  final shoulder = ex(MuscleRegion.deltFront, 'machine', order: 13);
+  final plank = ex(MuscleRegion.absMid, 'bodyweight', order: 28);
   final library = [press, machine, lats, row, shoulder, plank];
 
   LiftLog log(Exercise e, int month, int day, int start, int end) => LiftLog(

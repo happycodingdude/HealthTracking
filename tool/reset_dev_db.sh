@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Tạo lại database dev từ apps/server/db/schema.sql rồi nạp dữ liệu thử
-# (06 Bản 1 VS00-T13, 06 Bản 2 ED2-18). Dùng mỗi khi cấu trúc database đổi.
+# Tạo lại database dev bằng migration từ 0001 (05 Bản 3 TR3-05, 06 Bản 3
+# VS32-T02) rồi nạp dữ liệu thử. Dùng mỗi khi cấu trúc database đổi.
 # Dữ liệu thử cũ trên database dev bị xóa; app trên simulator/iPhone cần cài lại.
 #   tool/reset_dev_db.sh            tạo lại + nạp dữ liệu thử
 #   tool/reset_dev_db.sh --no-seed  chỉ tạo lại, database trống
@@ -16,11 +16,13 @@ PSQL=(docker compose -f "$ROOT/deploy/docker-compose.dev.yml" exec -T db psql -U
 "$ROOT/tool/test_db.sh" ensure
 "${PSQL[@]}" -d postgres -c "DROP DATABASE IF EXISTS \"$DB\" WITH (FORCE)"
 "${PSQL[@]}" -d postgres -c "CREATE DATABASE \"$DB\""
-"${PSQL[@]}" -d "$DB" < "$SCHEMA"
-# Đánh dấu bản schema.sql đã dùng để tool/run_device.sh phát hiện cấu trúc cũ.
+(cd "$ROOT/apps/server" && DATABASE_URL="$(dev_db_url "$DB")" \
+  JWT_SECRET="$(openssl rand -base64 48 | tr -d '\n')" dart run bin/admin.dart migrate)
+# Đánh dấu bản schema.sql (tổng các migration) đã dùng để tool/run_device.sh
+# phát hiện cấu trúc cũ.
 HASH="$(shasum -a 256 "$SCHEMA" | cut -d' ' -f1)"
 "${PSQL[@]}" -d postgres -c "COMMENT ON DATABASE \"$DB\" IS 'schema:$HASH'"
-echo "Đã tạo lại database $DB từ apps/server/db/schema.sql."
+echo "Đã tạo lại database $DB bằng migration (apps/server/migrations)."
 
 if [ "${1:-}" != "--no-seed" ]; then
   (cd "$ROOT" && DATABASE_URL="$(dev_db_url "$DB")" dart run tool/seed_dev.dart)

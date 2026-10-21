@@ -6,3 +6,4 @@ export 'package:domain/testing.dart' show randomTestPassword, randomTestSecret;
 
 export 'testing/library_fixtures.dart';
 export 'testing/test_database.dart';
+export 'testing/v2_data_set.dart';

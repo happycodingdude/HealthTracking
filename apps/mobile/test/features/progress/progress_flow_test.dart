@@ -45,11 +45,11 @@ void main() {
     logs = LiftLogRepository(db);
     await seedSetUp(db);
     library = await seedLibrary(db);
-    press = exerciseOf(library, MuscleRegion.chestUpper, Equipment.freeWeight);
-    machine = exerciseOf(library, MuscleRegion.chestUpper, Equipment.machine);
-    lats = exerciseOf(library, MuscleRegion.lats, Equipment.machine);
-    row = exerciseOf(library, MuscleRegion.backMid, Equipment.freeWeight);
-    shoulder = exerciseOf(library, MuscleRegion.deltFront, Equipment.machine);
+    press = exerciseOf(library, MuscleRegion.chestUpper, 'free-weight');
+    machine = exerciseOf(library, MuscleRegion.chestUpper, 'machine');
+    lats = exerciseOf(library, MuscleRegion.lats, 'machine');
+    row = exerciseOf(library, MuscleRegion.backMid, 'free-weight');
+    shoulder = exerciseOf(library, MuscleRegion.deltFront, 'machine');
     abs = exerciseOf(library, MuscleRegion.absLower);
   });
 
@@ -245,52 +245,6 @@ void main() {
       expect(shown.single.x, 7);
       final items = data.lineTouchData.touchTooltipData.getTooltipItems(shown);
       expect(items.single?.text, S.chartTooltip('07/10', '11', '13', S.unitKg));
-    });
-
-    testWidgets('F23-AC6, F22-AC7, UX-AC54: bài với máy hiện "thanh" ở Tiến '
-        'bộ, danh sách và ô chạm của biểu đồ; trục dọc chỉ vạch số nguyên', (
-      tester,
-    ) async {
-      await log(machine, LocalDate(2026, 10, 5), 70, 70);
-      await log(machine, LocalDate(2026, 10, 7), 70, 70);
-      await log(press, LocalDate(2026, 10, 7), 120, 140);
-      await pump(tester);
-      await openProgress(tester);
-      expect(
-        find.descendant(
-          of: key('progress-${machine.id}'),
-          matching: find.text('7 → 7 thanh'),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: key('progress-${press.id}'),
-          matching: find.text('12 → 14 kg'),
-        ),
-        findsOneWidget,
-      );
-      await go(tester, liftChartPath(machine.id));
-      expect(
-        tester.widget<Text>(key('chart-row-2026-10-07')).data,
-        '7 → 7 thanh',
-      );
-      final chart = tester.getRect(key('lift-chart'));
-      final dayWidth = (chart.width - 40) / 31;
-      await tester.tapAt(
-        Offset(chart.left + 40 + (7 - 0.5) * dayWidth, chart.center.dy),
-      );
-      await tester.pumpAndSettle();
-      final data = tester.widget<LineChart>(find.byType(LineChart)).data;
-      final shown = data.showingTooltipIndicators.single.showingSpots;
-      final items = data.lineTouchData.touchTooltipData.getTooltipItems(shown);
-      expect(
-        items.single?.text,
-        S.chartTooltip('07/10', '7', '7', S.unitPlates),
-      );
-      // Cùng khoảng này bài tạ chia vạch 0,5 kg; bài máy chia 1 thanh.
-      expect(data.titlesData.leftTitles.sideTitles.interval, 1);
-      expect((data.minY % 1, data.maxY % 1), (0, 0));
     });
 
     testWidgets('"Xem bài" → S-67, quay lại "Tiến bộ"; S-67 "Xem biểu đồ" quay '

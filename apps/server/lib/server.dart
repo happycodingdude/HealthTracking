@@ -14,6 +14,7 @@ export 'src/app.dart';
 export 'src/config.dart';
 export 'src/db/database.dart';
 export 'src/db/migrator.dart';
+export 'src/db/sql_script.dart';
 export 'src/http/api_exception.dart';
 export 'src/http/json.dart';
 export 'src/http/middleware.dart';

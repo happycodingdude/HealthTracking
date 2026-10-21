@@ -174,7 +174,7 @@ void main() {
         .substring('lift-log-'.length);
     await tester.tap(logButton.first);
     await tester.pumpAndSettle();
-    // Số hợp lệ cho cả kg lẫn số thanh (bài máy, 1–30).
+    // Số hợp lệ cho cả kg lẫn nấc máy (1–50).
     await tester.enterText(find.byKey(const ValueKey('lift-start-input')), '7');
     await tester.enterText(find.byKey(const ValueKey('lift-end-input')), '8');
     await tester.pumpAndSettle();

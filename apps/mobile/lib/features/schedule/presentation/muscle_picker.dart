@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import '../../../app/theme.dart';
 import '../../../core/formatters.dart';
 
-/// Bộ chọn nhóm cơ (04 §6.13.4): 6 nút viên thuốc theo thứ tự PR-02, chọn
-/// nhiều; nút đã chọn được tô màu và có dấu tích.
+/// Bộ chọn nhóm cơ (04 §6.13.4): 7 nút viên thuốc theo thứ tự bộ chọn, Chân
+/// ở cuối (UA3-10), xuống hàng, không cuộn ngang; chọn nhiều; nút đã chọn
+/// được tô màu và có dấu tích.
 class MusclePicker extends StatelessWidget {
   const MusclePicker({
     super.key,
@@ -22,7 +23,7 @@ class MusclePicker extends StatelessWidget {
       spacing: 8,
       runSpacing: 8,
       children: [
-        for (final m in MuscleGroup.values)
+        for (final m in MuscleGroup.pickerOrder)
           _Pill(
             key: ValueKey('muscle-${m.name}'),
             label: Fmt.muscle(m),

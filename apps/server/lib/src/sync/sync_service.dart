@@ -39,6 +39,11 @@ final class SyncService {
   /// snapshot, nên không bao giờ thấy nửa chừng.
   static const sharedRowsLock = 7426004;
 
+  /// Giá trị cột `entity` của dòng pull bị lọc với app cũ ([VersionedPull]):
+  /// không có trong `changes` nhưng `nextCursor` vẫn tiến qua (05 Bản 3
+  /// §6.6.7).
+  static const skippedEntity = '-';
+
   /// `clientUpdatedAt` lớn hơn giờ server quá mức này bị từ chối (05 §6.6.2).
   static const maxClockSkew = Duration(minutes: 10);
 
@@ -74,13 +79,16 @@ final class SyncService {
 
   /// Các thay đổi của [userId] có `server_version > cursor`, tăng dần, tối đa
   /// [limit] (05 §6.6.3). Đọc trong một snapshot để `remaining` khớp `changes`.
+  /// [appVersion] = header `X-App-Version` (null = không có header): entity
+  /// [VersionedPull] gửi dạng theo phiên bản app (05 Bản 3 TD3-21).
   Future<PullResponse> pull(
     String userId, {
     required int cursor,
     int limit = PullResponse.maxLimit,
+    AppVersion? appVersion,
   }) {
     final union = [
-      for (final h in _handlers.values) '(${h.pullSql})',
+      for (final h in _handlers.values) '(${_pullSql(h, appVersion)})',
     ].join('\nUNION ALL\n');
     return _pool.withConnection((conn) async {
       // Khóa chia sẻ mức phiên, lấy TRƯỚC khi transaction chụp snapshot.
@@ -116,8 +124,13 @@ final class SyncService {
           ),
           parameters: {'user': userId, 'cursor': cursor, 'limit': limit},
         );
-        final changes = [for (final r in rows) changeFromRow(r)];
-        final next = changes.isEmpty ? cursor : changes.last.serverVersion;
+        final next = rows.isEmpty
+            ? cursor
+            : rows.last.toColumnMap()['server_version']! as int;
+        final changes = [
+          for (final r in rows)
+            if (r.toColumnMap()['entity'] != skippedEntity) changeFromRow(r),
+        ];
         final remaining =
             (await conn.execute(
                   Sql.named('SELECT count(*) FROM ($union) c'),
@@ -137,6 +150,12 @@ final class SyncService {
       },
     );
   }
+
+  static String _pullSql(SyncEntityHandler h, AppVersion? appVersion) =>
+      switch (h) {
+        final VersionedPull v => v.pullSqlFor(appVersion),
+        _ => h.pullSql,
+      };
 
   /// Gọi đầu tiên trong transaction ghi dòng dùng chung, trước mọi `nextval`.
   static Future<void> lockSharedRowsForWrite(Session s) => s.execute(

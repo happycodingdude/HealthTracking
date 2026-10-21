@@ -17,6 +17,7 @@ const silentErrorCodes = {
   ErrorCode.liftWindowClosed,
   ErrorCode.liftNotAllowedForExercise,
   ErrorCode.liftExerciseNotInSession,
+  ErrorCode.liftUnitMissing,
 };
 
 /// Hàm duy nhất đổi lỗi thành câu tiếng Việt (06 §6.4.3, AP-6).
@@ -49,7 +50,8 @@ String errorMessage(ApiError? error, ErrorScreen screen, {int? nextMonth}) {
     ErrorCode.liftNoSession ||
     ErrorCode.liftWindowClosed ||
     ErrorCode.liftNotAllowedForExercise ||
-    ErrorCode.liftExerciseNotInSession => offline,
+    ErrorCode.liftExerciseNotInSession ||
+    ErrorCode.liftUnitMissing => offline,
     ErrorCode.unauthorized ||
     ErrorCode.profileIncomplete ||
     ErrorCode.notFound ||

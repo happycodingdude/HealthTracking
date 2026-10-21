@@ -51,6 +51,7 @@ void main() {
       'lift_window_closed',
       'lift_not_allowed_for_exercise',
       'lift_exercise_not_in_session',
+      'lift_unit_missing',
     });
     expect(silentErrorCodes.intersection(displayed), isEmpty);
     for (final code in silentErrorCodes) {

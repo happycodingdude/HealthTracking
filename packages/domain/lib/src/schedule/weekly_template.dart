@@ -4,15 +4,32 @@ import 'package:crypto/crypto.dart';
 
 import '../time/local_time.dart';
 
-/// 6 nhóm cơ, thứ tự cố định PR-02: Ngực · Tay sau · Vai · Bụng · Lưng · Tay
-/// trước. Giá trị trong API/PostgreSQL là [name] (05 §6.7.1).
+/// 7 nhóm cơ (Bản 3 thêm Chân, BR3-10). Thứ tự khai báo là thứ tự bộ chọn
+/// nhóm cơ của lịch (PR-02, UA3-10): Ngực · Tay sau · Vai · Bụng · Lưng · Tay
+/// trước · Chân. Giá trị trong API/PostgreSQL là [name] (05 §6.7.1).
 enum MuscleGroup {
   chest,
   triceps,
   shoulders,
   abs,
   back,
-  biceps;
+  biceps,
+  legs;
+
+  /// Thứ tự bộ chọn nhóm cơ ở lịch tuần, sửa riêng, buổi tập thêm (UA3-10).
+  static const pickerOrder = values;
+
+  /// Thứ tự thư viện (F18-R43, UR3-04): Ngực · Lưng · Vai · Tay trước · Tay
+  /// sau · Bụng · Chân. Khác [pickerOrder] (UA3-10, như UA2-14 Bản 2).
+  static const libraryOrder = [
+    chest,
+    back,
+    shoulders,
+    biceps,
+    triceps,
+    abs,
+    legs,
+  ];
 
   /// Sắp theo thứ tự PR-02, bỏ trùng.
   static List<MuscleGroup> ordered(Iterable<MuscleGroup> muscles) {

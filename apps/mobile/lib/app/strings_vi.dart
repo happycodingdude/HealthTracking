@@ -97,8 +97,11 @@ abstract final class S {
   static const unitCm = 'cm';
   static const unitKg = 'kg';
 
-  /// Đơn vị mức tạ của bài với máy (BR2-24, sửa 13/10/2026).
-  static const unitPlates = 'thanh';
+  /// Đơn vị nấc máy: dạng ngắn sau con số, dạng đầy đủ ở chi tiết bài và bộ
+  /// chọn lần ghi đầu (04 Bản 3 UA3-07).
+  static const unitSteps = 'nấc';
+  static const unitStepsFull = 'nấc máy';
+
   static const unitKcal = 'kcal';
   static const done = 'Xong';
   static const invalidHeight = 'Chiều cao cần từ 120 đến 230 cm';
@@ -178,6 +181,7 @@ abstract final class S {
   static const muscleAbs = 'Bụng';
   static const muscleBack = 'Lưng';
   static const muscleBiceps = 'Tay trước';
+  static const muscleLegs = 'Chân';
   static const and = 'và';
   static const noWorkoutDay = 'Lịch tập cần ít nhất 1 ngày';
   static const rest = 'Nghỉ';
@@ -565,11 +569,9 @@ abstract final class S {
   static const regionAbsLower = 'Bụng dưới';
   static const regionAbsMid = 'Bụng giữa';
   static const regionObliques = 'Hai bên';
-
-  // Nhãn dụng cụ (04 Bản 2 §6.10).
-  static const equipmentMachine = 'Máy';
-  static const equipmentFreeWeight = 'Tạ';
-  static const equipmentBodyweight = 'Không dụng cụ';
+  static const regionQuads = 'Đùi trước';
+  static const regionHamstrings = 'Đùi sau';
+  static const regionCalves = 'Bắp chân';
 
   // S-66 Thư viện, S-67 Chi tiết bài (04 Bản 2 §6.8, §6.12).
   static const libraryFootnote =
@@ -607,7 +609,6 @@ abstract final class S {
   static const liftStart = 'Bắt đầu';
   static const liftEnd = 'Kết thúc';
   static const liftStepHint = 'Bước 0,5 kg · chạm vào số để gõ';
-  static const liftStepHintPlates = 'Bước 1 thanh · chạm vào số để gõ';
   static const liftFirstTime = 'Lần ghi đầu tiên của bài này';
   static const deleteLift = 'Xóa mức tạ';
   static const deleteLiftConfirm = 'Xóa mức tạ của bài này?';
@@ -616,15 +617,11 @@ abstract final class S {
   static const liftMissing = 'Vui lòng nhập cả mức tạ bắt đầu và kết thúc';
   static const liftOutOfRange = 'Mức tạ cần từ 0,5 đến 300 kg';
   static const liftNotStep = 'Mức tạ nhập theo bước 0,5 kg';
-  static const liftPlatesOutOfRange = 'Số thanh cần từ 1 đến 30';
-  static const liftPlatesNotStep = 'Số thanh không có số lẻ';
   static const liftNotNumber = 'Mức tạ chưa đúng';
 
   /// Nhãn VoiceOver của nút − / + (giả định câu chữ, chờ Bạn xem).
   static const liftDecrease = 'Giảm 0,5 kg';
   static const liftIncrease = 'Tăng 0,5 kg';
-  static const liftDecreasePlates = 'Giảm 1 thanh';
-  static const liftIncreasePlates = 'Tăng 1 thanh';
 
   /// "Buổi tập · Ngực và Tay sau".
   static String sessionTitle(String muscles) => 'Buổi tập · $muscles';
@@ -641,7 +638,7 @@ abstract final class S {
   /// Thẻ buổi tập ở Hôm nay (UA2-08).
   static String liftLoggedCount(int n) => 'Đã ghi mức tạ $n bài';
 
-  /// "12 → 14 kg", "7 → 8 thanh" ([unit] là [unitKg] hoặc [unitPlates]).
+  /// "12 → 14 kg", "8 → 10 nấc" ([unit] là [unitKg] hoặc [unitSteps]).
   static String liftValue(String start, String end, String unit) =>
       '$start → $end $unit';
   static String liftSaved(String start, String end, String unit) =>
@@ -698,7 +695,7 @@ abstract final class S {
   static String chartSemantics(int month, int sessions) =>
       'Biểu đồ mức tạ tháng ${month.toString().padLeft(2, '0')}, $sessions buổi';
 
-  /// Ô nhỏ khi chạm một ngày: "07/10 · 10 → 12 kg", "07/10 · 7 → 8 thanh".
+  /// Ô nhỏ khi chạm một ngày: "07/10 · 10 → 12 kg", "07/10 · 8 → 10 nấc".
   static String chartTooltip(
     String date,
     String start,
@@ -708,6 +705,117 @@ abstract final class S {
 
   // Hình món ăn (03 Bản 2 F12-E2, 05 Bản 2 §6.8.3).
   static const dishImageQuotaExhausted = 'Bạn đã xem đủ 3 hình mới hôm nay.';
+
+  // Bản 3 — câu chữ của 03 Bản 3 §6.7, §6.13, §6.14 và 04 Bản 3 §6.13 (06 Bản
+  // 3 ED3-13).
+  // S-63 (04 Bản 3 §6.6, UA3-05, UA3-08).
+  static const liftPreviousLabel = 'BUỔI TRƯỚC';
+  static const liftLatestLabel = 'GẦN NHẤT';
+  static const liftNotLogged = 'Chưa ghi';
+  static const noteShort = 'Ghi chú';
+  static const sessionFootnote = 'Số mờ là mức tạ buổi trước · chạm vào để ghi';
+
+  // S-64 (04 Bản 3 §6.6, UA3-06, UA3-09; 03 Bản 3 F21-V41 → V45, F26-E4).
+  static const liftUnitPrompt = 'Bài này ghi bằng';
+  static const liftNoWeight = 'Bài này không ghi mức tạ';
+  static const noteHint = 'Ghi chú cho hôm nay';
+  static const liftUnitRequired = 'Chọn kg hoặc nấc máy cho bài này';
+  static const liftKgInvalid = 'Mức tạ cần từ 0,5 đến 300 kg, theo bước 0,5';
+  static const liftStepsInvalid = 'Nấc máy cần là số nguyên từ 1 đến 50';
+  static const liftAndNoteLocked =
+      'Mức tạ và ghi chú của buổi này đã khóa lúc 00:00.';
+  static const discardChanges = 'Bỏ thay đổi chưa lưu?';
+  static const keepLogging = 'Tiếp tục ghi';
+  static const noteSaved = 'Đã lưu ghi chú';
+
+  // S-56, S-73 (04 Bản 3 §6.9, UA3-04, UA3-16; 03 Bản 3 F-27).
+  static const thisDevice = 'Thiết bị này';
+  static const logout = 'Đăng xuất';
+  static const logoutHint =
+      'Đăng xuất sẽ xóa dữ liệu trên máy này. Dữ liệu của Bạn vẫn được giữ trên hệ thống.';
+  static const logoutConfirmTitle = 'Đăng xuất?';
+  static const logoutConfirmBody =
+      'Đăng xuất sẽ xóa dữ liệu trên máy này. Dữ liệu của Bạn vẫn được giữ trên hệ thống và sẽ khôi phục khi đăng nhập lại.';
+  static const logoutFailedTitle = 'Chưa đăng xuất được';
+  static const logoutOffline = 'Cần kết nối internet để đăng xuất.';
+  static const logoutSyncFailed =
+      'Chưa đồng bộ xong, chưa đăng xuất được. Thử lại sau.';
+  static const logoutSyncing = 'Đang đồng bộ…';
+  static const logoutSyncingBody =
+      'Đồng bộ xong app mới đăng xuất. Đừng tắt mạng.';
+  static const logoutFinishing = 'Đang hoàn tất đăng xuất…';
+
+  // S-70 Widget (04 Bản 3 §6.7, UA3-14; 03 Bản 3 F-24).
+  static const widgetNotDone = 'Chưa tập';
+  static const widgetDone = 'Đã tập';
+  static const widgetSkipped = 'Không tập';
+  static const widgetRest = 'Nghỉ';
+  static const widgetOneExtra = '+1 buổi thêm';
+  static const widgetThisWeek = 'Tuần này';
+  static const widgetNoSessionsThisWeek = 'Tuần này không có buổi';
+  static const widgetNoSchedule = 'Chưa có lịch tập';
+  static const widgetSignedOut = 'Mở app để đăng nhập';
+
+  // S-71 Thẻ màn hình khóa (04 Bản 3 §6.8, UA3-15; 03 Bản 3 F-25).
+  static const activityTitle = 'Ironly · Buổi tập hôm nay';
+  static const activityLastLogged = 'Vừa ghi';
+  static const activityNext = 'Kế tiếp';
+  static const activityNothingLogged = 'Chưa ghi bài nào';
+  static const activityPreviousNone = 'Buổi trước: chưa ghi';
+  static const activityAllLogged = 'Đã ghi hết bài';
+  static const activityAbsOnly = 'Bài bụng không ghi mức tạ';
+  static const activityNextNone = 'Kế tiếp: chưa ghi';
+
+  /// S-64 dòng hướng dẫn dưới hai ô (UA3-06): [step] là "2,5 kg" / "1 nấc".
+  static String liftStepGuide(String step) =>
+      'Số mờ là mức buổi trước · chạm vào số để gõ · bước $step';
+
+  /// S-64 lần ghi đầu: "Chạm vào số để gõ · bước 2,5 kg".
+  static String liftStepGuideFirst(String step) =>
+      'Chạm vào số để gõ · bước $step';
+
+  /// S-64 bộ đếm ghi chú (F26-V1).
+  static String noteCounter(int n) => '$n/200';
+
+  /// S-64 ghi chú buổi trước (FA3-02): "{dd/mm}: {nội dung}".
+  static String notePrevious(String date, String text) => '$date: $text';
+
+  /// S-67 bài bụng: "Buổi trước ({dd/mm}): {ghi chú}".
+  static String notePreviousSession(String date, String text) =>
+      'Buổi trước ($date): $text';
+
+  /// S-67 dòng ghi chú hôm nay.
+  static String noteToday(String text) => 'Ghi chú hôm nay: $text';
+
+  /// S-67 "Đơn vị: kg" / "Đơn vị: nấc máy" ([unit] dạng đầy đủ).
+  static String unitLine(String unit) => 'Đơn vị: $unit';
+
+  /// S-67 lối đổi, S-72 tiêu đề và nút, S-69 nhãn mốc, thông báo nhanh
+  /// (F21-R47, UA3-13, UA3-17).
+  static String changeUnitTo(String unit) => 'Đổi sang $unit';
+  static String changeUnitTitle(String unit) => 'Đổi sang $unit?';
+  static String changeUnitBody(String unit) =>
+      'Mức tạ đã ghi của bài này giữ nguyên con số, không quy đổi sang $unit. Biểu đồ sẽ hiện theo $unit.';
+  static String unitChanged(String unit) => 'Đã đổi sang $unit';
+
+  /// S-69 chú giải và danh sách bản ghi trước mốc đổi đơn vị (UA3-13).
+  static String chartLegendUnit(String unit) =>
+      '○ Bắt đầu · ● Kết thúc · đơn vị: $unit';
+  static const beforeUnitChange = '· trước khi đổi';
+
+  /// VoiceOver của mốc đổi đơn vị (04 Bản 3 §6.6 S-69).
+  static String unitChangeSemantics(String unit, String date) =>
+      'Đổi sang $unit ngày $date';
+
+  /// S-70: "Ironly · Thứ 3", "Chưa tập · 18:00", "{X}/{Y}", "+{n}".
+  static String widgetHeader(String weekday) => 'Ironly · $weekday';
+  static String widgetNotDoneAt(String time) => '$widgetNotDone · $time';
+  static String widgetProgress(int done, int total) => '$done/$total';
+  static String widgetExtra(int n) => '+$n';
+
+  /// S-71: "Buổi trước: 40 → 45 kg", Dynamic Island "Kế tiếp: 40 → 45 kg".
+  static String activityPrevious(String lift) => 'Buổi trước: $lift';
+  static String activityNextLift(String lift) => 'Kế tiếp: $lift';
 
   static const Map<String, String> catalog = {
     'back': back,
@@ -758,6 +866,7 @@ abstract final class S {
     'muscleAbs': muscleAbs,
     'muscleBack': muscleBack,
     'muscleBiceps': muscleBiceps,
+    'muscleLegs': muscleLegs,
     'and': and,
     'noWorkoutDay': noWorkoutDay,
     'rest': rest,
@@ -795,7 +904,8 @@ abstract final class S {
     'goalFatLoss': goalFatLoss,
     'unitCm': unitCm,
     'unitKg': unitKg,
-    'unitPlates': unitPlates,
+    'unitSteps': unitSteps,
+    'unitStepsFull': unitStepsFull,
     'unitKcal': unitKcal,
     'done': done,
     'invalidHeight': invalidHeight,
@@ -966,9 +1076,9 @@ abstract final class S {
     'regionAbsLower': regionAbsLower,
     'regionAbsMid': regionAbsMid,
     'regionObliques': regionObliques,
-    'equipmentMachine': equipmentMachine,
-    'equipmentFreeWeight': equipmentFreeWeight,
-    'equipmentBodyweight': equipmentBodyweight,
+    'regionQuads': regionQuads,
+    'regionHamstrings': regionHamstrings,
+    'regionCalves': regionCalves,
     'libraryFootnote': libraryFootnote,
     'backLibrary': backLibrary,
     'backSession': backSession,
@@ -996,7 +1106,6 @@ abstract final class S {
     'liftStart': liftStart,
     'liftEnd': liftEnd,
     'liftStepHint': liftStepHint,
-    'liftStepHintPlates': liftStepHintPlates,
     'liftFirstTime': liftFirstTime,
     'deleteLift': deleteLift,
     'deleteLiftConfirm': deleteLiftConfirm,
@@ -1005,13 +1114,9 @@ abstract final class S {
     'liftMissing': liftMissing,
     'liftOutOfRange': liftOutOfRange,
     'liftNotStep': liftNotStep,
-    'liftPlatesOutOfRange': liftPlatesOutOfRange,
-    'liftPlatesNotStep': liftPlatesNotStep,
     'liftNotNumber': liftNotNumber,
     'liftDecrease': liftDecrease,
     'liftIncrease': liftIncrease,
-    'liftDecreasePlates': liftDecreasePlates,
-    'liftIncreasePlates': liftIncreasePlates,
     'progressHint': progressHint,
     'viewExercise': viewExercise,
     'viewChart': viewChart,
@@ -1019,5 +1124,49 @@ abstract final class S {
     'chartMonthEmpty': chartMonthEmpty,
     'chartSessions': chartSessions,
     'backExerciseDetail': backExerciseDetail,
+    'liftPreviousLabel': liftPreviousLabel,
+    'liftLatestLabel': liftLatestLabel,
+    'liftNotLogged': liftNotLogged,
+    'noteShort': noteShort,
+    'sessionFootnote': sessionFootnote,
+    'liftUnitPrompt': liftUnitPrompt,
+    'liftNoWeight': liftNoWeight,
+    'noteHint': noteHint,
+    'liftUnitRequired': liftUnitRequired,
+    'liftKgInvalid': liftKgInvalid,
+    'liftStepsInvalid': liftStepsInvalid,
+    'liftAndNoteLocked': liftAndNoteLocked,
+    'discardChanges': discardChanges,
+    'keepLogging': keepLogging,
+    'noteSaved': noteSaved,
+    'thisDevice': thisDevice,
+    'logout': logout,
+    'logoutHint': logoutHint,
+    'logoutConfirmTitle': logoutConfirmTitle,
+    'logoutConfirmBody': logoutConfirmBody,
+    'logoutFailedTitle': logoutFailedTitle,
+    'logoutOffline': logoutOffline,
+    'logoutSyncFailed': logoutSyncFailed,
+    'logoutSyncing': logoutSyncing,
+    'logoutSyncingBody': logoutSyncingBody,
+    'logoutFinishing': logoutFinishing,
+    'widgetNotDone': widgetNotDone,
+    'widgetDone': widgetDone,
+    'widgetSkipped': widgetSkipped,
+    'widgetRest': widgetRest,
+    'widgetOneExtra': widgetOneExtra,
+    'widgetThisWeek': widgetThisWeek,
+    'widgetNoSessionsThisWeek': widgetNoSessionsThisWeek,
+    'widgetNoSchedule': widgetNoSchedule,
+    'widgetSignedOut': widgetSignedOut,
+    'activityTitle': activityTitle,
+    'activityLastLogged': activityLastLogged,
+    'activityNext': activityNext,
+    'activityNothingLogged': activityNothingLogged,
+    'activityPreviousNone': activityPreviousNone,
+    'activityAllLogged': activityAllLogged,
+    'activityAbsOnly': activityAbsOnly,
+    'activityNextNone': activityNextNone,
+    'beforeUnitChange': beforeUnitChange,
   };
 }

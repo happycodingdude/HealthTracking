@@ -7,6 +7,8 @@ import '../../features/me/data/profile_repository.dart';
 import '../../features/menu/data/menu_repository.dart';
 import '../../features/schedule/data/schedule_repository.dart';
 import '../../features/weight/data/weight_repository.dart';
+import '../../features/workout/data/exercise_note_repository.dart';
+import '../../features/workout/data/exercise_unit_repository.dart';
 import '../../features/workout/data/lift_log_repository.dart';
 
 /// Ghi bản ghi từ server vào bảng trên máy của một entity.
@@ -216,6 +218,50 @@ final class LiftLogStore implements LocalEntityStore {
     final data = change?.data;
     if (change == null || change.deleted || data == null) {
       final parsed = LiftLog.parseKey(key);
+      if (parsed != null) await _repo.delete(parsed.$1, parsed.$2);
+      return;
+    }
+    await _repo.put(_codec.decode(key, data));
+  }
+}
+
+/// Entity `exercise_unit` (push + pull, 06 Bản 3 VS32-T05). Không có
+/// tombstone; nếu có thì xóa dòng.
+final class ExerciseUnitStore implements LocalEntityStore {
+  ExerciseUnitStore(this._repo);
+
+  final ExerciseUnitRepository _repo;
+  static const _codec = ExerciseUnitCodec();
+
+  @override
+  String get entity => SyncEntities.exerciseUnit;
+
+  @override
+  Future<void> apply(String key, SyncChange? change) async {
+    final data = change?.data;
+    if (change == null || change.deleted || data == null) {
+      await _repo.delete(key);
+      return;
+    }
+    await _repo.put(_codec.decode(key, data));
+  }
+}
+
+/// Entity `exercise_note` (push + pull, 06 Bản 3 VS32-T05). Tombstone → xóa.
+final class ExerciseNoteStore implements LocalEntityStore {
+  ExerciseNoteStore(this._repo);
+
+  final ExerciseNoteRepository _repo;
+  static const _codec = ExerciseNoteCodec();
+
+  @override
+  String get entity => SyncEntities.exerciseNote;
+
+  @override
+  Future<void> apply(String key, SyncChange? change) async {
+    final data = change?.data;
+    if (change == null || change.deleted || data == null) {
+      final parsed = ExerciseNote.parseKey(key);
       if (parsed != null) await _repo.delete(parsed.$1, parsed.$2);
       return;
     }

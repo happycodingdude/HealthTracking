@@ -25,6 +25,8 @@ void main() {
         'lift_window_closed': 422,
         'lift_not_allowed_for_exercise': 422,
         'lift_exercise_not_in_session': 422,
+        // Bản 3 (05 Bản 3 §6.6.3).
+        'lift_unit_missing': 422,
       };
       for (final entry in expected.entries) {
         final code = ErrorCode.fromWire(entry.key);

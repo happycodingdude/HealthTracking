@@ -1,5 +1,5 @@
 // Nạp dữ liệu thử cho database dev (06 Bản 1 VS00-T13, 06 Bản 2 ED2-18,
-// §6.5.2). Chạy sau khi tạo lại database từ apps/server/db/schema.sql:
+// §6.5.2). Chạy sau khi tạo lại database bằng migration:
 //
 //   tool/reset_dev_db.sh            # xóa, tạo lại, rồi chạy file này
 //   dart run tool/seed_dev.dart     # chỉ nạp (bỏ qua tài khoản đã có)
@@ -10,13 +10,16 @@
 // Tài khoản thử (mật khẩu chung: DEV_SEED_PASSWORD của tiến trình, rồi .env ở
 // gốc repo; code không chứa mật khẩu, kể cả mật khẩu thử):
 // - 0900000001 "Minh": như Bản 1 — đã xếp lịch từ 40 ngày trước (trải qua 2
-//   tháng), có buổi đã đánh dấu, buổi chờ đánh dấu, vài số cân; mức tạ của
-//   các buổi trước tuần này, tăng dần theo từng buổi (06 Bản 2 §6.5.2).
+//   tháng), có buổi đã đánh dấu, buổi chờ đánh dấu, vài số cân; mức tạ kiểu
+//   Bản 2 của các buổi trước tuần này, tăng dần theo từng buổi, trên 3 bài
+//   giữ (2 bài máy ghi số thanh, 1 bài tạ ghi kg) và 2 bài bỏ (06 Bản 3
+//   VS32-T09) để thử `library purge`.
 // - 0900000002 "Lan": đã hoàn tất thiết lập nhưng "Để sau" lịch tuần (chưa có
 //   lịch, 03 Bản 2 §6.1), công tắc nhắc bật.
 //
-// Thư viện bài tập: nạp data/exercises.json (29 bài Bạn đã duyệt) bằng
-// cùng LibraryImporter của `admin library import` (06 Bản 2 VS21-T08).
+// Thư viện bài tập: nạp data/v2__exercises.json (29 bài Bản 2, có
+// `equipment`) bằng cùng LibraryImporter của `admin library import` như
+// production Bản 2 (06 Bản 2 VS21-T08).
 import 'dart:io';
 
 import 'package:domain/domain.dart';
@@ -100,7 +103,7 @@ String _withSslMode(String url) {
 
 Future<List<Exercise>> _seedLibrary(Connection c) async {
   final file = LibraryFile.parse(
-    File('data/exercises.json').readAsStringSync(),
+    File('data/v2__exercises.json').readAsStringSync(),
   );
   final report = await LibraryImporter(c).run(file);
   stdout.writeln('Thư viện: ${report.describe()}');
@@ -260,49 +263,60 @@ Future<void> _seedScheduled(
   );
 }
 
-/// Mức tạ (kg × 10) cho bài đầu tiên của mỗi nhóm cơ trong buổi (trừ bụng,
-/// FR2-12), kể cả buổi "Không tập" (AP-9): tăng 2,5 kg mỗi buổi, kết thúc
-/// cao hơn bắt đầu 5 kg; buổi thứ 4 của mỗi bài giảm 5 kg để có cảnh báo
-/// F21-R8. Ghi lúc 1 giờ sau giờ tập, trong cửa sổ ghi tạ.
+/// Mức tạ kiểu Bản 2 (06 Bản 3 VS32-T09, D3-04) trên 3 bài giữ — 2 bài máy
+/// ghi số thanh (× 10), 1 bài tạ ghi kg (× 10) — và 2 bài bỏ, kể cả buổi
+/// "Không tập" (AP-9): mỗi buổi tăng một bước, kết thúc cao hơn bắt đầu một
+/// bước; buổi thứ 4 của mỗi bài giảm 3 bước để có cảnh báo. Ghi lúc 1 giờ sau
+/// giờ tập, trong cửa sổ ghi tạ. Bài không có trong thư viện thì bỏ qua.
 Future<int> _liftLogs(
   Connection c,
   String user,
   List<PlanDay> days,
   List<Exercise> library,
 ) async {
-  const base = {
-    MuscleGroup.chest: 300,
-    MuscleGroup.back: 350,
-    MuscleGroup.shoulders: 150,
-    MuscleGroup.biceps: 100,
-    MuscleGroup.triceps: 125,
+  // (bài, mức bắt đầu buổi đầu × 10, bước × 10).
+  const plan = {
+    MuscleGroup.chest: [
+      ('chest-mid-machine-pec-deck', 40, 10), // máy, số thanh
+      ('chest-upper-free-weight-incline-dumbbell-press', 100, 25), // bỏ
+    ],
+    MuscleGroup.back: [
+      ('lats-machine-lat-pulldown', 60, 10), // máy, số thanh
+    ],
+    MuscleGroup.biceps: [
+      ('biceps-free-weight-dumbbell-biceps-curl', 80, 25), // bỏ
+    ],
+    MuscleGroup.shoulders: [
+      ('delt-front-free-weight-seated-dumbbell-shoulder-press', 120, 25),
+    ],
   };
+  final ids = {for (final e in library) e.id};
   final sessions = <String, int>{};
   var count = 0;
   for (final d in days) {
     for (final g in d.sessionMuscles) {
-      final start = base[g];
-      if (start == null) continue;
-      final e = library.firstWhere((e) => e.group == g && e.active);
-      final n = sessions.update(e.id, (n) => n + 1, ifAbsent: () => 0);
-      final kg = start + 25 * n - (n % 4 == 3 ? 75 : 0);
-      final at = _utc(d.date.atTime(d.time!).add(const Duration(hours: 1)));
-      await c.execute(
-        Sql.named('''
-          INSERT INTO lift_logs (user_id, date, exercise_id, start_kg_x10, end_kg_x10,
-                                 logged_at, server_version, client_updated_at)
-          VALUES (@user, @date::date, @exercise, @start, @end, @at,
-                  nextval('sync_version_seq'), @at)'''),
-        parameters: {
-          'user': user,
-          'date': d.date.toKey(),
-          'exercise': e.id,
-          'start': kg,
-          'end': kg + 50,
-          'at': at,
-        },
-      );
-      count++;
+      for (final (id, base, step) in plan[g] ?? const <(String, int, int)>[]) {
+        if (!ids.contains(id)) continue;
+        final n = sessions.update(id, (n) => n + 1, ifAbsent: () => 0);
+        final start = base + step * n - (n % 4 == 3 ? 3 * step : 0);
+        final at = _utc(d.date.atTime(d.time!).add(const Duration(hours: 1)));
+        await c.execute(
+          Sql.named('''
+            INSERT INTO lift_logs (user_id, date, exercise_id, start_kg_x10, end_kg_x10,
+                                   logged_at, server_version, client_updated_at)
+            VALUES (@user, @date::date, @exercise, @start, @end, @at,
+                    nextval('sync_version_seq'), @at)'''),
+          parameters: {
+            'user': user,
+            'date': d.date.toKey(),
+            'exercise': id,
+            'start': start,
+            'end': start + step,
+            'at': at,
+          },
+        );
+        count++;
+      }
     }
   }
   return count;

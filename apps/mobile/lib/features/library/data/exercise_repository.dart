@@ -21,7 +21,6 @@ final class ExerciseRepository {
           id: e.id,
           muscleGroup: e.group.name,
           muscleRegion: e.region.id,
-          equipment: e.equipment.wire,
           logsWeight: e.logsWeight,
           nameVi: e.nameVi,
           nameEn: Value(e.nameEn),
@@ -34,6 +33,7 @@ final class ExerciseRepository {
           guideSteps: jsonEncode(e.guideSteps),
           guideSafety: jsonEncode(e.guideSafety),
           approvedAt: e.approvedAt.toKey(),
+          sortInGroup: Value(e.sortInGroup),
           sortOrder: e.sortOrder,
           active: e.active,
         ),
@@ -42,15 +42,19 @@ final class ExerciseRepository {
   Future<void> delete(String id) =>
       (_db.delete(_db.exercises)..where((x) => x.id.equals(id))).go();
 
-  /// Bài đang có trong thư viện của nhóm [group], thứ tự F18-R9.
+  /// Bài đang có trong thư viện của nhóm [group], danh sách phẳng theo thứ
+  /// tự thư viện (F18-R42, F18-R43), chỉ `active && !deleted`.
   Stream<List<Exercise>> watchGroup(MuscleGroup group) =>
       (_db.select(_db.exercises)
-            ..where((x) => x.muscleGroup.equals(group.name) & x.active)
+            ..where(
+              (x) =>
+                  x.muscleGroup.equals(group.name) & x.active & x.deleted.not(),
+            )
             ..orderBy([(x) => OrderingTerm.asc(x.sortOrder)]))
           .watch()
           .map((rows) => [for (final r in rows) _toExercise(r)]);
 
-  /// Mọi bài, kể cả bài đã rời thư viện, thứ tự F18-R9 (buổi tập, Tiến bộ).
+  /// Mọi bài, kể cả bài gỡ sau ra mắt, thứ tự F18-R43 (buổi tập, Tiến bộ).
   Stream<List<Exercise>> watchAll() =>
       (_db.select(_db.exercises)
             ..orderBy([(x) => OrderingTerm.asc(x.sortOrder)]))
@@ -73,7 +77,6 @@ final class ExerciseRepository {
   static Exercise _toExercise(ExerciseRow r) => Exercise(
     id: r.id,
     region: MuscleRegion.tryParse(r.muscleRegion)!,
-    equipment: Equipment.tryParse(r.equipment)!,
     nameVi: r.nameVi,
     nameEn: r.nameEn,
     youtubeVideoId: r.youtubeVideoId,
@@ -87,6 +90,7 @@ final class ExerciseRepository {
     guideSteps: (jsonDecode(r.guideSteps) as List).cast<String>(),
     guideSafety: (jsonDecode(r.guideSafety) as List).cast<String>(),
     approvedAt: DateCodec.decode(r.approvedAt),
+    sortInGroup: r.sortInGroup,
     sortOrder: r.sortOrder,
     active: r.active,
   );

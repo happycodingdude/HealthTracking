@@ -67,6 +67,7 @@ abstract final class Fmt {
     MuscleGroup.abs => S.muscleAbs,
     MuscleGroup.back => S.muscleBack,
     MuscleGroup.biceps => S.muscleBiceps,
+    MuscleGroup.legs => S.muscleLegs,
   };
 
   /// Tên vùng cơ (03 Bản 2 §6.10).
@@ -87,13 +88,9 @@ abstract final class Fmt {
     MuscleRegion.absLower => S.regionAbsLower,
     MuscleRegion.absMid => S.regionAbsMid,
     MuscleRegion.obliques => S.regionObliques,
-  };
-
-  /// Nhãn dụng cụ (04 Bản 2 §6.10).
-  static String equipment(Equipment e) => switch (e) {
-    Equipment.machine => S.equipmentMachine,
-    Equipment.freeWeight => S.equipmentFreeWeight,
-    Equipment.bodyweight => S.equipmentBodyweight,
+    MuscleRegion.quads => S.regionQuads,
+    MuscleRegion.hamstrings => S.regionHamstrings,
+    MuscleRegion.calves => S.regionCalves,
   };
 
   /// Độ dài video: 48 → `0:48`, 62 → `1:02`.
@@ -127,11 +124,20 @@ abstract final class Fmt {
       for (final r in MuscleRegion.of(g)) region(r),
   ].join(' · ');
 
-  /// Đơn vị mức tạ: `kg` (bài với tạ), `thanh` (bài với máy).
-  static String liftUnit(LiftUnit unit) =>
-      unit == LiftUnit.plates ? S.unitPlates : S.unitKg;
+  /// Đơn vị mức tạ sau con số (UA3-07): `kg`, `nấc`.
+  static String liftUnit(LiftUnit unit) => switch (unit) {
+    LiftUnit.kg => S.unitKg,
+    LiftUnit.steps => S.unitSteps,
+  };
 
-  /// Mức tạ của một bản ghi: `12 → 14 kg`, `72,5 → 75 kg`, `7 → 8 thanh`.
+  /// Tên đầy đủ của đơn vị (chi tiết bài, bộ chọn lần ghi đầu, UA3-07):
+  /// `kg`, `nấc máy`.
+  static String liftUnitFull(LiftUnit unit) => switch (unit) {
+    LiftUnit.kg => S.unitKg,
+    LiftUnit.steps => S.unitStepsFull,
+  };
+
+  /// Mức tạ của một bản ghi: `12 → 14 kg`, `72,5 → 75 kg`, `8 → 10 nấc`.
   static String lift(LiftLog l, LiftUnit unit) =>
       S.liftValue(kgNumber(l.startKgX10), kgNumber(l.endKgX10), liftUnit(unit));
 

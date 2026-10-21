@@ -1,30 +1,6 @@
-import '../lift_log/lift_kg.dart';
 import '../schedule/weekly_template.dart';
 import '../time/local_date.dart';
 import 'muscle_region.dart';
-
-/// Loại dụng cụ (03 Bản 2 §6.1). Giá trị trong API/PostgreSQL là [wire].
-enum Equipment {
-  /// Máy, gồm cả máy kéo cáp.
-  machine('machine'),
-
-  /// Tạ: tạ đơn, thanh đòn, thanh EZ… không dùng máy.
-  freeWeight('free_weight'),
-
-  /// Không dụng cụ — chỉ có ở bụng (BR2-22).
-  bodyweight('bodyweight');
-
-  const Equipment(this.wire);
-
-  final String wire;
-
-  static Equipment? tryParse(String wire) {
-    for (final e in values) {
-      if (e.wire == wire) return e;
-    }
-    return null;
-  }
-}
 
 /// Lý do video không khả dụng (05 Bản 2 §6.10.3).
 enum VideoUnavailableReason {
@@ -47,13 +23,13 @@ enum VideoUnavailableReason {
   }
 }
 
-/// Một bài trong thư viện (03 Bản 2 §6.10, entity `exercise`). Thuộc đúng 1
-/// vùng cơ (FA2-09). Bài rời thư viện vẫn còn với [active] = false (TA2-10).
+/// Một bài trong thư viện (03 Bản 3 §6.1, §6.4, entity `exercise`). Thuộc đúng
+/// 1 nhóm cơ và 1 vùng cơ. Không có loại dụng cụ và không có đơn vị mức tạ
+/// (TD3-20, BR3-18). Bài gỡ sau ra mắt vẫn còn với [active] = false (F18-R46).
 final class Exercise {
   const Exercise({
     required this.id,
     required this.region,
-    required this.equipment,
     required this.nameVi,
     this.nameEn,
     required this.youtubeVideoId,
@@ -65,6 +41,7 @@ final class Exercise {
     required this.guideSteps,
     required this.guideSafety,
     required this.approvedAt,
+    this.sortInGroup = 0,
     this.sortOrder = 0,
     this.active = true,
   });
@@ -72,7 +49,6 @@ final class Exercise {
   /// Slug ổn định; thay video không đổi [id] (FA2-14).
   final String id;
   final MuscleRegion region;
-  final Equipment equipment;
   final String nameVi;
   final String? nameEn;
   final String youtubeVideoId;
@@ -91,21 +67,22 @@ final class Exercise {
   /// Ngày Bạn duyệt (LIB-AC1).
   final LocalDate approvedAt;
 
-  /// Thứ tự F18-R9, tính khi nạp.
+  /// Vị trí trong nhóm (1, 2, 3…), theo thứ tự trong file thư viện (PD3-02,
+  /// LIB-R23).
+  final int sortInGroup;
+
+  /// Thứ tự toàn cục F18-R43, tính khi nạp (TD3-07).
   final int sortOrder;
   final bool active;
 
   MuscleGroup get group => region.group;
 
-  /// FR2-12: bài bụng không ghi mức tạ, không có biểu đồ.
+  /// FR2-12, BR3-11: bài bụng không ghi mức tạ, không có biểu đồ; bài chân
+  /// ghi như mọi nhóm khác.
   bool get logsWeight => group != MuscleGroup.abs;
 
-  /// Đơn vị mức tạ (BR2-24, sửa 13/10/2026): bài với máy ghi số thanh tạ,
-  /// bài với tạ ghi kg.
-  LiftUnit get liftUnit =>
-      equipment == Equipment.machine ? LiftUnit.plates : LiftUnit.kg;
-
   Exercise copyWith({
+    int? sortInGroup,
     int? sortOrder,
     bool? active,
     int? videoDurationS,
@@ -115,7 +92,6 @@ final class Exercise {
   }) => Exercise(
     id: id,
     region: region,
-    equipment: equipment,
     nameVi: nameVi,
     nameEn: nameEn,
     youtubeVideoId: youtubeVideoId,
@@ -128,6 +104,7 @@ final class Exercise {
     guideSteps: guideSteps,
     guideSafety: guideSafety,
     approvedAt: approvedAt,
+    sortInGroup: sortInGroup ?? this.sortInGroup,
     sortOrder: sortOrder ?? this.sortOrder,
     active: active ?? this.active,
   );
@@ -137,7 +114,6 @@ final class Exercise {
       other is Exercise &&
       other.id == id &&
       other.region == region &&
-      other.equipment == equipment &&
       other.nameVi == nameVi &&
       other.nameEn == nameEn &&
       other.youtubeVideoId == youtubeVideoId &&
@@ -149,6 +125,7 @@ final class Exercise {
       _same(other.guideSteps, guideSteps) &&
       _same(other.guideSafety, guideSafety) &&
       other.approvedAt == approvedAt &&
+      other.sortInGroup == sortInGroup &&
       other.sortOrder == sortOrder &&
       other.active == active;
 
@@ -156,11 +133,11 @@ final class Exercise {
   int get hashCode => Object.hash(
     id,
     region,
-    equipment,
     nameVi,
     youtubeVideoId,
     videoDurationS,
     videoAvailable,
+    sortInGroup,
     sortOrder,
     active,
   );
@@ -183,23 +160,11 @@ bool _same<T>(List<T> a, List<T> b) {
 /// Một lỗi của thư viện: bài nào (null = cả thư viện), trường hay quy tắc nào.
 typedef LibraryIssue = ({String? exerciseId, String rule});
 
-/// Quy tắc thư viện bài tập (03 Bản 2 §6.10, §6.16; 05 Bản 2 §6.10.2). App và
-/// server cùng dùng (ED2-09).
+/// Quy tắc thư viện bài tập (03 Bản 3 §6.4, §6.15; 05 Bản 3 §6.10.2). App
+/// và server cùng dùng (ED2-09).
 abstract final class LibraryRules {
-  /// Thứ tự nhóm cơ của thư viện (F18-R9, UA2-14): Ngực · Lưng · Vai · Tay
-  /// trước · Tay sau · Bụng. Khác thứ tự bộ chọn nhóm cơ của lịch (PR-02).
-  static const groupOrder = [
-    MuscleGroup.chest,
-    MuscleGroup.back,
-    MuscleGroup.shoulders,
-    MuscleGroup.biceps,
-    MuscleGroup.triceps,
-    MuscleGroup.abs,
-  ];
-
-  /// F18-R1: mỗi vùng của 5 nhóm có 1–2 bài máy và 1–2 bài tạ.
-  static const minPerEquipment = 1;
-  static const maxPerEquipment = 2;
+  /// Thứ tự nhóm cơ của thư viện (F18-R43).
+  static const groupOrder = MuscleGroup.libraryOrder;
 
   /// LIB-R4.
   static const minSteps = 3;
@@ -225,8 +190,6 @@ abstract final class LibraryRules {
   static List<String> entryErrors(Exercise e) => [
     if (!_slug.hasMatch(e.id)) 'id',
     if (e.nameVi.trim().isEmpty || e.nameVi != e.nameVi.trim()) 'nameVi',
-    if (e.equipment == Equipment.bodyweight && e.group != MuscleGroup.abs)
-      'equipment',
     if (!_youtubeId.hasMatch(e.youtubeVideoId)) 'video.youtubeId',
     if (e.videoChannel.trim().isEmpty) 'video.channel',
     if (e.videoDurationS != null &&
@@ -263,39 +226,14 @@ abstract final class LibraryRules {
       'guide',
   ];
 
-  /// F18-R1, LIB-R8 trên tập bài đang có trong thư viện: mỗi vùng của 5 nhóm
-  /// có 1–2 bài máy, 1–2 bài tạ và không có bài không dụng cụ; mỗi vùng bụng
-  /// đúng 1 bài. Thêm: id và tên tiếng Việt không trùng (LIB-R1).
+  /// Trên tập bài đang có trong thư viện: id và tên tiếng Việt không trùng
+  /// (LIB-R1). Bản 3 bỏ quy tắc máy/tạ mỗi vùng (F18-R41, LIB-R25).
   static List<LibraryIssue> coverageErrors(Iterable<Exercise> library) {
-    final active = [
-      for (final e in library)
-        if (e.active) e,
-    ];
     final issues = <LibraryIssue>[];
-    for (final region in MuscleRegion.values) {
-      final inRegion = [
-        for (final e in active)
-          if (e.region == region) e,
-      ];
-      if (region.group == MuscleGroup.abs) {
-        if (inRegion.length != 1) {
-          issues.add((exerciseId: null, rule: '${region.id}: cần đúng 1 bài'));
-        }
-        continue;
-      }
-      for (final eq in [Equipment.machine, Equipment.freeWeight]) {
-        final n = inRegion.where((e) => e.equipment == eq).length;
-        if (n < minPerEquipment || n > maxPerEquipment) {
-          issues.add((
-            exerciseId: null,
-            rule: '${region.id}: cần 1–2 bài ${eq.wire}, đang có $n',
-          ));
-        }
-      }
-    }
     final ids = <String>{};
     final names = <String>{};
-    for (final e in active) {
+    for (final e in library) {
+      if (!e.active) continue;
       if (!ids.add(e.id)) issues.add((exerciseId: e.id, rule: 'id trùng'));
       if (!names.add(e.nameVi)) {
         issues.add((exerciseId: e.id, rule: 'nameVi trùng'));
@@ -304,25 +242,19 @@ abstract final class LibraryRules {
     return issues;
   }
 
-  /// F18-R9: nhóm cơ (theo [groupOrder]) → vùng (thứ tự [MuscleRegion]) → máy
-  /// trước, tạ sau → thứ tự trong file. Trả bản sao với `sortOrder` 1, 2, 3…
+  /// TD3-07, F18-R43, PD3-02: nhóm cơ theo [groupOrder], trong nhóm theo thứ
+  /// tự trong file. Trả bản sao với `sortInGroup` = vị trí trong nhóm (1, 2,
+  /// 3…) và `sortOrder` = (vị trí nhóm + 1) × 100 + `sortInGroup`.
   static List<Exercise> sorted(List<Exercise> library) {
-    final indexed = [for (var i = 0; i < library.length; i++) (i, library[i])];
-    indexed.sort((a, b) {
-      final ea = a.$2, eb = b.$2;
-      final byGroup = groupOrder
-          .indexOf(ea.group)
-          .compareTo(groupOrder.indexOf(eb.group));
-      if (byGroup != 0) return byGroup;
-      final byRegion = ea.region.index.compareTo(eb.region.index);
-      if (byRegion != 0) return byRegion;
-      final byEquipment = ea.equipment.index.compareTo(eb.equipment.index);
-      if (byEquipment != 0) return byEquipment;
-      return a.$1.compareTo(b.$1);
-    });
-    return [
-      for (var i = 0; i < indexed.length; i++)
-        indexed[i].$2.copyWith(sortOrder: i + 1),
-    ];
+    final out = <Exercise>[];
+    for (var g = 0; g < groupOrder.length; g++) {
+      var i = 0;
+      for (final e in library) {
+        if (e.group != groupOrder[g]) continue;
+        i++;
+        out.add(e.copyWith(sortInGroup: i, sortOrder: (g + 1) * 100 + i));
+      }
+    }
+    return out;
   }
 }

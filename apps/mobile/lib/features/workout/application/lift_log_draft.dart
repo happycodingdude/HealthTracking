@@ -1,5 +1,6 @@
 import 'package:domain/domain.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'lift_unit.dart';
 
 /// Ô của bảng ghi mức tạ.
 enum LiftField { start, end }

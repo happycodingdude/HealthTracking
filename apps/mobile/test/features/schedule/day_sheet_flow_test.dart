@@ -267,10 +267,14 @@ void main() {
       await pump(tester);
       await open(tester, LocalDate(2026, 10, 22));
       await tapKey(tester, 'day-schedule');
+      await tester.ensureVisible(find.widgetWithText(FilledButton, S.save));
+      await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(FilledButton, S.save));
       await tester.pumpAndSettle();
       expect(find.text(S.missingTimeOrMuscles), findsOneWidget);
       await tapKey(tester, 'muscle-abs');
+      await tester.ensureVisible(find.widgetWithText(FilledButton, S.save));
+      await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(FilledButton, S.save));
       await tester.pumpAndSettle();
       expect(find.text('Đã sửa riêng Thứ 5 22/10'), findsOneWidget);
@@ -353,6 +357,8 @@ void main() {
       await tapKey(tester, 'day-row-3');
       await tapKey(tester, 'muscle-back');
       await tapKey(tester, 'muscle-shoulders');
+      await tester.ensureVisible(find.widgetWithText(FilledButton, S.save));
+      await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(FilledButton, S.save));
       await tester.pumpAndSettle();
       expect(find.text(S.templateSaved), findsOneWidget);
@@ -390,6 +396,8 @@ void main() {
       await tapKey(tester, 'day-row-3');
       await tapKey(tester, 'muscle-back');
       await tapKey(tester, 'muscle-shoulders');
+      await tester.ensureVisible(find.widgetWithText(FilledButton, S.save));
+      await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(FilledButton, S.save));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('redistribute-banner')), findsOneWidget);

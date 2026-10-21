@@ -11,10 +11,9 @@ void main() {
   tearDown(() => db.close());
 
   test(
-    'schemaVersion 1: tạo sync_state một dòng, cursor 0, chưa đồng bộ',
+    'schemaVersion 2 (Bản 3): tạo sync_state một dòng, cursor 0, chưa đồng bộ',
     () async {
-      // 06 Bản 2 ED2-18: giữ schemaVersion 1 và onCreate đến bản phát hành đầu tiên.
-      expect(db.schemaVersion, 1);
+      expect(db.schemaVersion, 2);
       final rows = await db.select(db.syncState).get();
       expect(rows, hasLength(1));
       expect(rows.single.id, 1);
@@ -24,8 +23,8 @@ void main() {
     },
   );
 
-  test('VS20-T09: bảng Bản 2 có sẵn; 16 vùng cơ nạp sẵn đúng thứ tự (05 Bản 2 '
-      '§6.10.4)', () async {
+  test('VS32-T05: bảng Bản 2, Bản 3 có sẵn; 19 vùng cơ nạp sẵn đúng thứ tự '
+      '(05 Bản 3 §6.10.3)', () async {
     final regions = await (db.select(
       db.muscleRegions,
     )..orderBy([(r) => OrderingTerm.asc(r.sortOrder)])).get();
@@ -38,11 +37,13 @@ void main() {
     expect(await db.select(db.exercises).get(), isEmpty);
     expect(await db.select(db.liftLogs).get(), isEmpty);
     expect(await db.select(db.dishImages).get(), isEmpty);
+    expect(await db.select(db.exerciseUnits).get(), isEmpty);
+    expect(await db.select(db.exerciseNotes).get(), isEmpty);
   });
 
   test('đăng nhập tài khoản khác (wipe) giữ vùng cơ nạp sẵn', () async {
     await db.wipe();
-    expect(await db.select(db.muscleRegions).get(), hasLength(16));
+    expect(await db.select(db.muscleRegions).get(), hasLength(19));
   });
 
   test('sync_state chỉ có dòng id = 1', () async {

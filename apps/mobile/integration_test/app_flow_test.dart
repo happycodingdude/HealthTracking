@@ -232,8 +232,8 @@ void main() {
         tester,
         find.byKey(const ValueKey('lift-value-$pressId')),
       );
-      // Bài với máy ghi số thanh (BR2-24 sửa 13/10/2026).
-      expect(find.text('7 → 8 thanh'), findsOneWidget);
+      // Đơn vị theo bài có từ VS-35; tới lúc đó mọi bài ghi kg.
+      expect(find.text('7 → 8 kg'), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('session-back')));
       await tester.pumpAndSettle();
       await pumpUntilGone(tester, find.byKey(const ValueKey('sync-indicator')));

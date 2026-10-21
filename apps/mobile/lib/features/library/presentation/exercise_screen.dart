@@ -8,6 +8,7 @@ import '../../../app/theme.dart';
 import '../../../core/formatters.dart';
 import '../../../core/widgets/heading.dart';
 import '../../../core/widgets/reference_tag.dart';
+import '../../workout/application/lift_unit.dart';
 import '../../workout/application/session_providers.dart';
 import '../../workout/presentation/lift_log_sheet.dart';
 import '../application/library_providers.dart';
@@ -104,8 +105,7 @@ class ExerciseScreen extends ConsumerWidget {
               const SizedBox(height: 4),
               Text(
                 '${Fmt.muscle(exercise.group)} · '
-                '${Fmt.region(exercise.region)} · '
-                '${Fmt.equipment(exercise.equipment)}',
+                '${Fmt.region(exercise.region)}',
                 style: context.text.bodyLarge?.copyWith(
                   color: palette.textSecondary,
                 ),

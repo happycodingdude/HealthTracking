@@ -2,6 +2,7 @@ import 'package:api_contract/api_contract.dart';
 import 'package:postgres/postgres.dart';
 
 import 'sync_entity_handler.dart';
+import 'sync_service.dart';
 
 /// Thời điểm ISO 8601 UTC, độ chính xác mili giây (05 §6.8.1).
 String _instant(String column) =>
@@ -24,23 +25,28 @@ abstract base class SharedPullHandler extends PullOnlyHandler {
   }
 }
 
-/// Entity `exercise`, key = `id` (06 Bản 2 §6.5.1): mọi cột của `exercises`
-/// trừ `library_version`. Bài rời thư viện vẫn được gửi với `active = false`
-/// (TA2-10); không bao giờ là tombstone.
-final class ExerciseHandler extends SharedPullHandler {
+/// Entity `exercise`, key = `id` (06 Bản 3 §6.5.1): mọi cột của `exercises`
+/// trừ `library_version`, `equipment`. 14 bài bỏ ở Bản 3 là tombstone
+/// (`deleted`, TR3-09); bài gỡ sau ra mắt vẫn gửi với `active = false`
+/// (F18-R46).
+///
+/// App < 3.0.0 (TD3-21, 05 Bản 3 §6.6.7): dạng Bản 2 kèm `equipment`; chỉ gửi
+/// tombstone và dòng app 2.x đọc được (có `equipment`, không phải nhóm Chân),
+/// dòng khác có `entity` = [SyncService.skippedEntity].
+final class ExerciseHandler extends SharedPullHandler implements VersionedPull {
   const ExerciseHandler();
 
   @override
   String get entity => SyncEntities.exercise;
 
   @override
-  String get pullSql =>
+  String pullSqlFor(AppVersion? appVersion) =>
+      appVersion != null && appVersion >= AppVersion.v3 ? pullSql : _legacySql;
+
+  static String _common(String extra) =>
       '''
-    SELECT 'exercise'::text AS entity, id AS key, false AS deleted, server_version,
-           jsonb_build_object(
              'muscleGroup', muscle_group::text,
-             'muscleRegion', muscle_region,
-             'equipment', equipment::text,
+             'muscleRegion', muscle_region,$extra
              'logsWeight', logs_weight,
              'nameVi', name_vi,
              'nameEn', name_en,
@@ -52,9 +58,28 @@ final class ExerciseHandler extends SharedPullHandler {
              'videoUnavailableReason', video_unavailable_reason,
              'guideSteps', to_jsonb(guide_steps),
              'guideSafety', to_jsonb(guide_safety),
-             'approvedAt', to_char(approved_at, 'YYYY-MM-DD'),
+             'approvedAt', to_char(approved_at, 'YYYY-MM-DD'),''';
+
+  @override
+  String get pullSql =>
+      '''
+    SELECT 'exercise'::text AS entity, id AS key, deleted, server_version,
+           CASE WHEN deleted THEN NULL ELSE jsonb_build_object(${_common('')}
+             'sortInGroup', sort_in_group,
              'sortOrder', sort_order,
-             'active', active) AS data
+             'active', active) END AS data
+    FROM exercises
+    WHERE server_version > @cursor''';
+
+  static final _legacySql =
+      '''
+    SELECT CASE WHEN deleted OR (equipment IS NOT NULL AND muscle_group <> 'legs')
+                THEN 'exercise' ELSE '${SyncService.skippedEntity}' END::text AS entity,
+           id AS key, deleted, server_version,
+           CASE WHEN deleted OR equipment IS NULL OR muscle_group = 'legs' THEN NULL
+                ELSE jsonb_build_object(${_common("\n             'equipment', equipment::text,")}
+             'sortOrder', sort_order,
+             'active', active) END AS data
     FROM exercises
     WHERE server_version > @cursor''';
 }

@@ -8,12 +8,14 @@ import 'package:server/src/auth/token_service.dart';
 
 /// Admin CLI (TR-09). Xem docs/runbook.md.
 ///
+///   admin migrate
 ///   admin reset-password --phone 0901234567
 ///   admin budget --show
-///   admin library import data/exercises.json [--check-only]
+///   admin library import data/v2__exercises.json [--check-only]
 ///   admin library check-videos
 Future<void> main(List<String> args) async {
   final parser = ArgParser()
+    ..addCommand('migrate')
     ..addCommand(
       'reset-password',
       ArgParser()..addOption('phone', mandatory: true),
@@ -43,7 +45,8 @@ Future<void> main(List<String> args) async {
   } on FormatException catch (e) {
     stderr
       ..writeln(e.message)
-      ..writeln('Dùng: admin reset-password --phone <số điện thoại>')
+      ..writeln('Dùng: admin migrate')
+      ..writeln('      admin reset-password --phone <số điện thoại>')
       ..writeln('      admin budget --show')
       ..writeln(
         '      admin library import <file thư viện .json> [--check-only]',
@@ -62,6 +65,19 @@ Future<void> main(List<String> args) async {
       bcryptCost: config.bcryptCost,
     );
     switch (parsed.command!.name) {
+      case 'migrate':
+        // Như lúc server khởi động (05 Bản 3 TR3-05); dùng cho database dev
+        // và test (tool/reset_dev_db.sh, tool/integration_test.sh).
+        final applied = await Migrator(
+          db.pool,
+          Directory(config.migrationsDir),
+          Logger.stdout(),
+        ).migrate();
+        stdout.writeln(
+          applied.isEmpty
+              ? 'Không có migration mới.'
+              : 'Đã chạy: ${applied.join(', ')}',
+        );
       case 'reset-password':
         final phone = parsed.command!.option('phone')!;
         final temp = await admin.resetPassword(phone);

@@ -164,4 +164,57 @@ void main() {
     expect(S.percent(25), '25%');
     expect(S.budgetResets('01/11'), 'Đặt lại vào 01/11');
   });
+
+  test('03 Bản 3 §6.7, §6.13; 04 Bản 3 §6.13: câu có tham số (ED3-13)', () {
+    expect(
+      S.liftStepGuide('2,5 kg'),
+      'Số mờ là mức buổi trước · chạm vào số để gõ · bước 2,5 kg',
+    );
+    expect(
+      S.liftStepGuide('1 nấc'),
+      'Số mờ là mức buổi trước · chạm vào số để gõ · bước 1 nấc',
+    );
+    expect(S.liftStepGuideFirst('2,5 kg'), 'Chạm vào số để gõ · bước 2,5 kg');
+    expect(S.noteCounter(12), '12/200');
+    expect(S.notePrevious('05/11', 'máy 2 hỏng'), '05/11: máy 2 hỏng');
+    expect(
+      S.notePreviousSession('05/11', 'plank 60 giây'),
+      'Buổi trước (05/11): plank 60 giây',
+    );
+    expect(S.noteToday('máy 2 hỏng'), 'Ghi chú hôm nay: máy 2 hỏng');
+    expect(S.unitLine(S.unitStepsFull), 'Đơn vị: nấc máy');
+    expect(S.changeUnitTo(S.unitStepsFull), 'Đổi sang nấc máy');
+    expect(S.changeUnitTitle(S.unitStepsFull), 'Đổi sang nấc máy?');
+    expect(
+      S.changeUnitBody(S.unitStepsFull),
+      'Mức tạ đã ghi của bài này giữ nguyên con số, không quy đổi sang nấc '
+      'máy. Biểu đồ sẽ hiện theo nấc máy.',
+    );
+    expect(S.unitChanged(S.unitStepsFull), 'Đã đổi sang nấc máy');
+    expect(
+      S.chartLegendUnit(S.unitStepsFull),
+      '○ Bắt đầu · ● Kết thúc · đơn vị: nấc máy',
+    );
+    expect(
+      S.unitChangeSemantics(S.unitSteps, '26/10'),
+      'Đổi sang nấc ngày 26/10',
+    );
+    expect(S.liftSaved('40', '47,5', S.unitKg), 'Đã lưu 40 → 47,5 kg');
+    expect(S.liftValue('8', '10', S.unitSteps), '8 → 10 nấc');
+    expect(
+      S.liftEndMuchHigher('5', S.unitSteps),
+      'Mức tạ kết thúc cao hơn buổi trước 5 nấc. Bạn kiểm tra lại con số, và '
+      'nhớ tập trong sức mình nhé.',
+    );
+    expect(
+      S.liftEndLower('1', S.unitSteps),
+      'Mức tạ kết thúc thấp hơn buổi trước 1 nấc. Bạn kiểm tra lại con số nhé.',
+    );
+    expect(S.widgetHeader('Thứ 3'), 'Ironly · Thứ 3');
+    expect(S.widgetNotDoneAt('18:00'), 'Chưa tập · 18:00');
+    expect(S.widgetProgress(1, 4), '1/4');
+    expect(S.widgetExtra(1), '+1');
+    expect(S.activityPrevious('40 → 45 kg'), 'Buổi trước: 40 → 45 kg');
+    expect(S.activityNextLift('40 → 45 kg'), 'Kế tiếp: 40 → 45 kg');
+  });
 }

@@ -13,6 +13,8 @@ analyzer:
   exclude:
     - "**/*.g.dart"
     - "**/build/**"
+    # Chạy trong bản code app 2.x (tool/compat_e2e.sh), không phải cây này.
+    - "tool/compat/**"
 
 linter:
   rules:

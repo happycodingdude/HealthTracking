@@ -163,9 +163,9 @@ class _GroupChips extends StatelessWidget {
   }
 }
 
-/// Một dòng bài (S-66; S-63 dùng lại ở VS-27): hình vùng cơ thu nhỏ · tên bài
-/// · nhãn dụng cụ · mũi tên. Không dùng màu để phân biệt dụng cụ (04 Bản 2
-/// §6.10).
+/// Một dòng bài (S-66; S-63 dùng lại): hình vùng cơ thu nhỏ · tên bài · nhãn
+/// vùng cơ dưới tên · mũi tên (04 Bản 3 §6.6, §6.10). Không còn nhãn dụng cụ
+/// (UR3-03).
 class ExerciseRow extends StatelessWidget {
   const ExerciseRow({
     super.key,
@@ -184,7 +184,7 @@ class ExerciseRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: '${exercise.nameVi}, ${Fmt.equipment(exercise.equipment)}',
+      label: '${exercise.nameVi}, ${Fmt.region(exercise.region)}',
       child: ExcludeSemantics(
         child: InkWell(
           key: ValueKey('exercise-${exercise.id}'),
@@ -201,7 +201,7 @@ class ExerciseRow extends StatelessWidget {
                     children: [
                       Text(exercise.nameVi, style: context.text.bodyLarge),
                       const SizedBox(height: 4),
-                      EquipmentTag(exercise.equipment),
+                      RegionLabel(exercise.region),
                     ],
                   ),
                 ),
@@ -220,27 +220,19 @@ class ExerciseRow extends StatelessWidget {
   }
 }
 
-/// Nhãn dụng cụ: nền xám nhỏ, chữ "Máy" / "Tạ" / "Không dụng cụ" (04 Bản 2
+/// Nhãn vùng cơ dưới tên bài: chữ xám nhỏ, không nền, không màu (04 Bản 3
 /// §6.10).
-class EquipmentTag extends StatelessWidget {
-  const EquipmentTag(this.equipment, {super.key});
+class RegionLabel extends StatelessWidget {
+  const RegionLabel(this.region, {super.key});
 
-  final Equipment equipment;
+  final MuscleRegion region;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: context.palette.neutralContainer,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: context.palette.border),
-      ),
-      child: Text(
-        Fmt.equipment(equipment),
-        style: context.text.labelMedium?.copyWith(
-          color: context.palette.neutral,
-        ),
+    return Text(
+      Fmt.region(region),
+      style: context.text.bodyMedium?.copyWith(
+        color: context.palette.textSecondary,
       ),
     );
   }

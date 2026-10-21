@@ -2,8 +2,9 @@ import 'package:postgres/postgres.dart';
 import 'package:server/testing.dart';
 import 'package:test/test.dart';
 
-/// `db/schema.sql` (06 Bản 2 ED2-18): tạo được từ database trống và CHECK khớp
-/// quy tắc. Phần Bản 1 giữ nguyên các kiểm tra của migration 0001 → 0005 cũ.
+/// Cấu trúc database tạo từ migration (05 Bản 3 TR3-05): tạo được từ
+/// database trống và CHECK khớp quy tắc. Phần Bản 1 giữ nguyên các kiểm tra
+/// của migration 0001 → 0005 cũ.
 void main() {
   final violates = throwsA(
     isA<ServerException>().having((e) => e.code, 'code', '23514'),
@@ -79,7 +80,7 @@ void main() {
       expect(rule.single[0], 'n');
     });
 
-    test('05 Bản 2 §6.10.4: 16 vùng cơ nạp sẵn, đúng nhóm, đúng mặt, '
+    test('05 Bản 3 §6.10.3: 19 vùng cơ nạp sẵn, đúng nhóm, đúng mặt, '
         'đúng thứ tự', () async {
       final rows = await tdb.pool.execute(
         'SELECT id, muscle_group::text, view::text FROM muscle_regions ORDER BY sort_order',
@@ -103,6 +104,9 @@ void main() {
           ['abs_lower', 'abs', 'front'],
           ['abs_mid', 'abs', 'front'],
           ['obliques', 'abs', 'front'],
+          ['quads', 'legs', 'front'],
+          ['hamstrings', 'legs', 'back'],
+          ['calves', 'legs', 'back'],
         ],
       );
     });
@@ -515,7 +519,7 @@ void main() {
       String id = 'chest-upper-free-weight-incline-dumbbell-press',
       String group = 'chest',
       String region = 'chest_upper',
-      String equipment = 'free_weight',
+      String? equipment = 'free_weight',
       bool logsWeight = true,
       String name = 'Đẩy ngực trên với tạ đơn',
       int? duration = 48,
@@ -570,9 +574,17 @@ void main() {
       );
     });
 
-    test('không dụng cụ chỉ ở bụng; bài bụng không ghi mức tạ (FR2-12)', () {
-      expect(exercise(equipment: 'bodyweight'), violates);
-      expect(exercise(logsWeight: false), violates);
+    test('Bản 3 bỏ ràng buộc dụng cụ (TD3-07); bài bụng không ghi mức tạ '
+        '(FR2-12)', () async {
+      await exercise(equipment: null);
+      await exercise(
+        id: 'biceps-bodyweight-x',
+        group: 'biceps',
+        region: 'biceps',
+        equipment: 'bodyweight',
+        name: 'Bài tay trước',
+      );
+      await expectLater(exercise(id: 'x-lw', logsWeight: false), violates);
       expect(
         exercise(
           id: 'abs-mid-bodyweight-forearm-plank',
@@ -583,6 +595,13 @@ void main() {
         ),
         violates,
         reason: 'bài bụng phải có logs_weight = false',
+      );
+      await exercise(
+        id: 'legs-quads-leg-press',
+        group: 'legs',
+        region: 'quads',
+        equipment: null,
+        name: 'Nằm máy đạp chân',
       );
     });
 

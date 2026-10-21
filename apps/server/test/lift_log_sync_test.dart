@@ -326,39 +326,6 @@ void main() {
       );
     });
 
-    test('bài với máy ghi số thanh: 0; 31; 7,5 → validation_failed; 1 và 30 '
-        '→ applied', () async {
-      final at = DateTime.utc(2026, 10, 12, 12);
-      for (final (start, end, field) in [
-        (0, 140, 'startKgX10'),
-        (120, 310, 'endKgX10'),
-        (75, 140, 'startKgX10'),
-      ]) {
-        final r = await liftAt(
-          monday,
-          'chest-upper-machine',
-          at,
-          start: start,
-          end: end,
-        );
-        expect(
-          (r.status, r.code, r.field),
-          (PushStatus.rejected, ErrorCode.validationFailed, field),
-          reason: '$start → $end',
-        );
-      }
-      expect(
-        (await liftAt(
-          monday,
-          'chest-upper-machine',
-          at,
-          start: 10,
-          end: 300,
-        )).status,
-        PushStatus.applied,
-      );
-    });
-
     test('mức tạ độc lập với trạng thái buổi (AP-9): buổi "Không tập" vẫn '
         'ghi được trong cửa sổ', () async {
       final day = generated.days.firstWhere((d) => d.date == monday);

@@ -10,12 +10,12 @@ import 'package:mobile/features/library/data/video_player_gateway.dart';
 /// Độ dài video dùng trong test và golden (file thư viện chưa đo, B2-1).
 const fixtureVideoSeconds = 48;
 
-/// 29 bài của thư viện thật (`data/exercises.json`, Bạn đã duyệt), thứ tự
-/// F18-R9 như `library import`. Độ dài video cố định [fixtureVideoSeconds]
-/// để golden không đổi khi file được đo.
+/// 29 bài của thư viện Bản 2 (`data/v2__exercises.json`, Bạn đã duyệt), thứ
+/// tự như `library import` (TD3-07). Độ dài video cố định
+/// [fixtureVideoSeconds] để golden không đổi khi file được đo.
 List<Exercise> realLibrary() {
   final json =
-      jsonDecode(File('../../data/exercises.json').readAsStringSync())
+      jsonDecode(File('../../data/v2__exercises.json').readAsStringSync())
           as Map<String, Object?>;
   return LibraryRules.sorted([
     for (final raw in json['exercises']! as List)
@@ -23,7 +23,6 @@ List<Exercise> realLibrary() {
         Exercise(
           id: e['id']! as String,
           region: MuscleRegion.tryParse(e['muscleRegion']! as String)!,
-          equipment: Equipment.tryParse(e['equipment']! as String)!,
           nameVi: e['nameVi']! as String,
           nameEn: e['nameEn'] as String?,
           youtubeVideoId: (e['video']! as Map)['youtubeId']! as String,
@@ -49,13 +48,14 @@ Future<List<Exercise>> seedLibrary(
   return all;
 }
 
-/// Bài đầu tiên của vùng [region] với dụng cụ [equipment].
+/// Bài đầu tiên của vùng [region]; [kind] chọn theo mã bài của thư viện Bản
+/// 2 (`machine`, `free-weight`, `bodyweight` trong `id`).
 Exercise exerciseOf(
   List<Exercise> library,
   MuscleRegion region, [
-  Equipment? equipment,
+  String? kind,
 ]) => library.firstWhere(
-  (e) => e.region == region && (equipment == null || e.equipment == equipment),
+  (e) => e.region == region && (kind == null || e.id.contains('-$kind-')),
 );
 
 /// Trình phát giả (06 Bản 2 ED2-11): không tạo WebView; test gọi [ready] hoặc

@@ -281,7 +281,9 @@ class _LiftLogSheetState extends ConsumerState<LiftLogSheet> {
               )
             else
               Text(
-                unit == LiftUnit.plates ? S.liftStepHintPlates : S.liftStepHint,
+                unit == LiftUnit.steps
+                    ? S.liftStepGuideFirst('1 ${S.unitSteps}')
+                    : S.liftStepHint,
                 style: context.text.bodyMedium?.copyWith(
                   color: palette.textSecondary,
                 ),
@@ -316,12 +318,12 @@ class _LiftLogSheetState extends ConsumerState<LiftLogSheet> {
   }
 
   static String _errorText(LiftInputError e, LiftUnit unit) {
-    final plates = unit == LiftUnit.plates;
+    final steps = unit == LiftUnit.steps;
     return switch (e) {
       LiftInputError.missing => S.liftMissing,
       LiftInputError.outOfRange =>
-        plates ? S.liftPlatesOutOfRange : S.liftOutOfRange,
-      LiftInputError.notStep => plates ? S.liftPlatesNotStep : S.liftNotStep,
+        steps ? S.liftStepsInvalid : S.liftOutOfRange,
+      LiftInputError.notStep => steps ? S.liftStepsInvalid : S.liftNotStep,
       LiftInputError.notNumber => S.liftNotNumber,
     };
   }
@@ -357,7 +359,7 @@ class _KgBox extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final label = field == LiftField.start ? S.liftStart : S.liftEnd;
-    final plates = unit == LiftUnit.plates;
+    final steps = unit == LiftUnit.steps;
     final numberStyle = context.text.headlineMedium?.copyWith(
       fontWeight: FontWeight.w700,
     );
@@ -388,9 +390,7 @@ class _KgBox extends StatelessWidget {
               _StepButton(
                 key: ValueKey('lift-${field.name}-minus'),
                 icon: Icons.remove,
-                label:
-                    '$label, '
-                    '${plates ? S.liftDecreasePlates : S.liftDecrease}',
+                label: '$label, ${S.liftDecrease}',
                 onStep: canStep ? () => onStep(-1) : null,
               ),
               Expanded(
@@ -457,10 +457,10 @@ class _KgBox extends StatelessWidget {
                               color: Colors.transparent,
                             ),
                             keyboardType: TextInputType.numberWithOptions(
-                              decimal: !plates,
+                              decimal: !steps,
                             ),
                             inputFormatters: [
-                              if (plates)
+                              if (steps)
                                 FilteringTextInputFormatter.digitsOnly
                               else ...[
                                 FilteringTextInputFormatter.allow(
@@ -486,9 +486,7 @@ class _KgBox extends StatelessWidget {
               _StepButton(
                 key: ValueKey('lift-${field.name}-plus'),
                 icon: Icons.add,
-                label:
-                    '$label, '
-                    '${plates ? S.liftIncreasePlates : S.liftIncrease}',
+                label: '$label, ${S.liftIncrease}',
                 onStep: canStep ? () => onStep(1) : null,
               ),
             ],

@@ -1,11 +1,18 @@
 # Migration
 
-Trong lúc dev chưa có file migration nào (06 Bản 2 IR2-13, ED2-18): cấu trúc
-database nằm trong `../db/schema.sql`, sửa thẳng file đó và tạo lại database dev
-bằng `tool/reset_dev_db.sh`.
+Từ Bản 3 (05 Bản 3 TR3-05, 06 Bản 3 ED3-01), cấu trúc database chỉ đổi bằng
+file `NNNN_<tên>.sql` đánh số tiếp trong thư mục này, **chỉ thêm, không sửa,
+không xóa** file đã có. Server chạy các file chưa chạy khi khởi động
+(`Migrator`); `admin migrate` chạy cùng việc đó cho database dev và test.
 
-Khi bản đầu tiên có dữ liệu thật được phát hành, `schema.sql` lúc đó được đóng
-băng thành `0001_baseline.sql` ở thư mục này (06 Bản 2 VS31-T07, 06 Bản 1
-VS15-T10). Từ đó mọi thay đổi cấu trúc là một file `NNNN_<tên>.sql` đánh số
-tiếp, chỉ thêm, không sửa file đã chạy trên production. Server chạy các file này
-khi khởi động (`Migrator`).
+- `0001_baseline.sql`: cấu trúc Bản 2 đang chạy production, đóng băng từ
+  `db/schema.sql` của bản đã triển khai. Database production tạo từ
+  `schema.sql` trước đây được ghi nhận là đã chạy `0001` ở lần khởi động đầu
+  tiên (không chạy lại).
+- `0002_v3.sql`: toàn bộ cấu trúc Bản 3.
+
+File có dòng `-- migrate:commit` được chạy từng đoạn, mỗi đoạn một
+transaction (giá trị enum mới phải commit trước khi dùng).
+
+`../db/schema.sql` là tổng các migration, sinh bằng `tool/gen_schema.sh`; không
+sửa tay (`tool/check.sh` và CI kiểm tra).

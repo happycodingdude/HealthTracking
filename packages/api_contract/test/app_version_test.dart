@@ -10,6 +10,8 @@ void main() {
       expect(AppVersion.parse('2.10.0') >= AppVersion.parse('2.9.9'), isTrue);
       expect(AppVersion.parse('1.9.9') < AppVersion.v2, isTrue);
       expect(AppVersion.parse('3.0.0') >= AppVersion.v2, isTrue);
+      expect(AppVersion.parse('3.0.0'), AppVersion.v3);
+      expect(AppVersion.parse('2.9.9') < AppVersion.v3, isTrue);
     });
 
     test('giá trị lạ → null (server coi như app Bản 1)', () {

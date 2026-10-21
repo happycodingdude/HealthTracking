@@ -33,7 +33,7 @@ void main() {
   Map<String, Object?> libraryWithNewExercise() {
     final json = libraryMinJson();
     final added =
-        fixtureEntry(MuscleRegion.lats, Equipment.machine, suffix: 'b')
+        fixtureEntry(MuscleRegion.lats, LegacyEquipment.machine, suffix: 'b')
           ..remove('guide')
           ..remove('approvedAt');
     (json['exercises']! as List).add(added);

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Triển khai production trên server (05 §6.13.3, 06 OPS-1). Chạy trong thư mục
 # chứa docker-compose.yml, Caddyfile, .env (danh sách biến: docs/runbook.md §9).
-#   deploy.sh --init <image>   cài lần đầu: tạo cấu trúc database từ schema.sql rồi chạy
+#   deploy.sh --init <image>   cài lần đầu: chạy; api tự tạo cấu trúc database bằng
+#                              migration khi khởi động (05 Bản 3 TR3-05)
 #   deploy.sh <image>          cập nhật api lên image mới; /healthz lỗi thì quay về image trước
 #   deploy.sh --rollback       quay về image trước
 # Image đang chạy ghi ở .api_image, image trước ở .api_image.prev.
@@ -32,24 +33,9 @@ healthy() {
   return 1
 }
 
-init_db() {
-  compose "$1" up -d --wait db
-  local tables
-  tables="$(compose "$1" exec -T db psql -U "$(sed -n 's/^POSTGRES_USER=//p' .env)" -d "$(sed -n 's/^POSTGRES_DB=//p' .env)" -tA \
-    -c "SELECT count(*) FROM pg_tables WHERE schemaname = 'public'")"
-  if [ "$tables" != "0" ]; then
-    echo "Database đã có $tables bảng, không nạp schema.sql lại."
-    return 0
-  fi
-  echo "==> Nạp cấu trúc database từ schema.sql trong image"
-  compose "$1" run --rm --no-deps --entrypoint cat api /app/db/schema.sql \
-    | compose "$1" exec -T db psql -U "$(sed -n 's/^POSTGRES_USER=//p' .env)" -d "$(sed -n 's/^POSTGRES_DB=//p' .env)" -v ON_ERROR_STOP=1 -q
-}
-
 case "${1:-}" in
   --init)
     IMAGE="${2:?Thiếu image}"
-    init_db "$IMAGE"
     compose "$IMAGE" up -d
     healthy "$IMAGE" || { echo "api không trả lời /healthz; xem: docker compose logs api caddy" >&2; exit 1; }
     echo "$IMAGE" > .api_image

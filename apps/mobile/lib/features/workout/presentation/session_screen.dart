@@ -13,6 +13,7 @@ import '../../../core/widgets/toast.dart';
 import '../../library/presentation/body_map.dart';
 import '../../library/presentation/library_screen.dart';
 import '../../schedule/presentation/session_marking.dart';
+import '../application/lift_unit.dart';
 import '../application/session_providers.dart';
 import 'lift_log_sheet.dart';
 
@@ -303,7 +304,7 @@ class _ExerciseLine extends StatelessWidget {
       children: [
         Text(e.nameVi, style: context.text.bodyLarge),
         const SizedBox(height: 4),
-        EquipmentTag(e.equipment),
+        RegionLabel(e.region),
         if (!e.active) ...[
           const SizedBox(height: 4),
           Text(
@@ -325,7 +326,7 @@ class _ExerciseLine extends StatelessWidget {
           children: [
             Semantics(
               button: true,
-              label: '${e.nameVi}, ${Fmt.equipment(e.equipment)}',
+              label: '${e.nameVi}, ${Fmt.region(e.region)}',
               child: ExcludeSemantics(
                 child: InkWell(
                   key: ValueKey('exercise-${e.id}'),
@@ -353,7 +354,7 @@ class _ExerciseLine extends StatelessWidget {
         Expanded(
           child: Semantics(
             button: true,
-            label: '${e.nameVi}, ${Fmt.equipment(e.equipment)}',
+            label: '${e.nameVi}, ${Fmt.region(e.region)}',
             child: ExcludeSemantics(
               child: InkWell(
                 key: ValueKey('exercise-${e.id}'),

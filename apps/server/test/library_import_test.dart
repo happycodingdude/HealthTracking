@@ -29,19 +29,26 @@ void main() {
       LibraryFile.parse(jsonEncode(json));
 
   group('TAC2-12 (phần nạp), 05 Bản 2 §6.10.2', () {
+    LibraryFile duplicateName() {
+      final json = libraryMinJson();
+      final list = json['exercises']! as List;
+      (list[1] as Map)['nameVi'] = (list[0] as Map)['nameVi'];
+      return fileOf(json);
+    }
+
     test(
-      'file thiếu bài tạ ở một vùng → từ chối toàn bộ, database không đổi',
+      'file sai (trùng tên, LIB-R1) → từ chối toàn bộ, database không đổi',
       () async {
-        final r = await importer.run(libraryMissingFree());
+        final r = await importer.run(duplicateName());
         expect(r.ok, isFalse);
-        expect(r.issues.single, contains('chest_upper'));
+        expect(r.issues.single, contains('nameVi trùng'));
         expect(await count(), 0);
 
         await importer.run(libraryMin());
         final before = await app.tdb.pool.execute(
           'SELECT id, server_version FROM exercises ORDER BY id',
         );
-        expect((await importer.run(libraryMissingFree())).ok, isFalse);
+        expect((await importer.run(duplicateName())).ok, isFalse);
         final after = await app.tdb.pool.execute(
           'SELECT id, server_version FROM exercises ORDER BY id',
         );
@@ -53,7 +60,7 @@ void main() {
     );
 
     test(
-      'file hợp lệ → 29 bài, thứ tự F18-R9; mọi tài khoản nhận qua pull',
+      'file hợp lệ → 29 bài, thứ tự TD3-07; mọi tài khoản nhận qua pull',
       () async {
         final r = await importer.run(libraryMin());
         expect((r.ok, r.added, r.updated, r.deactivated), (true, 29, 0, 0));
@@ -102,7 +109,7 @@ void main() {
         'đưa lại thì active = true', () async {
       final withExtra = libraryMinJson();
       (withExtra['exercises']! as List).add(
-        fixtureEntry(MuscleRegion.lats, Equipment.machine, suffix: 'b'),
+        fixtureEntry(MuscleRegion.lats, LegacyEquipment.machine, suffix: 'b'),
       );
       await importer.run(fileOf(withExtra));
       expect(await count('active'), 30);

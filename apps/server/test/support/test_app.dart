@@ -163,10 +163,19 @@ extension SyncCalls on TestApp {
     return PushResponse.fromJson(res.json);
   }
 
-  Future<PullResponse> pull(String token, {int cursor = 0, int? limit}) async {
-    final res = await get(
+  /// [appVersion] mặc định là app Bản 3; `null` = không có header (05 Bản 3
+  /// TD3-21: app cũ nhận `exercise` dạng Bản 2).
+  Future<PullResponse> pull(
+    String token, {
+    int cursor = 0,
+    int? limit,
+    AppVersion? appVersion = AppVersion.v3,
+  }) async {
+    final res = await send(
+      'GET',
       '/v1/sync/pull?cursor=$cursor${limit == null ? '' : '&limit=$limit'}',
       token: token,
+      headers: {AppVersion.header: ?appVersion?.toString()},
     );
     if (res.status != 200) throw StateError('pull ${res.status} ${res.json}');
     return PullResponse.fromJson(res.json);

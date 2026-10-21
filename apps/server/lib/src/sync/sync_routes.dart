@@ -24,7 +24,12 @@ void addSyncRoutes(Router router, SyncService sync, TokenService tokens) {
         throw ApiException(ErrorCode.validationFailed, field: 'limit');
       }
       return jsonResponse(
-        (await sync.pull(userId, cursor: cursor, limit: limit)).toJson(),
+        (await sync.pull(
+          userId,
+          cursor: cursor,
+          limit: limit,
+          appVersion: request.info.appVersion,
+        )).toJson(),
       );
     }),
   );

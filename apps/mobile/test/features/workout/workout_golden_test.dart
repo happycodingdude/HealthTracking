@@ -28,7 +28,7 @@ void main() {
   late List<Exercise> library;
   late FixedClock clock;
 
-  Exercise ex(MuscleRegion region, [Equipment? equipment]) =>
+  Exercise ex(MuscleRegion region, [String? equipment]) =>
       exerciseOf(library, region, equipment);
 
   Future<AppDatabase> seeded() async {
@@ -119,20 +119,8 @@ void main() {
     testWidgets('S-63-1 trong cửa sổ, đã ghi 2 bài, thanh đáy "Đã tập" '
         '${v.name}', (tester) async {
       final db = await seeded();
-      await log(
-        db,
-        mon,
-        ex(MuscleRegion.chestUpper, Equipment.machine),
-        70,
-        80,
-      );
-      await log(
-        db,
-        mon,
-        ex(MuscleRegion.chestUpper, Equipment.freeWeight),
-        100,
-        120,
-      );
+      await log(db, mon, ex(MuscleRegion.chestUpper, 'machine'), 70, 80);
+      await log(db, mon, ex(MuscleRegion.chestUpper, 'free-weight'), 100, 120);
       final c = await pump(tester, v, db, DateTime(2026, 10, 12, 18, 30));
       await go(tester, c, sessionPath(AppTab.today, mon));
       await snap('s63_window_${v.name}');
@@ -148,7 +136,7 @@ void main() {
     testWidgets('S-63-3 buổi tập thêm Vai và Bụng ${v.name}', (tester) async {
       final db = await seeded();
       await seedExtra(db, tue, const [MuscleGroup.shoulders, MuscleGroup.abs]);
-      await log(db, tue, ex(MuscleRegion.deltFront, Equipment.machine), 50, 60);
+      await log(db, tue, ex(MuscleRegion.deltFront, 'machine'), 50, 60);
       final c = await pump(tester, v, db, DateTime(2026, 10, 13, 20, 30));
       await go(tester, c, sessionPath(AppTab.today, tue));
       await snap('s63_extra_${v.name}');
@@ -156,7 +144,7 @@ void main() {
 
     testWidgets('S-64-1 lần ghi đầu tiên ${v.name}', (tester) async {
       final db = await seeded();
-      final e = ex(MuscleRegion.chestMid, Equipment.machine);
+      final e = ex(MuscleRegion.chestMid, 'machine');
       final c = await pump(tester, v, db, DateTime(2026, 10, 12, 18, 30));
       await go(tester, c, sessionPath(AppTab.today, mon));
       await tapRow(tester, 'lift-log-${e.id}');
@@ -174,7 +162,7 @@ void main() {
       tester,
     ) async {
       final db = await seeded();
-      final e = ex(MuscleRegion.chestUpper, Equipment.freeWeight);
+      final e = ex(MuscleRegion.chestUpper, 'free-weight');
       await log(db, LocalDate(2026, 10, 5), e, 120, 140);
       await log(db, mon, e, 100, 120);
       final c = await pump(tester, v, db, DateTime(2026, 10, 12, 18, 30));
@@ -185,7 +173,7 @@ void main() {
 
     testWidgets('S-64-3 lỗi nhập liệu ${v.name}', (tester) async {
       final db = await seeded();
-      final e = ex(MuscleRegion.chestMid, Equipment.machine);
+      final e = ex(MuscleRegion.chestMid, 'machine');
       final c = await pump(tester, v, db, DateTime(2026, 10, 12, 18, 30));
       await go(tester, c, sessionPath(AppTab.today, mon));
       await tapRow(tester, 'lift-log-${e.id}');
@@ -206,7 +194,7 @@ void main() {
 
     testWidgets('S-64-4 lưu sau 00:00, buổi đã khóa ${v.name}', (tester) async {
       final db = await seeded();
-      final e = ex(MuscleRegion.chestMid, Equipment.machine);
+      final e = ex(MuscleRegion.chestMid, 'machine');
       final c = await pump(tester, v, db, DateTime(2026, 10, 12, 23, 58));
       await go(tester, c, sessionPath(AppTab.today, mon));
       await tapRow(tester, 'lift-log-${e.id}');
@@ -227,7 +215,7 @@ void main() {
       tester,
     ) async {
       final db = await seeded();
-      final e = ex(MuscleRegion.chestUpper, Equipment.freeWeight);
+      final e = ex(MuscleRegion.chestUpper, 'free-weight');
       await log(db, LocalDate(2026, 10, 5), e, 120, 140);
       final c = await pump(tester, v, db, DateTime(2026, 10, 12, 18, 30));
       await go(tester, c, sessionExercisePath(AppTab.today, mon, e.id));
@@ -244,13 +232,7 @@ void main() {
       tester,
     ) async {
       final db = await seeded();
-      await log(
-        db,
-        mon,
-        ex(MuscleRegion.chestUpper, Equipment.machine),
-        70,
-        80,
-      );
+      await log(db, mon, ex(MuscleRegion.chestUpper, 'machine'), 70, 80);
       await log(db, mon, ex(MuscleRegion.tricepsLong), 100, 125);
       await pump(tester, v, db, DateTime(2026, 10, 12, 18, 30));
       await snap('s10_session_exercises_${v.name}');

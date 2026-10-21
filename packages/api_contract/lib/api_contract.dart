@@ -7,6 +7,7 @@ export 'src/auth_dtos.dart';
 export 'src/codecs.dart';
 export 'src/error_code.dart';
 export 'src/exercise_codecs.dart';
+export 'src/exercise_unit_note_codecs.dart';
 export 'src/json_reader.dart';
 export 'src/lift_log_codecs.dart';
 export 'src/menu_dtos.dart';

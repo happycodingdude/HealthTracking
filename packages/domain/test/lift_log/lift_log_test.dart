@@ -12,11 +12,10 @@ void main() {
     muscles: const [MuscleGroup.chest],
   );
 
-  Exercise ex(MuscleRegion region, Equipment equipment, {bool active = true}) =>
+  Exercise ex(MuscleRegion region, String kind, {bool active = true}) =>
       Exercise(
-        id: '${region.id}-${equipment.wire}',
+        id: '${region.id}-$kind',
         region: region,
-        equipment: equipment,
         nameVi: 'Bài',
         youtubeVideoId: 'abcdefghijk',
         videoChannel: 'Kênh',
@@ -26,9 +25,9 @@ void main() {
         active: active,
       );
 
-  final chestPress = ex(MuscleRegion.chestUpper, Equipment.freeWeight);
-  final shoulderPress = ex(MuscleRegion.deltFront, Equipment.machine);
-  final plank = ex(MuscleRegion.absMid, Equipment.bodyweight);
+  final chestPress = ex(MuscleRegion.chestUpper, 'press');
+  final shoulderPress = ex(MuscleRegion.deltFront, 'machine');
+  final plank = ex(MuscleRegion.absMid, 'plank');
 
   group('LiftKg: nhập con số (F21-R6, F21-V1 → V4)', () {
     test('F21-E9: "72,5" và "72.5" đều là 72,5 kg', () {
@@ -86,31 +85,23 @@ void main() {
       expect(LiftKg.format(5), '0,5');
     });
 
-    test('BR2-24 sửa 13/10: bài với máy ghi số thanh, bài với tạ ghi kg', () {
-      expect(shoulderPress.liftUnit, LiftUnit.plates);
-      expect(chestPress.liftUnit, LiftUnit.kg);
-    });
-
-    test('số thanh: số nguyên 1–30, không có số lẻ', () {
-      const u = LiftUnit.plates;
-      expect(LiftKg.check('7', u), (70, null));
+    test('F21-R42, A3-03: nấc máy là số nguyên 1–50, không có số lẻ', () {
+      const u = LiftUnit.steps;
+      expect(LiftKg.check('8', u), (80, null));
       expect(LiftKg.check('1', u), (10, null));
-      expect(LiftKg.check('30', u), (300, null));
+      expect(LiftKg.check('50', u), (500, null));
       expect(LiftKg.check('0', u), (null, LiftInputError.outOfRange));
-      expect(LiftKg.check('31', u), (null, LiftInputError.outOfRange));
-      expect(LiftKg.check('7,5', u), (null, LiftInputError.notStep));
+      expect(LiftKg.check('51', u), (null, LiftInputError.outOfRange));
+      expect(LiftKg.check('8,5', u), (null, LiftInputError.notStep));
       expect(LiftKg.check('', u), (null, LiftInputError.missing));
-      final input = LiftInput.of('7', '8,5', u);
-      expect((input.startX10, input.endError), (70, LiftInputError.notStep));
+      final input = LiftInput.of('8', '8,5', u);
+      expect((input.startX10, input.endError), (80, LiftInputError.notStep));
     });
 
-    test('số thanh: − / + mỗi lần 1 thanh, chặn ở 1 và 30', () {
-      const u = LiftUnit.plates;
-      expect(LiftKg.stepped(70, 1, u), 80);
-      expect(LiftKg.stepped(70, -1, u), 60);
-      expect(LiftKg.stepped(10, -1, u), 10);
-      expect(LiftKg.stepped(300, 1, u), 300);
-      expect(LiftKg.format(70), '7');
+    test('LiftUnit: giá trị trong API (TD3-03)', () {
+      expect(LiftUnit.tryParse('kg'), LiftUnit.kg);
+      expect(LiftUnit.tryParse('steps'), LiftUnit.steps);
+      expect(LiftUnit.tryParse('plates'), isNull);
     });
 
     test('bản ghi kiểm tra theo đơn vị của bài (app và server cùng dùng)', () {
@@ -120,10 +111,10 @@ void main() {
         startKgX10: start,
         endKgX10: end,
       );
-      expect(of(70, 80).invalidField(LiftUnit.plates), isNull);
-      expect(of(75, 80).invalidField(LiftUnit.plates), 'startKgX10');
-      expect(of(70, 310).invalidField(LiftUnit.plates), 'endKgX10');
-      expect(of(75, 310).invalidField(LiftUnit.kg), isNull);
+      expect(of(70, 80).invalidField(LiftUnit.steps), isNull);
+      expect(of(75, 80).invalidField(LiftUnit.steps), 'startKgX10');
+      expect(of(70, 510).invalidField(LiftUnit.steps), 'endKgX10');
+      expect(of(75, 510).invalidField(LiftUnit.kg), isNull);
     });
   });
 
@@ -268,11 +259,7 @@ void main() {
 
     test('F21-E7: bài đã rời thư viện → không tạo mới; đã có bản ghi thì sửa, '
         'xóa được', () {
-      final gone = ex(
-        MuscleRegion.chestUpper,
-        Equipment.freeWeight,
-        active: false,
-      );
+      final gone = ex(MuscleRegion.chestUpper, 'press', active: false);
       expect(
         LiftLogRules.check(day: chestDay, exercise: gone, now: at),
         LiftError.notAllowedForExercise,
@@ -371,13 +358,13 @@ void main() {
       expect(EndWarning.of(140, 140, LiftUnit.kg), isNull);
     });
 
-    test('bài với máy: cao hơn buổi trước quá 3 thanh mới cảnh báo; thấp hơn '
+    test('A3-04: nấc máy cao hơn buổi trước quá 4 nấc mới cảnh báo; thấp hơn '
         'bất kỳ mức nào thì cảnh báo', () {
-      const u = LiftUnit.plates;
-      expect(EndWarning.of(70, 100, u), isNull);
+      const u = LiftUnit.steps;
+      expect(EndWarning.of(70, 110, u), isNull);
       expect(
-        EndWarning.of(70, 110, u),
-        const EndWarning(EndWarningKind.muchHigher, 40),
+        EndWarning.of(70, 120, u),
+        const EndWarning(EndWarningKind.muchHigher, 50),
       );
       expect(
         EndWarning.of(70, 60, u),

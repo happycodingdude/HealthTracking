@@ -85,7 +85,8 @@ goalLabel: "Mục tiêu" # 04 S-03 "Mục tiêu: Giảm mỡ" (mock tách 2 ph�
 goalFatLoss: "Giảm mỡ" # 04 S-03, 03 FR-07
 unitCm: "cm" # 04 S-03
 unitKg: "kg" # 04 S-03
-unitPlates: "thanh" # SỬA NGAY 13/10 — bài với máy ghi số thanh (BR2-24 sửa), chờ Bạn Chốt
+unitSteps: "nấc" # 04 Bản 3 UA3-07, §6.13
+unitStepsFull: "nấc máy" # 04 Bản 3 UA3-07, §6.13 (S-64 bộ chọn lần ghi đầu, S-67)
 unitKcal: "kcal" # 04 S-52
 done: "Xong" # nút đóng bánh xe chọn năm sinh (kiểu iOS)
 invalidHeight: "Chiều cao cần từ 120 đến 230 cm" # 03 F01-V1
@@ -138,6 +139,7 @@ muscleShoulders: "Vai" # 03 §6.1, 04 §6.13.4
 muscleAbs: "Bụng" # 03 §6.1, 04 §6.13.4
 muscleBack: "Lưng" # 03 §6.1, 04 §6.13.4
 muscleBiceps: "Tay trước" # 03 §6.1, 04 §6.13.4
+muscleLegs: "Chân" # 03 Bản 3 §6.1, BR3-10
 and: "và" # 04 §6.13.4 nối nhóm cơ bằng "và"
 noWorkoutDay: "Lịch tập cần ít nhất 1 ngày" # 03 F03-V1
 rest: "Nghỉ" # 04 §6.13.3, S-20
@@ -309,11 +311,11 @@ regionTricepsLateralMedial: "Đầu ngoài và đầu trong"
 regionAbsLower: "Bụng dưới"
 regionAbsMid: "Bụng giữa"
 regionObliques: "Hai bên"
+regionQuads: "Đùi trước" # 03 Bản 3 §6.4, BR3-11
+regionHamstrings: "Đùi sau"
+regionCalves: "Bắp chân"
 
 # 04 Bản 2 §6.10 — nhãn dụng cụ
-equipmentMachine: "Máy"
-equipmentFreeWeight: "Tạ"
-equipmentBodyweight: "Không dụng cụ"
 
 # 04 Bản 2 S-66, S-67, §6.12; 03 Bản 2 F10-R21, F18-E1 → E3, F19-E2
 libraryFootnote: "Thư viện gồm các bài và video Bạn đã duyệt. Không cần mạng, trừ video."
@@ -347,7 +349,6 @@ readOnlyPastExtra: "Chỉ xem · Buổi tập thêm cho ngày đã qua không gh
 liftStart: "Bắt đầu"
 liftEnd: "Kết thúc"
 liftStepHint: "Bước 0,5 kg · chạm vào số để gõ"
-liftStepHintPlates: "Bước 1 thanh · chạm vào số để gõ" # SỬA NGAY 13/10 — bài với máy ghi số thanh (BR2-24 sửa), chờ Bạn Chốt
 liftFirstTime: "Lần ghi đầu tiên của bài này"
 deleteLift: "Xóa mức tạ"
 deleteLiftConfirm: "Xóa mức tạ của bài này?"
@@ -356,13 +357,9 @@ liftLockedAtMidnight: "Mức tạ của buổi này đã khóa lúc 00:00."
 liftMissing: "Vui lòng nhập cả mức tạ bắt đầu và kết thúc"
 liftOutOfRange: "Mức tạ cần từ 0,5 đến 300 kg"
 liftNotStep: "Mức tạ nhập theo bước 0,5 kg"
-liftPlatesOutOfRange: "Số thanh cần từ 1 đến 30" # SỬA NGAY 13/10 — bài với máy ghi số thanh (BR2-24 sửa), chờ Bạn Chốt
-liftPlatesNotStep: "Số thanh không có số lẻ" # SỬA NGAY 13/10 — bài với máy ghi số thanh (BR2-24 sửa), chờ Bạn Chốt
 liftNotNumber: "Mức tạ chưa đúng"
 liftDecrease: "Giảm 0,5 kg" # GIẢ ĐỊNH — nhãn VoiceOver của nút −, spec không ghi câu
 liftIncrease: "Tăng 0,5 kg" # GIẢ ĐỊNH — nhãn VoiceOver của nút +, spec không ghi câu
-liftDecreasePlates: "Giảm 1 thanh" # GIẢ ĐỊNH — nhãn VoiceOver nút − của bài với máy
-liftIncreasePlates: "Tăng 1 thanh" # GIẢ ĐỊNH — nhãn VoiceOver nút + của bài với máy
 
 # 04 Bản 2 S-68, S-69, §6.12; 03 Bản 2 F22-E1
 progressHint: "Mức tạ gần nhất của từng bài · bài tập gần nhất lên đầu"
@@ -372,3 +369,54 @@ chartLegend: "○ Bắt đầu · ● Kết thúc"
 chartMonthEmpty: "Chưa có mức tạ trong tháng này"
 chartSessions: "Các buổi trong tháng" # theo mock S-69-1
 backExerciseDetail: "Chi tiết bài" # GIẢ ĐỊNH — nút quay lại S-69 khi mở từ S-67, spec không ghi
+
+# Bản 3 (06 Bản 3 ED3-13): 03 Bản 3 §6.7, §6.13, §6.14; 04 Bản 3 §6.13
+# S-63
+liftPreviousLabel: "BUỔI TRƯỚC"
+liftLatestLabel: "GẦN NHẤT"
+liftNotLogged: "Chưa ghi"
+noteShort: "Ghi chú"
+sessionFootnote: "Số mờ là mức tạ buổi trước · chạm vào để ghi"
+# S-64; 03 Bản 3 F21-V41, V43, V44, F26-E4
+liftUnitPrompt: "Bài này ghi bằng"
+liftNoWeight: "Bài này không ghi mức tạ"
+noteHint: "Ghi chú cho hôm nay"
+liftUnitRequired: "Chọn kg hoặc nấc máy cho bài này"
+liftKgInvalid: "Mức tạ cần từ 0,5 đến 300 kg, theo bước 0,5"
+liftStepsInvalid: "Nấc máy cần là số nguyên từ 1 đến 50"
+liftAndNoteLocked: "Mức tạ và ghi chú của buổi này đã khóa lúc 00:00."
+discardChanges: "Bỏ thay đổi chưa lưu?"
+keepLogging: "Tiếp tục ghi"
+noteSaved: "Đã lưu ghi chú"
+beforeUnitChange: "· trước khi đổi" # S-69 (UA3-13)
+# S-56, S-73; 03 Bản 3 F-27
+thisDevice: "Thiết bị này"
+logout: "Đăng xuất"
+logoutHint: "Đăng xuất sẽ xóa dữ liệu trên máy này. Dữ liệu của Bạn vẫn được giữ trên hệ thống."
+logoutConfirmTitle: "Đăng xuất?"
+logoutConfirmBody: "Đăng xuất sẽ xóa dữ liệu trên máy này. Dữ liệu của Bạn vẫn được giữ trên hệ thống và sẽ khôi phục khi đăng nhập lại."
+logoutFailedTitle: "Chưa đăng xuất được"
+logoutOffline: "Cần kết nối internet để đăng xuất."
+logoutSyncFailed: "Chưa đồng bộ xong, chưa đăng xuất được. Thử lại sau."
+logoutSyncing: "Đang đồng bộ…"
+logoutSyncingBody: "Đồng bộ xong app mới đăng xuất. Đừng tắt mạng."
+logoutFinishing: "Đang hoàn tất đăng xuất…"
+# S-70 Widget; 03 Bản 3 F-24
+widgetNotDone: "Chưa tập"
+widgetDone: "Đã tập"
+widgetSkipped: "Không tập"
+widgetRest: "Nghỉ"
+widgetOneExtra: "+1 buổi thêm"
+widgetThisWeek: "Tuần này"
+widgetNoSessionsThisWeek: "Tuần này không có buổi"
+widgetNoSchedule: "Chưa có lịch tập"
+widgetSignedOut: "Mở app để đăng nhập"
+# S-71 Thẻ màn hình khóa; 03 Bản 3 F-25
+activityTitle: "Ironly · Buổi tập hôm nay"
+activityLastLogged: "Vừa ghi"
+activityNext: "Kế tiếp"
+activityNothingLogged: "Chưa ghi bài nào"
+activityPreviousNone: "Buổi trước: chưa ghi"
+activityAllLogged: "Đã ghi hết bài"
+activityAbsOnly: "Bài bụng không ghi mức tạ"
+activityNextNone: "Kế tiếp: chưa ghi" # 04 Bản 3 UA3-15 Dynamic Island thu gọn

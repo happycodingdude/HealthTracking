@@ -1,45 +1,58 @@
-/// Lỗi nhập mức tạ (F21-V1 → V4). Câu chữ nằm ở app.
+/// Lỗi nhập mức tạ (F21-V42 → V45). Câu chữ nằm ở app.
 enum LiftInputError {
-  /// F21-V1: thiếu con số.
+  /// F21-V42: thiếu con số.
   missing,
 
-  /// F21-V2: ngoài khoảng của đơn vị (0,5–300 kg; 1–30 thanh).
+  /// F21-V43, V44: ngoài khoảng của đơn vị (0,5–300 kg; 1–50 nấc).
   outOfRange,
 
-  /// F21-V3: lẻ bước (kg: không phải bội số của 0,5; thanh: có số lẻ).
+  /// F21-V43, V44: lẻ bước (kg: không phải bội số của 0,5; nấc: có số lẻ).
   notStep,
 
-  /// F21-V4: không phải số.
+  /// F21-V45: không phải số.
   notNumber,
 }
 
-/// Đơn vị mức tạ theo dụng cụ của bài (BR2-24, sửa 13/10/2026): bài với tạ
-/// ghi kg, bài với máy (gồm máy kéo cáp) ghi số thanh tạ của máy. Cả hai lưu
-/// × 10 như nhau (7 thanh → 70), nên bản ghi và đồng bộ không đổi.
+/// Đơn vị mức tạ của một bài (BR3-21, TD3-03): kg hoặc nấc máy (con số trên
+/// khối tạ xếp chồng). Đơn vị là dữ liệu của Bạn theo từng bài (bảng
+/// `exercise_units`), không thuộc thư viện. Cả hai lưu × 10 cùng cột như nhau
+/// (TA3-05): 72,5 kg → 725, 8 nấc → 80. Giá trị trong API/PostgreSQL là
+/// [wire].
 enum LiftUnit {
-  /// 0,5–300 kg, bước 0,5 (F21-R6, FA2-03); cao hơn buổi trước quá 10 kg
-  /// thì cảnh báo (F21-R8).
-  kg(min: 5, max: 3000, step: 5, maxRise: 100),
+  /// 0,5–300 kg, bước 0,5 (F21-R42); cao hơn buổi trước quá 10 kg thì cảnh
+  /// báo (F21-R45).
+  kg('kg', min: 5, max: 3000, step: 5, maxRise: 100),
 
-  /// 1–30 thanh, không có số lẻ; cao hơn buổi trước quá 3 thanh thì cảnh báo.
-  plates(min: 10, max: 300, step: 10, maxRise: 30);
+  /// Nấc máy 1–50, số nguyên (F21-R42, A3-03); cao hơn buổi trước quá 4 nấc
+  /// thì cảnh báo (A3-04).
+  steps('steps', min: 10, max: 500, step: 10, maxRise: 40);
 
-  const LiftUnit({
+  const LiftUnit(
+    this.wire, {
     required this.min,
     required this.max,
     required this.step,
     required this.maxRise,
   });
 
+  final String wire;
+
   /// Khoảng, bước và mức tăng tối đa không cảnh báo, đều × 10.
   final int min;
   final int max;
   final int step;
   final int maxRise;
+
+  static LiftUnit? tryParse(String wire) {
+    for (final u in values) {
+      if (u.wire == wire) return u;
+    }
+    return null;
+  }
 }
 
 /// Mức tạ lưu bằng số nguyên × 10 như cân nặng (05 Bản 2 §6.6.2): 72,5 kg →
-/// 725, 7 thanh → 70. Khoảng và bước theo [LiftUnit] của bài.
+/// 725, 8 nấc → 80. Khoảng và bước theo [LiftUnit] của bài.
 abstract final class LiftKg {
   static final _number = RegExp(r'^(\d+)(?:[.,](\d+))?$');
 
@@ -65,7 +78,7 @@ abstract final class LiftKg {
     return (whole * 10 + tenth, null);
   }
 
-  /// F21-V2, F21-V3 cho giá trị × 10 theo [unit].
+  /// Khoảng và bước cho giá trị × 10 theo [unit].
   static LiftInputError? validate(int x10, LiftUnit unit) {
     if (x10 < unit.min || x10 > unit.max) return LiftInputError.outOfRange;
     if (x10 % unit.step != 0) return LiftInputError.notStep;
@@ -81,7 +94,7 @@ abstract final class LiftKg {
   }
 
   /// Nút − / + (04 Bản 2 UA2-10): thêm [delta] bước của [unit] (0,5 kg; 1
-  /// thanh), không vượt khoảng. Giá trị lẻ bước được làm tròn về bước gần
+  /// nấc), không vượt khoảng. Giá trị lẻ bước được làm tròn về bước gần
   /// nhất theo hướng bấm.
   static int stepped(int x10, int delta, LiftUnit unit) {
     final step = unit.step;
@@ -100,7 +113,7 @@ abstract final class LiftKg {
   }
 }
 
-/// Kiểm tra hai ô của bảng ghi mức tạ (F21-V1 → V4): mỗi ô một lỗi, hoặc giá
+/// Kiểm tra hai ô của bảng ghi mức tạ (F21-V42 → V45): mỗi ô một lỗi, hoặc giá
 /// trị × 10 khi hợp lệ. Thiếu một trong hai con số thì ô trống báo
 /// [LiftInputError.missing] ("Vui lòng nhập cả mức tạ bắt đầu và kết thúc").
 final class LiftInput {
@@ -120,7 +133,7 @@ final class LiftInput {
   bool get isValid => startError == null && endError == null;
 }
 
-/// Hai ô của bảng ghi mức tạ chưa hợp lệ (F21-V1 → V4): chưa lưu gì.
+/// Hai ô của bảng ghi mức tạ chưa hợp lệ (F21-V42 → V45): chưa lưu gì.
 final class LiftInputException implements Exception {
   const LiftInputException(this.input);
 

@@ -51,16 +51,8 @@ void main() {
     logs = LiftLogRepository(db);
     await seedSetUp(db);
     library = await seedLibrary(db);
-    chestMachine = exerciseOf(
-      library,
-      MuscleRegion.chestUpper,
-      Equipment.machine,
-    );
-    chestDumbbell = exerciseOf(
-      library,
-      MuscleRegion.chestUpper,
-      Equipment.freeWeight,
-    );
+    chestMachine = exerciseOf(library, MuscleRegion.chestUpper, 'machine');
+    chestDumbbell = exerciseOf(library, MuscleRegion.chestUpper, 'free-weight');
     tricepsLong = exerciseOf(library, MuscleRegion.tricepsLong);
     shoulderSide = exerciseOf(library, MuscleRegion.deltSide);
     absLower = exerciseOf(library, MuscleRegion.absLower);
@@ -287,20 +279,17 @@ void main() {
     testWidgets('F20-AC5: buổi tuần trước có mức tạ → chỉ đọc, chạm dòng → '
         'S-67 "Buổi này: …" không có "Sửa"', (tester) async {
       final wed = LocalDate(2026, 10, 7);
-      final back = exerciseOf(library, MuscleRegion.lats, Equipment.machine);
+      final back = exerciseOf(library, MuscleRegion.lats, 'machine');
       await logLift(wed, back, 70, 80);
       await pump(tester, tall: true);
       await go(tester, sessionPath(AppTab.schedule, wed));
       expect(find.text(S.readOnlyLocked), findsOneWidget);
-      expect(find.text('7 → 8 thanh'), findsOneWidget);
+      expect(find.text('7 → 8 kg'), findsOneWidget);
       expect(key('lift-readonly-${back.id}'), findsOneWidget);
       expect(find.text(S.logLiftShort, skipOffstage: false), findsNothing);
       await tapKey(tester, 'exercise-${back.id}');
       expect(find.text(S.backSession), findsOneWidget);
-      expect(
-        find.text(S.liftThisSession('7', '8', S.unitPlates)),
-        findsOneWidget,
-      );
+      expect(find.text(S.liftThisSession('7', '8', S.unitKg)), findsOneWidget);
       expect(key('exercise-edit-lift'), findsNothing);
       expect(key('exercise-log-lift'), findsNothing);
     });
@@ -335,7 +324,7 @@ void main() {
       expect(find.text(S.liftLoggedOf(1, 9)), findsOneWidget);
       await tapKey(tester, 'lift-value-${chestMachine.id}');
       await enter(tester, end: '9');
-      expect(find.text('7 → 9 thanh'), findsOneWidget);
+      expect(find.text('7 → 9 kg'), findsOneWidget);
     });
 
     testWidgets('F20-E2: sửa riêng nhóm cơ hôm nay trước giờ tập → danh sách '
@@ -502,47 +491,6 @@ void main() {
       expect(find.text('300'), findsWidgets);
     });
 
-    testWidgets('BR2-24 sửa 13/10: bài với máy ghi số thanh — ô số kèm '
-        '"thanh", chỉ nhận chữ số, − / + mỗi lần 1 thanh, 1–30; cao hơn buổi '
-        'trước quá 3 thanh mới cảnh báo', (tester) async {
-      await logLift(LocalDate(2026, 10, 5), chestMachine, 70, 80);
-      await pump(tester);
-      await go(tester, sessionPath(AppTab.today, mon));
-      await tapKey(tester, 'lift-log-${chestMachine.id}');
-      expect(
-        find.text(S.liftPrevious('05/10', '7', '8', S.unitPlates)),
-        findsOneWidget,
-      );
-      expect(find.text(S.liftStepHintPlates), findsOneWidget);
-      expect(find.text(S.unitPlates), findsNWidgets(2));
-      expect(find.text(S.unitKg), findsNothing);
-      expect(
-        tester.widget<TextField>(key('lift-start-input')).keyboardType,
-        TextInputType.number,
-      );
-      await enter(tester, start: '7', save: false);
-      await tapKey(tester, 'lift-end-plus');
-      expect(find.text('8'), findsWidgets);
-      // Buổi trước kết thúc 8: 11 (cao hơn 3 thanh) không cảnh báo; 12 (cao
-      // hơn 4 thanh) cảnh báo; thấp hơn bất kỳ mức nào cũng cảnh báo.
-      await enter(tester, end: '11', save: false);
-      expect(key('lift-warning-muchHigher'), findsNothing);
-      await enter(tester, end: '12', save: false);
-      expect(find.text(S.liftEndMuchHigher('4', S.unitPlates)), findsOneWidget);
-      await enter(tester, end: '7', save: false);
-      expect(find.text(S.liftEndLower('1', S.unitPlates)), findsOneWidget);
-      // Dấu phẩy bị bỏ: "7,5" thành "75", ngoài 1–30.
-      await enter(tester, end: '7,5');
-      expect(find.text(S.liftPlatesOutOfRange), findsOneWidget);
-      await enter(tester, end: '31');
-      expect(find.text(S.liftPlatesOutOfRange), findsOneWidget);
-      expect(await logs.get(mon, chestMachine.id), isNull);
-      await enter(tester, end: '9');
-      expect(find.text('Đã lưu 7 → 9 thanh'), findsOneWidget);
-      expect(find.text('7 → 9 thanh'), findsOneWidget);
-      expect((await logs.get(mon, chestMachine.id))!.endKgX10, 90);
-    });
-
     testWidgets('FA2-17, F21-E4, F21-R12: mở lúc 23:58, bấm Lưu lúc 00:01 → '
         'hộp "Mức tạ của buổi này đã khóa lúc 00:00." → "Đã hiểu" → S-63 chỉ '
         'đọc, không lưu gì', (tester) async {
@@ -618,7 +566,7 @@ void main() {
         );
         expect(key('exercise-log-lift'), findsNothing);
         expect(
-          find.text(S.liftLatest('05/10', '7', '8', S.unitPlates)),
+          find.text(S.liftLatest('05/10', '7', '8', S.unitKg)),
           findsOneWidget,
         );
       },

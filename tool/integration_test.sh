@@ -17,11 +17,12 @@ JWT_SECRET="$(openssl rand -base64 48 | tr -d '\n')"
 "$ROOT/tool/test_db.sh" ensure
 DBNAME="itest_$(date +%s)"
 docker compose -f "$ROOT/deploy/docker-compose.dev.yml" exec -T db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "CREATE DATABASE $DBNAME" >/dev/null
-# Trong lúc dev, cấu trúc database tạo từ schema.sql (06 Bản 2 ED2-18).
-docker compose -f "$ROOT/deploy/docker-compose.dev.yml" exec -T db psql -U "$POSTGRES_USER" -d "$DBNAME" -v ON_ERROR_STOP=1 -q <"$ROOT/apps/server/db/schema.sql"
+# Cấu trúc database bằng migration (05 Bản 3 TR3-05).
+(cd "$ROOT/apps/server" && DATABASE_URL="$(dev_db_url "$DBNAME")" JWT_SECRET="$JWT_SECRET" \
+  dart run bin/admin.dart migrate >/dev/null)
 # Thư viện bài tập Bạn đã duyệt (mục Bài tập, chi tiết bài; 05 Bản 2 §6.10.2).
 (cd "$ROOT/apps/server" && DATABASE_URL="$(dev_db_url "$DBNAME")" JWT_SECRET="$JWT_SECRET" \
-  dart run bin/admin.dart library import "$ROOT/data/exercises.json" >/dev/null)
+  dart run bin/admin.dart library import "$ROOT/data/v2__exercises.json" >/dev/null)
 mkdir -p "$ROOT/build"
 (cd "$ROOT/apps/server" && DATABASE_URL="$(dev_db_url "$DBNAME")" HOST=127.0.0.1 PORT=$PORT \
   JWT_SECRET="$JWT_SECRET" BCRYPT_COST=4 \

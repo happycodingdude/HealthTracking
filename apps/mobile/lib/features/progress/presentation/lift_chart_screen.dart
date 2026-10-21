@@ -12,6 +12,7 @@ import '../../../app/time_ticker.dart';
 import '../../../core/formatters.dart';
 import '../../../core/widgets/heading.dart';
 import '../../library/application/library_providers.dart';
+import '../../workout/application/lift_unit.dart';
 import '../application/progress_providers.dart';
 
 /// Đường dẫn S-69 mở từ S-68 (mục Tiến bộ, NAV-11).
@@ -329,7 +330,7 @@ class _LiftChartState extends State<_LiftChart> {
   static const _steps = [0.5, 1.0, 2.0, 2.5, 5.0, 10.0, 20.0, 25.0, 50.0];
 
   /// Bước chia trục số thanh: chỉ số nguyên.
-  static const _plateSteps = [1.0, 2.0, 5.0, 10.0];
+  static const _wholeSteps = [1.0, 2.0, 5.0, 10.0];
 
   @override
   Widget build(BuildContext context) {
@@ -342,7 +343,7 @@ class _LiftChartState extends State<_LiftChart> {
     var minY = math.max(0, low / 10 - pad).toDouble();
     var maxY = high / 10 + pad;
     final unit = widget.unit;
-    final step = (unit == LiftUnit.plates ? _plateSteps : _steps).firstWhere(
+    final step = (unit == LiftUnit.steps ? _wholeSteps : _steps).firstWhere(
       (s) => (maxY - minY) / s <= 5,
       orElse: () => 100,
     );

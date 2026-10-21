@@ -246,7 +246,7 @@ class DishImages extends Table {
   Set<Column<Object>> get primaryKey => {nameKey};
 }
 
-/// 16 vùng cơ (05 Bản 2 §6.10.4), nạp sẵn lúc tạo database từ
+/// 19 vùng cơ (05 Bản 3 §6.10.3), nạp sẵn lúc tạo database từ
 /// [MuscleRegion]; không đồng bộ.
 @DataClassName('MuscleRegionRow')
 class MuscleRegions extends Table {
@@ -265,7 +265,8 @@ class MuscleRegions extends Table {
 }
 
 /// Bản sao chỉ đọc entity `exercise` (dòng dùng chung, AP-7). Cột giống bảng
-/// `exercises` của server trừ `library_version` (06 Bản 2 §6.5.1).
+/// `exercises` của server trừ `library_version` (06 Bản 3 §6.5.1). Bài bỏ ở
+/// Bản 3 (tombstone) bị xóa dòng (05 Bản 3 §6.5).
 @DataClassName('ExerciseRow')
 class Exercises extends Table {
   @override
@@ -275,8 +276,9 @@ class Exercises extends Table {
   TextColumn get muscleGroup => text()();
   TextColumn get muscleRegion => text()();
 
-  /// `machine` / `free_weight` / `bodyweight`.
-  TextColumn get equipment => text()();
+  /// Cột của Bản 2, app Bản 3 không đọc (TD3-20). Còn trong SQLite đã nâng
+  /// từ schema 1 (NOT NULL) nên ghi chuỗi rỗng.
+  TextColumn get equipment => text().clientDefault(() => '')();
   BoolColumn get logsWeight => boolean()();
   TextColumn get nameVi => text()();
   TextColumn get nameEn => text().nullable()();
@@ -293,8 +295,14 @@ class Exercises extends Table {
 
   /// `YYYY-MM-DD`.
   TextColumn get approvedAt => text()();
+
+  /// Vị trí trong nhóm (TD3-07), schema 2.
+  IntColumn get sortInGroup => integer().withDefault(const Constant(0))();
   IntColumn get sortOrder => integer()();
   BoolColumn get active => boolean()();
+
+  /// Schema 2 (06 Bản 3 §6.5.2).
+  BoolColumn get deleted => boolean().withDefault(const Constant(false))();
 
   @override
   Set<Column<Object>> get primaryKey => {id};
@@ -318,10 +326,45 @@ class LiftLogs extends Table {
   Set<Column<Object>> get primaryKey => {date, exerciseId};
 }
 
-/// SQLite trên máy (TD-04). Trong lúc dev (06 Bản 2 IR2-13, ED2-18): giữ
-/// `schemaVersion = 1` và chỉ có `onCreate`; đổi bảng thì sửa thẳng ở đây và
-/// cài lại app. Từ bản phát hành đầu tiên có dữ liệu thật, mỗi lần đổi cấu
-/// trúc tăng `schemaVersion` và có bước nâng cấp, chỉ thêm (ED-05).
+/// Bản sao entity `exercise_unit` (key `exerciseId`, 05 Bản 3 §6.6.2): đơn vị
+/// mức tạ Bạn chọn cho bài, ghi qua outbox. Schema 2.
+@DataClassName('ExerciseUnitRow')
+class ExerciseUnits extends Table {
+  @override
+  String get tableName => 'exercise_units';
+
+  TextColumn get exerciseId => text()();
+
+  /// `kg` / `steps`.
+  TextColumn get unit => text()();
+
+  /// `YYYY-MM-DD`: ngày đổi đơn vị gần nhất (F22-R42).
+  TextColumn get changedOn => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {exerciseId};
+}
+
+/// Bản sao entity `exercise_note` (key `YYYY-MM-DD:exerciseId`, 05 Bản 3
+/// §6.6.4): ghi chú bài theo buổi, ghi qua outbox; xóa là xóa dòng. Schema 2.
+@DataClassName('ExerciseNoteRow')
+class ExerciseNotes extends Table {
+  @override
+  String get tableName => 'exercise_notes';
+
+  /// `YYYY-MM-DD`.
+  TextColumn get date => text()();
+  TextColumn get exerciseId => text()();
+  TextColumn get noteText => text().named('text')();
+
+  @override
+  Set<Column<Object>> get primaryKey => {date, exerciseId};
+}
+
+/// SQLite trên máy (TD-04). Bản 2 đã phát hành với `schemaVersion = 1`; từ
+/// Bản 3 mỗi lần đổi cấu trúc tăng `schemaVersion` và có bước nâng cấp, chỉ
+/// thêm, không xóa database vì outbox có thể còn thay đổi chưa gửi (ED-05,
+/// 05 Bản 3 §6.5, TR3-05).
 @DriftDatabase(
   tables: [
     SyncState,
@@ -339,13 +382,29 @@ class LiftLogs extends Table {
     MuscleRegions,
     Exercises,
     LiftLogs,
+    ExerciseUnits,
+    ExerciseNotes,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
+  /// 1 = Bản 2; 2 = Bản 3 (06 Bản 3 §6.5.2).
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  /// Vùng cơ còn thiếu (lần tạo: 19 vùng; nâng từ schema 1: 3 vùng chân).
+  Future<void> _insertMuscleRegions() => batch((b) {
+    b.insertAllOnConflictUpdate(muscleRegions, [
+      for (final r in MuscleRegion.values)
+        MuscleRegionsCompanion.insert(
+          id: r.id,
+          muscleGroup: r.group.name,
+          view: r.view.name,
+          sortOrder: r.sortOrder,
+        ),
+    ]);
+  });
 
   /// Đăng nhập tài khoản khác trên máy này (05 §6.6.6): xóa toàn bộ dữ liệu
   /// của tài khoản cũ (kể cả thay đổi chưa gửi), đặt lại cursor để khôi phục
@@ -373,17 +432,18 @@ class AppDatabase extends _$AppDatabase {
       await into(
         syncState,
       ).insert(SyncStateCompanion.insert(id: const Value(1)));
-      await batch((b) {
-        b.insertAll(muscleRegions, [
-          for (final r in MuscleRegion.values)
-            MuscleRegionsCompanion.insert(
-              id: r.id,
-              muscleGroup: r.group.name,
-              view: r.view.name,
-              sortOrder: r.sortOrder,
-            ),
-        ]);
-      });
+      await _insertMuscleRegions();
+    },
+    // 1 → 2 (Bản 3): chỉ thêm bảng, cột, vùng cơ; outbox và dữ liệu giữ
+    // nguyên. Cursor về 0 một lần do bộ entity đã biết đổi (TD3-09).
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        await m.createTable(exerciseUnits);
+        await m.createTable(exerciseNotes);
+        await m.addColumn(exercises, exercises.sortInGroup);
+        await m.addColumn(exercises, exercises.deleted);
+        await _insertMuscleRegions();
+      }
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');

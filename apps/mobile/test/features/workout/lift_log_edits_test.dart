@@ -31,7 +31,6 @@ void main() {
   // Thứ 2 12/10: Ngực + Tay sau 18:00 (templateAc2).
   final monday = LocalDate(2026, 10, 12);
   late String chest;
-  late String chestMachine;
   late String triceps;
   late String shoulders;
   late String abs;
@@ -70,16 +69,7 @@ void main() {
     );
     await seedSetUp(db);
     library = await seedLibrary(db);
-    chest = exerciseOf(
-      library,
-      MuscleRegion.chestUpper,
-      Equipment.freeWeight,
-    ).id;
-    chestMachine = exerciseOf(
-      library,
-      MuscleRegion.chestUpper,
-      Equipment.machine,
-    ).id;
+    chest = exerciseOf(library, MuscleRegion.chestUpper, 'free-weight').id;
     triceps = exerciseOf(library, MuscleRegion.tricepsLong).id;
     shoulders = exerciseOf(library, MuscleRegion.deltSide).id;
     abs = exerciseOf(library, MuscleRegion.absLower).id;
@@ -157,26 +147,6 @@ void main() {
     }
     expect(await outbox(), isEmpty);
     expect(await logs.watchDay(monday).first, isEmpty);
-  });
-
-  test('BR2-24 sửa 13/10: bài với máy ghi số thanh 1–30, không có số lẻ; lưu '
-      '× 10 như kg', () async {
-    for (final (start, end, startError, endError) in [
-      ('7,5', '8', LiftInputError.notStep, null),
-      ('0', '31', LiftInputError.outOfRange, LiftInputError.outOfRange),
-    ]) {
-      await expectLater(
-        save(monday, chestMachine, start: start, end: end),
-        throwsA(
-          isA<LiftInputException>()
-              .having((e) => e.input.startError, 'start', startError)
-              .having((e) => e.input.endError, 'end', endError),
-        ),
-      );
-    }
-    expect(await outbox(), isEmpty);
-    final saved = await save(monday, chestMachine, start: '1', end: '30');
-    expect((saved.startKgX10, saved.endKgX10), (10, 300));
   });
 
   test('FA2-17, F21-E4: thời điểm bấm Lưu quyết định — 23:59 lưu được, '

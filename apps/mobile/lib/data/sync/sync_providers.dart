@@ -8,6 +8,8 @@ import '../../features/me/data/profile_repository.dart';
 import '../../features/menu/data/menu_repository.dart';
 import '../../features/schedule/data/schedule_repository.dart';
 import '../../features/weight/data/weight_repository.dart';
+import '../../features/workout/data/exercise_note_repository.dart';
+import '../../features/workout/data/exercise_unit_repository.dart';
 import '../../features/workout/data/lift_log_repository.dart';
 import 'local_stores.dart';
 import 'outbox_writer.dart';
@@ -44,6 +46,14 @@ final liftLogRepositoryProvider = Provider<LiftLogRepository>(
   (ref) => LiftLogRepository(ref.watch(databaseProvider)),
 );
 
+final exerciseUnitRepositoryProvider = Provider<ExerciseUnitRepository>(
+  (ref) => ExerciseUnitRepository(ref.watch(databaseProvider)),
+);
+
+final exerciseNoteRepositoryProvider = Provider<ExerciseNoteRepository>(
+  (ref) => ExerciseNoteRepository(ref.watch(databaseProvider)),
+);
+
 final outboxWriterProvider = Provider<OutboxWriter>(
   (ref) => OutboxWriter(ref.watch(databaseProvider), ref.watch(clockProvider)),
 );
@@ -76,6 +86,14 @@ final syncEngineProvider = Provider<SyncEngine>((ref) {
         ref.watch(exerciseRepositoryProvider),
       ),
       SyncEntities.liftLog: LiftLogStore(ref.watch(liftLogRepositoryProvider)),
+      // Bản 3 (VS32-T05): app mới biết thêm 2 entity → cursor về 0 một lần
+      // (TD3-09, ED2-14).
+      SyncEntities.exerciseUnit: ExerciseUnitStore(
+        ref.watch(exerciseUnitRepositoryProvider),
+      ),
+      SyncEntities.exerciseNote: ExerciseNoteStore(
+        ref.watch(exerciseNoteRepositoryProvider),
+      ),
     },
     clock: ref.watch(clockProvider),
     reporter: ref.watch(errorReporterProvider),

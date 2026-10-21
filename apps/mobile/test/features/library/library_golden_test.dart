@@ -94,11 +94,7 @@ void main() {
           .read(routerProvider)
           .go(
             exercisePath(
-              exerciseOf(
-                library,
-                MuscleRegion.chestUpper,
-                Equipment.machine,
-              ).id,
+              exerciseOf(library, MuscleRegion.chestUpper, 'machine').id,
               ExerciseFrom.library,
             ),
           );
@@ -109,7 +105,7 @@ void main() {
     testWidgets('S-67 video không khả dụng, bài đã rời thư viện, hồ sơ Nữ '
         '${v.name}', (tester) async {
       final library = realLibrary();
-      final e = exerciseOf(library, MuscleRegion.lats, Equipment.freeWeight);
+      final e = exerciseOf(library, MuscleRegion.lats, 'free-weight');
       final db = await seeded(
         library: [
           for (final x in library)

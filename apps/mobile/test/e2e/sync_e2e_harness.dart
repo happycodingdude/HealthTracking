@@ -96,7 +96,7 @@ final class E2eDevice {
     // về việc tạo AppDatabase nhiều lần.
     driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
     final public = ApiClient.create(server.baseUrl)
-      ..dio.interceptors.add(AppVersionInterceptor(AppVersion.v2));
+      ..dio.interceptors.add(AppVersionInterceptor(AppVersion.v3));
     tokens = TokenManager(
       store: store,
       clock: clock,
@@ -104,7 +104,7 @@ final class E2eDevice {
     );
     api = ApiClient.create(server.baseUrl);
     api.dio.interceptors
-      ..add(AppVersionInterceptor(AppVersion.v2))
+      ..add(AppVersionInterceptor(AppVersion.v3))
       ..add(AuthInterceptor(api.dio, tokens));
     auth = AuthRepository(api: api, tokens: tokens, store: store);
     accounts = AccountRepository(db);

@@ -4,8 +4,11 @@ import 'codecs.dart';
 import 'json_reader.dart';
 import 'sync_entities.dart';
 
-/// Entity `exercise` (chỉ pull, dòng dùng chung, key = `id`, 06 Bản 2 §6.5.1):
-/// mọi cột của `exercises` trừ `library_version`, tên camelCase.
+/// Entity `exercise` (chỉ pull, dòng dùng chung, key = `id`, 06 Bản 3 §6.5.1):
+/// mọi cột của `exercises` trừ `library_version`, `equipment`, `deleted`, tên
+/// camelCase. Bài bỏ ở Bản 3 là tombstone (`deleted` của thay đổi). Server
+/// gửi dạng Bản 2 (có `equipment`, không có `sortInGroup`) cho app < 3.0.0
+/// (TD3-21); app Bản 3 bỏ qua trường thừa.
 final class ExerciseCodec {
   const ExerciseCodec();
 
@@ -17,9 +20,6 @@ final class ExerciseCodec {
     if (region == null || region.group.name != r.string('muscleGroup')) {
       throw const ContractFormatException('data.muscleRegion');
     }
-    final equipment =
-        Equipment.tryParse(r.string('equipment')) ??
-        (throw const ContractFormatException('data.equipment'));
     final reason = r.optString('videoUnavailableReason');
     List<String> strings(String k) => [
       for (final s in r.list(k))
@@ -28,7 +28,6 @@ final class ExerciseCodec {
     return Exercise(
       id: key,
       region: region,
-      equipment: equipment,
       nameVi: r.string('nameVi'),
       nameEn: r.optString('nameEn'),
       youtubeVideoId: r.string('youtubeVideoId'),
@@ -47,6 +46,7 @@ final class ExerciseCodec {
       guideSteps: strings('guideSteps'),
       guideSafety: strings('guideSafety'),
       approvedAt: r.decoded('approvedAt', DateCodec.decode),
+      sortInGroup: r.integer('sortInGroup'),
       sortOrder: r.integer('sortOrder'),
       active: r.boolean('active'),
     );
@@ -55,7 +55,6 @@ final class ExerciseCodec {
   Map<String, Object?> encode(Exercise e) => {
     'muscleGroup': e.group.name,
     'muscleRegion': e.region.id,
-    'equipment': e.equipment.wire,
     'logsWeight': e.logsWeight,
     'nameVi': e.nameVi,
     'nameEn': e.nameEn,
@@ -70,6 +69,7 @@ final class ExerciseCodec {
     'guideSteps': e.guideSteps,
     'guideSafety': e.guideSafety,
     'approvedAt': DateCodec.encode(e.approvedAt),
+    'sortInGroup': e.sortInGroup,
     'sortOrder': e.sortOrder,
     'active': e.active,
   };

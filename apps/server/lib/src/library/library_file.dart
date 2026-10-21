@@ -13,11 +13,27 @@ final class LibraryFileException implements Exception {
   String toString() => 'LibraryFileException(${issues.join('; ')})';
 }
 
-/// Nội dung `data/exercises.json` — nguồn duy nhất của thư viện
+/// Giá trị `equipment` của thư viện Bản 2. Bản 3 bỏ loại dụng cụ (TD3-20);
+/// cột còn trong database để gửi dạng Bản 2 cho app cũ (TD3-21) và để
+/// `library purge` chọn đơn vị cho bài giữ (D3-04).
+abstract final class LegacyEquipment {
+  static const machine = 'machine';
+  static const freeWeight = 'free_weight';
+  static const bodyweight = 'bodyweight';
+  static const values = {machine, freeWeight, bodyweight};
+}
+
+/// Nội dung file thư viện (`data/*.json`) — nguồn duy nhất của thư viện
 /// (TD2-05). Trường ngoài lược đồ (kể cả `guideDraft`, `video.title`,
-/// `videoBackup`) bị từ chối (06 Bản 2 VS21-T03, C2-3, ED2-12).
+/// `videoBackup`) bị từ chối (06 Bản 2 VS21-T03, C2-3, ED2-12). Trường
+/// `equipment` của file Bản 2 (không bắt buộc) được giữ riêng ở
+/// [equipment].
 final class LibraryFile {
-  const LibraryFile(this.libraryVersion, this.exercises);
+  const LibraryFile(
+    this.libraryVersion,
+    this.exercises, {
+    this.equipment = const {},
+  });
 
   /// Đọc và kiểm lược đồ. Ném [LibraryFileException] với đủ mọi lỗi tìm thấy.
   factory LibraryFile.parse(String source) {
@@ -36,20 +52,27 @@ final class LibraryFile {
     if (version is! int || version < 1) issues.add('libraryVersion');
     final list = json['exercises'];
     final exercises = <Exercise>[];
+    final equipment = <String, String>{};
     if (list is! List<Object?>) {
       issues.add('exercises');
     } else {
       for (var i = 0; i < list.length; i++) {
         final e = _exercise(list[i], i, issues);
-        if (e != null) exercises.add(e);
+        if (e == null) continue;
+        exercises.add(e);
+        final raw = (list[i]! as Map<String, Object?>)['equipment'];
+        if (raw is String) equipment[e.id] = raw;
       }
     }
     if (issues.isNotEmpty) throw LibraryFileException(issues);
-    return LibraryFile(version! as int, exercises);
+    return LibraryFile(version! as int, exercises, equipment: equipment);
   }
 
   final int libraryVersion;
   final List<Exercise> exercises;
+
+  /// `equipment` theo `id` của bài (chỉ file Bản 2 có).
+  final Map<String, String> equipment;
 
   static const _rootKeys = {'libraryVersion', 'exercises'};
   static const _exerciseKeys = {
@@ -110,10 +133,10 @@ final class LibraryFile {
     if (region != null && raw['muscleGroup'] != region.group.name) {
       bad('muscleGroup');
     }
-    final equipment = Equipment.tryParse(
-      raw['equipment'] is String ? raw['equipment']! as String : '',
-    );
-    if (equipment == null) bad('equipment');
+    final equipment = raw['equipment'];
+    if (equipment != null && !LegacyEquipment.values.contains(equipment)) {
+      bad('equipment');
+    }
     final nameVi = str(raw, 'nameVi', 'nameVi');
     final nameEn = raw['nameEn'];
     if (nameEn != null && nameEn is! String) bad('nameEn');
@@ -152,7 +175,6 @@ final class LibraryFile {
     return Exercise(
       id: id,
       region: region!,
-      equipment: equipment!,
       nameVi: nameVi!,
       nameEn: nameEn as String?,
       youtubeVideoId: youtubeId!,

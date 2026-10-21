@@ -22,6 +22,9 @@ fi
 step "file cấm và chuỗi giống khóa trong git"
 "$ROOT/tool/scan_repo.sh"
 
+step "schema.sql khớp tổng các migration (06 Bản 3 ED3-01)"
+"$ROOT/tool/gen_schema.sh" --check
+
 step "pub get"
 flutter pub get >/dev/null
 

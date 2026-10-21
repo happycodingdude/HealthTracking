@@ -13,12 +13,11 @@ import 'package:mobile/features/library/data/exercise_repository.dart';
 
 import '../../support/fake_sync.dart';
 
-Exercise _ex(MuscleRegion r, Equipment e, int order, {bool active = true}) =>
+Exercise _ex(MuscleRegion r, String kind, int order, {bool active = true}) =>
     Exercise(
-      id: '${r.id}-${e.wire}'.replaceAll('_', '-'),
+      id: '${r.id}-$kind'.replaceAll('_', '-'),
       region: r,
-      equipment: e,
-      nameVi: 'Bài ${r.id} ${e.wire}',
+      nameVi: 'Bài ${r.id} $kind',
       youtubeVideoId: 'abcdefghijk',
       videoChannel: 'Kênh',
       videoDurationS: 45,
@@ -61,16 +60,11 @@ void main() {
     await db.close();
   });
 
-  final upperFree = _ex(MuscleRegion.chestUpper, Equipment.freeWeight, 2);
-  final upperMachine = _ex(MuscleRegion.chestUpper, Equipment.machine, 1);
-  final mid = _ex(MuscleRegion.chestMid, Equipment.machine, 3);
-  final gone = _ex(
-    MuscleRegion.chestLower,
-    Equipment.machine,
-    5,
-    active: false,
-  );
-  final back = _ex(MuscleRegion.lats, Equipment.machine, 7);
+  final upperFree = _ex(MuscleRegion.chestUpper, 'free-weight', 2);
+  final upperMachine = _ex(MuscleRegion.chestUpper, 'machine', 1);
+  final mid = _ex(MuscleRegion.chestMid, 'machine', 3);
+  final gone = _ex(MuscleRegion.chestLower, 'machine', 5, active: false);
+  final back = _ex(MuscleRegion.lats, 'machine', 7);
 
   test('VS21-T07: pull exercise vào Drift; thư viện của nhóm theo vùng, máy '
       'trước tạ sau, chỉ bài đang có (F18-R9)', () async {

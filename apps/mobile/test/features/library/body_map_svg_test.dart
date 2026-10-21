@@ -49,15 +49,16 @@ void main() {
     }
   });
 
-  test('ED2-10: đủ 16 id (10 mặt trước, 6 mặt sau) cùng body và '
+  // 3 vùng chân vào cùng 4 SVG Bản 3 ở VS-33 (VS33-T03).
+  test('ED2-10: đủ 16 id Bản 2 (10 mặt trước, 6 mặt sau) cùng body và '
       'other_muscles; mỗi vùng không rỗng và có đủ hai bên', () {
     final front = [
       for (final r in MuscleRegion.values)
-        if (r.view == BodyView.front) r.id,
+        if (r.view == BodyView.front && r.group != MuscleGroup.legs) r.id,
     ];
     final back = [
       for (final r in MuscleRegion.values)
-        if (r.view == BodyView.back) r.id,
+        if (r.view == BodyView.back && r.group != MuscleGroup.legs) r.id,
     ];
     expect((front.length, back.length), (10, 6));
     for (final MapEntry(key: (sex, view), :value) in files.entries) {

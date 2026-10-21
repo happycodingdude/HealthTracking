@@ -313,10 +313,13 @@ void main() {
                 )
                 .data,
         ],
-        ['Ngực', 'Lưng', 'Vai', 'Tay trước', 'Tay sau', 'Bụng'],
+        ['Ngực', 'Lưng', 'Vai', 'Tay trước', 'Tay sau', 'Bụng', 'Chân'],
       );
 
-      for (final g in LibraryRules.groupOrder) {
+      // Thư viện Bản 2 chưa có bài Chân (28 bài Bản 3 vào ở VS-33).
+      for (final g in LibraryRules.groupOrder.where(
+        (g) => g != MuscleGroup.legs,
+      )) {
         await tapKey(tester, 'group-${g.name}');
         expect(regionHeaders(tester), [
           for (final r in MuscleRegion.of(g)) r.id,
@@ -332,10 +335,7 @@ void main() {
             findsOneWidget,
           );
           expect(
-            find.descendant(
-              of: row,
-              matching: find.text(Fmt.equipment(e.equipment)),
-            ),
+            find.descendant(of: row, matching: find.text(Fmt.region(e.region))),
             findsOneWidget,
           );
         }
@@ -349,9 +349,9 @@ void main() {
       expect(
         [
           for (final id in rows(tester).take(2))
-            library.firstWhere((e) => e.id == id).equipment,
+            id.contains('-machine-') ? 'machine' : 'free-weight',
         ],
-        [Equipment.machine, Equipment.freeWeight],
+        ['machine', 'free-weight'],
       );
       expect(find.text(S.libraryFootnote, skipOffstage: false), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsNothing);
@@ -374,11 +374,7 @@ void main() {
     testWidgets('F18-E4: vùng tạm chỉ còn 1 bài → hiện bài còn lại, không có '
         'ghi chú; bài đã rời thư viện không hiện', (tester) async {
       await seedSetUp(db);
-      final gone = exerciseOf(
-        library,
-        MuscleRegion.chestUpper,
-        Equipment.freeWeight,
-      );
+      final gone = exerciseOf(library, MuscleRegion.chestUpper, 'free-weight');
       await seedLibrary(db, [
         for (final e in library)
           e.id == gone.id ? e.copyWith(active: false) : e,
@@ -429,7 +425,7 @@ void main() {
       await seedSetUp(db);
       await seedLibrary(db);
       await pump(tester, tall: true);
-      final e = exerciseOf(library, MuscleRegion.chestUpper, Equipment.machine);
+      final e = exerciseOf(library, MuscleRegion.chestUpper, 'machine');
       await openExercise(tester, e);
       expect(
         find.descendant(
@@ -442,7 +438,7 @@ void main() {
       expect(find.text('0:48'), findsOneWidget);
       expect(video.opened, isEmpty, reason: 'UA2-12: không tự tải');
       expect(find.text(e.nameVi), findsOneWidget);
-      expect(find.text('Ngực · Ngực trên · Máy'), findsOneWidget);
+      expect(find.text('Ngực · Ngực trên'), findsOneWidget);
       expect(
         find.byKey(const ValueKey('body-map-male_front-chest_upper')),
         findsOneWidget,
@@ -487,10 +483,7 @@ void main() {
         expect(find.byKey(const ValueKey('video-play')), findsOneWidget);
         expect(find.text(e.nameVi), findsOneWidget, reason: e.id);
         expect(
-          find.text(
-            '${Fmt.muscle(e.group)} · ${Fmt.region(e.region)} · '
-            '${Fmt.equipment(e.equipment)}',
-          ),
+          find.text('${Fmt.muscle(e.group)} · ${Fmt.region(e.region)}'),
           findsOneWidget,
           reason: e.id,
         );
@@ -518,7 +511,7 @@ void main() {
       await seedSetUp(db);
       await seedLibrary(db);
       await pump(tester);
-      final e = exerciseOf(library, MuscleRegion.lats, Equipment.machine);
+      final e = exerciseOf(library, MuscleRegion.lats, 'machine');
       await openExercise(tester, e);
 
       await tapKey(tester, 'video-play');
@@ -569,7 +562,7 @@ void main() {
       'dụng", không nút phát, không "Thử lại"; tên, hình, hướng dẫn vẫn hiện',
       (tester) async {
         await seedSetUp(db);
-        final e = exerciseOf(library, MuscleRegion.deltSide, Equipment.machine);
+        final e = exerciseOf(library, MuscleRegion.deltSide, 'machine');
         await seedLibrary(db, [
           for (final x in library)
             x.id == e.id
@@ -664,10 +657,7 @@ void main() {
         lessThan(
           tester
               .getTopLeft(
-                find.text(
-                  '${Fmt.muscle(e.group)} · ${Fmt.region(e.region)} · '
-                  '${Fmt.equipment(e.equipment)}',
-                ),
+                find.text('${Fmt.muscle(e.group)} · ${Fmt.region(e.region)}'),
               )
               .dy,
         ),
@@ -683,7 +673,7 @@ void main() {
     await seedLibrary(db);
     await pump(tester);
     await openLibrary(tester);
-    final e = exerciseOf(library, MuscleRegion.lats, Equipment.machine);
+    final e = exerciseOf(library, MuscleRegion.lats, 'machine');
     await tapKey(tester, 'exercise-${e.id}');
     // Buổi hôm nay được đánh dấu trên máy khác, kéo về khi S-67 đang mở:
     // các provider của màn bị che đang tạm dừng.
@@ -738,7 +728,7 @@ void main() {
       findsNWidgets(2),
     );
     expect(find.byKey(const ValueKey('body-map-male_back-lats')), findsNothing);
-    final e = exerciseOf(library, MuscleRegion.lats, Equipment.machine);
+    final e = exerciseOf(library, MuscleRegion.lats, 'machine');
     await tapKey(tester, 'exercise-${e.id}');
     expect(
       find.byKey(const ValueKey('body-map-female_back-lats')),

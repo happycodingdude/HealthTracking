@@ -75,6 +75,15 @@ abstract interface class SyncEntityHandler {
   String get pullSql;
 }
 
+/// Entity có câu pull khác nhau theo phiên bản app (05 Bản 3 TD3-21): app cũ
+/// nhận dữ liệu dạng cũ. Dòng app cũ không đọc được có `entity` =
+/// [SyncService.skippedEntity]: không gửi, nhưng cursor vẫn tiến qua.
+abstract interface class VersionedPull {
+  /// Câu pull cho request có header `X-App-Version` = [appVersion] (null =
+  /// không có header). Cùng cột và tham số với [SyncEntityHandler.pullSql].
+  String pullSqlFor(AppVersion? appVersion);
+}
+
 /// Đọc một dòng `entity, key, deleted, server_version, data` thành [SyncChange].
 SyncChange changeFromRow(ResultRow row) {
   final m = row.toColumnMap();

@@ -18,7 +18,7 @@ String get testAdminUrl {
   return url;
 }
 
-/// File `apps/server/db/schema.sql` (cấu trúc database trong lúc dev, ED2-18),
+/// File `apps/server/db/schema.sql` (sinh từ migration, tool/gen_schema.sh),
 /// dùng được khi chạy test từ `apps/server` lẫn từ `apps/mobile` (sync_e2e).
 File serverSchemaFile() {
   for (final path in [
@@ -34,12 +34,29 @@ File serverSchemaFile() {
   );
 }
 
+/// Thư mục `apps/server/migrations` (05 Bản 3 TR3-05), tìm như
+/// [serverSchemaFile].
+Directory serverMigrationsDir() {
+  for (final path in [
+    'migrations',
+    '../server/migrations',
+    'apps/server/migrations',
+  ]) {
+    final dir = Directory(path);
+    if (File('${dir.path}/0001_baseline.sql').existsSync()) return dir;
+  }
+  throw StateError(
+    'Không tìm thấy apps/server/migrations từ ${Directory.current.path}',
+  );
+}
+
 /// Database tạm, riêng cho một nhóm test. Tạo bằng [create], xóa bằng [dispose].
 final class TestDatabase {
   TestDatabase._(this.name, this.url, this.db);
 
-  /// Tạo database trống. [schema] = true thì tạo cấu trúc từ `schema.sql`
-  /// (06 Bản 2 ED2-18: trong lúc dev, test tạo database từ file này).
+  /// Tạo database trống. [schema] = true thì tạo cấu trúc bằng chính
+  /// [Migrator] của server từ `apps/server/migrations` (05 Bản 3 TR3-05: từ
+  /// Bản 3 migration là nguồn duy nhất của cấu trúc).
   static Future<TestDatabase> create({bool schema = true}) async {
     final name = 'test_${const Uuid().v4().replaceAll('-', '')}';
     await _admin((conn) => conn.execute('CREATE DATABASE "$name"'));
@@ -47,10 +64,7 @@ final class TestDatabase {
     final url = admin.replace(path: '/$name').toString();
     final db = Database.open(url);
     if (schema) {
-      await db.pool.execute(
-        serverSchemaFile().readAsStringSync(),
-        queryMode: QueryMode.simple,
-      );
+      await Migrator(db.pool, serverMigrationsDir(), Logger((_) {})).migrate();
     }
     return TestDatabase._(name, url, db);
   }

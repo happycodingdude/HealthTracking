@@ -9,6 +9,7 @@ import '../../../data/sync/sync_providers.dart';
 import '../../library/data/exercise_repository.dart';
 import '../../schedule/data/schedule_repository.dart';
 import '../data/lift_log_repository.dart';
+import 'lift_unit.dart';
 
 /// Ghi, xóa mức tạ (F-21, 05 Bản 2 §6.4.1). Mỗi thao tác là một transaction
 /// (bản ghi + outbox); không cần mạng (F21-R10). Cửa sổ tính lại với giờ lúc
