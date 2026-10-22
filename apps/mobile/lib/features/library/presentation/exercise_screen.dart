@@ -295,7 +295,9 @@ class _LiftArea extends ConsumerWidget {
     final secondary = context.text.bodyLarge?.copyWith(
       color: context.palette.textSecondary,
     );
-    final unit = Fmt.liftUnit(exercise.liftUnit);
+    final unit = Fmt.liftUnit(
+      displayUnit(ref.watch(exerciseUnitsProvider).value, exercise.id),
+    );
 
     final List<Widget> content;
     if (date != null && inWindow && thisSession == null && exercise.active) {

@@ -27,6 +27,7 @@ class ProgressScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final items = ref.watch(progressListProvider);
+    final units = ref.watch(exerciseUnitsProvider).value;
     final palette = context.palette;
     return TabPage(
       tab: AppTab.schedule,
@@ -67,6 +68,7 @@ class ProgressScreen extends ConsumerWidget {
                   if (i > 0) const Divider(height: 1),
                   _ProgressRow(
                     item: item,
+                    unit: displayUnit(units, item.exercise.id),
                     onTap: () => context.push(liftChartPath(item.exercise.id)),
                   ),
                 ],
@@ -83,9 +85,14 @@ class ProgressScreen extends ConsumerWidget {
 /// "thanh"; đậm) và ngày bản ghi gần nhất · ›. Bài đã rời thư viện có ghi chú
 /// nhỏ (F23-R5).
 class _ProgressRow extends StatelessWidget {
-  const _ProgressRow({required this.item, required this.onTap});
+  const _ProgressRow({
+    required this.item,
+    required this.unit,
+    required this.onTap,
+  });
 
   final ProgressItem item;
+  final LiftUnit unit;
   final VoidCallback onTap;
 
   @override
@@ -99,7 +106,7 @@ class _ProgressRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Text(
-          Fmt.lift(item.latest, e.liftUnit),
+          Fmt.lift(item.latest, unit),
           style: context.text.titleMedium?.copyWith(
             fontWeight: FontWeight.w700,
           ),

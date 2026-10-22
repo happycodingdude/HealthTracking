@@ -141,6 +141,15 @@ abstract final class Fmt {
   static String lift(LiftLog l, LiftUnit unit) =>
       S.liftValue(kgNumber(l.startKgX10), kgNumber(l.endKgX10), liftUnit(unit));
 
+  /// Câu lỗi của bảng ghi tạ (03 Bản 3 F21-V41 → V45).
+  static String liftError(LiftInputError e, LiftUnit? unit) => switch (e) {
+    LiftInputError.unitMissing => S.liftUnitRequired,
+    LiftInputError.missing => S.liftMissing,
+    LiftInputError.outOfRange || LiftInputError.notStep =>
+      unit == LiftUnit.steps ? S.liftStepsInvalid : S.liftKgInvalid,
+    LiftInputError.notNumber => S.liftNotNumber,
+  };
+
   /// `T4 07/10` (S-20).
   static String shortWeekdayDate(LocalDate date) =>
       '${S.weekdaysShort[date.weekday - 1]} ${dayMonth(date)}';

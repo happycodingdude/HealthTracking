@@ -262,6 +262,7 @@ void main() {
 
     test('exercise_unit, exercise_note: push cấu trúc, pull về đúng tài khoản '
         '(khung TAC3-13)', () async {
+      app.clock.set(DateTime.utc(2026, 11, 12, 11, 35));
       final a = (await app.register()).accessToken;
       final b = (await app.register(phone: '0912345679')).accessToken;
       final userA =
@@ -277,7 +278,19 @@ void main() {
         ),
         parameters: {'u': userA},
       );
-      final at = DateTime.utc(2026, 11, 12, 10, 30);
+      await app.tdb.pool.execute(
+        Sql.named('''
+          INSERT INTO profiles (user_id, height_cm, birth_year, sex, activity_level, setup_date,
+                                onboarding_step, disclaimer_accepted_at, onboarding_completed_at,
+                                calorie_mode, calorie_kcal, timezone, server_version,
+                                client_updated_at)
+          VALUES (@u, 172, 1994, 'male', 'moderate', '2026-11-01', 5, now(), now(), 'auto',
+                  2210, 'Asia/Ho_Chi_Minh', 1, now())'''),
+        parameters: {'u': userA},
+      );
+      // 18:30 giờ Việt Nam: trong cửa sổ ghi tạ của buổi 18:00 (ghi chú,
+      // VS-35).
+      final at = DateTime.utc(2026, 11, 12, 11, 30);
       final pushed = await app.push(a, [
         mutation(
           SyncEntities.exerciseUnit,

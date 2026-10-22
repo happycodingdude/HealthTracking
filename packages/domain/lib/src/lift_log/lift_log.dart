@@ -116,9 +116,15 @@ final class EndWarning {
   final int diffX10;
 
   /// null khi chưa có buổi trước ([previousEndX10] null, F21-AC6), bằng,
-  /// hoặc cao hơn không quá [LiftUnit.maxRise] (10 kg; 4 nấc).
-  static EndWarning? of(int? previousEndX10, int endX10, LiftUnit unit) {
-    if (previousEndX10 == null) return null;
+  /// hoặc cao hơn không quá [LiftUnit.maxRise] (10 kg; 4 nấc). [edited] =
+  /// false (Lưu với số điền sẵn không sửa) → không cảnh báo (FA3-07, ED3-12).
+  static EndWarning? of(
+    int? previousEndX10,
+    int endX10,
+    LiftUnit unit, {
+    bool edited = true,
+  }) {
+    if (previousEndX10 == null || !edited) return null;
     final diff = endX10 - previousEndX10;
     if (diff < 0) return EndWarning(EndWarningKind.lower, -diff);
     if (diff > unit.maxRise) {

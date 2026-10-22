@@ -1,17 +1,18 @@
 import 'package:domain/domain.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'lift_unit.dart';
 
 /// Ô của bảng ghi mức tạ.
 enum LiftField { start, end }
 
 /// Mở S-64 cho bài [exercise] trong buổi ngày [date]: [existing] = bản ghi
-/// của buổi (chế độ sửa), [previous] = buổi trước của bài (FR2-06).
+/// của buổi (chế độ sửa), [previous] = buổi trước của bài (FR2-06), [unit] =
+/// đơn vị hiện tại của bài, null khi chưa từng ghi (F21-R41).
 typedef LiftDraftArgs = ({
   LocalDate date,
   Exercise exercise,
   LiftLog? existing,
   LiftLog? previous,
+  LiftUnit? unit,
 });
 
 /// Hai ô số của S-64 (04 Bản 2 S-64, UA2-10, UA2-11): chữ Bạn gõ, lỗi sau
@@ -25,7 +26,7 @@ final class LiftDraft {
     this.input,
   });
 
-  /// Đơn vị theo dụng cụ của bài: kg, hoặc số thanh với bài máy.
+  /// Đơn vị của bài; lần ghi đầu: đơn vị sẽ gắn cho bài.
   final LiftUnit unit;
 
   /// Chữ trong ô, luôn dùng dấu phẩy (UR-10).
@@ -105,7 +106,9 @@ class LiftLogDraft extends Notifier<LiftDraft> {
   LiftDraft build() {
     final existing = args.existing;
     return LiftDraft(
-      unit: args.exercise.liftUnit,
+      // Tạm tới VS-36 (S-64 Bản 3 có thanh chọn kg | nấc máy ở lần ghi đầu,
+      // F21-V41): bảng Bản 2 ghi lần đầu bằng kg.
+      unit: args.unit ?? LiftUnit.kg,
       start: existing == null ? '' : LiftKg.format(existing.startKgX10),
       end: existing == null ? '' : LiftKg.format(existing.endKgX10),
       previous: args.previous,

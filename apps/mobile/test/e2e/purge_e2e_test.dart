@@ -7,6 +7,7 @@ import 'package:domain/domain.dart';
 import 'package:flutter_test/flutter_test.dart' hide pumpEventQueue;
 import 'package:mobile/data/sync/sync_engine.dart';
 import 'package:mobile/features/onboarding/data/onboarding_draft_repository.dart';
+import 'package:postgres/postgres.dart' show Sql;
 import 'package:server/server.dart' show LibraryImporter, LibraryPurge;
 import 'package:server/testing.dart' show insertV2Library, library28;
 
@@ -77,11 +78,21 @@ void main() {
     expect(await a.sync(), SyncOutcome.synced);
     expect(await a.exercises.watchAll().first, hasLength(29));
 
-    a.clock.set(DateTime(2026, 9, 14, 8));
+    // Mức tạ ghi từ app 2.x trước khi phát hành Bản 3 (bài máy: số thanh).
     for (final id in [pecDeck, ...removed]) {
-      await a.saveLift(monday, id, start: '7', end: '8');
+      await server.tdb.pool.execute(
+        Sql.named('''
+          INSERT INTO lift_logs (user_id, date, exercise_id, start_kg_x10,
+                                 end_kg_x10, logged_at, server_version,
+                                 client_updated_at)
+          SELECT id, '2026-09-14', @e, 70, 80, now(),
+                 nextval('sync_version_seq'), now()
+          FROM users WHERE phone = '0912345678' '''),
+        parameters: {'e': id},
+      );
     }
     expect(await a.sync(), SyncOutcome.synced);
+    expect(await a.liftLogs.watchAll().first, hasLength(3));
     Future<List<ProgressItem>> progress() async => ProgressList.of(
       await a.liftLogs.watchAll().first,
       await a.exercises.watchAll().first,

@@ -16,6 +16,7 @@ import '../../../core/widgets/toast.dart';
 import '../../../core/widgets/unsaved_changes.dart';
 import '../application/lift_log_draft.dart';
 import '../application/lift_log_edits.dart';
+import '../application/lift_unit.dart';
 import '../application/session_providers.dart';
 
 /// Từ mức phóng chữ này trở lên, hai ô số xếp dọc (04 Bản 2 §6.13).
@@ -37,6 +38,7 @@ Future<void> showLiftLogSheet(
     exercise: exercise,
     existing: existing,
     previous: LiftLogRules.previousSession(logs, exercise.id, date),
+    unit: container.read(exerciseUnitsProvider).value?[exercise.id]?.unit,
   );
   // Thông báo nhanh và hộp thoại sau khi bảng đóng dùng Navigator gốc.
   final host = Navigator.of(context, rootNavigator: true).context;
@@ -121,6 +123,7 @@ class _LiftLogSheetState extends ConsumerState<LiftLogSheet> {
             args.exercise.id,
             start: draft.start,
             end: draft.end,
+            unit: draft.unit,
           );
       return S.liftSaved(
         Fmt.kgNumber(log.startKgX10),
@@ -317,16 +320,8 @@ class _LiftLogSheetState extends ConsumerState<LiftLogSheet> {
     );
   }
 
-  static String _errorText(LiftInputError e, LiftUnit unit) {
-    final steps = unit == LiftUnit.steps;
-    return switch (e) {
-      LiftInputError.missing => S.liftMissing,
-      LiftInputError.outOfRange =>
-        steps ? S.liftStepsInvalid : S.liftOutOfRange,
-      LiftInputError.notStep => steps ? S.liftStepsInvalid : S.liftNotStep,
-      LiftInputError.notNumber => S.liftNotNumber,
-    };
-  }
+  static String _errorText(LiftInputError e, LiftUnit unit) =>
+      Fmt.liftError(e, unit);
 }
 
 /// Ô số "Bắt đầu" / "Kết thúc": nút −, con số lớn kèm "kg", nút + (04 Bản 2

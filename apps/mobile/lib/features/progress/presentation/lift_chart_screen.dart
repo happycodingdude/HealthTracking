@@ -70,8 +70,9 @@ class _LiftChartScreenState extends ConsumerState<LiftChartScreen> {
     final palette = context.palette;
     final earliest = view?.earliest;
     final chart = view?.chart;
-    // Đơn vị theo dụng cụ của bài: kg, hoặc số thanh với bài máy.
-    final unit = exercise?.liftUnit;
+    // Đơn vị hiện tại của bài (F21-R47: số cũ hiện theo đơn vị mới).
+    final units = ref.watch(exerciseUnitsProvider).value;
+    final unit = exercise == null ? null : displayUnit(units, exercise.id);
 
     return Scaffold(
       body: SafeArea(

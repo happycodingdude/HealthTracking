@@ -615,8 +615,6 @@ abstract final class S {
   static const liftDeleted = 'Đã xóa mức tạ';
   static const liftLockedAtMidnight = 'Mức tạ của buổi này đã khóa lúc 00:00.';
   static const liftMissing = 'Vui lòng nhập cả mức tạ bắt đầu và kết thúc';
-  static const liftOutOfRange = 'Mức tạ cần từ 0,5 đến 300 kg';
-  static const liftNotStep = 'Mức tạ nhập theo bước 0,5 kg';
   static const liftNotNumber = 'Mức tạ chưa đúng';
 
   /// Nhãn VoiceOver của nút − / + (giả định câu chữ, chờ Bạn xem).
@@ -1112,8 +1110,6 @@ abstract final class S {
     'liftDeleted': liftDeleted,
     'liftLockedAtMidnight': liftLockedAtMidnight,
     'liftMissing': liftMissing,
-    'liftOutOfRange': liftOutOfRange,
-    'liftNotStep': liftNotStep,
     'liftNotNumber': liftNotNumber,
     'liftDecrease': liftDecrease,
     'liftIncrease': liftIncrease,

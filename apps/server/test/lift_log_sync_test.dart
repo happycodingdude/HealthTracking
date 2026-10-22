@@ -129,6 +129,18 @@ void main() {
         'active': active,
       },
     );
+    // Bản 3 (05 Bản 3 §6.6.3): bài cần đơn vị trước khi ghi; test Bản 2 ghi
+    // kg như trước.
+    if (r.group != MuscleGroup.abs) {
+      await app.tdb.pool.execute(
+        Sql.named('''
+          INSERT INTO exercise_units (user_id, exercise_id, unit, changed_on,
+                                      client_updated_at, server_version)
+          SELECT id, @id, 'kg', '2026-10-07', now(), nextval('sync_version_seq')
+          FROM users'''),
+        parameters: {'id': id},
+      );
+    }
   }
 
   SyncMutation lift(

@@ -84,9 +84,17 @@ void main() {
       a.clock.set(DateTime(2026, 9, 14, 8));
       for (final (i, id) in ids.indexed) {
         // Số hợp lệ cho cả kg lẫn số thanh (bài máy, 1–30).
-        await a.saveLift(monday, id, start: '${4 + i * 5}', end: '${5 + i}');
+        await a.saveLift(
+          monday,
+          id,
+          start: '${4 + i * 5}',
+          end: '${5 + i}',
+          unit: LiftUnit.kg,
+        );
       }
-      expect((await a.status()).pending, 3, reason: 'chưa gọi sync = mất mạng');
+      // Lần ghi đầu mỗi bài kèm đơn vị (05 Bản 3 TD3-05): 3 đơn vị + 3 mức
+      // tạ, đều "Chưa đồng bộ" (F09-R41).
+      expect((await a.status()).pending, 6, reason: 'chưa gọi sync = mất mạng');
       expect(await a.sync(), SyncOutcome.synced);
       expect((await a.status()).hasPending, isFalse);
 
@@ -113,18 +121,66 @@ void main() {
     await b.restore();
 
     a.clock.set(DateTime(2026, 9, 14, 8));
-    await a.saveLift(monday, id, start: '5', end: '6');
+    await a.saveLift(monday, id, start: '5', end: '6', unit: LiftUnit.kg);
     b.clock.set(DateTime(2026, 9, 14, 8, 5));
-    await b.saveLift(monday, id, start: '5', end: '7');
+    await b.saveLift(monday, id, start: '5', end: '7', unit: LiftUnit.kg);
     expect(await b.sync(), SyncOutcome.synced);
     expect(await a.sync(), SyncOutcome.synced);
-    expect(a.reporter.reasons, ['sync_ignored_stale']);
+    // Cả đơn vị lẫn mức tạ của A cũ hơn của B.
+    expect(a.reporter.reasons, ['sync_ignored_stale', 'sync_ignored_stale']);
     expect((await a.liftLogs.get(monday, id))!.endKgX10, 70);
+    expect((await a.units.get(id))?.unit, LiftUnit.kg);
 
     a.clock.set(DateTime(2026, 9, 14, 9));
     await a.deleteLift(monday, id);
     expect(await a.sync(), SyncOutcome.synced);
     expect(await b.sync(), SyncOutcome.synced);
     expect(await b.liftLogs.get(monday, id), isNull);
+  });
+
+  test('F09-AC41, F09-R42: không có mạng ghi nấc máy cho 2 bài, ghi chú 1 bài '
+      '→ có mạng → máy B khôi phục: 2 bài đúng nấc, ghi chú còn', () async {
+    final a = device();
+    await a.register();
+    final ids = await setUpDevice(a);
+    a.clock.set(DateTime(2026, 9, 14, 8));
+    await a.saveLift(
+      monday,
+      ids[0],
+      start: '8',
+      end: '10',
+      unit: LiftUnit.steps,
+    );
+    await a.saveLift(
+      monday,
+      ids[1],
+      start: '12',
+      end: '12',
+      unit: LiftUnit.steps,
+    );
+    await a.saveNote(monday, ids[1], 'máy 2 hỏng, tập máy 5');
+    expect(
+      (await a.status()).pending,
+      5,
+      reason: '2 đơn vị, 2 mức tạ, 1 ghi chú',
+    );
+    expect(await a.sync(), SyncOutcome.synced);
+    expect((await a.status()).hasPending, isFalse);
+
+    final b = device();
+    await b.login();
+    await b.restore();
+    for (final id in ids.take(2)) {
+      expect((await b.units.get(id))?.unit, LiftUnit.steps, reason: id);
+    }
+    expect(
+      [
+        for (final l in await b.liftLogs.watchAll().first)
+          (l.exerciseId, l.startKgX10, l.endKgX10),
+      ]..sort((x, y) => x.$1.compareTo(y.$1)),
+      [(ids[0], 80, 100), (ids[1], 120, 120)]
+        ..sort((x, y) => x.$1.compareTo(y.$1)),
+    );
+    expect((await b.notes.get(monday, ids[1]))?.text, 'máy 2 hỏng, tập máy 5');
   });
 }

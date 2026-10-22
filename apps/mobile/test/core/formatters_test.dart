@@ -1,5 +1,6 @@
 import 'package:domain/domain.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/app/strings_vi.dart';
 import 'package:mobile/core/formatters.dart';
 
 void main() {
@@ -70,5 +71,49 @@ void main() {
       Fmt.weekRange(LocalDate(2026, 10, 5), LocalDate(2026, 10, 11)),
       '05/10 – 11/10',
     );
+  });
+
+  test('ED3-03: "{a} → {b} {đơn vị}" của app trùng formatter dùng chung của '
+      'domain (thẻ màn hình khóa dùng bản domain)', () {
+    for (final (start, end, unit) in [
+      (400, 475, LiftUnit.kg),
+      (80, 100, LiftUnit.steps),
+      (125, 135, LiftUnit.steps),
+    ]) {
+      final log = LiftLog(
+        date: LocalDate(2026, 11, 12),
+        exerciseId: 'x',
+        startKgX10: start,
+        endKgX10: end,
+      );
+      expect(Fmt.lift(log, unit), LiftFormat.range(start, end, unit));
+    }
+    expect(Fmt.liftUnit(LiftUnit.steps), LiftUnit.steps.label);
+  });
+
+  test('03 Bản 3 F21-V41 → V45: câu lỗi theo đơn vị', () {
+    expect(
+      Fmt.liftError(LiftInputError.unitMissing, null),
+      'Chọn kg hoặc nấc máy cho bài này',
+    );
+    expect(
+      Fmt.liftError(LiftInputError.missing, LiftUnit.kg),
+      'Vui lòng nhập cả mức tạ bắt đầu và kết thúc',
+    );
+    for (final e in [LiftInputError.outOfRange, LiftInputError.notStep]) {
+      expect(
+        Fmt.liftError(e, LiftUnit.kg),
+        'Mức tạ cần từ 0,5 đến 300 kg, theo bước 0,5',
+      );
+      expect(
+        Fmt.liftError(e, LiftUnit.steps),
+        'Nấc máy cần là số nguyên từ 1 đến 50',
+      );
+    }
+    expect(
+      Fmt.liftError(LiftInputError.notNumber, LiftUnit.kg),
+      S.liftNotNumber,
+    );
+    expect(S.liftNotNumber, 'Mức tạ chưa đúng');
   });
 }

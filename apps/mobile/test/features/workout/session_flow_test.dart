@@ -432,9 +432,9 @@ void main() {
       await tapKey(tester, 'lift-log-${chestDumbbell.id}');
       for (final (start, end, message) in [
         ('35', '', S.liftMissing),
-        ('35', '72,3', S.liftNotStep),
-        ('0', '10', S.liftOutOfRange),
-        ('300.5', '10', S.liftOutOfRange),
+        ('35', '72,3', S.liftKgInvalid),
+        ('0', '10', S.liftKgInvalid),
+        ('300.5', '10', S.liftKgInvalid),
         ('1,2,3', '10', S.liftNotNumber),
       ]) {
         await enter(tester, start: start, end: end);

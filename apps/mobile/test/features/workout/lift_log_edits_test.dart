@@ -11,6 +11,7 @@ import 'package:mobile/features/library/data/exercise_repository.dart';
 import 'package:mobile/features/schedule/data/schedule_repository.dart';
 import 'package:mobile/features/today/application/mark_session.dart';
 import 'package:mobile/features/workout/application/lift_log_edits.dart';
+import 'package:mobile/features/workout/data/exercise_unit_repository.dart';
 import 'package:mobile/features/workout/data/lift_log_repository.dart';
 
 import '../../support/fake_sync.dart';
@@ -43,6 +44,7 @@ void main() {
     final schedule = ScheduleRepository(db);
     final exercises = ExerciseRepository(db);
     final outbox = OutboxWriter(db, clock);
+    final units = ExerciseUnitRepository(db);
     save = SaveLiftLog(
       db: db,
       logs: logs,
@@ -50,6 +52,7 @@ void main() {
       exercises: exercises,
       outbox: outbox,
       clock: clock,
+      units: units,
     );
     delete = DeleteLiftLog(
       db: db,
@@ -69,6 +72,13 @@ void main() {
     );
     await seedSetUp(db);
     library = await seedLibrary(db);
+    // Các bài đã có đơn vị kg (quy tắc lần ghi đầu: lift_unit_note_test).
+    for (final e in library) {
+      if (!e.logsWeight) continue;
+      await units.put(
+        ExerciseUnit(exerciseId: e.id, unit: LiftUnit.kg, changedOn: monday),
+      );
+    }
     chest = exerciseOf(library, MuscleRegion.chestUpper, 'free-weight').id;
     triceps = exerciseOf(library, MuscleRegion.tricepsLong).id;
     shoulders = exerciseOf(library, MuscleRegion.deltSide).id;

@@ -355,8 +355,6 @@ deleteLiftConfirm: "Xóa mức tạ của bài này?"
 liftDeleted: "Đã xóa mức tạ"
 liftLockedAtMidnight: "Mức tạ của buổi này đã khóa lúc 00:00."
 liftMissing: "Vui lòng nhập cả mức tạ bắt đầu và kết thúc"
-liftOutOfRange: "Mức tạ cần từ 0,5 đến 300 kg"
-liftNotStep: "Mức tạ nhập theo bước 0,5 kg"
 liftNotNumber: "Mức tạ chưa đúng"
 liftDecrease: "Giảm 0,5 kg" # GIẢ ĐỊNH — nhãn VoiceOver của nút −, spec không ghi câu
 liftIncrease: "Tăng 0,5 kg" # GIẢ ĐỊNH — nhãn VoiceOver của nút +, spec không ghi câu

@@ -14,10 +14,6 @@ final class LiftLogHandler implements SyncEntityHandler {
   const LiftLogHandler();
 
   static const _codec = LiftLogCodec();
-  static const _dayCodec = DayCodec();
-  static const _exerciseCodec = ExerciseCodec();
-  static const _days = DayHandler();
-  static const _exercises = ExerciseHandler();
 
   @override
   String get entity => SyncEntities.liftLog;
@@ -80,15 +76,15 @@ final class LiftLogHandler implements SyncEntityHandler {
     final userId = ctx.userId;
     final (date, exerciseId) = LiftLog.parseKey(m.key)!;
     final existing = await read(s, userId, m.key);
-    final exercise = await _exercise(s, exerciseId);
+    final exercise = await libraryExercise(s, exerciseId);
     final error = LiftLogRules.check(
-      day: await _day(s, userId, date),
+      day: await sessionDay(s, userId, date),
       exercise: exercise,
       now: await deviceNow(s, userId, m.clientUpdatedAt) ?? m.clientUpdatedAt,
       exists: existing != null && !existing.deleted,
     );
     if (error != null) {
-      throw SyncRejection('key', code: _codes[error]!);
+      throw SyncRejection('key', code: liftErrorCodes[error]!);
     }
     final parameters = {
       'user': userId,
@@ -111,10 +107,15 @@ final class LiftLogHandler implements SyncEntityHandler {
       );
       return;
     }
-    // Bước 5: khoảng, bước của mức tạ. Đơn vị theo bài (`exercise_units`)
-    // kiểm từ VS-35; tới lúc đó mọi bài theo kg như Bản 2 (F21-R6).
+    // Bước 5 (05 Bản 3 §6.6.3): bài phải có đơn vị (TD3-05: app gửi
+    // `exercise_unit` trước trong cùng batch); khoảng, bước theo đơn vị hiện
+    // tại, chỉ cho giá trị mới gửi lên (F21-R47).
+    final unit = await _unit(s, userId, exerciseId);
+    if (unit == null) {
+      throw const SyncRejection('key', code: ErrorCode.liftUnitMissing);
+    }
     final log = _codec.decode(m.key, m.data!);
-    final invalid = log.invalidField(LiftUnit.kg);
+    final invalid = log.invalidField(unit);
     if (invalid != null) throw SyncRejection(invalid);
     await s.execute(
       Sql.named('''
@@ -134,33 +135,15 @@ final class LiftLogHandler implements SyncEntityHandler {
     );
   }
 
-  static const _codes = {
-    LiftError.noSession: ErrorCode.liftNoSession,
-    LiftError.windowClosed: ErrorCode.liftWindowClosed,
-    LiftError.notAllowedForExercise: ErrorCode.liftNotAllowedForExercise,
-    LiftError.exerciseNotInSession: ErrorCode.liftExerciseNotInSession,
-  };
-
-  /// Dòng `days` của [date]; thời điểm lưu buổi tập thêm quy về giờ trên
-  /// iPhone như `clientUpdatedAt` (05 Bản 2 §6.4.3).
-  Future<PlanDay?> _day(Session s, String userId, LocalDate date) async {
-    final change = await _days.read(s, userId, date.toKey());
-    if (change == null || change.deleted) return null;
-    final day = _dayCodec.decode(change.key, change.data!);
-    final loggedAt = day.extraLoggedAt;
-    if (loggedAt == null) return day;
-    return day.withExtra(
-      day.extraMuscles,
-      loggedAt: await deviceNow(s, userId, loggedAt) ?? loggedAt,
+  /// Đơn vị hiện tại của bài với tài khoản này (TD3-03); null = chưa có.
+  Future<LiftUnit?> _unit(Session s, String userId, String exerciseId) async {
+    final rows = await s.execute(
+      Sql.named('''
+        SELECT unit FROM exercise_units
+        WHERE user_id = @user AND exercise_id = @exercise AND NOT deleted'''),
+      parameters: {'user': userId, 'exercise': exerciseId},
     );
-  }
-
-  /// Bài trong thư viện; bài bỏ ở Bản 3 (tombstone) coi như không có.
-  Future<Exercise?> _exercise(Session s, String id) async {
-    final change = await _exercises.read(s, '', id);
-    return change == null || change.deleted
-        ? null
-        : _exerciseCodec.decode(change.key, change.data!);
+    return rows.isEmpty ? null : LiftUnit.tryParse(rows.first[0]! as String);
   }
 
   @override
@@ -185,4 +168,35 @@ final class LiftLogHandler implements SyncEntityHandler {
                   'endKgX10', end_kg_x10) END AS data
     FROM lift_logs
     WHERE user_id = @user AND server_version > @cursor''';
+}
+
+/// Mã lỗi đồng bộ của từng lý do không ghi được mức tạ, ghi chú (05 Bản 2
+/// §6.6.2, 05 Bản 3 §6.6.4).
+const liftErrorCodes = {
+  LiftError.noSession: ErrorCode.liftNoSession,
+  LiftError.windowClosed: ErrorCode.liftWindowClosed,
+  LiftError.notAllowedForExercise: ErrorCode.liftNotAllowedForExercise,
+  LiftError.exerciseNotInSession: ErrorCode.liftExerciseNotInSession,
+};
+
+/// Dòng `days` của [date]; thời điểm lưu buổi tập thêm quy về giờ trên
+/// iPhone như `clientUpdatedAt` (05 Bản 2 §6.4.3).
+Future<PlanDay?> sessionDay(Session s, String userId, LocalDate date) async {
+  final change = await const DayHandler().read(s, userId, date.toKey());
+  if (change == null || change.deleted) return null;
+  final day = const DayCodec().decode(change.key, change.data!);
+  final loggedAt = day.extraLoggedAt;
+  if (loggedAt == null) return day;
+  return day.withExtra(
+    day.extraMuscles,
+    loggedAt: await deviceNow(s, userId, loggedAt) ?? loggedAt,
+  );
+}
+
+/// Bài trong thư viện; bài bỏ ở Bản 3 (tombstone) coi như không có.
+Future<Exercise?> libraryExercise(Session s, String id) async {
+  final change = await const ExerciseHandler().read(s, '', id);
+  return change == null || change.deleted
+      ? null
+      : const ExerciseCodec().decode(change.key, change.data!);
 }

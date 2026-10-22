@@ -152,6 +152,15 @@ final class E2eDevice {
       exercises: exercises,
       outbox: outbox,
       clock: clock,
+      units: units,
+    );
+    saveNote = SaveExerciseNote(
+      db: db,
+      notes: notes,
+      schedule: schedule,
+      exercises: exercises,
+      outbox: outbox,
+      clock: clock,
     );
     deleteLift = DeleteLiftLog(
       db: db,
@@ -225,6 +234,7 @@ final class E2eDevice {
   late final ExerciseUnitRepository units = ExerciseUnitRepository(db);
   late final ExerciseNoteRepository notes = ExerciseNoteRepository(db);
   late final SaveLiftLog saveLift;
+  late final SaveExerciseNote saveNote;
   late final DeleteLiftLog deleteLift;
   late final MarkSessionDone markDone;
   late final MarkSessionSkipped markSkipped;

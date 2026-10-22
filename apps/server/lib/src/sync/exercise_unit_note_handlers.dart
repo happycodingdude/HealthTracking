@@ -2,11 +2,14 @@ import 'package:api_contract/api_contract.dart';
 import 'package:domain/domain.dart';
 import 'package:postgres/postgres.dart';
 
+import 'lift_log_handler.dart';
+import 'schedule_handlers.dart';
 import 'sync_entity_handler.dart';
 
 /// Entity `exercise_unit` (key `exerciseId`) = bảng `exercise_units` (05 Bản 3
 /// §6.6.2, TD3-03): đơn vị mức tạ Bạn chọn cho từng bài. Không có cửa sổ, đổi
 /// được bất cứ lúc nào (FA3-04); đổi đơn vị là `upsert`, không có tombstone.
+/// Bài phải có trong thư viện (kể cả đã rời thư viện) và có ghi mức tạ.
 /// Xung đột: `clientUpdatedAt` mới hơn thắng (SyncService).
 final class ExerciseUnitHandler implements SyncEntityHandler {
   const ExerciseUnitHandler();
@@ -62,6 +65,10 @@ final class ExerciseUnitHandler implements SyncEntityHandler {
     int serverVersion,
   ) async {
     final unit = _codec.decode(m.key, m.data!);
+    final exercise = await libraryExercise(s, unit.exerciseId);
+    if (exercise == null || !exercise.logsWeight) {
+      throw const SyncRejection('exerciseId');
+    }
     await s.execute(
       Sql.named('''
         INSERT INTO exercise_units (user_id, exercise_id, unit, changed_on,
@@ -110,8 +117,11 @@ final class ExerciseUnitHandler implements SyncEntityHandler {
 
 /// Entity `exercise_note` (key `{date}:{exerciseId}`) = bảng `exercise_notes`
 /// (05 Bản 3 §6.6.4, TD3-06): ghi chú bài theo buổi, độc lập với mức tạ
-/// (FD3-01 = A). Ghi chú trống là `delete` (tombstone, nội dung bị xóa). Nội
-/// dung không ghi vào log (TA3-08).
+/// (FD3-01 = A). Kiểm tra theo thứ tự: buổi, cửa sổ ghi tạ, bài, nhóm cơ của
+/// buổi ([ExerciseNoteRules.check], không xét `logsWeight`), rồi nội dung 1–200
+/// ký tự sau trim. Ghi chú trống là `delete` (tombstone, nội dung bị xóa);
+/// `upsert` chỉ có khoảng trắng cũng là xóa (TAC3-06). Nội dung không ghi vào
+/// log (TA3-08).
 final class ExerciseNoteHandler implements SyncEntityHandler {
   const ExerciseNoteHandler();
 
@@ -174,16 +184,31 @@ final class ExerciseNoteHandler implements SyncEntityHandler {
     SyncMutation m,
     int serverVersion,
   ) async {
+    final userId = ctx.userId;
     final (date, exerciseId) = ExerciseNote.parseKey(m.key)!;
+    final existing = await read(s, userId, m.key);
+    final exists = existing != null && !existing.deleted;
+    final error = ExerciseNoteRules.check(
+      day: await sessionDay(s, userId, date),
+      exercise: await libraryExercise(s, exerciseId),
+      now: await deviceNow(s, userId, m.clientUpdatedAt) ?? m.clientUpdatedAt,
+      exists: exists,
+    );
+    if (error != null) {
+      throw SyncRejection('key', code: liftErrorCodes[error]!);
+    }
     final parameters = {
-      'user': ctx.userId,
+      'user': userId,
       'date': date.toKey(),
       'exercise': exerciseId,
       'version': serverVersion,
       'clientUpdatedAt': m.clientUpdatedAt,
     };
-    if (m.op == SyncOp.delete) {
-      // SyncService chỉ gọi khi dòng đang có (chưa xóa).
+    final text = m.op == SyncOp.delete
+        ? ''
+        : ExerciseNoteRules.normalize(_codec.decode(m.key, m.data!).text);
+    if (text.isEmpty) {
+      if (!exists) return;
       await s.execute(
         Sql.named('''
           UPDATE exercise_notes
@@ -195,7 +220,7 @@ final class ExerciseNoteHandler implements SyncEntityHandler {
       );
       return;
     }
-    final note = _codec.decode(m.key, m.data!);
+    if (!ExerciseNoteRules.isValid(text)) throw const SyncRejection('text');
     await s.execute(
       Sql.named('''
         INSERT INTO exercise_notes (user_id, date, exercise_id, text, logged_at,
@@ -209,7 +234,7 @@ final class ExerciseNoteHandler implements SyncEntityHandler {
           client_updated_at = EXCLUDED.client_updated_at,
           updated_at = now(),
           deleted = false'''),
-      parameters: {...parameters, 'text': note.text},
+      parameters: {...parameters, 'text': text},
     );
   }
 

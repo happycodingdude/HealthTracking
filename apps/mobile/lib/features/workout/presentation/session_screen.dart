@@ -237,7 +237,7 @@ class _ReadOnlyLine extends StatelessWidget {
 /// nhỏ · tên · nhãn dụng cụ (chạm → S-67); bên phải nút "Ghi", con số đậm
 /// (chạm → S-64 sửa), con số thường, hoặc trống. Bài bụng không có chỗ ghi
 /// (FR2-12). Bài đã rời thư viện có ghi chú nhỏ (F20-E1).
-class _ExerciseLine extends StatelessWidget {
+class _ExerciseLine extends ConsumerWidget {
   const _ExerciseLine({
     required this.session,
     required this.item,
@@ -249,9 +249,10 @@ class _ExerciseLine extends StatelessWidget {
   final VoidCallback onOpen;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final e = item.exercise;
     final log = item.log;
+    final unit = displayUnit(ref.watch(exerciseUnitsProvider).value, e.id);
     final canLog = session.canLog && e.logsWeight;
     final palette = context.palette;
     final stacked = MediaQuery.textScalerOf(context).scale(1) >= _stackedScale;
@@ -276,7 +277,7 @@ class _ExerciseLine extends StatelessWidget {
           ),
         ),
         onPressed: openSheet,
-        child: Text(Fmt.lift(l, e.liftUnit)),
+        child: Text(Fmt.lift(l, unit)),
       ),
       (true, null) when e.active => OutlinedButton(
         key: ValueKey('lift-log-${e.id}'),
@@ -292,7 +293,7 @@ class _ExerciseLine extends StatelessWidget {
         child: const Text(S.logLiftShort),
       ),
       (false, final LiftLog l) => Text(
-        Fmt.lift(l, e.liftUnit),
+        Fmt.lift(l, unit),
         key: ValueKey('lift-readonly-${e.id}'),
         style: context.text.titleMedium,
       ),
