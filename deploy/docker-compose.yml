@@ -28,6 +28,11 @@ services:
       TRUST_PROXY: "true"
       MIGRATIONS_DIR: /app/migrations
       DATABASE_URL: postgres://${POSTGRES_USER:?}:${POSTGRES_PASSWORD:?}@db:5432/${POSTGRES_DB:?}
+    # Thẻ màn hình khóa (05 Bản 3 TD3-10, runbook §12): APNS_KEY_PATH,
+    # APNS_KEY_ID, APNS_TEAM_ID, APNS_BUNDLE_ID, LIVE_ACTIVITY_CRON đặt trong
+    # .env; file khóa .p8 nằm ở deploy/secrets/ (quyền 600), gắn chỉ đọc.
+    volumes:
+      - ./secrets:/app/secrets:ro
     depends_on:
       db:
         condition: service_healthy

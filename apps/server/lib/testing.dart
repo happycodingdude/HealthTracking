@@ -4,6 +4,9 @@ library;
 
 export 'package:domain/testing.dart' show randomTestPassword, randomTestSecret;
 
+export 'src/live_activity/apns.dart';
+export 'src/live_activity/fake_apns.dart';
+export 'testing/apns_tokens.dart';
 export 'testing/library_fixtures.dart';
 export 'testing/test_database.dart';
 export 'testing/v2_data_set.dart';

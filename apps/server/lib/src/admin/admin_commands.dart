@@ -1,10 +1,13 @@
 import 'dart:math';
 
+import 'package:api_contract/api_contract.dart' show ApnsEnvironment;
 import 'package:domain/domain.dart';
 import 'package:postgres/postgres.dart';
 
 import '../ai/budget_ledger.dart';
 import '../auth/token_service.dart';
+import '../live_activity/apns.dart';
+import '../live_activity/scheduler.dart';
 
 final class AdminException implements Exception {
   AdminException(this.message);
@@ -59,6 +62,36 @@ final class AdminCommands {
       await _tokens.revokeAll(tx, rows.first[0]! as String);
     });
     return temp;
+  }
+
+  /// `admin apns test --user <số>` (06 Bản 3 VS40-T06): gửi push `end` tới
+  /// token thẻ của tài khoản (token cập nhật nếu có, không thì push-to-start
+  /// token) để thử khóa APNs. Không in token.
+  Future<ApnsResult> apnsTest(String phone, Apns apns, DateTime now) async {
+    if (!AccountValidators.isValidPhone(phone)) {
+      throw AdminException(
+        'Số điện thoại không đúng định dạng (10 chữ số, bắt đầu bằng 0).',
+      );
+    }
+    final rows = await _pool.execute(
+      Sql.named('''
+        SELECT COALESCE(t.activity_push_token, t.push_to_start_token), t.environment
+        FROM live_activity_tokens t JOIN users u ON u.id = t.user_id
+        WHERE u.phone = @phone'''),
+      parameters: {'phone': AccountValidators.normalizePhone(phone)},
+    );
+    if (rows.isEmpty) {
+      throw AdminException(
+        'Tài khoản $phone chưa có token thẻ (mở app Bản 3 trên iPhone trước).',
+      );
+    }
+    return apns.send(
+      ApnsPush(
+        token: rows.first[0]! as String,
+        environment: ApnsEnvironment.tryParse(rows.first[1]! as String)!,
+        payload: LiveActivityPayload.end(now),
+      ),
+    );
   }
 
   /// `admin budget --show` (06 VS13-T03, TR-09): tháng hiện tại theo giờ Việt

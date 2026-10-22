@@ -5,6 +5,8 @@ import 'package:domain/domain.dart';
 import 'package:server/server.dart';
 import 'package:server/src/admin/admin_commands.dart';
 import 'package:server/src/auth/token_service.dart';
+import 'package:server/src/live_activity/apns.dart';
+import 'package:server/src/live_activity/apns_client.dart';
 
 /// Admin CLI (TR-09). Xem docs/runbook.md.
 ///
@@ -14,6 +16,7 @@ import 'package:server/src/auth/token_service.dart';
 ///   admin library import data/v3__exercises.json [--check-only]
 ///   admin library purge --dry-run | --apply --confirm-count=N
 ///   admin library check-videos
+///   admin apns test --user 0901234567
 Future<void> main(List<String> args) async {
   final parser = ArgParser()
     ..addCommand('migrate')
@@ -22,6 +25,11 @@ Future<void> main(List<String> args) async {
       ArgParser()..addOption('phone', mandatory: true),
     )
     ..addCommand('budget', ArgParser()..addFlag('show', defaultsTo: true))
+    ..addCommand(
+      'apns',
+      ArgParser()
+        ..addCommand('test', ArgParser()..addOption('user', mandatory: true)),
+    )
     ..addCommand(
       'library',
       ArgParser()
@@ -50,6 +58,9 @@ Future<void> main(List<String> args) async {
             library.rest.length != (library.name == 'import' ? 1 : 0))) {
       throw const FormatException('Thiếu lệnh con hoặc đường dẫn file');
     }
+    if (parsed.command!.name == 'apns' && parsed.command!.command == null) {
+      throw const FormatException('Thiếu lệnh con: apns test --user <số>');
+    }
     if (library?.name == 'purge' &&
         (library!.flag('dry-run') == library.flag('apply') ||
             (library.flag('apply') &&
@@ -70,7 +81,8 @@ Future<void> main(List<String> args) async {
       ..writeln(
         '      admin library purge --dry-run | --apply --confirm-count=<tổng>',
       )
-      ..writeln('      admin library check-videos');
+      ..writeln('      admin library check-videos')
+      ..writeln('      admin apns test --user <số điện thoại>');
     exitCode = 64;
     return;
   }
@@ -167,6 +179,34 @@ Future<void> main(List<String> args) async {
         ).run(file, checkOnly: cmd.flag('check-only'));
         (report.ok ? stdout : stderr).writeln(report.describe());
         if (!report.ok) exitCode = 1;
+      case 'apns':
+        final apns = config.apns;
+        if (apns == null) {
+          stderr.writeln(
+            'Chưa cấu hình APNS_KEY_PATH, APNS_KEY_ID, APNS_TEAM_ID, '
+            'APNS_BUNDLE_ID (docs/runbook.md, mục APNs).',
+          );
+          exitCode = 1;
+          return;
+        }
+        final client = ApnsClient(
+          credentials: apns.credentials(),
+          bundleId: apns.bundleId,
+          clock: const SystemClock(),
+        );
+        try {
+          final result = await admin.apnsTest(
+            parsed.command!.command!.option('user')!,
+            client,
+            DateTime.now().toUtc(),
+          );
+          (result.outcome == ApnsOutcome.sent ? stdout : stderr).writeln(
+            'APNs: ${result.outcome.name} ${result.error}',
+          );
+          if (result.outcome != ApnsOutcome.sent) exitCode = 1;
+        } finally {
+          await client.close();
+        }
       case 'budget':
         stdout.write(
           await admin.budgetReport(

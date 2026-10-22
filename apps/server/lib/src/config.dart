@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'ai/ai_config.dart';
+import 'live_activity/apns_client.dart';
 
 final class ConfigException implements Exception {
   ConfigException(this.message);
@@ -23,6 +24,8 @@ final class ServerConfig {
     this.youtubeApiKey,
     this.videoCheckAt = defaultVideoCheckAt,
     this.sentryDsn,
+    this.apns,
+    this.liveActivityInterval = const Duration(minutes: 1),
   });
 
   factory ServerConfig.fromEnvironment(Map<String, String> env) {
@@ -69,7 +72,28 @@ final class ServerConfig {
       sentryDsn: env['SENTRY_DSN']?.isNotEmpty == true
           ? env['SENTRY_DSN']
           : null,
+      apns: ApnsConfig.fromEnvironment(env),
+      liveActivityInterval: parseMinuteCron(
+        env['LIVE_ACTIVITY_CRON']?.isNotEmpty == true
+            ? env['LIVE_ACTIVITY_CRON']!
+            : '* * * * *',
+      ),
     );
+  }
+
+  /// `LIVE_ACTIVITY_CRON` (05 Bản 3 TD3-12): "* * * * *" (mỗi phút) hoặc
+  /// "*/N * * * *" (mỗi N phút). Dạng khác → [ConfigException].
+  static Duration parseMinuteCron(String cron) {
+    final m = RegExp(
+      r'^(\*|\*/(\d{1,2})) \* \* \* \*$',
+    ).firstMatch(cron.trim());
+    final n = m == null ? null : int.parse(m.group(2) ?? '1');
+    if (n == null || n < 1 || n > 59) {
+      throw ConfigException(
+        'LIVE_ACTIVITY_CRON chỉ nhận "* * * * *" hoặc "*/N * * * *"',
+      );
+    }
+    return Duration(minutes: n);
   }
 
   /// `VIDEO_CHECK_CRON` dạng "phút giờ * * *" (một lần mỗi ngày, giờ Việt
@@ -110,6 +134,13 @@ final class ServerConfig {
   /// Sentry của server (OPS-6); không có thì cảnh báo chỉ ghi log.
   final String? sentryDsn;
 
+  /// APNs cho thẻ màn hình khóa; null = chưa có khóa, job thẻ không chạy
+  /// (06 Bản 3 ED3-15).
+  final ApnsConfig? apns;
+
+  /// Nhịp job thẻ màn hình khóa (mặc định mỗi phút, TD3-12).
+  final Duration liveActivityInterval;
+
   /// Biến môi trường của tiến trình, bổ sung bằng file `.env` nếu có
   /// (biến của tiến trình được ưu tiên).
   static Map<String, String> loadEnvironment({String dotEnvPath = '.env'}) {
@@ -136,5 +167,54 @@ final class ServerConfig {
       out[line.substring(0, eq).trim()] = value;
     }
     return out;
+  }
+}
+
+/// APNs (05 Bản 3 TD3-10, TD3-22): khóa `.p8` nằm trong `secrets/` trên server
+/// (quyền 600), chỉ đường dẫn đi qua biến môi trường.
+final class ApnsConfig {
+  const ApnsConfig({
+    required this.keyPath,
+    required this.keyId,
+    required this.teamId,
+    required this.bundleId,
+  });
+
+  /// Đủ 4 biến → cấu hình; thiếu → null (job thẻ tắt, ED3-15).
+  static ApnsConfig? fromEnvironment(Map<String, String> env) {
+    String? v(String key) => env[key]?.isNotEmpty == true ? env[key] : null;
+    final keyPath = v('APNS_KEY_PATH');
+    final keyId = v('APNS_KEY_ID');
+    final teamId = v('APNS_TEAM_ID');
+    final bundleId = v('APNS_BUNDLE_ID');
+    if (keyPath == null || keyId == null || teamId == null) return null;
+    if (bundleId == null) return null;
+    return ApnsConfig(
+      keyPath: keyPath,
+      keyId: keyId,
+      teamId: teamId,
+      bundleId: bundleId,
+    );
+  }
+
+  final String keyPath;
+  final String keyId;
+  final String teamId;
+
+  /// Bundle ID của app nhận thẻ: `com.happycodingdude.ironly`, bản dev
+  /// `com.happycodingdude.ironly.dev`.
+  final String bundleId;
+
+  /// Đọc khóa từ file (không giữ đường dẫn trong log).
+  ApnsCredentials credentials() {
+    final file = File(keyPath);
+    if (!file.existsSync()) {
+      throw ConfigException('Không đọc được file khóa APNS_KEY_PATH');
+    }
+    return ApnsCredentials(
+      keyPem: file.readAsStringSync(),
+      keyId: keyId,
+      teamId: teamId,
+    );
   }
 }

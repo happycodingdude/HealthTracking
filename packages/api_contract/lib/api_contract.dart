@@ -10,6 +10,7 @@ export 'src/exercise_codecs.dart';
 export 'src/exercise_unit_note_codecs.dart';
 export 'src/json_reader.dart';
 export 'src/lift_log_codecs.dart';
+export 'src/live_activity_dtos.dart';
 export 'src/menu_dtos.dart';
 export 'src/profile_codecs.dart';
 export 'src/schedule_codecs.dart';

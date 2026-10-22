@@ -16,6 +16,7 @@ import 'auth/token_service.dart';
 import 'db/database.dart';
 import 'health/health_routes.dart';
 import 'http/middleware.dart';
+import 'live_activity/token_routes.dart';
 import 'logging/logger.dart';
 import 'sync/account_handler.dart';
 import 'sync/exercise_unit_note_handlers.dart';
@@ -106,6 +107,7 @@ Handler buildApp(AppDeps deps) {
     ..get('/healthz', healthHandler(deps.db));
   addAuthRoutes(router, deps.auth, trustProxy: deps.trustProxy);
   addLogoutRoute(router, deps.db.pool, deps.tokens);
+  addLiveActivityTokenRoutes(router, deps.db.pool, deps.tokens);
   addMeRoutes(router, deps.db.pool, deps.tokens);
   addSyncRoutes(router, deps.sync, deps.tokens);
   addMenuRoutes(router, deps.menus, deps.tokens);

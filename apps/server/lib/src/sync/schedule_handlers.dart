@@ -375,6 +375,18 @@ final class DayHandler implements SyncEntityHandler {
         'clientUpdatedAt': m.clientUpdatedAt,
       },
     );
+    // 05 Bản 3 §6.6.5: "Đã tập" / "Không tập" kèm `liveActivityEnded` — app đã
+    // tắt thẻ tại chỗ nên job không gửi push tắt nữa.
+    if (d.mark != null && m.data!['liveActivityEnded'] == true) {
+      await s.execute(
+        Sql.named(
+          '''
+          UPDATE live_activity_sessions SET end_sent_at = @now
+          WHERE user_id = @user AND date = @date::date AND end_sent_at IS NULL''',
+        ),
+        parameters: {'now': ctx.serverNow, 'user': userId, 'date': m.key},
+      );
+    }
   }
 
   @override

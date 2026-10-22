@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:domain/domain.dart';
-
 import 'package:shelf/shelf_io.dart' as shelf_io;
 
 import 'ai/ai_cleanup.dart';
@@ -17,6 +16,8 @@ import 'jobs/job_scheduler.dart';
 import 'jobs/maintenance.dart';
 import 'library/video_check.dart';
 import 'library/youtube_api.dart';
+import 'live_activity/apns_client.dart';
+import 'live_activity/scheduler.dart';
 import 'logging/logger.dart';
 
 /// Vòng đời server: migration → mở HTTP → job định kỳ → tắt an toàn.
@@ -92,6 +93,30 @@ final class ServerApp {
         logger: log,
       );
       jobs.dailyAt('video_check', config.videoCheckAt, videoCheck.run);
+    }
+    // 05 Bản 3 §6.9.4: thẻ màn hình khóa. Chưa có khóa APNs (dev, CI) thì
+    // không chạy (ED3-15).
+    final apns = config.apns;
+    if (apns == null) {
+      log.info('live_activity_disabled');
+    } else {
+      final client = ApnsClient(
+        credentials: apns.credentials(),
+        bundleId: apns.bundleId,
+        clock: deps.clock,
+      );
+      final liveActivity = LiveActivityScheduler(
+        pool: db.pool,
+        apns: client,
+        clock: deps.clock,
+        logger: log,
+        alerts: dsn == null ? LogAlerts(log) : SentryAlerts(log),
+      );
+      jobs.every(
+        'live_activity',
+        config.liveActivityInterval,
+        liveActivity.run,
+      );
     }
     final handler = buildApp(deps);
     final http = await shelf_io.serve(handler, config.host, config.port);

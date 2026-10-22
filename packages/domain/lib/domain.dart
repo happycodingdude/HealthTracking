@@ -14,6 +14,7 @@ export 'src/lift_log/exercise_unit.dart';
 export 'src/lift_log/lift_kg.dart';
 export 'src/lift_log/lift_log.dart';
 export 'src/lift_log/lift_window.dart';
+export 'src/live_activity/live_activity_content.dart';
 export 'src/menu/menu.dart';
 export 'src/profile/profile.dart';
 export 'src/profile/profile_rules.dart';

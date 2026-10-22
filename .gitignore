@@ -38,3 +38,6 @@ age-key*
 
 # Ảnh chụp widget lỗi khi chạy test Swift (06 Bản 3 ED3-14).
 apps/mobile/ios/IronlyWidgetsTests/__Snapshots__/*.failed.png
+
+# Khóa APNs .p8 trên server (05 Bản 3 TR3-13), không vào git.
+deploy/secrets/
