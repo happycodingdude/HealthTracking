@@ -15,7 +15,12 @@ import '../data/lift_log_repository.dart';
 /// Việc làm sau khi mức tạ hoặc đơn vị của bài đổi (05 Bản 3 §6.4.1): cập nhật
 /// widget (VS-39) và thẻ màn hình khóa (VS-41). Mặc định không làm gì.
 abstract interface class LiftChangeHooks {
-  Future<void> liftChanged(LocalDate date);
+  /// Đã lưu ([deleted] = false) hoặc xóa mức tạ bài [exerciseId] ngày [date].
+  Future<void> liftChanged(
+    LocalDate date,
+    String exerciseId, {
+    required bool deleted,
+  });
   Future<void> unitChanged(String exerciseId);
 }
 
@@ -23,7 +28,11 @@ final class NoLiftChangeHooks implements LiftChangeHooks {
   const NoLiftChangeHooks();
 
   @override
-  Future<void> liftChanged(LocalDate date) async {}
+  Future<void> liftChanged(
+    LocalDate date,
+    String exerciseId, {
+    required bool deleted,
+  }) async {}
 
   @override
   Future<void> unitChanged(String exerciseId) async {}
@@ -149,7 +158,7 @@ final class SaveLiftLog extends _LiftWrite {
       );
       return log;
     });
-    await _hooks.liftChanged(date);
+    await _hooks.liftChanged(date, exerciseId, deleted: false);
     return log;
   }
 }
@@ -340,7 +349,7 @@ final class DeleteLiftLog extends _LiftWrite {
         null,
       );
     });
-    await _hooks.liftChanged(date);
+    await _hooks.liftChanged(date, exerciseId, deleted: true);
   }
 }
 

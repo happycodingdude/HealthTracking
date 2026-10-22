@@ -15,20 +15,25 @@
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
 		46D38C018D76DF10CC2347BA /* WidgetTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B8975EE5C5438C523D80228 /* WidgetTimeline.swift */; };
 		5C169300CDF1BB28C398201A /* SharedState.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3BBAAB75F49042289FA9281 /* SharedState.swift */; };
+		65D226CE4A74832F867F4154 /* IronlySessionActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB7E2D6E550BDDD5955C704 /* IronlySessionActivity.swift */; };
 		674F5D91B311721E01F5D226 /* WidgetContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC9FEF3C14B31DECDDC5625A /* WidgetContentView.swift */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
+		7670B6B8E9ABACC94167576E /* IronlySessionAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B97A2F947B2D215E85B4EDC /* IronlySessionAttributes.swift */; };
 		7D3334C0FF4BC52C72782A77 /* WidgetModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF1348B9B64BCAF465AB7F10 /* WidgetModels.swift */; };
 		82054CE29ED3ED07FF5E7AF1 /* WidgetTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B8975EE5C5438C523D80228 /* WidgetTimeline.swift */; };
+		8571F4938F5612757DC2B84F /* IronlySessionAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B97A2F947B2D215E85B4EDC /* IronlySessionAttributes.swift */; };
 		8DFF873FF7BAC19DABDC82E7 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 17E34B6C35635BBB8F4F1459 /* Pods_Runner.framework */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
+		9FB3E6CC7DDF3A2C595AA390 /* IronlySessionActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB7E2D6E550BDDD5955C704 /* IronlySessionActivity.swift */; };
 		B031570D1E7C0352C53CBD36 /* IronlyWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 4FF5FAB88D96BCB996D64090 /* IronlyWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		BBEA50A2A4BDF6896E9C9893 /* WidgetContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC9FEF3C14B31DECDDC5625A /* WidgetContentView.swift */; };
 		BFDCD5AFDBFE60FFA561F44A /* WidgetModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF1348B9B64BCAF465AB7F10 /* WidgetModels.swift */; };
 		BFEE948FCB3AD311EC53DD75 /* IronlyWidgetsBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 709C13211DFE51BA24DDD1AF /* IronlyWidgetsBundle.swift */; };
 		C00D6D2F44BC98C4009DD95A /* SharedState.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3BBAAB75F49042289FA9281 /* SharedState.swift */; };
 		C995A7776F67ADCB8C95F350 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 954B0CA689C1220568234091 /* Foundation.framework */; };
+		E6DF96909D55FDBB02FC1280 /* IronlySessionAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B97A2F947B2D215E85B4EDC /* IronlySessionAttributes.swift */; };
 		E958E1F81518E641A79E9B68 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 954B0CA689C1220568234091 /* Foundation.framework */; };
 		E9CDEBC42CC0427935FE05DB /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 027436D1691226A67F625C40 /* Pods_RunnerTests.framework */; };
 		F77FEA15EF451DF141AAC3F8 /* NativeBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECE846D392C6B0A3DCE6B0AE /* NativeBridge.swift */; };
@@ -98,6 +103,7 @@
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
+		7DB7E2D6E550BDDD5955C704 /* IronlySessionActivity.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = IronlySessionActivity.swift; sourceTree = "<group>"; };
 		86F68D755C0C6183B4C5CAA1 /* Pods-RunnerTests.profile-dev.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile-dev.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile-dev.xcconfig"; sourceTree = "<group>"; };
 		8769F42EEF72B0145F4935DF /* Profile-dev.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = "Profile-dev.xcconfig"; path = "Flutter/Profile-dev.xcconfig"; sourceTree = "<group>"; };
 		954B0CA689C1220568234091 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
@@ -111,6 +117,7 @@
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		984170E8E6364C37EA207633 /* Pods-RunnerTests.release-dev.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release-dev.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release-dev.xcconfig"; sourceTree = "<group>"; };
 		995C8E2332C73341C963303B /* Release-dev.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = "Release-dev.xcconfig"; path = "Flutter/Release-dev.xcconfig"; sourceTree = "<group>"; };
+		9B97A2F947B2D215E85B4EDC /* IronlySessionAttributes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = IronlySessionAttributes.swift; sourceTree = "<group>"; };
 		9D73AF27D6D75399CE167A57 /* IronlyWidgets.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = IronlyWidgets.xcconfig; sourceTree = "<group>"; };
 		B3B5AB47E3D131D8AB3FDEEF /* Pods-Runner.profile-dev.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile-dev.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile-dev.xcconfig"; sourceTree = "<group>"; };
 		B7ED0AA3053BC292B244F518 /* IronlyWidgets.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = IronlyWidgets.entitlements; sourceTree = "<group>"; };
@@ -200,6 +207,8 @@
 				C1523465719830DCF038F1C9 /* Info.plist */,
 				B7ED0AA3053BC292B244F518 /* IronlyWidgets.entitlements */,
 				9D73AF27D6D75399CE167A57 /* IronlyWidgets.xcconfig */,
+				9B97A2F947B2D215E85B4EDC /* IronlySessionAttributes.swift */,
+				7DB7E2D6E550BDDD5955C704 /* IronlySessionActivity.swift */,
 			);
 			name = IronlyWidgets;
 			path = IronlyWidgets;
@@ -549,6 +558,8 @@
 				46D38C018D76DF10CC2347BA /* WidgetTimeline.swift in Sources */,
 				674F5D91B311721E01F5D226 /* WidgetContentView.swift in Sources */,
 				20DA7DCCB1B2ECF1E96824CD /* SharedState.swift in Sources */,
+				7670B6B8E9ABACC94167576E /* IronlySessionAttributes.swift in Sources */,
+				9FB3E6CC7DDF3A2C595AA390 /* IronlySessionActivity.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -562,6 +573,8 @@
 				82054CE29ED3ED07FF5E7AF1 /* WidgetTimeline.swift in Sources */,
 				BBEA50A2A4BDF6896E9C9893 /* WidgetContentView.swift in Sources */,
 				5C169300CDF1BB28C398201A /* SharedState.swift in Sources */,
+				E6DF96909D55FDBB02FC1280 /* IronlySessionAttributes.swift in Sources */,
+				65D226CE4A74832F867F4154 /* IronlySessionActivity.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -581,6 +594,7 @@
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 				F77FEA15EF451DF141AAC3F8 /* NativeBridge.swift in Sources */,
 				C00D6D2F44BC98C4009DD95A /* SharedState.swift in Sources */,
+				8571F4938F5612757DC2B84F /* IronlySessionAttributes.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -762,6 +776,7 @@
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
 				IRONLY_APP_GROUP = group.com.happycodingdude.ironly;
+				IRONLY_APS_ENVIRONMENT = development;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -903,6 +918,7 @@
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = "Runner/Info-Dev.plist";
 				IRONLY_APP_GROUP = group.com.happycodingdude.ironly.dev;
+				IRONLY_APS_ENVIRONMENT = development;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1235,6 +1251,7 @@
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = "Runner/Info-Dev.plist";
 				IRONLY_APP_GROUP = group.com.happycodingdude.ironly.dev;
+				IRONLY_APS_ENVIRONMENT = development;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1370,6 +1387,7 @@
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
 				IRONLY_APP_GROUP = group.com.happycodingdude.ironly;
+				IRONLY_APS_ENVIRONMENT = development;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1395,6 +1413,7 @@
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
 				IRONLY_APP_GROUP = group.com.happycodingdude.ironly;
+				IRONLY_APS_ENVIRONMENT = production;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1464,6 +1483,7 @@
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = "Runner/Info-Dev.plist";
 				IRONLY_APP_GROUP = group.com.happycodingdude.ironly.dev;
+				IRONLY_APS_ENVIRONMENT = development;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

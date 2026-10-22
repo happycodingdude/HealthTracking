@@ -17,6 +17,23 @@ final class NotConfirmedException implements Exception {
   String toString() => 'NotConfirmedException';
 }
 
+/// Thẻ màn hình khóa (05 Bản 3 §6.4.4, VS-41): "Đã tập" / "Không tập" tắt
+/// thẻ của ngày đó tại chỗ.
+abstract interface class SessionMarkHooks {
+  Future<void> sessionMarked(LocalDate date);
+}
+
+final class NoSessionMarkHooks implements SessionMarkHooks {
+  const NoSessionMarkHooks();
+
+  @override
+  Future<void> sessionMarked(LocalDate date) async {}
+}
+
+final sessionMarkHooksProvider = Provider<SessionMarkHooks>(
+  (ref) => const NoSessionMarkHooks(),
+);
+
 /// Ghi một bản ngày đã kiểm tra bằng domain + outbox trong một transaction.
 /// Giao diện đổi ngay nhờ stream của Drift, không chờ mạng (P6, F05-E28).
 abstract base class _DayWrite {
@@ -37,20 +54,26 @@ abstract base class _DayWrite {
 
   static const _codec = DayCodec();
 
+  /// [endsLiveActivity]: "Đã tập" / "Không tập" — mutation kèm
+  /// `liveActivityEnded: true` để server không gửi push tắt thừa (05 Bản 3
+  /// §6.6.5), rồi tắt thẻ tại chỗ.
   Future<PlanDay> _write(
     LocalDate date,
-    PlanDay Function(PlanDay? day, DateTime now) change,
-  ) => _db.transaction(() async {
-    final updated = change(await _schedule.day(date), _clock.now());
-    await _schedule.putDay(updated);
-    await _outbox.enqueue(
-      SyncEntities.day,
-      date.toKey(),
-      SyncOp.upsert,
-      _codec.encode(updated),
-    );
+    PlanDay Function(PlanDay? day, DateTime now) change, {
+    SessionMarkHooks? endsLiveActivity,
+  }) async {
+    final updated = await _db.transaction(() async {
+      final updated = change(await _schedule.day(date), _clock.now());
+      await _schedule.putDay(updated);
+      await _outbox.enqueue(SyncEntities.day, date.toKey(), SyncOp.upsert, {
+        ..._codec.encode(updated),
+        if (endsLiveActivity != null) 'liveActivityEnded': true,
+      });
+      return updated;
+    });
+    await endsLiveActivity?.sessionMarked(date);
     return updated;
-  });
+  }
 }
 
 /// "Đã tập" (F05-R23, F05-R24, 05 Bản 2 TD2-08): chỉ khi Bạn đã xác nhận hộp
@@ -63,14 +86,17 @@ final class MarkSessionDone extends _DayWrite {
     required super.schedule,
     required super.outbox,
     required super.clock,
-  });
+    SessionMarkHooks hooks = const NoSessionMarkHooks(),
+  }) : _hooks = hooks;
+
+  final SessionMarkHooks _hooks;
 
   Future<PlanDay> call(LocalDate date, {required bool confirmed}) async {
     if (!confirmed) throw const NotConfirmedException();
     return _write(date, (day, now) {
       if (day == null) throw const MarkException(MarkError.notWorkout);
       return SessionRules.markDone(day, now: now);
-    });
+    }, endsLiveActivity: _hooks);
   }
 }
 
@@ -83,9 +109,12 @@ final class MarkSessionSkipped extends _DayWrite {
     required LiftLogRepository liftLogs,
     required super.outbox,
     required super.clock,
-  }) : _liftLogs = liftLogs;
+    SessionMarkHooks hooks = const NoSessionMarkHooks(),
+  }) : _liftLogs = liftLogs,
+       _hooks = hooks;
 
   final LiftLogRepository _liftLogs;
+  final SessionMarkHooks _hooks;
 
   /// Số bài đã có mức tạ trong buổi ngày [date]: > 0 thì UI hỏi trước khi
   /// lưu "Buổi này đã có mức tạ của {N} bài." (F05-R28).
@@ -94,7 +123,7 @@ final class MarkSessionSkipped extends _DayWrite {
   Future<PlanDay> call(LocalDate date) => _write(date, (day, now) {
     if (day == null) throw const MarkException(MarkError.notWorkout);
     return SessionRules.markSkipped(day, now: now);
-  });
+  }, endsLiveActivity: _hooks);
 }
 
 /// Thêm buổi tập thêm (F05-R31 → R35): chỉ khi Bạn đã xác nhận hộp S-65
@@ -139,6 +168,7 @@ final markSessionDoneProvider = Provider<MarkSessionDone>(
     schedule: ref.watch(scheduleRepositoryProvider),
     outbox: ref.watch(outboxWriterProvider),
     clock: ref.watch(clockProvider),
+    hooks: ref.watch(sessionMarkHooksProvider),
   ),
 );
 
@@ -149,6 +179,7 @@ final markSessionSkippedProvider = Provider<MarkSessionSkipped>(
     liftLogs: ref.watch(liftLogRepositoryProvider),
     outbox: ref.watch(outboxWriterProvider),
     clock: ref.watch(clockProvider),
+    hooks: ref.watch(sessionMarkHooksProvider),
   ),
 );
 

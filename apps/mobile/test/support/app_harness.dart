@@ -21,6 +21,7 @@ import 'package:mobile/features/account/application/logout.dart';
 import 'package:mobile/features/auth/application/auth_controller.dart';
 import 'package:mobile/features/me/application/calorie_updates.dart';
 import 'package:mobile/features/me/application/reminders.dart';
+import 'package:mobile/features/native/live_activity_controller.dart';
 import 'package:mobile/features/native/native_bridge.dart';
 import 'package:mobile/features/onboarding/application/setup_state.dart';
 
@@ -135,6 +136,7 @@ List<Override> appOverrides({
     localMarksProvider.overrideWithValue(marks ?? MemoryLocalMarks()),
     logoutFlagProvider.overrideWithValue(logoutFlag ?? MemoryLogoutFlag()),
     nativeBridgeProvider.overrideWithValue(native ?? FakeNativeBridge()),
+    liveActivityStoreProvider.overrideWithValue(MemoryLiveActivityStore()),
     // Gốc app (`AppRoot`) tự cung cấp khi test dựng cả gốc app.
     if (logoutFinisher != null)
       logoutFinisherProvider.overrideWithValue(logoutFinisher),

@@ -9,6 +9,7 @@ import '../data/sync/sync_scheduler.dart';
 import '../features/auth/application/auth_controller.dart';
 import '../features/me/application/calorie_updates.dart';
 import '../features/me/application/reminders.dart';
+import '../features/native/live_activity_controller.dart';
 import '../features/native/widget_state_writer.dart';
 import '../features/schedule/application/month_materializer.dart';
 import 'providers.dart';
@@ -19,7 +20,8 @@ import 'time_ticker.dart';
 /// foreground và khi qua 00:00 lúc app đang mở: [MonthMaterializer] (F03-R6),
 /// kiểm tra sang năm mới cho mức calo (F01-E2), rồi [ReminderScheduler]
 /// (TR-10). Chạm vào nhắc → Hôm nay (NAV-2). Bản 3: ghi nội dung widget mỗi
-/// khi đổi và mỗi lần mở app / quay lại foreground (F24-R5, TD3-15).
+/// khi đổi và mỗi lần mở app / quay lại foreground (F24-R5, TD3-15); thẻ màn
+/// hình khóa: tắt thẻ ngày cũ, gửi token (05 Bản 3 §6.4.4).
 class BackgroundTasks extends ConsumerStatefulWidget {
   const BackgroundTasks({super.key, required this.child});
 
@@ -66,6 +68,8 @@ class _BackgroundTasksState extends ConsumerState<BackgroundTasks> {
       } catch (e, st) {
         await reporter.report(e, st, reason: 'notifications_init');
       }
+      // Token thẻ màn hình khóa từ iOS (TA3-12, TA3-13).
+      ref.read(liveActivityControllerProvider).start();
       _run();
     });
   }
@@ -77,6 +81,8 @@ class _BackgroundTasksState extends ConsumerState<BackgroundTasks> {
     if (ref.read(widgetStateProvider) case final widget?) {
       unawaited(ref.read(widgetStateWriterProvider).write(widget, force: true));
     }
+    // Thẻ ngày cũ tắt, token gửi lại khi cần (05 Bản 3 §6.4.4).
+    unawaited(ref.read(liveActivityControllerProvider).refresh());
     unawaited(_tasks());
     _scheduleMidnight();
   }

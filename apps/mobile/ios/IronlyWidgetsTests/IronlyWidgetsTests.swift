@@ -3,7 +3,9 @@ import XCTest
 
 /// 06 Bản 3 VS39-T08 (Swift): đọc `widget_state.json`, file hỏng / thiếu không
 /// crash (ED3-07), timeline 00:00 (TAC3-09), URL theo NAV-15, ảnh chụp 7 trạng
-/// thái × sáng / tối × cỡ chữ lớn (UX-AC57, UX-AC63; ED3-14).
+/// thái × sáng / tối × cỡ chữ lớn (UX-AC57, UX-AC63; ED3-14). VS41-T06: thẻ
+/// S-71 — `content-state` thiếu trường không crash, ảnh chụp 4 trạng thái ×
+/// sáng / tối × cỡ chữ lớn, Dynamic Island thu gọn / mở rộng (UX-AC58).
 final class IronlyWidgetsTests: XCTestCase {
   private var calendar: Calendar = {
     var c = Calendar(identifier: .gregorian)
@@ -107,6 +109,130 @@ final class IronlyWidgetsTests: XCTestCase {
     XCTAssertNil(SharedState.readWidgetState(in: dir))
   }
 
+  // MARK: - Thẻ màn hình khóa S-71
+
+  private typealias State = IronlySessionAttributes.ContentState
+
+  private func state(_ json: String) throws -> State {
+    try JSONDecoder().decode(State.self, from: Data(json.utf8))
+  }
+
+  func testVS41T06ContentStateDecodesWithMissingFields() throws {
+    let full = try state(
+      #"{"lastLogged":{"name":"Máy ép ngực","lift":"40 → 47,5 kg"},"next":{"name":"Nằm ghế ngang đẩy thanh tạ","prev":"50 → 55 kg"},"allLogged":false,"absOnly":false}"#)
+    XCTAssertEqual(ActivityText.lastLogged(full), "Máy ép ngực · 40 → 47,5 kg")
+    XCTAssertEqual(ActivityText.next(full), "Nằm ghế ngang đẩy thanh tạ · Buổi trước: 50 → 55 kg")
+    XCTAssertEqual(ActivityText.compact(full), "Kế tiếp: 50 → 55 kg")
+
+    let empty = try state("{}")
+    XCTAssertEqual(ActivityText.lastLogged(empty), "Chưa ghi bài nào")
+    XCTAssertEqual(ActivityText.next(empty), "Đã ghi hết bài")
+    XCTAssertFalse(empty.absOnly)
+
+    let broken = try state(#"{"lastLogged":{"name":1},"next":{"name":"Máy ép ngực"},"absOnly":"x","extra":true}"#)
+    XCTAssertNil(broken.lastLogged)
+    XCTAssertEqual(ActivityText.next(broken), "Máy ép ngực · Buổi trước: chưa ghi")
+    XCTAssertEqual(ActivityText.compact(broken), "Kế tiếp: chưa ghi")
+    XCTAssertFalse(broken.allLogged)
+    XCTAssertFalse(broken.absOnly)
+  }
+
+  func testNAV16ActivityOpensTodaySession() {
+    XCTAssertEqual(IronlySessionActivity.url.absoluteString, "ironly://session/today")
+  }
+
+  private var activityStates: [(String, String, State)] {
+    let lift = State.Lift(name: "Máy ép ngực", lift: "40 → 47,5 kg")
+    return [
+      ("logging", "Ngực", State(
+        lastLogged: lift, next: .init(name: "Nằm ghế ngang đẩy thanh tạ", prev: "50 → 55 kg"),
+        allLogged: false, absOnly: false)),
+      ("nothing_logged", "Ngực + Tay sau", State(
+        lastLogged: nil, next: .init(name: "Máy ép ngực", prev: nil), allLogged: false, absOnly: false)),
+      ("all_logged", "Ngực", State(lastLogged: lift, next: nil, allLogged: true, absOnly: false)),
+      ("abs_only", "Bụng", State(lastLogged: nil, next: nil, allLogged: false, absOnly: true)),
+    ]
+  }
+
+  @MainActor
+  func testActivitySnapshots() throws {
+    let firstRun = !FileManager.default.fileExists(
+      atPath: snapshotDir.appendingPathComponent("s71_logging_light.png").path)
+    let recording = firstRun || ProcessInfo.processInfo.environment["SNAPSHOT_RECORD"] == "1"
+    var failures: [String] = []
+    for (name, groups, state) in activityStates {
+      for (variant, scheme, size) in [
+        ("light", ColorScheme.light, DynamicTypeSize.large),
+        ("dark", ColorScheme.dark, DynamicTypeSize.large),
+        ("light_maxtext", ColorScheme.light, DynamicTypeSize.accessibility3),
+      ] {
+        let card = LockScreenActivityView(groups: groups, state: state)
+          .frame(width: 361)
+          .background(Color.ironlyWidgetBackground)
+          .clipShape(RoundedRectangle(cornerRadius: 22))
+        let image = try snapshot(card, scheme: scheme, size: size)
+        if let problem = try compare(image, name: "s71_\(name)_\(variant)", record: recording) {
+          failures.append(problem)
+        }
+      }
+    }
+    // Dynamic Island: nền đen, máy sáng hay tối vẽ như nhau.
+    let (_, groups, logging) = activityStates[0]
+    let islands: [(String, AnyView)] = [
+      ("compact", AnyView(HStack {
+        IslandCompactLeading(groups: groups)
+        Spacer(minLength: 24)
+        IslandCompactTrailing(state: logging)
+      }.padding(.horizontal, 18).frame(width: 250, height: 37).background(Color.black)
+        .clipShape(Capsule()))),
+      ("expanded", AnyView(IslandExpandedView(groups: groups, state: logging)
+        .padding(24).frame(width: 371).background(Color.black)
+        .clipShape(RoundedRectangle(cornerRadius: 44)))),
+    ]
+    for (name, island) in islands {
+      let light = try snapshot(island, scheme: .light, size: .large)
+      let dark = try snapshot(island, scheme: .dark, size: .large)
+      XCTAssertEqual(light.pngData(), dark.pngData(), "\(name): sáng / tối phải như nhau")
+      if let problem = try compare(dark, name: "s71_island_\(name)", record: recording) {
+        failures.append(problem)
+      }
+    }
+    XCTAssertTrue(failures.isEmpty, failures.joined(separator: "\n"))
+    if firstRun { throw XCTSkip("chưa có ảnh S-71 cho \(osFolder): đã ghi, chưa so") }
+  }
+
+  /// Vẽ nội dung thẻ do app tính ở từng bước demo (`DEMO_ACTIVITY_DIR`, file
+  /// `{"groups": …, "state": content-state}`): simulator không bật được thẻ
+  /// bằng push (05 Bản 3 TA3-15). Không đặt biến thì bỏ qua.
+  @MainActor
+  func testRenderDemoActivities() throws {
+    guard let dir = ProcessInfo.processInfo.environment["DEMO_ACTIVITY_DIR"] else {
+      throw XCTSkip("chỉ dùng khi demo")
+    }
+    struct Demo: Decodable {
+      let groups: String
+      let state: State
+    }
+    let url = URL(fileURLWithPath: dir)
+    for json in try FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil)
+    where json.pathExtension == "json" {
+      let demo = try JSONDecoder().decode(Demo.self, from: Data(contentsOf: json))
+      for (variant, scheme) in [("light", ColorScheme.light), ("dark", ColorScheme.dark)] {
+        let card = LockScreenActivityView(groups: demo.groups, state: demo.state)
+          .frame(width: 361)
+          .background(Color.ironlyWidgetBackground)
+          .clipShape(RoundedRectangle(cornerRadius: 22))
+        let png = try XCTUnwrap(try snapshot(card, scheme: scheme, size: .large).pngData())
+        try png.write(to: json.deletingPathExtension().appendingPathExtension("\(variant).png"))
+      }
+      let island = IslandExpandedView(groups: demo.groups, state: demo.state)
+        .padding(24).frame(width: 371).background(Color.black)
+        .clipShape(RoundedRectangle(cornerRadius: 44))
+      let png = try XCTUnwrap(try snapshot(island, scheme: .dark, size: .large).pngData())
+      try png.write(to: json.deletingPathExtension().appendingPathExtension("island.png"))
+    }
+  }
+
   // MARK: - Ảnh chụp (UX-AC57, UX-AC63)
 
   private func states() throws -> [(String, WidgetDisplay)] {
@@ -171,11 +297,18 @@ final class IronlyWidgetsTests: XCTestCase {
   /// Cỡ vừa trên iPhone 6,1 inch: 338 × 158 điểm.
   @MainActor
   private func render(_ display: WidgetDisplay, scheme: ColorScheme, size: DynamicTypeSize) throws -> UIImage {
-    let view = WidgetContentView(display: display)
-      .padding(16)
-      .frame(width: 338, height: 158)
-      .background(Color.ironlyWidgetBackground)
-      .clipShape(RoundedRectangle(cornerRadius: 22))
+    try snapshot(
+      WidgetContentView(display: display)
+        .padding(16)
+        .frame(width: 338, height: 158)
+        .background(Color.ironlyWidgetBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 22)),
+      scheme: scheme, size: size)
+  }
+
+  @MainActor
+  private func snapshot(_ content: some View, scheme: ColorScheme, size: DynamicTypeSize) throws -> UIImage {
+    let view = content
       .environment(\.colorScheme, scheme)
       .environment(\.dynamicTypeSize, size)
     let renderer = ImageRenderer(content: view)

@@ -7,6 +7,7 @@ import 'package:domain/domain.dart';
 import 'package:domain/testing.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -18,6 +19,8 @@ import 'package:mobile/data/auth/session_store.dart';
 import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/data/logout_flag.dart';
 import 'package:mobile/features/auth/presentation/login_screen.dart';
+import 'package:mobile/features/native/live_activity_controller.dart';
+import 'package:mobile/features/native/native_bridge.dart';
 import 'package:mobile/main.dart' as app;
 
 import 'flow_helpers.dart';
@@ -206,7 +209,8 @@ void main() {
       await pumpUntil(tester, done);
       expect(find.text(S.statusAwaiting), findsOneWidget);
       await tester.tap(done);
-      // VS-24: "Đã tập" qua hộp chốt buổi S-65.
+      // VS-24: "Đã tập" qua hộp chốt buổi S-65; mutation `day` kèm
+      // `liveActivityEnded` (VS-41, F25-AC3) được server nhận.
       await pumpUntil(tester, find.text(S.doneConfirmTitle('Ngực')));
       await tester.tap(find.byKey(const ValueKey('lock-confirm-save')));
       await pumpUntil(tester, find.text(S.markedDone('Ngực')));
@@ -450,8 +454,10 @@ void main() {
 
   testWidgets(
     'VS-38, F27-E2: tắt app sau khi bật cờ đăng xuất → mở lại xóa nốt → màn '
-    'Đăng nhập; đăng nhập lại khôi phục; đăng xuất qua S-56 (TAC3-10 phần app) '
-    '→ Keychain, cờ trống, mở lại app vào màn Chào mừng',
+    'Đăng nhập; đăng nhập lại khôi phục; VS-41: cầu thẻ màn hình khóa thật '
+    '(không thẻ nào khi server chưa bật, gửi push-to-start token nếu iOS cấp); '
+    'đăng xuất qua S-56 (TAC3-10) → Keychain, cờ, token thẻ trống, mở lại app '
+    'vào màn Chào mừng',
     (tester) async {
       // Máy đang đăng nhập (test trước) bị tắt ngay sau bước bật cờ.
       await tester.pumpWidget(const SizedBox());
@@ -468,6 +474,24 @@ void main() {
       await pumpUntil(tester, find.text(S.restored));
       expect(find.textContaining(S.greeting('Minh Anh')), findsOneWidget);
 
+      // VS-41 (TA3-15): simulator không bật được thẻ bằng push; app không bao
+      // giờ tự bật (ED3-09) → không thẻ nào; cập nhật / tắt thẻ không có
+      // không lỗi; push-to-start token (nếu iOS cấp) gửi lên server thật.
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(AppTabBar)),
+      );
+      final bridge = container.read(nativeBridgeProvider);
+      expect(await bridge.liveActivities(), isEmpty);
+      await bridge.updateLiveActivity('none', '{}');
+      await bridge.endLiveActivity('none');
+      await bridge.endAllLiveActivities();
+      final token = await bridge.pushToStartToken();
+      await container.read(liveActivityControllerProvider).refresh();
+      final sent = await PrefsLiveActivityStore().sent();
+      expect(sent?.pushToStart, token);
+      // ignore: avoid_print
+      print('VS-41 push-to-start token trên simulator: ${token != null}');
+
       await tester.tap(tabLabel(S.tabMe));
       await tester.pumpAndSettle();
       await tapVisible(tester, find.byKey(const ValueKey('row-account-data')));
@@ -477,6 +501,7 @@ void main() {
       expect(find.byType(AppTabBar), findsNothing);
       expect(await SecureSessionStore().read(), isNull);
       expect(await PrefsLogoutFlag().isPending(), isFalse);
+      expect(await PrefsLiveActivityStore().sent(), isNull);
 
       await tester.pumpWidget(const SizedBox());
       await launch();

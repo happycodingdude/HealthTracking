@@ -12,6 +12,7 @@ import 'package:mobile/app/time_ticker.dart';
 import 'package:mobile/core/formatters.dart';
 import 'package:mobile/data/auth/token_manager.dart';
 import 'package:mobile/data/db/app_database.dart';
+import 'package:mobile/features/native/live_activity_controller.dart';
 import 'package:mobile/features/native/native_bridge.dart';
 import 'package:mobile/features/native/native_logout_hooks.dart';
 import 'package:mobile/features/native/widget_state_writer.dart';
@@ -210,22 +211,37 @@ void main() {
     expect(watch.elapsedMilliseconds, lessThan(200));
   });
 
-  test('VS39-T05: đăng xuất — xóa App Group, ghi "Mở app để đăng nhập", làm '
-      'mới widget', () async {
-    final bridge = FakeNativeBridge();
-    final hooks = NativeLogoutHooks(
-      bridge,
-      FixedClock(DateTime(2026, 10, 12, 10)),
-    );
-    await hooks.clearAppGroup();
-    await hooks.reloadWidgets();
-    expect(bridge.calls, [
-      'appGroupClear',
-      'writeWidgetState',
-      'reloadWidgets',
-    ]);
-    expect(bridge.current!['signedIn'], isFalse);
-  });
+  test(
+    'VS39-T05, VS41-T04: đăng xuất — xóa token thẻ trên server, xóa App '
+    'Group, tắt mọi thẻ, ghi "Mở app để đăng nhập", làm mới widget',
+    () async {
+      final bridge = FakeNativeBridge();
+      final store = MemoryLiveActivityStore()
+        ..order = (date: LocalDate(2026, 10, 12), exerciseIds: const ['a']);
+      var deleted = 0;
+      final hooks = NativeLogoutHooks(
+        bridge,
+        FixedClock(DateTime(2026, 10, 12, 10)),
+        store: store,
+        deleteToken: () async => deleted++,
+      );
+      bridge.startActivity('a1', LocalDate(2026, 10, 12));
+      await hooks.deleteActivityToken();
+      await hooks.clearAppGroup();
+      await hooks.endActivities();
+      await hooks.reloadWidgets();
+      expect(bridge.calls, [
+        'appGroupClear',
+        'liveActivity.endAll',
+        'writeWidgetState',
+        'reloadWidgets',
+      ]);
+      expect(deleted, 1, reason: 'DELETE /v1/me/live-activity-token');
+      expect(bridge.activities, isEmpty, reason: 'F25-E7: thẻ tắt');
+      expect(store.order, isNull, reason: 'tài khoản sau gửi lại token');
+      expect(bridge.current!['signedIn'], isFalse);
+    },
+  );
 
   test('ED3-06: channel dev.antonnguyen.ironly/native, tên method', () async {
     TestWidgetsFlutterBinding.ensureInitialized();

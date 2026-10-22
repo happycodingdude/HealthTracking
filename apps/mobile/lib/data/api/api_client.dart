@@ -69,6 +69,12 @@ class ApiClient {
     ),
   );
 
+  Future<Object?> putJson(String path, Object? body) =>
+      _send(() => dio.put<Object?>(path, data: body, options: _options(true)));
+
+  Future<Object?> deleteJson(String path) =>
+      _send(() => dio.delete<Object?>(path, options: _options(true)));
+
   static const _authKey = 'auth';
 
   static Options _options(bool auth, {Duration? receiveTimeout}) =>

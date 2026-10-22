@@ -19,9 +19,12 @@ import 'data/notifications/notification_gateway.dart';
 import 'features/account/application/logout.dart';
 import 'features/auth/application/auth_controller.dart';
 import 'features/me/data/profile_repository.dart';
+import 'features/native/live_activity_controller.dart';
 import 'features/native/native_bridge.dart';
 import 'features/native/native_logout_hooks.dart';
 import 'features/onboarding/application/setup_state.dart';
+import 'features/today/application/mark_session.dart';
+import 'features/workout/application/lift_log_edits.dart';
 
 Future<void> main() => runIronlyApp();
 
@@ -73,7 +76,16 @@ Future<void> runIronlyApp({
             (ref) => NativeLogoutHooks(
               ref.watch(nativeBridgeProvider),
               ref.watch(clockProvider),
+              store: ref.watch(liveActivityStoreProvider),
+              deleteToken: ref.watch(liveActivityApiProvider).delete,
             ),
+          ),
+          // Thẻ màn hình khóa cập nhật / tắt tại chỗ (05 Bản 3 §6.4.4).
+          liftChangeHooksProvider.overrideWith(
+            (ref) => ref.watch(liveActivityControllerProvider),
+          ),
+          sessionMarkHooksProvider.overrideWith(
+            (ref) => ref.watch(liveActivityControllerProvider),
           ),
           // Đăng xuất xong: màn Đăng nhập như lần cài mới (05 Bản 3 §6.6.6).
           if (afterLogout) initialLocationProvider.overrideWithValue(loginPath),
@@ -87,7 +99,11 @@ Future<void> runIronlyApp({
       session: SecureSessionStore(),
       marks: SecureLocalMarks(),
       notifications: LocalNotificationGateway(),
-      device: const NativeLogoutHooks(ChannelNativeBridge(), SystemClock()),
+      device: NativeLogoutHooks(
+        const ChannelNativeBridge(),
+        const SystemClock(),
+        store: PrefsLiveActivityStore(),
+      ),
       flag: logoutFlag,
       reporter: reporter,
     );
