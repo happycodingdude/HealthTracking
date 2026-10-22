@@ -21,8 +21,10 @@ import 'package:mobile/features/account/application/logout.dart';
 import 'package:mobile/features/auth/application/auth_controller.dart';
 import 'package:mobile/features/me/application/calorie_updates.dart';
 import 'package:mobile/features/me/application/reminders.dart';
+import 'package:mobile/features/native/native_bridge.dart';
 import 'package:mobile/features/onboarding/application/setup_state.dart';
 
+import 'fake_native.dart';
 import 'fake_notifications.dart';
 import 'fake_server.dart';
 import 'fake_sync.dart';
@@ -56,6 +58,7 @@ List<Override> appOverrides({
   LocalMarks? marks,
   LogoutFlag? logoutFlag,
   Future<void> Function()? logoutFinisher,
+  NativeBridge? native,
 }) {
   final initial = identical(session, _signedInByDefault)
       ? signedInSession
@@ -131,6 +134,7 @@ List<Override> appOverrides({
     connectivityProvider.overrideWithValue(connectivity ?? FakeConnectivity()),
     localMarksProvider.overrideWithValue(marks ?? MemoryLocalMarks()),
     logoutFlagProvider.overrideWithValue(logoutFlag ?? MemoryLogoutFlag()),
+    nativeBridgeProvider.overrideWithValue(native ?? FakeNativeBridge()),
     // Gốc app (`AppRoot`) tự cung cấp khi test dựng cả gốc app.
     if (logoutFinisher != null)
       logoutFinisherProvider.overrideWithValue(logoutFinisher),

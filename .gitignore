@@ -35,3 +35,6 @@ config.dev.*
 config.prod.*
 *.agekey
 age-key*
+
+# Ảnh chụp widget lỗi khi chạy test Swift (06 Bản 3 ED3-14).
+apps/mobile/ios/IronlyWidgetsTests/__Snapshots__/*.failed.png

@@ -9,6 +9,7 @@ import '../data/sync/sync_scheduler.dart';
 import '../features/auth/application/auth_controller.dart';
 import '../features/me/application/calorie_updates.dart';
 import '../features/me/application/reminders.dart';
+import '../features/native/widget_state_writer.dart';
 import '../features/schedule/application/month_materializer.dart';
 import 'providers.dart';
 import 'router.dart';
@@ -17,7 +18,8 @@ import 'time_ticker.dart';
 /// Chạy các thành phần nền của app (05 §6.4.4) khi khởi động, khi quay lại
 /// foreground và khi qua 00:00 lúc app đang mở: [MonthMaterializer] (F03-R6),
 /// kiểm tra sang năm mới cho mức calo (F01-E2), rồi [ReminderScheduler]
-/// (TR-10). Chạm vào nhắc → Hôm nay (NAV-2).
+/// (TR-10). Chạm vào nhắc → Hôm nay (NAV-2). Bản 3: ghi nội dung widget mỗi
+/// khi đổi và mỗi lần mở app / quay lại foreground (F24-R5, TD3-15).
 class BackgroundTasks extends ConsumerStatefulWidget {
   const BackgroundTasks({super.key, required this.child});
 
@@ -34,6 +36,11 @@ class _BackgroundTasksState extends ConsumerState<BackgroundTasks> {
   @override
   void initState() {
     super.initState();
+    ref.listenManual(widgetStateProvider, (_, next) {
+      if (next != null) {
+        unawaited(ref.read(widgetStateWriterProvider).write(next));
+      }
+    });
     _lifecycle = AppLifecycleListener(
       onResume: _run,
       onHide: () {
@@ -67,6 +74,9 @@ class _BackgroundTasksState extends ConsumerState<BackgroundTasks> {
     if (!mounted) return;
     // Đồng hồ giao diện đọc lại giờ (VS06-T05): có thể vừa qua giờ tập, 00:00.
     ref.invalidate(nowProvider);
+    if (ref.read(widgetStateProvider) case final widget?) {
+      unawaited(ref.read(widgetStateWriterProvider).write(widget, force: true));
+    }
     unawaited(_tasks());
     _scheduleMidnight();
   }

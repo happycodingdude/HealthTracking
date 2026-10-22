@@ -1,0 +1,4 @@
+// Extension IronlyWidgets (05 Bản 3 TD3-02): số phiên bản lấy theo app
+// (FLUTTER_BUILD_NAME, FLUTTER_BUILD_NUMBER), không liên kết pod nào.
+#include "../Flutter/Generated.xcconfig"
+#include? "../Flutter/Signing.xcconfig"

@@ -34,3 +34,4 @@ export 'src/time/week.dart';
 export 'src/time/year_month.dart';
 export 'src/weight/weight_log.dart';
 export 'src/weight/weight_rules.dart';
+export 'src/widget_state/widget_state.dart';

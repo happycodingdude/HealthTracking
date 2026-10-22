@@ -18,5 +18,9 @@ import UIKit
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    // Widget, App Group (VS-39); thẻ màn hình khóa (VS-41).
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "IronlyNativeBridge") {
+      NativeBridge.register(with: registrar)
+    }
   }
 }

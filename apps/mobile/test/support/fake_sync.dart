@@ -97,6 +97,8 @@ final class FakeScheduler implements SyncScheduler {
           t,
     ];
     for (final t in due) {
+      // Như Timer thật: hẹn giờ bị hủy bởi một hẹn giờ chạy trước thì không chạy.
+      if (t.cancelled) continue;
       t.cancelled = true;
       t.callback();
     }

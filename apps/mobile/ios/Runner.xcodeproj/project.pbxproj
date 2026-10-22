@@ -7,15 +7,31 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		059C77C5EE9D6211E5562AC1 /* IronlyWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3036CE9DB07F57F8E9BD850F /* IronlyWidget.swift */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
+		20DA7DCCB1B2ECF1E96824CD /* SharedState.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3BBAAB75F49042289FA9281 /* SharedState.swift */; };
+		25DEC2DB9408DE567E4652F9 /* IronlyWidgetsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F695565F867E81A9F198803 /* IronlyWidgetsTests.swift */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
+		46D38C018D76DF10CC2347BA /* WidgetTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B8975EE5C5438C523D80228 /* WidgetTimeline.swift */; };
+		5C169300CDF1BB28C398201A /* SharedState.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3BBAAB75F49042289FA9281 /* SharedState.swift */; };
+		674F5D91B311721E01F5D226 /* WidgetContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC9FEF3C14B31DECDDC5625A /* WidgetContentView.swift */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
+		7D3334C0FF4BC52C72782A77 /* WidgetModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF1348B9B64BCAF465AB7F10 /* WidgetModels.swift */; };
+		82054CE29ED3ED07FF5E7AF1 /* WidgetTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B8975EE5C5438C523D80228 /* WidgetTimeline.swift */; };
 		8DFF873FF7BAC19DABDC82E7 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 17E34B6C35635BBB8F4F1459 /* Pods_Runner.framework */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
+		B031570D1E7C0352C53CBD36 /* IronlyWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 4FF5FAB88D96BCB996D64090 /* IronlyWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		BBEA50A2A4BDF6896E9C9893 /* WidgetContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC9FEF3C14B31DECDDC5625A /* WidgetContentView.swift */; };
+		BFDCD5AFDBFE60FFA561F44A /* WidgetModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF1348B9B64BCAF465AB7F10 /* WidgetModels.swift */; };
+		BFEE948FCB3AD311EC53DD75 /* IronlyWidgetsBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 709C13211DFE51BA24DDD1AF /* IronlyWidgetsBundle.swift */; };
+		C00D6D2F44BC98C4009DD95A /* SharedState.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3BBAAB75F49042289FA9281 /* SharedState.swift */; };
+		C995A7776F67ADCB8C95F350 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 954B0CA689C1220568234091 /* Foundation.framework */; };
+		E958E1F81518E641A79E9B68 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 954B0CA689C1220568234091 /* Foundation.framework */; };
 		E9CDEBC42CC0427935FE05DB /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 027436D1691226A67F625C40 /* Pods_RunnerTests.framework */; };
+		F77FEA15EF451DF141AAC3F8 /* NativeBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECE846D392C6B0A3DCE6B0AE /* NativeBridge.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -26,9 +42,27 @@
 			remoteGlobalIDString = 97C146ED1CF9000F007C117D;
 			remoteInfo = Runner;
 		};
+		BC2F014C13063277F08277BF /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1CF5094F379F7A8594E52B55;
+			remoteInfo = IronlyWidgets;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		4B32A10C7C98A7C9F1756D31 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				B031570D1E7C0352C53CBD36 /* IronlyWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		9705A1C41CF9048500538489 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -46,19 +80,27 @@
 		03F87C05C5AF632B9DBC39D1 /* Pods-Runner.debug-dev.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug-dev.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug-dev.xcconfig"; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
+		16E8F9B59EE3A607F500505C /* Runner.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
 		17E34B6C35635BBB8F4F1459 /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		1B83B3CB3C271A95EDF0D208 /* Pods-Runner.release-dev.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release-dev.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release-dev.xcconfig"; sourceTree = "<group>"; };
+		1FC4AD66D117324DA1C0533D /* IronlyWidgetsTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = IronlyWidgetsTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		3036CE9DB07F57F8E9BD850F /* IronlyWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = IronlyWidget.swift; sourceTree = "<group>"; };
 		331C807B294A618700263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		331C8081294A63A400263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
+		4B8975EE5C5438C523D80228 /* WidgetTimeline.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetTimeline.swift; sourceTree = "<group>"; };
+		4FF5FAB88D96BCB996D64090 /* IronlyWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = IronlyWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		57B4DE45D5B748F8ACB9ABA7 /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
 		621D77FEDABEF5764BA9DFE4 /* Debug-dev.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = "Debug-dev.xcconfig"; path = "Flutter/Debug-dev.xcconfig"; sourceTree = "<group>"; };
 		6752A318C7EB76A472F1F528 /* Pods-Runner.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"; sourceTree = "<group>"; };
+		6F695565F867E81A9F198803 /* IronlyWidgetsTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = IronlyWidgetsTests.swift; sourceTree = "<group>"; };
+		709C13211DFE51BA24DDD1AF /* IronlyWidgetsBundle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = IronlyWidgetsBundle.swift; sourceTree = "<group>"; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
 		86F68D755C0C6183B4C5CAA1 /* Pods-RunnerTests.profile-dev.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile-dev.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile-dev.xcconfig"; sourceTree = "<group>"; };
 		8769F42EEF72B0145F4935DF /* Profile-dev.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = "Profile-dev.xcconfig"; path = "Flutter/Profile-dev.xcconfig"; sourceTree = "<group>"; };
+		954B0CA689C1220568234091 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		95C6752661AF2BF6A8C95283 /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = Flutter/Debug.xcconfig; sourceTree = "<group>"; };
 		9740EEB31CF90195004384FC /* Generated.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Generated.xcconfig; path = Flutter/Generated.xcconfig; sourceTree = "<group>"; };
@@ -69,11 +111,18 @@
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		984170E8E6364C37EA207633 /* Pods-RunnerTests.release-dev.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release-dev.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release-dev.xcconfig"; sourceTree = "<group>"; };
 		995C8E2332C73341C963303B /* Release-dev.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = "Release-dev.xcconfig"; path = "Flutter/Release-dev.xcconfig"; sourceTree = "<group>"; };
+		9D73AF27D6D75399CE167A57 /* IronlyWidgets.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = IronlyWidgets.xcconfig; sourceTree = "<group>"; };
 		B3B5AB47E3D131D8AB3FDEEF /* Pods-Runner.profile-dev.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile-dev.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile-dev.xcconfig"; sourceTree = "<group>"; };
+		B7ED0AA3053BC292B244F518 /* IronlyWidgets.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = IronlyWidgets.entitlements; sourceTree = "<group>"; };
+		BF1348B9B64BCAF465AB7F10 /* WidgetModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetModels.swift; sourceTree = "<group>"; };
+		C1523465719830DCF038F1C9 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		C7F3FAEA15FF65E277A6727C /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
+		D3BBAAB75F49042289FA9281 /* SharedState.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SharedState.swift; sourceTree = "<group>"; };
 		DCFDC5D25699B3490D8DC843 /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
 		E4AA556DAC354EA323B749A3 /* Pods-RunnerTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release.xcconfig"; sourceTree = "<group>"; };
 		EC71F81D2B942FE0141AF958 /* Pods-RunnerTests.debug-dev.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug-dev.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug-dev.xcconfig"; sourceTree = "<group>"; };
+		EC9FEF3C14B31DECDDC5625A /* WidgetContentView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetContentView.swift; sourceTree = "<group>"; };
+		ECE846D392C6B0A3DCE6B0AE /* NativeBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NativeBridge.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -85,11 +134,27 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		6DD6714322D606FA3D4FB2CD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C995A7776F67ADCB8C95F350 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		97C146EB1CF9000F007C117D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				8DFF873FF7BAC19DABDC82E7 /* Pods_Runner.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D5CD9C31C4CB9511C7347304 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E958E1F81518E641A79E9B68 /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -101,8 +166,18 @@
 			children = (
 				17E34B6C35635BBB8F4F1459 /* Pods_Runner.framework */,
 				027436D1691226A67F625C40 /* Pods_RunnerTests.framework */,
+				D79BD19F64C42C5F0594EBBD /* iOS */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		3259CF64FFC8DE40EC39C0EA /* IronlyWidgetsTests */ = {
+			isa = PBXGroup;
+			children = (
+				6F695565F867E81A9F198803 /* IronlyWidgetsTests.swift */,
+			);
+			name = IronlyWidgetsTests;
+			path = IronlyWidgetsTests;
 			sourceTree = "<group>";
 		};
 		331C8082294A63A400263BE5 /* RunnerTests */ = {
@@ -111,6 +186,23 @@
 				331C807B294A618700263BE5 /* RunnerTests.swift */,
 			);
 			path = RunnerTests;
+			sourceTree = "<group>";
+		};
+		8A2189AF7CEA74A9B1AEAD74 /* IronlyWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				709C13211DFE51BA24DDD1AF /* IronlyWidgetsBundle.swift */,
+				3036CE9DB07F57F8E9BD850F /* IronlyWidget.swift */,
+				BF1348B9B64BCAF465AB7F10 /* WidgetModels.swift */,
+				4B8975EE5C5438C523D80228 /* WidgetTimeline.swift */,
+				EC9FEF3C14B31DECDDC5625A /* WidgetContentView.swift */,
+				D3BBAAB75F49042289FA9281 /* SharedState.swift */,
+				C1523465719830DCF038F1C9 /* Info.plist */,
+				B7ED0AA3053BC292B244F518 /* IronlyWidgets.entitlements */,
+				9D73AF27D6D75399CE167A57 /* IronlyWidgets.xcconfig */,
+			);
+			name = IronlyWidgets;
+			path = IronlyWidgets;
 			sourceTree = "<group>";
 		};
 		9740EEB11CF90186004384FC /* Flutter */ = {
@@ -136,6 +228,8 @@
 				331C8082294A63A400263BE5 /* RunnerTests */,
 				9A3919CADC339756FC108EE3 /* Pods */,
 				0766B0969BF32E70A986BD43 /* Frameworks */,
+				8A2189AF7CEA74A9B1AEAD74 /* IronlyWidgets */,
+				3259CF64FFC8DE40EC39C0EA /* IronlyWidgetsTests */,
 			);
 			sourceTree = "<group>";
 		};
@@ -144,6 +238,8 @@
 			children = (
 				97C146EE1CF9000F007C117D /* Runner.app */,
 				331C8081294A63A400263BE5 /* RunnerTests.xctest */,
+				4FF5FAB88D96BCB996D64090 /* IronlyWidgets.appex */,
+				1FC4AD66D117324DA1C0533D /* IronlyWidgetsTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -159,6 +255,8 @@
 				1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */,
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
+				16E8F9B59EE3A607F500505C /* Runner.entitlements */,
+				ECE846D392C6B0A3DCE6B0AE /* NativeBridge.swift */,
 			);
 			path = Runner;
 			sourceTree = "<group>";
@@ -182,9 +280,51 @@
 			path = Pods;
 			sourceTree = "<group>";
 		};
+		D79BD19F64C42C5F0594EBBD /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				954B0CA689C1220568234091 /* Foundation.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		06C4AB41E5B3C3BBD38E66D8 /* IronlyWidgetsTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CD304B4CCBA5B548975B8E5A /* Build configuration list for PBXNativeTarget "IronlyWidgetsTests" */;
+			buildPhases = (
+				04A31B9A69CBFD8BC2D0858E /* Sources */,
+				6DD6714322D606FA3D4FB2CD /* Frameworks */,
+				0648191CFCF6AA38B572F270 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = IronlyWidgetsTests;
+			productName = IronlyWidgetsTests;
+			productReference = 1FC4AD66D117324DA1C0533D /* IronlyWidgetsTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		1CF5094F379F7A8594E52B55 /* IronlyWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6647D6E44840CFFC5A070476 /* Build configuration list for PBXNativeTarget "IronlyWidgets" */;
+			buildPhases = (
+				2B1F707187A06576F7D85324 /* Sources */,
+				D5CD9C31C4CB9511C7347304 /* Frameworks */,
+				919E3182EFA024FD8A315C3E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = IronlyWidgets;
+			productName = IronlyWidgets;
+			productReference = 4FF5FAB88D96BCB996D64090 /* IronlyWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		331C8080294A63A400263BE5 /* RunnerTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 331C8087294A63A400263BE5 /* Build configuration list for PBXNativeTarget "RunnerTests" */;
@@ -214,12 +354,14 @@
 				97C146EB1CF9000F007C117D /* Frameworks */,
 				97C146EC1CF9000F007C117D /* Resources */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
+				4B32A10C7C98A7C9F1756D31 /* Embed Foundation Extensions */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				461513D4165906A8ECB65611 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				CE951CEA91FE89172F1A6D7E /* PBXTargetDependency */,
 			);
 			name = Runner;
 			productName = Runner;
@@ -261,12 +403,28 @@
 			targets = (
 				97C146ED1CF9000F007C117D /* Runner */,
 				331C8080294A63A400263BE5 /* RunnerTests */,
+				1CF5094F379F7A8594E52B55 /* IronlyWidgets */,
+				06C4AB41E5B3C3BBD38E66D8 /* IronlyWidgetsTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		0648191CFCF6AA38B572F270 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		331C807F294A63A400263BE5 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		919E3182EFA024FD8A315C3E /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -382,6 +540,31 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		04A31B9A69CBFD8BC2D0858E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				25DEC2DB9408DE567E4652F9 /* IronlyWidgetsTests.swift in Sources */,
+				7D3334C0FF4BC52C72782A77 /* WidgetModels.swift in Sources */,
+				46D38C018D76DF10CC2347BA /* WidgetTimeline.swift in Sources */,
+				674F5D91B311721E01F5D226 /* WidgetContentView.swift in Sources */,
+				20DA7DCCB1B2ECF1E96824CD /* SharedState.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2B1F707187A06576F7D85324 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BFEE948FCB3AD311EC53DD75 /* IronlyWidgetsBundle.swift in Sources */,
+				059C77C5EE9D6211E5562AC1 /* IronlyWidget.swift in Sources */,
+				BFDCD5AFDBFE60FFA561F44A /* WidgetModels.swift in Sources */,
+				82054CE29ED3ED07FF5E7AF1 /* WidgetTimeline.swift in Sources */,
+				BBEA50A2A4BDF6896E9C9893 /* WidgetContentView.swift in Sources */,
+				5C169300CDF1BB28C398201A /* SharedState.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		331C807D294A63A400263BE5 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -396,6 +579,8 @@
 			files = (
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
+				F77FEA15EF451DF141AAC3F8 /* NativeBridge.swift in Sources */,
+				C00D6D2F44BC98C4009DD95A /* SharedState.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -406,6 +591,12 @@
 			isa = PBXTargetDependency;
 			target = 97C146ED1CF9000F007C117D /* Runner */;
 			targetProxy = 331C8085294A63A400263BE5 /* PBXContainerItemProxy */;
+		};
+		CE951CEA91FE89172F1A6D7E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = IronlyWidgets;
+			target = 1CF5094F379F7A8594E52B55 /* IronlyWidgets */;
+			targetProxy = BC2F014C13063277F08277BF /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -429,6 +620,66 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		03996D1CE4C279C09F75741A /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9D73AF27D6D75399CE167A57 /* IronlyWidgets.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = IronlyWidgets/IronlyWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = A8MCR6FB2V;
+				ENABLE_PREVIEWS = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = IronlyWidgets/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
+				IRONLY_APP_GROUP = group.com.happycodingdude.ironly;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.happycodingdude.ironly.IronlyWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		14A9D678BF8A6DC108E672DD /* Profile-dev */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9D73AF27D6D75399CE167A57 /* IronlyWidgets.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = IronlyWidgets/IronlyWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = A8MCR6FB2V;
+				ENABLE_PREVIEWS = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = IronlyWidgets/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
+				IRONLY_APP_GROUP = group.com.happycodingdude.ironly.dev;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.happycodingdude.ironly.dev.IronlyWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = "Profile-dev";
+		};
 		1E8895D7610532F5AB904E88 /* Debug-dev */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = EC71F81D2B942FE0141AF958 /* Pods-RunnerTests.debug-dev.xcconfig */;
@@ -490,7 +741,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = iphoneos;
@@ -505,10 +756,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = A8MCR6FB2V;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
+				IRONLY_APP_GROUP = group.com.happycodingdude.ironly;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -536,6 +789,35 @@
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Runner.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Runner";
 			};
 			name = "Profile-dev";
+		};
+		2D431F1730D1DDD56FB21130 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9D73AF27D6D75399CE167A57 /* IronlyWidgets.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = IronlyWidgets/IronlyWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = A8MCR6FB2V;
+				ENABLE_PREVIEWS = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = IronlyWidgets/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
+				IRONLY_APP_GROUP = group.com.happycodingdude.ironly;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.happycodingdude.ironly.IronlyWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
 		};
 		331C8088294A63A400263BE5 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -587,16 +869,40 @@
 			};
 			name = Profile;
 		};
+		5F05C623A9798AA8EC4FAAD3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = A8MCR6FB2V;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.happycodingdude.ironly.IronlyWidgetsTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
 		5FEF789947D2E96032DE35BC /* Release-dev */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 995C8E2332C73341C963303B /* Release-dev.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = A8MCR6FB2V;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = "Runner/Info-Dev.plist";
+				IRONLY_APP_GROUP = group.com.happycodingdude.ironly.dev;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -658,13 +964,43 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = "Debug-dev";
+		};
+		70198482C89D2DB8D5EE1966 /* Release-dev */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9D73AF27D6D75399CE167A57 /* IronlyWidgets.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = IronlyWidgets/IronlyWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = A8MCR6FB2V;
+				ENABLE_PREVIEWS = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = IronlyWidgets/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
+				IRONLY_APP_GROUP = group.com.happycodingdude.ironly.dev;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.happycodingdude.ironly.dev.IronlyWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = "Release-dev";
 		};
 		717274CD70CA043359C0EE2B /* Release-dev */ = {
 			isa = XCBuildConfiguration;
@@ -709,7 +1045,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = iphoneos;
@@ -779,7 +1115,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = iphoneos;
@@ -788,16 +1124,117 @@
 			};
 			name = "Profile-dev";
 		};
+		852A281C4749DD67698DC04A /* Profile */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9D73AF27D6D75399CE167A57 /* IronlyWidgets.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = IronlyWidgets/IronlyWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = A8MCR6FB2V;
+				ENABLE_PREVIEWS = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = IronlyWidgets/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
+				IRONLY_APP_GROUP = group.com.happycodingdude.ironly;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.happycodingdude.ironly.IronlyWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Profile;
+		};
+		855369E0E3ABF62FD6F7964E /* Profile-dev */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = A8MCR6FB2V;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.happycodingdude.ironly.IronlyWidgetsTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = "Profile-dev";
+		};
+		89A86862DE8D9D49EFDD9E3C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = A8MCR6FB2V;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.happycodingdude.ironly.IronlyWidgetsTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		8ECC6F99E69FCA4BC4B44334 /* Profile */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = A8MCR6FB2V;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.happycodingdude.ironly.IronlyWidgetsTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Profile;
+		};
 		94ECEF989EC6F11B0C556830 /* Profile-dev */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 8769F42EEF72B0145F4935DF /* Profile-dev.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = A8MCR6FB2V;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = "Runner/Info-Dev.plist";
+				IRONLY_APP_GROUP = group.com.happycodingdude.ironly.dev;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -859,7 +1296,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
@@ -910,7 +1347,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = iphoneos;
@@ -927,10 +1364,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = A8MCR6FB2V;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
+				IRONLY_APP_GROUP = group.com.happycodingdude.ironly;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -950,10 +1389,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = A8MCR6FB2V;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
+				IRONLY_APP_GROUP = group.com.happycodingdude.ironly;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -966,16 +1407,63 @@
 			};
 			name = Release;
 		};
+		9FAB26D859CECAF272C24967 /* Release-dev */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = A8MCR6FB2V;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.happycodingdude.ironly.IronlyWidgetsTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = "Release-dev";
+		};
+		BAB0C0C782533B6B0A820C03 /* Debug-dev */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = A8MCR6FB2V;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.happycodingdude.ironly.IronlyWidgetsTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = "Debug-dev";
+		};
 		C5EC0FCDFD6785515664C278 /* Debug-dev */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 621D77FEDABEF5764BA9DFE4 /* Debug-dev.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = A8MCR6FB2V;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = "Runner/Info-Dev.plist";
+				IRONLY_APP_GROUP = group.com.happycodingdude.ironly.dev;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -986,6 +1474,35 @@
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = "Debug-dev";
+		};
+		EA85CD658F0F4CF1BBBB0888 /* Debug-dev */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9D73AF27D6D75399CE167A57 /* IronlyWidgets.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = IronlyWidgets/IronlyWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = A8MCR6FB2V;
+				ENABLE_PREVIEWS = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = IronlyWidgets/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
+				IRONLY_APP_GROUP = group.com.happycodingdude.ironly.dev;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.happycodingdude.ironly.dev.IronlyWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = "Debug-dev";
 		};
@@ -1001,6 +1518,19 @@
 				1E8895D7610532F5AB904E88 /* Debug-dev */,
 				777BE2DA3BFDAF6BA693BC76 /* Release-dev */,
 				2CFDAAD77A79EC1F07E814E5 /* Profile-dev */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		6647D6E44840CFFC5A070476 /* Build configuration list for PBXNativeTarget "IronlyWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2D431F1730D1DDD56FB21130 /* Debug */,
+				03996D1CE4C279C09F75741A /* Release */,
+				852A281C4749DD67698DC04A /* Profile */,
+				EA85CD658F0F4CF1BBBB0888 /* Debug-dev */,
+				70198482C89D2DB8D5EE1966 /* Release-dev */,
+				14A9D678BF8A6DC108E672DD /* Profile-dev */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -1027,6 +1557,19 @@
 				C5EC0FCDFD6785515664C278 /* Debug-dev */,
 				5FEF789947D2E96032DE35BC /* Release-dev */,
 				94ECEF989EC6F11B0C556830 /* Profile-dev */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CD304B4CCBA5B548975B8E5A /* Build configuration list for PBXNativeTarget "IronlyWidgetsTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5F05C623A9798AA8EC4FAAD3 /* Debug */,
+				89A86862DE8D9D49EFDD9E3C /* Release */,
+				8ECC6F99E69FCA4BC4B44334 /* Profile */,
+				BAB0C0C782533B6B0A820C03 /* Debug-dev */,
+				9FAB26D859CECAF272C24967 /* Release-dev */,
+				855369E0E3ABF62FD6F7964E /* Profile-dev */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -1,4 +1,5 @@
 import 'package:api_contract/api_contract.dart' show AppVersion;
+import 'package:domain/domain.dart' show SystemClock;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:package_info_plus/package_info_plus.dart';
@@ -18,6 +19,8 @@ import 'data/notifications/notification_gateway.dart';
 import 'features/account/application/logout.dart';
 import 'features/auth/application/auth_controller.dart';
 import 'features/me/data/profile_repository.dart';
+import 'features/native/native_bridge.dart';
+import 'features/native/native_logout_hooks.dart';
 import 'features/onboarding/application/setup_state.dart';
 
 Future<void> main() => runIronlyApp();
@@ -66,6 +69,12 @@ Future<void> runIronlyApp({
           ),
           errorReporterProvider.overrideWithValue(reporter),
           logoutFlagProvider.overrideWithValue(logoutFlag),
+          logoutDeviceHooksProvider.overrideWith(
+            (ref) => NativeLogoutHooks(
+              ref.watch(nativeBridgeProvider),
+              ref.watch(clockProvider),
+            ),
+          ),
           // Đăng xuất xong: màn Đăng nhập như lần cài mới (05 Bản 3 §6.6.6).
           if (afterLogout) initialLocationProvider.overrideWithValue(loginPath),
           ...overrides,
@@ -78,7 +87,7 @@ Future<void> runIronlyApp({
       session: SecureSessionStore(),
       marks: SecureLocalMarks(),
       notifications: LocalNotificationGateway(),
-      device: const NoLogoutDeviceHooks(),
+      device: const NativeLogoutHooks(ChannelNativeBridge(), SystemClock()),
       flag: logoutFlag,
       reporter: reporter,
     );

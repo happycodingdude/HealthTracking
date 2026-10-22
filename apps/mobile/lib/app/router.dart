@@ -30,6 +30,7 @@ import '../features/today/presentation/week_progress_screen.dart';
 import '../features/training/presentation/training_screen.dart';
 import '../features/weight/presentation/weight_screen.dart';
 import '../features/workout/presentation/session_screen.dart';
+import 'providers.dart';
 import 'shell/app_shell.dart';
 import 'shell/app_tab.dart';
 import 'shell/tab_stacks.dart';
@@ -94,6 +95,27 @@ const onboardingSteps = {
   '/onboarding/5',
 };
 
+/// URL của widget và thẻ màn hình khóa (05 Bản 3 TD3-16, 04 Bản 3 NAV-15,
+/// NAV-16): `ironly://today` → Hôm nay, `ironly://session/today` → buổi tập
+/// hôm nay (S-63), `ironly://login` → màn Đăng nhập. Không phải URL của app →
+/// null. [appRedirect] áp dụng lên đích này như mọi lần điều hướng (chưa đăng
+/// nhập → màn Chào mừng).
+@visibleForTesting
+String? deepLinkLocation(Uri uri, LocalDate today) {
+  if (uri.scheme != 'ironly') return null;
+  // go_router đổi đường dẫn rỗng thành "/": `ironly://login` → host "login",
+  // path "/".
+  final target = [
+    uri.host,
+    ...uri.pathSegments,
+  ].where((s) => s.isNotEmpty).join('/');
+  return switch (target) {
+    'session/today' => sessionPath(AppTab.today, today),
+    'login' => loginPath,
+    _ => AppTab.today.path,
+  };
+}
+
 /// Màn đầu tiên khi mở app: Hôm nay (NAV-1); sau đăng xuất là màn Đăng nhập
 /// S-01b (05 Bản 3 §6.6.6 bước 6).
 final initialLocationProvider = Provider<String>((ref) => AppTab.today.path);
@@ -118,8 +140,20 @@ final routerProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
     initialLocation: ref.read(initialLocationProvider),
     refreshListenable: Listenable.merge([auth, setup]),
-    redirect: (context, state) =>
-        appRedirect(auth.value, setup.value, state.matchedLocation),
+    redirect: (context, state) {
+      // Link ngoài app: tính luôn đích cuối (go_router không chạy lại redirect
+      // cho đích của lần redirect này).
+      final deep = deepLinkLocation(
+        state.uri,
+        LocalDate.fromDateTime(ref.read(clockProvider).now()),
+      );
+      return appRedirect(
+            auth.value,
+            setup.value,
+            deep ?? state.matchedLocation,
+          ) ??
+          deep;
+    },
     routes: [
       GoRoute(
         path: '/welcome',

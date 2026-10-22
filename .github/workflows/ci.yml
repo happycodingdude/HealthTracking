@@ -95,3 +95,40 @@ jobs:
           name: golden-failures
           path: apps/mobile/test/**/failures/
           if-no-files-found: ignore
+
+  # Widget iOS (06 Bản 3 VS39-T07, ED3-14): build extension IronlyWidgets và
+  # chạy test Swift (nội dung, file hỏng, timeline 00:00, ảnh chụp S-70) trên Mac.
+  ios-widgets:
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: apps/mobile/pubspec.yaml
+          channel: stable
+          cache: true
+
+      # Sinh ios/Flutter/Generated.xcconfig (số phiên bản của extension).
+      - name: flutter pub get
+        working-directory: apps/mobile
+        run: flutter pub get
+
+      - name: Câu chữ Swift của widget
+        run: tool/scan_strings.sh
+
+      - name: xcodebuild test IronlyWidgets
+        run: |
+          SIM="$(xcrun simctl list devices available | grep -E '^\s+iPhone' | grep -Eo '\([0-9A-F-]{36}\)' | head -1 | tr -d '()')"
+          xcodebuild test -project apps/mobile/ios/Runner.xcodeproj -scheme IronlyWidgets \
+            -destination "platform=iOS Simulator,id=$SIM"
+
+      - name: Lưu ảnh chụp widget lỗi
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: widget-snapshot-failures
+          path: apps/mobile/ios/IronlyWidgetsTests/__Snapshots__/*.failed.png
+          if-no-files-found: ignore

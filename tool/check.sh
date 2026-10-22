@@ -22,6 +22,9 @@ fi
 step "file cấm và chuỗi giống khóa trong git"
 "$ROOT/tool/scan_repo.sh"
 
+step "câu chữ Swift của widget (06 Bản 3 VS39-T07)"
+"$ROOT/tool/scan_strings.sh"
+
 step "schema.sql khớp tổng các migration (06 Bản 3 ED3-01)"
 "$ROOT/tool/gen_schema.sh" --check
 
@@ -58,6 +61,27 @@ if has_tests apps/mobile; then
   else
     (cd apps/mobile && flutter test -r failures-only --exclude-tags golden)
   fi
+fi
+
+# Test Swift của widget (06 Bản 3 ED3-14) trên Mac; CI chạy ở job Mac riêng.
+if [ "$(uname -s)" = "Darwin" ] && [ -z "${CI:-}" ] && command -v xcodebuild >/dev/null; then
+  step "test Swift của widget (IronlyWidgetsTests, simulator)"
+  # Ảnh chụp widget so theo bản iOS: ưu tiên simulator iPhone đang bật, rồi
+  # iPhone của bản iOS mới nhất.
+  SIM="${ITEST_DEVICE:-$(xcrun simctl list -j devices available | python3 -c '
+import json, sys
+devices = json.load(sys.stdin)["devices"]
+phones = [(rt, d) for rt, ds in devices.items() if "iOS" in rt for d in ds if d["name"].startswith("iPhone")]
+booted = [d for _, d in phones if d["state"] == "Booted"]
+latest = sorted(phones, key=lambda p: [int(x) for x in p[0].rsplit("iOS-", 1)[-1].split("-")])
+print((booted or [latest[-1][1]])[0]["udid"])')}"
+  LOG="$(mktemp)"
+  if ! xcodebuild test -quiet -project apps/mobile/ios/Runner.xcodeproj -scheme IronlyWidgets \
+    -destination "platform=iOS Simulator,id=$SIM" >"$LOG" 2>&1; then
+    tail -40 "$LOG"
+    exit 1
+  fi
+  echo "IronlyWidgetsTests: OK"
 fi
 
 printf '\n\033[1;32mcheck.sh: tất cả đều xanh\033[0m\n'

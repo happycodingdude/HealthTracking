@@ -1,5 +1,5 @@
-# iOS 16 trở lên (TA-14).
-platform :ios, '16.0'
+# iOS 17.2 trở lên (05 Bản 3 TR3-04: widget, thẻ màn hình khóa).
+platform :ios, '17.2'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
@@ -45,8 +45,8 @@ post_install do |installer|
     # Xcode 27 báo lỗi khi pod khai báo iOS < 15 (Flutter 12.0, Sentry 11.0…).
     # Đưa mọi pod về đúng mức tối thiểu của app.
     target.build_configurations.each do |config|
-      if config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_f < 16.0
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
+      if config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_f < 17.2
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '17.2'
       end
     end
   end
