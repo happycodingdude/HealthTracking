@@ -70,6 +70,7 @@ class _LiftChartScreenState extends ConsumerState<LiftChartScreen> {
     final palette = context.palette;
     final earliest = view?.earliest;
     final chart = view?.chart;
+    final change = view?.unitChange;
     // Đơn vị hiện tại của bài (F21-R47: số cũ hiện theo đơn vị mới).
     final units = ref.watch(exerciseUnitsProvider).value;
     final unit = exercise == null ? null : displayUnit(units, exercise.id);
@@ -172,23 +173,32 @@ class _LiftChartScreenState extends ConsumerState<LiftChartScreen> {
                       )
                     : Column(
                         children: [
+                          // VoiceOver đọc cả mốc đổi đơn vị (04 Bản 3 S-69).
                           Semantics(
-                            label: S.chartSemantics(
-                              month.month,
-                              chart.logs.length,
-                            ),
+                            label: [
+                              S.chartSemantics(month.month, chart.logs.length),
+                              if (change != null &&
+                                  change.on.yearMonth == chart.month)
+                                S.unitChangeSemantics(
+                                  Fmt.liftUnit(change.to),
+                                  Fmt.dayMonth(change.on),
+                                ),
+                            ].join('. '),
                             child: ExcludeSemantics(
                               child: _LiftChart(
                                 key: ValueKey('chart-${month.toKey()}'),
                                 chart: chart,
                                 unit: unit,
+                                change: change,
                               ),
                             ),
                           ),
                           const SizedBox(height: 8),
                           ExcludeSemantics(
                             child: Text(
-                              S.chartLegend,
+                              S.chartLegendUnit(Fmt.liftUnitFull(unit)),
+                              key: const ValueKey('chart-legend'),
+                              textAlign: TextAlign.center,
                               style: context.text.bodyMedium?.copyWith(
                                 color: palette.textSecondary,
                               ),
@@ -225,13 +235,19 @@ class _LiftChartScreenState extends ConsumerState<LiftChartScreen> {
                             horizontal: 16,
                             vertical: 14,
                           ),
-                          child: Row(
+                          // Chữ lớn không đủ một dòng thì mức tạ xuống dưới.
+                          child: OverflowBar(
+                            alignment: MainAxisAlignment.spaceBetween,
+                            overflowAlignment: OverflowBarAlignment.start,
+                            spacing: 8,
                             children: [
-                              Expanded(
-                                child: Text(
-                                  Fmt.shortWeekdayDate(l.date),
-                                  style: context.text.bodyLarge,
-                                ),
+                              Text(
+                                change != null && l.date.isBefore(change.on)
+                                    ? '${Fmt.shortWeekdayDate(l.date)} '
+                                          '${S.beforeUnitChange}'
+                                    : Fmt.shortWeekdayDate(l.date),
+                                key: ValueKey('chart-date-${l.date.toKey()}'),
+                                style: context.text.bodyLarge,
                               ),
                               Text(
                                 Fmt.lift(l, unit),
@@ -312,10 +328,18 @@ class _MonthBar extends StatelessWidget {
 /// (F22-E3). Ngày trống ngắt đường (F22-R9). Chạm một ngày → "{dd/mm} · {a}
 /// → {b} kg".
 class _LiftChart extends StatefulWidget {
-  const _LiftChart({super.key, required this.chart, required this.unit});
+  const _LiftChart({
+    super.key,
+    required this.chart,
+    required this.unit,
+    required this.change,
+  });
 
   final MonthlyLiftChart chart;
   final LiftUnit unit;
+
+  /// Mốc đổi đơn vị gần nhất (UA3-13); chỉ vẽ khi rơi vào tháng đang xem.
+  final LiftUnitChange? change;
 
   @override
   State<_LiftChart> createState() => _LiftChartState();
@@ -423,94 +447,141 @@ class _LiftChartState extends State<_LiftChart> {
             height: 220,
             child: MediaQuery.withClampedTextScaling(
               maxScaleFactor: 1.5,
-              child: LineChart(
-                duration: Duration.zero,
-                LineChartData(
-                  minX: 0.5,
-                  maxX: days + 0.5,
-                  minY: minY,
-                  maxY: maxY,
-                  lineBarsData: bars,
-                  showingTooltipIndicators: tooltip,
-                  lineTouchData: LineTouchData(
-                    enabled: false,
-                    touchTooltipData: LineTouchTooltipData(
-                      getTooltipColor: (_) => colors.inverseSurface,
-                      fitInsideHorizontally: true,
-                      fitInsideVertically: true,
-                      getTooltipItems: (touched) => [
-                        for (final t in touched)
-                          if (byDay[t.x.round()] case final l?)
-                            LineTooltipItem(
-                              S.chartTooltip(
-                                Fmt.dayMonth(l.date),
-                                Fmt.kgNumber(l.startKgX10),
-                                Fmt.kgNumber(l.endKgX10),
-                                Fmt.liftUnit(unit),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: LineChart(
+                      duration: Duration.zero,
+                      LineChartData(
+                        minX: 0.5,
+                        maxX: days + 0.5,
+                        minY: minY,
+                        maxY: maxY,
+                        lineBarsData: bars,
+                        showingTooltipIndicators: tooltip,
+                        lineTouchData: LineTouchData(
+                          enabled: false,
+                          touchTooltipData: LineTouchTooltipData(
+                            getTooltipColor: (_) => colors.inverseSurface,
+                            fitInsideHorizontally: true,
+                            fitInsideVertically: true,
+                            getTooltipItems: (touched) => [
+                              for (final t in touched)
+                                if (byDay[t.x.round()] case final l?)
+                                  LineTooltipItem(
+                                    S.chartTooltip(
+                                      Fmt.dayMonth(l.date),
+                                      Fmt.kgNumber(l.startKgX10),
+                                      Fmt.kgNumber(l.endKgX10),
+                                      Fmt.liftUnit(unit),
+                                    ),
+                                    context.text.bodyMedium!.copyWith(
+                                      color: colors.onInverseSurface,
+                                    ),
+                                  )
+                                else
+                                  null,
+                            ],
+                          ),
+                        ),
+                        gridData: FlGridData(
+                          drawVerticalLine: false,
+                          horizontalInterval: step,
+                          getDrawingHorizontalLine: (_) =>
+                              FlLine(color: palette.border, strokeWidth: 1),
+                        ),
+                        borderData: FlBorderData(show: false),
+                        // Mốc đổi đơn vị: đường dọc nét đứt vàng nhạt, nhãn "Đổi
+                        // sang {đơn vị}" (F22-R42, UA3-13).
+                        extraLinesData: ExtraLinesData(
+                          verticalLines: [
+                            if (widget.change case final change?
+                                when change.on.yearMonth == chart.month)
+                              VerticalLine(
+                                x: change.on.day.toDouble(),
+                                color: palette.reference,
+                                strokeWidth: 1.5,
+                                dashArray: const [4, 4],
+                                label: VerticalLineLabel(
+                                  show: true,
+                                  alignment: Alignment.topRight,
+                                  padding: const EdgeInsets.only(
+                                    left: 6,
+                                    top: 2,
+                                  ),
+                                  style: context.text.bodySmall?.copyWith(
+                                    color: palette.reference,
+                                    backgroundColor: palette.referenceContainer,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  labelResolver: (_) =>
+                                      S.changeUnitTo(Fmt.liftUnit(change.to)),
+                                ),
                               ),
-                              context.text.bodyMedium!.copyWith(
-                                color: colors.onInverseSurface,
+                          ],
+                        ),
+                        titlesData: FlTitlesData(
+                          rightTitles: const AxisTitles(),
+                          topTitles: const AxisTitles(),
+                          leftTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: _leftReserved,
+                              interval: step,
+                              getTitlesWidget: (value, meta) => SideTitleWidget(
+                                meta: meta,
+                                child: Text(
+                                  Fmt.kgNumber((value * 10).round()),
+                                  style: context.text.bodySmall?.copyWith(
+                                    color: palette.textSecondary,
+                                  ),
+                                ),
                               ),
-                            )
-                          else
-                            null,
-                      ],
-                    ),
-                  ),
-                  gridData: FlGridData(
-                    drawVerticalLine: false,
-                    horizontalInterval: step,
-                    getDrawingHorizontalLine: (_) =>
-                        FlLine(color: palette.border, strokeWidth: 1),
-                  ),
-                  borderData: FlBorderData(show: false),
-                  titlesData: FlTitlesData(
-                    rightTitles: const AxisTitles(),
-                    topTitles: const AxisTitles(),
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: _leftReserved,
-                        interval: step,
-                        getTitlesWidget: (value, meta) => SideTitleWidget(
-                          meta: meta,
-                          child: Text(
-                            Fmt.kgNumber((value * 10).round()),
-                            style: context.text.bodySmall?.copyWith(
-                              color: palette.textSecondary,
+                            ),
+                          ),
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: 28,
+                              interval: 1,
+                              getTitlesWidget: (value, meta) {
+                                final day = value.round();
+                                // Nhãn ngày 1, 5, 10, 15, … (mock S-69-1).
+                                if (value != day ||
+                                    day < 1 ||
+                                    day > days ||
+                                    (day != 1 && day % 5 != 0)) {
+                                  return const SizedBox.shrink();
+                                }
+                                return SideTitleWidget(
+                                  meta: meta,
+                                  child: Text(
+                                    '$day',
+                                    style: context.text.bodySmall?.copyWith(
+                                      color: palette.textSecondary,
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
                           ),
                         ),
                       ),
                     ),
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 28,
-                        interval: 1,
-                        getTitlesWidget: (value, meta) {
-                          final day = value.round();
-                          // Nhãn ngày 1, 5, 10, 15, … (mock S-69-1).
-                          if (value != day ||
-                              day < 1 ||
-                              day > days ||
-                              (day != 1 && day % 5 != 0)) {
-                            return const SizedBox.shrink();
-                          }
-                          return SideTitleWidget(
-                            meta: meta,
-                            child: Text(
-                              '$day',
-                              style: context.text.bodySmall?.copyWith(
-                                color: palette.textSecondary,
-                              ),
-                            ),
-                          );
-                        },
+                  ),
+                  // Đơn vị của trục mức tạ (F22-R41), góc dưới bên trái.
+                  Positioned(
+                    left: 0,
+                    bottom: 4,
+                    child: Text(
+                      Fmt.liftUnit(unit),
+                      key: const ValueKey('chart-axis-unit'),
+                      style: context.text.bodySmall?.copyWith(
+                        color: palette.textSecondary,
                       ),
                     ),
                   ),
-                ),
+                ],
               ),
             ),
           ),

@@ -136,4 +136,65 @@ void main() {
       expect(ProgressList.of(const [], library), isEmpty);
     });
   });
+
+  group('Bản 3: đơn vị trên biểu đồ, Tiến bộ (06 Bản 3 VS37-T05)', () {
+    ExerciseUnit unit(Exercise e, LiftUnit u, int month, int day) =>
+        ExerciseUnit(
+          exerciseId: e.id,
+          unit: u,
+          changedOn: LocalDate(2026, month, day),
+        );
+
+    test('F22-AC42: 3 điểm kg rồi đổi sang nấc 26/10 → 3 điểm giữ nguyên số, '
+        'mốc "Đổi sang nấc" đúng ngày', () {
+      final logs = [
+        log(machine, 10, 10, 400, 450),
+        log(machine, 10, 17, 420, 470),
+        log(machine, 10, 24, 450, 500),
+      ];
+      final chart = MonthlyLiftChart.of(logs, machine.id, YearMonth(2026, 10));
+      expect([for (final l in chart.logs) l.endKgX10], [450, 470, 500]);
+      expect(
+        MonthlyLiftChart.unitChange(
+          logs,
+          unit(machine, LiftUnit.steps, 10, 26),
+        ),
+        (on: LocalDate(2026, 10, 26), to: LiftUnit.steps),
+      );
+    });
+
+    test('đơn vị gắn ở lần ghi đầu không có mốc; F22-E41: đổi hai lần → chỉ '
+        'mốc của lần gần nhất', () {
+      final first = [log(machine, 10, 12, 80, 100)];
+      expect(
+        MonthlyLiftChart.unitChange(
+          first,
+          unit(machine, LiftUnit.steps, 10, 12),
+        ),
+        isNull,
+      );
+      expect(MonthlyLiftChart.unitChange(first, null), isNull);
+      final logs = [
+        log(machine, 10, 12, 80, 100),
+        log(machine, 10, 19, 400, 450),
+        log(machine, 10, 26, 90, 100),
+      ];
+      expect(
+        MonthlyLiftChart.unitChange(
+          logs,
+          unit(machine, LiftUnit.steps, 10, 26),
+        ),
+        (on: LocalDate(2026, 10, 26), to: LiftUnit.steps),
+      );
+    });
+
+    test('F23-AC42: cùng ngày ghi "Ngồi máy đẩy vai" và "Máy ép ngực" → bài '
+        'ngực đứng trước (thứ tự thư viện Bản 3)', () {
+      final items = ProgressList.of([
+        log(shoulder, 10, 12, 300, 350),
+        log(machine, 10, 12, 400, 450),
+      ], library);
+      expect([for (final i in items) i.exercise.id], [machine.id, shoulder.id]);
+    });
+  });
 }

@@ -646,6 +646,11 @@ abstract final class S {
   ) => 'Buổi trước ($date): $start → $end $unit';
   static String liftThisSession(String start, String end, String unit) =>
       'Buổi này: $start → $end $unit';
+
+  /// Nhãn trước con số đậm ở khu cuối trang S-67 (mock S-67-2): "Buổi này",
+  /// "Gần nhất (17/10)".
+  static const liftThisSessionLabel = 'Buổi này';
+  static String liftLatestOn(String date) => 'Gần nhất ($date)';
   static String liftLatest(
     String date,
     String start,
@@ -673,7 +678,6 @@ abstract final class S {
       'Mức tạ gần nhất của từng bài · bài tập gần nhất lên đầu';
   static const viewExercise = 'Xem bài';
   static const viewChart = 'Xem biểu đồ';
-  static const chartLegend = '○ Bắt đầu · ● Kết thúc';
   static const chartMonthEmpty = 'Chưa có mức tạ trong tháng này';
 
   /// Tiêu đề danh sách dưới biểu đồ (theo mock S-69-1).
@@ -1114,7 +1118,6 @@ abstract final class S {
     'progressHint': progressHint,
     'viewExercise': viewExercise,
     'viewChart': viewChart,
-    'chartLegend': chartLegend,
     'chartMonthEmpty': chartMonthEmpty,
     'chartSessions': chartSessions,
     'backExerciseDetail': backExerciseDetail,

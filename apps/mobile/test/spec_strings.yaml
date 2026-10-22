@@ -360,7 +360,6 @@ liftNotNumber: "Mức tạ chưa đúng"
 progressHint: "Mức tạ gần nhất của từng bài · bài tập gần nhất lên đầu"
 viewExercise: "Xem bài"
 viewChart: "Xem biểu đồ"
-chartLegend: "○ Bắt đầu · ● Kết thúc"
 chartMonthEmpty: "Chưa có mức tạ trong tháng này"
 chartSessions: "Các buổi trong tháng" # theo mock S-69-1
 backExerciseDetail: "Chi tiết bài" # GIẢ ĐỊNH — nút quay lại S-69 khi mở từ S-67, spec không ghi

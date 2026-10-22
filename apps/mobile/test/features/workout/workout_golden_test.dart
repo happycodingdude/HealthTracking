@@ -11,6 +11,7 @@ import 'package:mobile/app/router.dart';
 import 'package:mobile/app/shell/app_tab.dart';
 import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/features/library/data/video_player_gateway.dart';
+import 'package:mobile/features/library/presentation/exercise_screen.dart';
 import 'package:mobile/features/schedule/data/schedule_repository.dart';
 import 'package:mobile/features/workout/data/exercise_note_repository.dart';
 import 'package:mobile/features/workout/data/exercise_unit_repository.dart';
@@ -23,8 +24,9 @@ import '../../support/library_fixture.dart';
 import '../../support/schedule_fixture.dart';
 
 /// 06 Bản 3 VS36-T06 (golden): S-63 (3 biến thể theo mock S-63-1 → 3), S-64
-/// (4 dạng theo mock S-64-1 → 4), khu mức tạ của S-67, S-10 có phần bài tập
-/// — sáng/tối × cỡ chữ lớn nhất (UX-AC63). Dữ liệu `sessionChestV3`.
+/// (4 dạng theo mock S-64-1 → 4), S-10 có phần bài tập — sáng/tối × cỡ chữ
+/// lớn nhất (UX-AC63). Dữ liệu `sessionChestV3`. 06 Bản 3 VS37-T05: khu cuối
+/// trang S-67 (3 biến thể theo mock S-67-1 → 3), hộp S-72.
 void main() {
   final mon = LocalDate(2026, 10, 12);
   final tue = LocalDate(2026, 10, 13);
@@ -253,20 +255,65 @@ void main() {
       await snap('s64_note_only_${v.name}');
     });
 
-    testWidgets('S-67 khu mức tạ mở từ S-63, có buổi trước ${v.name}', (
-      tester,
-    ) async {
-      final db = await seeded();
-      final e = group(MuscleGroup.chest)[1];
-      final c = await pump(tester, v, db, DateTime(2026, 10, 12, 18, 30));
-      await go(tester, c, sessionExercisePath(AppTab.today, mon, e.id));
+    /// Cuộn tới khu cuối trang S-67 (UA3-12).
+    Future<void> showLiftArea(WidgetTester tester) async {
       await tester.scrollUntilVisible(
         find.byKey(const ValueKey('exercise-lift-area')),
         300,
         scrollable: find.byType(Scrollable).last,
       );
       await tester.pumpAndSettle();
-      await snap('s67_lift_area_${v.name}');
+    }
+
+    testWidgets('S-67-1 mở từ Thư viện: đơn vị nấc máy, "Đổi sang kg", gần '
+        'nhất ${v.name}', (tester) async {
+      final db = await seeded();
+      final c = await pump(tester, v, db, DateTime(2026, 10, 13, 9));
+      await go(
+        tester,
+        c,
+        exercisePath(group(MuscleGroup.chest)[2].id, ExerciseFrom.library),
+      );
+      await showLiftArea(tester);
+      await snap('s67_library_steps_${v.name}');
+    });
+
+    testWidgets('S-67-2 mở từ buổi trong cửa sổ: "Buổi này" + "Sửa", ghi chú '
+        'hôm nay, đơn vị kg ${v.name}', (tester) async {
+      final db = await seeded();
+      final pecDeck = group(MuscleGroup.chest)[0];
+      await log(db, mon, pecDeck, 400, 475);
+      await note(db, mon, pecDeck, 'máy 2 hỏng, tập máy 5');
+      final c = await pump(tester, v, db, DateTime(2026, 10, 12, 18, 30));
+      await go(tester, c, sessionExercisePath(AppTab.today, mon, pecDeck.id));
+      await showLiftArea(tester);
+      await snap('s67_session_${v.name}');
+    });
+
+    testWidgets('S-67-3 bài bụng từ buổi: ghi chú buổi trước, "Ghi chú" '
+        '${v.name}', (tester) async {
+      final db = await seeded();
+      final plank = exerciseOf(library, MuscleRegion.absMid);
+      await note(db, LocalDate(2026, 10, 6), plank, 'giữ được 45 giây');
+      await seedExtra(db, tue, const [MuscleGroup.abs]);
+      final c = await pump(tester, v, db, DateTime(2026, 10, 13, 20, 30));
+      await go(tester, c, sessionExercisePath(AppTab.today, tue, plank.id));
+      await showLiftArea(tester);
+      await snap('s67_abs_${v.name}');
+    });
+
+    testWidgets('S-72-1 hộp xác nhận đổi đơn vị ${v.name}', (tester) async {
+      final db = await seeded();
+      final c = await pump(tester, v, db, DateTime(2026, 10, 13, 9));
+      await go(
+        tester,
+        c,
+        exercisePath(group(MuscleGroup.chest)[2].id, ExerciseFrom.library),
+      );
+      await showLiftArea(tester);
+      await tester.tap(find.byKey(const ValueKey('exercise-change-unit')));
+      await tester.pumpAndSettle();
+      await snap('s72_change_unit_${v.name}');
     });
 
     testWidgets('S-10-2 thẻ buổi tập có phần bài tập ${v.name}', (

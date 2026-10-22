@@ -13,6 +13,7 @@ import 'package:mobile/features/library/data/exercise_repository.dart';
 import 'package:mobile/features/library/data/video_player_gateway.dart';
 import 'package:mobile/features/progress/presentation/lift_chart_screen.dart';
 import 'package:mobile/features/training/application/training_section.dart';
+import 'package:mobile/features/workout/data/exercise_unit_repository.dart';
 import 'package:mobile/features/workout/data/lift_log_repository.dart';
 import 'package:mobile/features/workout/presentation/session_screen.dart';
 
@@ -22,7 +23,8 @@ import '../../support/fake_sync.dart';
 import '../../support/library_fixture.dart';
 import '../../support/schedule_fixture.dart';
 
-/// 06 Bản 2 VS28-T06 (widget): S-68, S-69, lối vào biểu đồ ở S-67.
+/// 06 Bản 2 VS28-T06 (widget): S-68, S-69, lối vào biểu đồ ở S-67; 06 Bản 3
+/// VS37-T05: đơn vị trên S-68, S-69, mốc đổi đơn vị.
 void main() {
   late AppDatabase db;
   late FixedClock clock;
@@ -279,6 +281,122 @@ void main() {
       expect(key('exercise-view-chart'), findsNothing);
       await go(tester, '/schedule/exercise/${abs.id}?from=library');
       expect(key('exercise-view-chart'), findsNothing);
+    });
+  });
+
+  group('Bản 3: đơn vị (VS37-T05)', () {
+    late List<Exercise> v3;
+    late Exercise pecDeck;
+    late Exercise legExtension;
+    late Exercise shoulderPress;
+
+    Future<void> setUnit(Exercise e, LiftUnit u, LocalDate on) =>
+        ExerciseUnitRepository(
+          db,
+        ).put(ExerciseUnit(exerciseId: e.id, unit: u, changedOn: on));
+
+    setUp(() async {
+      v3 = await seedLibrary(db, realLibraryV3());
+      pecDeck = v3.firstWhere((e) => e.id == 'chest-mid-machine-pec-deck');
+      legExtension = v3.firstWhere(
+        (e) => e.id == 'legs-quads-seated-leg-extension',
+      );
+      shoulderPress = v3.firstWhere(
+        (e) => e.id == 'delt-front-machine-machine-shoulder-press',
+      );
+    });
+
+    testWidgets('F23-AC41, UX-AC56: mỗi dòng đúng đơn vị của bài; F23-AC42: '
+        'cùng ngày "Máy ép ngực" trước "Ngồi máy đẩy vai"', (tester) async {
+      final day = LocalDate(2026, 10, 12);
+      await setUnit(shoulderPress, LiftUnit.steps, day);
+      await log(shoulderPress, day, 80, 100);
+      await setUnit(pecDeck, LiftUnit.kg, day);
+      await log(pecDeck, day, 400, 475);
+      await pump(tester);
+      await openProgress(tester);
+      expect(
+        find.descendant(
+          of: key('progress-${pecDeck.id}'),
+          matching: find.text('40 → 47,5 kg'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: key('progress-${shoulderPress.id}'),
+          matching: find.text('8 → 10 nấc'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        top(tester, 'progress-${pecDeck.id}'),
+        lessThan(top(tester, 'progress-${shoulderPress.id}')),
+      );
+    });
+
+    testWidgets('F22-AC41, F22-AC42, UX-AC55: 3 điểm kg rồi đổi sang nấc 10/10 '
+        '→ trục "nấc", chú giải "đơn vị: nấc máy", mốc "Đổi sang nấc" (VoiceOver '
+        'đọc ngày), bản ghi trước mốc "· trước khi đổi"; bài kg → trục "kg", '
+        'không mốc', (tester) async {
+      await log(legExtension, LocalDate(2026, 10, 1), 400, 450);
+      await log(legExtension, LocalDate(2026, 10, 5), 420, 470);
+      await log(legExtension, LocalDate(2026, 10, 7), 450, 500);
+      await log(legExtension, LocalDate(2026, 10, 12), 80, 100);
+      await setUnit(legExtension, LiftUnit.steps, LocalDate(2026, 10, 10));
+      await pump(tester);
+      await go(tester, liftChartPath(legExtension.id));
+      expect(tester.widget<Text>(key('chart-axis-unit')).data, S.unitSteps);
+      expect(find.text(S.chartLegendUnit(S.unitStepsFull)), findsOneWidget);
+      final chart = tester.widget<LineChart>(find.byType(LineChart));
+      final lines = chart.data.extraLinesData.verticalLines;
+      expect([for (final l in lines) l.x], [10]);
+      expect(lines.single.label.labelResolver(lines.single), 'Đổi sang nấc');
+      expect(
+        find.bySemanticsLabel(
+          '${S.chartSemantics(10, 4)}. '
+          '${S.unitChangeSemantics(S.unitSteps, '10/10')}',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('T4 07/10 ${S.beforeUnitChange}'), findsOneWidget);
+      expect(find.text('T2 12/10'), findsOneWidget);
+      expect(
+        tester.widget<Text>(key('chart-row-2026-10-07')).data,
+        '45 → 50 nấc',
+        reason: 'số giữ nguyên, không quy đổi',
+      );
+
+      await setUnit(pecDeck, LiftUnit.kg, LocalDate(2026, 10, 12));
+      await log(pecDeck, LocalDate(2026, 10, 12), 400, 450);
+      await go(tester, liftChartPath(pecDeck.id));
+      expect(tester.widget<Text>(key('chart-axis-unit')).data, S.unitKg);
+      expect(
+        tester
+            .widget<LineChart>(find.byType(LineChart))
+            .data
+            .extraLinesData
+            .verticalLines,
+        isEmpty,
+      );
+    });
+
+    testWidgets('S-69 chữ lớn nhất: dòng "· trước khi đổi" với số dài không '
+        'tràn', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 3.1;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await log(legExtension, LocalDate(2026, 10, 9), 1055, 1150);
+      await log(legExtension, LocalDate(2026, 10, 12), 80, 100);
+      await setUnit(legExtension, LiftUnit.steps, LocalDate(2026, 10, 10));
+      await pump(tester);
+      await go(tester, liftChartPath(legExtension.id));
+      await tester.ensureVisible(key('chart-row-2026-10-09'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(
+        tester.widget<Text>(key('chart-row-2026-10-09')).data,
+        '105,5 → 115 nấc',
+      );
     });
   });
 }

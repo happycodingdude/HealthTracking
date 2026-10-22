@@ -1,4 +1,6 @@
 import '../exercise/exercise.dart';
+import '../lift_log/exercise_unit.dart';
+import '../lift_log/lift_kg.dart';
 import '../lift_log/lift_log.dart';
 import '../time/local_date.dart';
 import '../time/year_month.dart';
@@ -66,11 +68,29 @@ final class MonthlyLiftChart {
     return first?.yearMonth;
   }
 
+  /// Mốc đổi đơn vị (F22-R42, F22-E41, UA3-13): ngày đổi gần nhất của
+  /// [unit] — chỉ một mốc, kể cả khi đã đổi nhiều lần. Đơn vị gắn ở lần ghi
+  /// đầu không phải "đổi": chỉ có mốc khi bài đã có bản ghi trước ngày đó.
+  static LiftUnitChange? unitChange(
+    Iterable<LiftLog> logs,
+    ExerciseUnit? unit,
+  ) {
+    if (unit == null) return null;
+    final changed = logs.any(
+      (l) => l.exerciseId == unit.exerciseId && l.date.isBefore(unit.changedOn),
+    );
+    return changed ? (on: unit.changedOn, to: unit.unit) : null;
+  }
+
   static List<LiftLog> _sorted(Iterable<LiftLog> logs, String exerciseId) => [
     for (final l in logs)
       if (l.exerciseId == exerciseId) l,
   ]..sort((a, b) => a.date.compareTo(b.date));
 }
+
+/// Mốc đổi đơn vị trên biểu đồ: ngày đổi và đơn vị mới. Bản ghi trước [on]
+/// là "trước khi đổi" (UA3-13).
+typedef LiftUnitChange = ({LocalDate on, LiftUnit to});
 
 /// Một dòng của Tiến bộ mức tạ (F-23): bài và bản ghi gần nhất của bài.
 typedef ProgressItem = ({Exercise exercise, LiftLog latest});

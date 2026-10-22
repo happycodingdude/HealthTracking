@@ -6,8 +6,11 @@ import 'package:go_router/go_router.dart';
 import '../../../app/strings_vi.dart';
 import '../../../app/theme.dart';
 import '../../../core/formatters.dart';
+import '../../../core/widgets/app_sheet.dart';
 import '../../../core/widgets/heading.dart';
 import '../../../core/widgets/reference_tag.dart';
+import '../../../core/widgets/toast.dart';
+import '../../workout/application/lift_log_edits.dart';
 import '../../workout/application/lift_unit.dart';
 import '../../workout/application/session_providers.dart';
 import '../../workout/presentation/lift_log_sheet.dart';
@@ -262,10 +265,13 @@ class _GuideNote extends StatelessWidget {
   }
 }
 
-/// Khu mức tạ (04 Bản 2 S-67, 6 tình huống): ghi hoặc sửa mức tạ của buổi khi
-/// mở từ S-63 trong cửa sổ ghi tạ; chỉ đọc khi ngoài cửa sổ; nơi khác hiện
-/// bản ghi gần nhất. Ẩn khi bài chưa có bản ghi nào (F19-AC3) và với bài bụng
-/// (F19-R4). Bài đã rời thư viện không có "Ghi mức tạ" (UA2-18).
+/// Khu cuối trang S-67 (04 Bản 3 S-67, UA3-12), các dòng theo tình huống:
+/// "Ghi mức tạ" / "Buổi này" + "Sửa" và "Ghi chú hôm nay" khi mở từ buổi
+/// trong cửa sổ ghi tạ; bài bụng: ghi chú buổi trước mờ, "Bài này không ghi
+/// mức tạ" + "Ghi chú" (FA3-08); "Đơn vị" + "Đổi sang …" khi bài đã có đơn vị
+/// (F19-R41, F19-R42); "Gần nhất" + "Xem biểu đồ" khi bài có bản ghi. Khu ẩn
+/// khi không có dòng nào (F19-AC3). Thẻ viền đậm khi mở từ buổi trong cửa sổ.
+/// Bài đã rời thư viện: không có "Ghi mức tạ" (UA2-18).
 class _LiftArea extends ConsumerWidget {
   const _LiftArea({
     required this.exercise,
@@ -279,136 +285,283 @@ class _LiftArea extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (!exercise.logsWeight) return const SizedBox.shrink();
     final logs = ref.watch(allLiftLogsProvider).value;
-    if (logs == null) return const SizedBox.shrink();
+    final notes = ref.watch(allExerciseNotesProvider).value;
+    final units = ref.watch(exerciseUnitsProvider).value;
+    if (logs == null || notes == null || units == null) {
+      return const SizedBox.shrink();
+    }
     final date = session;
     final view = date == null ? null : ref.watch(sessionProvider(date));
-    final inWindow = view?.canLog ?? false;
+    final inWindow = date != null && (view?.canLog ?? false);
+    final id = exercise.id;
     LiftLog? latest;
     LiftLog? thisSession;
     for (final l in logs) {
-      if (l.exerciseId != exercise.id) continue;
+      if (l.exerciseId != id) continue;
       if (latest == null || l.date.isAfter(latest.date)) latest = l;
       if (l.date == date) thisSession = l;
     }
+    ExerciseNote? todayNote;
+    for (final n in notes) {
+      if (n.exerciseId == id && n.date == date) todayNote = n;
+    }
+    final unit = units[id]?.unit;
+    final shown = Fmt.liftUnit(unit ?? LiftUnit.kg);
+    final palette = context.palette;
     final secondary = context.text.bodyLarge?.copyWith(
-      color: context.palette.textSecondary,
+      color: palette.textSecondary,
     );
-    final unit = Fmt.liftUnit(
-      displayUnit(ref.watch(exerciseUnitsProvider).value, exercise.id),
+    final bold = context.text.titleMedium?.copyWith(
+      fontWeight: FontWeight.w700,
+    );
+    void openSheet() =>
+        showLiftLogSheet(context, date: date!, exercise: exercise);
+
+    // Nút [label] nằm bên phải; chữ lớn làm nút chiếm quá nửa dòng thì nút
+    // xuống dưới.
+    Widget line(Widget left, [Widget? right, String label = '']) {
+      if (right == null) return left;
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final painter = TextPainter(
+            text: TextSpan(text: label, style: bold),
+            textScaler: MediaQuery.textScalerOf(context),
+            textDirection: TextDirection.ltr,
+            maxLines: 1,
+          )..layout();
+          final wide = painter.width + 24 > constraints.maxWidth * 0.55;
+          painter.dispose();
+          return wide
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [left, right],
+                )
+              : Row(
+                  children: [
+                    Expanded(child: left),
+                    const SizedBox(width: 8),
+                    right,
+                  ],
+                );
+        },
+      );
+    }
+
+    Widget link(String text, Key key, VoidCallback onPressed) => TextButton(
+      key: key,
+      style: TextButton.styleFrom(
+        minimumSize: const Size(44, 44),
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        textStyle: bold,
+      ),
+      onPressed: onPressed,
+      child: Text(text),
+    );
+    Widget valueText(String label, LiftLog l, Key key) => Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(text: '$label: '),
+          TextSpan(
+            text:
+                '${Fmt.kgNumber(l.startKgX10)} → ${Fmt.kgNumber(l.endKgX10)} '
+                '$shown',
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+        ],
+      ),
+      key: key,
+      style: context.text.bodyLarge,
+    );
+    Widget noteToday(ExerciseNote n) => InkWell(
+      key: const ValueKey('exercise-note-today'),
+      onTap: openSheet,
+      child: Row(
+        children: [
+          Icon(
+            Icons.sticky_note_2_outlined,
+            size: 18,
+            color: context.colors.primary,
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              S.noteToday(n.text),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: secondary,
+            ),
+          ),
+        ],
+      ),
     );
 
-    final List<Widget> content;
-    if (date != null && inWindow && thisSession == null && exercise.active) {
-      final previous = LiftLogRules.previousSession(logs, exercise.id, date);
-      content = [
-        if (previous != null) ...[
-          Text(
-            S.liftPrevious(
-              Fmt.dayMonth(previous.date),
-              Fmt.kgNumber(previous.startKgX10),
-              Fmt.kgNumber(previous.endKgX10),
-              unit,
+    final rows = <Widget>[
+      if (exercise.logsWeight) ...[
+        if (inWindow && thisSession == null && exercise.active)
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              key: const ValueKey('exercise-log-lift'),
+              onPressed: openSheet,
+              child: const Text(S.logLift),
             ),
+          )
+        else if (date != null && thisSession != null)
+          line(
+            valueText(
+              S.liftThisSessionLabel,
+              thisSession,
+              const ValueKey('exercise-lift-this-session'),
+            ),
+            inWindow
+                ? link(S.edit, const ValueKey('exercise-edit-lift'), openSheet)
+                : null,
+            S.edit,
+          ),
+        if (inWindow && todayNote != null) noteToday(todayNote),
+      ] else if (inWindow) ...[
+        if (ExerciseNoteRules.previous(
+              notes: notes,
+              logs: logs,
+              exercise: exercise,
+              date: date,
+            )
+            case final previous?)
+          Text(
+            S.notePreviousSession(Fmt.dayMonth(previous.date), previous.text),
+            key: const ValueKey('exercise-note-previous'),
             style: secondary,
           ),
-          const SizedBox(height: 12),
-        ],
-        FilledButton(
-          key: const ValueKey('exercise-log-lift'),
-          onPressed: () =>
-              showLiftLogSheet(context, date: date, exercise: exercise),
-          child: const Text(S.logLift),
-        ),
-      ];
-    } else if (date != null && thisSession != null) {
-      final value = Text(
-        S.liftThisSession(
-          Fmt.kgNumber(thisSession.startKgX10),
-          Fmt.kgNumber(thisSession.endKgX10),
-          unit,
-        ),
-        key: const ValueKey('exercise-lift-this-session'),
-        style: context.text.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-      );
-      content = [
-        if (inWindow)
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 12,
-            children: [
-              value,
-              OutlinedButton(
-                key: const ValueKey('exercise-edit-lift'),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(64, 44),
-                ),
-                onPressed: () =>
-                    showLiftLogSheet(context, date: date, exercise: exercise),
-                child: const Text(S.edit),
-              ),
-            ],
-          )
-        else
-          value,
-      ];
-    } else if (latest != null) {
-      content = [
-        Text(
-          S.liftLatest(
-            Fmt.dayMonth(latest.date),
-            Fmt.kgNumber(latest.startKgX10),
-            Fmt.kgNumber(latest.endKgX10),
-            unit,
-          ),
-          key: const ValueKey('exercise-lift-latest'),
-          style: secondary,
-        ),
-        // S-69 (NAV-11). Mở từ biểu đồ thì quay lại biểu đồ đó.
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton(
-            key: const ValueKey('exercise-view-chart'),
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.zero,
-              textStyle: context.text.titleMedium,
+        if (todayNote != null) noteToday(todayNote),
+        line(
+          Text(S.liftNoWeight, style: context.text.bodyLarge),
+          OutlinedButton(
+            key: const ValueKey('exercise-note'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: context.colors.primary,
+              minimumSize: const Size(64, 44),
+              shape: const StadiumBorder(),
+              side: BorderSide(color: context.colors.primary, width: 1.5),
+              textStyle: bold,
             ),
-            onPressed: () => from == ExerciseFrom.progress
-                ? context.pop()
-                : context.push('${GoRouterState.of(context).uri.path}/chart'),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
+            onPressed: openSheet,
+            child: const Text(S.noteShort),
+          ),
+          S.noteShort,
+        ),
+      ],
+      if (exercise.logsWeight && unit != null)
+        line(
+          Text.rich(
+            TextSpan(
               children: [
-                Flexible(child: Text(S.viewChart)),
-                Icon(Icons.chevron_right, size: 22),
+                TextSpan(text: S.unitLine('')),
+                TextSpan(
+                  text: Fmt.liftUnitFull(unit),
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
               ],
             ),
+            key: const ValueKey('exercise-unit'),
+            style: context.text.bodyLarge,
           ),
+          link(
+            S.changeUnitTo(Fmt.liftUnitFull(_other(unit))),
+            const ValueKey('exercise-change-unit'),
+            () => confirmChangeUnit(context, ref, exercise, unit),
+          ),
+          S.changeUnitTo(Fmt.liftUnitFull(_other(unit))),
         ),
-      ];
-    } else {
-      return const SizedBox.shrink();
-    }
+      if (exercise.logsWeight && latest != null)
+        line(
+          valueText(
+            S.liftLatestOn(Fmt.dayMonth(latest.date)),
+            latest,
+            const ValueKey('exercise-lift-latest'),
+          ),
+          // S-69 (NAV-11). Mở từ biểu đồ thì quay lại biểu đồ đó.
+          link(
+            S.viewChart,
+            const ValueKey('exercise-view-chart'),
+            () => from == ExerciseFrom.progress
+                ? context.pop()
+                : context.push('${GoRouterState.of(context).uri.path}/chart'),
+          ),
+          S.viewChart,
+        ),
+    ];
+    if (rows.isEmpty) return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.only(top: 20),
       child: Container(
         key: const ValueKey('exercise-lift-area'),
         width: double.infinity,
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: context.palette.card,
+          color: palette.card,
           borderRadius: BorderRadius.circular(20),
-          // Thẻ viền đậm để thấy ngay khi cuộn tới (04 Bản 2 S-67).
-          border: Border.all(color: context.colors.primary, width: 2),
+          // Viền đậm khi mở từ buổi trong cửa sổ ghi tạ (04 Bản 3 S-67).
+          border: inWindow
+              ? Border.all(color: context.colors.primary, width: 2)
+              : Border.all(color: palette.border),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: content,
+          children: [
+            for (final (i, row) in rows.indexed) ...[
+              if (i > 0) const Divider(height: 1),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: row,
+              ),
+            ],
+          ],
         ),
       ),
     );
   }
+
+  static LiftUnit _other(LiftUnit unit) =>
+      unit == LiftUnit.kg ? LiftUnit.steps : LiftUnit.kg;
+}
+
+/// S-72 — Xác nhận đổi đơn vị (04 Bản 3 §6.6, UA3-17): tiêu đề "Đổi sang
+/// {đơn vị}?", câu nguyên văn F21-R47, "Hủy" · "Đổi sang {đơn vị}" (không
+/// đỏ). Xác nhận → [ChangeExerciseUnit] (không cần mạng, F21-AC51) → thông
+/// báo nhanh "Đã đổi sang {đơn vị}"; mọi nơi đọc đơn vị đổi ngay.
+Future<void> confirmChangeUnit(
+  BuildContext context,
+  WidgetRef ref,
+  Exercise exercise,
+  LiftUnit current,
+) async {
+  final to = current == LiftUnit.kg ? LiftUnit.steps : LiftUnit.kg;
+  final name = Fmt.liftUnitFull(to);
+  final confirmed =
+      await showAppDialog<bool>(
+        context,
+        builder: (dialogContext) => AlertDialog(
+          key: const ValueKey('change-unit-dialog'),
+          title: Text(S.changeUnitTitle(name), textAlign: TextAlign.center),
+          content: Text(S.changeUnitBody(name), textAlign: TextAlign.center),
+          actions: [
+            OutlinedButton(
+              key: const ValueKey('change-unit-cancel'),
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text(S.cancel),
+            ),
+            FilledButton(
+              key: const ValueKey('change-unit-confirm'),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(S.changeUnitTo(name)),
+            ),
+          ],
+        ),
+      ) ??
+      false;
+  if (!confirmed || !context.mounted) return;
+  await ref.read(changeExerciseUnitProvider).call(exercise.id, to);
+  if (context.mounted) showToast(context, S.unitChanged(name));
 }
