@@ -13,7 +13,6 @@ import '../../../core/widgets/toast.dart';
 import '../../library/presentation/body_map.dart';
 import '../../library/presentation/library_screen.dart';
 import '../../schedule/presentation/session_marking.dart';
-import '../application/lift_unit.dart';
 import '../application/session_providers.dart';
 import 'lift_log_sheet.dart';
 
@@ -109,63 +108,57 @@ class SessionScreen extends ConsumerWidget {
                 const SizedBox(height: 16),
                 _ReadOnlyLine(session: session, reason: reason),
               ],
-              if (exercises != null)
+              if (exercises != null) ...[
                 for (final g in exercises.groups) ...[
-                  // Nhiều nhóm cơ: tiêu đề nhóm lớn, rồi tiêu đề vùng (UA2-17).
-                  if (exercises.groups.length > 1)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 20, left: 4),
-                      child: Semantics(
-                        header: true,
-                        child: Text(
-                          Fmt.muscle(g.group),
-                          key: ValueKey('session-group-${g.group.name}'),
-                          style: context.text.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
+                  // Mỗi nhóm một tiêu đề nhỏ, kể cả buổi một nhóm; dưới là
+                  // danh sách phẳng theo thứ tự thư viện (F20-R41, 04 Bản 3
+                  // S-63).
+                  const SizedBox(height: 20),
+                  Semantics(
+                    header: true,
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 4, bottom: 8),
+                      child: Text(
+                        Fmt.muscle(g.group).toUpperCase(),
+                        key: ValueKey('session-group-${g.group.name}'),
+                        style: context.text.labelLarge?.copyWith(
+                          color: palette.textSecondary,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.4,
                         ),
                       ),
                     ),
-                  for (final r in g.regions) ...[
-                    const SizedBox(height: 16),
-                    Semantics(
-                      header: true,
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 4, bottom: 8),
-                        child: Text(
-                          Fmt.region(r.region).toUpperCase(),
-                          key: ValueKey('session-region-${r.region.id}'),
-                          style: context.text.labelLarge?.copyWith(
-                            color: palette.textSecondary,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.4,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Card(
-                      clipBehavior: Clip.antiAlias,
-                      child: Column(
-                        children: [
-                          for (final (i, item) in r.items.indexed) ...[
-                            if (i > 0) const Divider(indent: 16, endIndent: 16),
-                            _ExerciseLine(
-                              session: session,
-                              item: item,
-                              onOpen: () => context.push(
-                                sessionExercisePath(
-                                  tab,
-                                  date,
-                                  item.exercise.id,
-                                ),
-                              ),
+                  ),
+                  Card(
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
+                      children: [
+                        for (final (i, item) in g.items.indexed) ...[
+                          if (i > 0) const Divider(indent: 16, endIndent: 16),
+                          _ExerciseLine(
+                            session: session,
+                            item: item,
+                            onOpen: () => context.push(
+                              sessionExercisePath(tab, date, item.exercise.id),
                             ),
-                          ],
+                          ),
                         ],
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
                 ],
+                if (session.canLog) ...[
+                  const SizedBox(height: 14),
+                  Text(
+                    S.sessionFootnote,
+                    key: const ValueKey('session-footnote'),
+                    textAlign: TextAlign.center,
+                    style: context.text.bodyMedium?.copyWith(
+                      color: palette.textSecondary,
+                    ),
+                  ),
+                ],
+              ],
             ],
           ],
         ),
@@ -233,10 +226,11 @@ class _ReadOnlyLine extends StatelessWidget {
   }
 }
 
-/// Một dòng bài (04 Bản 2 S-63, 6 tình huống): bên trái hình vùng cơ thu
-/// nhỏ · tên · nhãn dụng cụ (chạm → S-67); bên phải nút "Ghi", con số đậm
-/// (chạm → S-64 sửa), con số thường, hoặc trống. Bài bụng không có chỗ ghi
-/// (FR2-12). Bài đã rời thư viện có ghi chú nhỏ (F20-E1).
+/// Một dòng bài (04 Bản 3 S-63, 8 tình huống, [LiftRowState]): hình vùng cơ
+/// thu nhỏ · tên (+ biểu tượng ghi chú rõ / mờ, F20-R43) · nhãn vùng cơ;
+/// bên phải mức tạ buổi trước / gần nhất (xám, có nhãn), mức hôm nay (đậm),
+/// nút "Ghi" / "Ghi chú", hoặc trống. Chạm phần phải (và biểu tượng ghi chú)
+/// → S-64; chạm tên, hình hoặc cả dòng khi không ghi được → S-67.
 class _ExerciseLine extends ConsumerWidget {
   const _ExerciseLine({
     required this.session,
@@ -252,58 +246,168 @@ class _ExerciseLine extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final e = item.exercise;
     final log = item.log;
-    final unit = displayUnit(ref.watch(exerciseUnitsProvider).value, e.id);
-    final canLog = session.canLog && e.logsWeight;
+    final unit = item.unit ?? LiftUnit.kg;
     final palette = context.palette;
     final stacked = MediaQuery.textScalerOf(context).scale(1) >= _stackedScale;
 
-    void openSheet() => showLiftLogSheet(
-      context,
-      date: session.date,
-      exercise: e,
-      existing: log,
+    void openSheet() =>
+        showLiftLogSheet(context, date: session.date, exercise: e);
+    final canOpenSheet = switch (item.state) {
+      LiftRowState.prev || LiftRowState.today || LiftRowState.absNote => true,
+      LiftRowState.none || LiftRowState.removed => session.canLog,
+      _ => false,
+    };
+
+    final bold = context.text.titleMedium?.copyWith(
+      fontWeight: FontWeight.w700,
+    );
+    Widget value(LiftLog l, {TextStyle? style, Key? key}) =>
+        Text(Fmt.lift(l, unit), key: key, style: style);
+    Widget labelled(String label, LiftLog l, Key key) => Column(
+      key: key,
+      crossAxisAlignment: stacked
+          ? CrossAxisAlignment.start
+          : CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          style: context.text.labelSmall?.copyWith(
+            color: palette.textSecondary,
+            letterSpacing: 0.6,
+          ),
+        ),
+        const SizedBox(height: 2),
+        value(
+          l,
+          style: context.text.titleMedium?.copyWith(
+            color: palette.textSecondary,
+          ),
+        ),
+      ],
+    );
+    Widget tappable(Widget child, Key key) => Semantics(
+      button: true,
+      child: InkWell(
+        key: key,
+        borderRadius: BorderRadius.circular(10),
+        onTap: openSheet,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 44, minWidth: 44),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            child: Align(
+              widthFactor: 1,
+              heightFactor: 1,
+              alignment: stacked ? Alignment.centerLeft : Alignment.centerRight,
+              child: child,
+            ),
+          ),
+        ),
+      ),
+    );
+    Widget outlined(String text, Key key) => OutlinedButton(
+      key: key,
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(64, 44),
+        shape: const StadiumBorder(),
+        side: BorderSide(color: context.colors.primary, width: 1.5),
+        textStyle: bold,
+      ),
+      onPressed: openSheet,
+      child: Text(text),
     );
 
-    // Bên phải dòng bài.
-    final Widget? action = switch ((canLog, log)) {
-      (true, final LiftLog l) => TextButton(
-        key: ValueKey('lift-value-${e.id}'),
-        style: TextButton.styleFrom(
-          minimumSize: const Size(44, 44),
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          foregroundColor: context.colors.onSurface,
-          textStyle: context.text.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
+    // Bên phải dòng bài (UA3-05).
+    final Widget? action = switch (item.state) {
+      LiftRowState.prev => tappable(
+        labelled(
+          S.liftPreviousLabel,
+          item.previous!,
+          ValueKey('lift-prev-${e.id}'),
+        ),
+        ValueKey('lift-prev-tap-${e.id}'),
+      ),
+      LiftRowState.today => tappable(
+        value(log!, style: bold),
+        ValueKey('lift-value-${e.id}'),
+      ),
+      LiftRowState.latest => labelled(
+        S.liftLatestLabel,
+        item.previous!,
+        ValueKey('lift-latest-${e.id}'),
+      ),
+      LiftRowState.past => value(
+        log!,
+        key: ValueKey('lift-readonly-${e.id}'),
+        style: context.text.titleMedium,
+      ),
+      LiftRowState.none when session.canLog => outlined(
+        S.logLiftShort,
+        ValueKey('lift-log-${e.id}'),
+      ),
+      LiftRowState.none
+          when session.readOnly == LiftReadOnly.future ||
+              session.readOnly == LiftReadOnly.opensLater =>
+        Text(
+          S.liftNotLogged,
+          key: ValueKey('lift-none-${e.id}'),
+          style: context.text.titleMedium?.copyWith(
+            color: palette.textSecondary,
           ),
         ),
-        onPressed: openSheet,
-        child: Text(Fmt.lift(l, unit)),
+      LiftRowState.absNote => outlined(
+        S.noteShort,
+        ValueKey('note-log-${e.id}'),
       ),
-      (true, null) when e.active => OutlinedButton(
-        key: ValueKey('lift-log-${e.id}'),
-        style: OutlinedButton.styleFrom(
-          minimumSize: const Size(64, 44),
-          shape: const StadiumBorder(),
-          side: BorderSide(color: context.colors.primary, width: 1.5),
-          textStyle: context.text.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        onPressed: openSheet,
-        child: const Text(S.logLiftShort),
+      LiftRowState.removed when session.canLog => tappable(
+        value(log!, style: bold),
+        ValueKey('lift-value-${e.id}'),
       ),
-      (false, final LiftLog l) => Text(
-        Fmt.lift(l, unit),
+      LiftRowState.removed => value(
+        log!,
         key: ValueKey('lift-readonly-${e.id}'),
         style: context.text.titleMedium,
       ),
       _ => null,
     };
 
+    final noteIcon = switch (item.noteMark) {
+      NoteMark.none => null,
+      final mark => GestureDetector(
+        key: ValueKey('note-mark-${e.id}-${mark.name}'),
+        behavior: HitTestBehavior.opaque,
+        onTap: canOpenSheet ? openSheet : onOpen,
+        child: Padding(
+          padding: const EdgeInsets.only(left: 6),
+          child: Icon(
+            Icons.sticky_note_2_outlined,
+            size: 16,
+            semanticLabel: S.noteShort,
+            color: mark == NoteMark.today
+                ? context.colors.primary
+                : palette.textSecondary.withAlpha(150),
+          ),
+        ),
+      ),
+    };
+
     final info = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(e.nameVi, style: context.text.bodyLarge),
+        Text.rich(
+          TextSpan(
+            children: [
+              TextSpan(text: e.nameVi),
+              if (noteIcon != null)
+                WidgetSpan(
+                  alignment: PlaceholderAlignment.middle,
+                  child: noteIcon,
+                ),
+            ],
+          ),
+          style: context.text.bodyLarge,
+        ),
         const SizedBox(height: 4),
         RegionLabel(e.region),
         if (!e.active) ...[
@@ -318,71 +422,30 @@ class _ExerciseLine extends ConsumerWidget {
       ],
     );
 
-    if (stacked) {
-      // Cỡ chữ lớn: con số mức tạ nằm dưới tên bài (04 Bản 2 §6.13).
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(0, 0, 16, 0),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Semantics(
-              button: true,
-              label: '${e.nameVi}, ${Fmt.region(e.region)}',
-              child: ExcludeSemantics(
-                child: InkWell(
-                  key: ValueKey('exercise-${e.id}'),
-                  onTap: onOpen,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 14, 12),
-                    child: BodyMap(region: e.region),
-                  ),
-                ),
-              ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: info,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Row(
-      children: [
-        Expanded(
-          child: Semantics(
-            button: true,
-            label: '${e.nameVi}, ${Fmt.region(e.region)}',
-            child: ExcludeSemantics(
-              child: InkWell(
-                key: ValueKey('exercise-${e.id}'),
-                onTap: onOpen,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
-                  child: Row(
-                    children: [
-                      BodyMap(region: e.region),
-                      const SizedBox(width: 14),
-                      Expanded(child: info),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+    return Semantics(
+      button: true,
+      label: '${e.nameVi}, ${Fmt.region(e.region)}',
+      child: InkWell(
+        key: ValueKey('exercise-${e.id}'),
+        onTap: onOpen,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          child: Row(
+            crossAxisAlignment: stacked
+                ? CrossAxisAlignment.start
+                : CrossAxisAlignment.center,
+            children: [
+              ExcludeSemantics(child: BodyMap(region: e.region)),
+              const SizedBox(width: 14),
+              Expanded(child: info),
+              if (!stacked && action != null) ...[
+                const SizedBox(width: 8),
+                action,
+              ],
+            ],
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.only(right: 16),
-          child:
-              action ??
-              ExcludeSemantics(
-                child: Icon(Icons.chevron_right, color: palette.textSecondary),
-              ),
-        ),
-      ],
+      ),
     );
   }
 }

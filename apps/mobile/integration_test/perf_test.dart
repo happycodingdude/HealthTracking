@@ -172,7 +172,10 @@ void main() {
     final exerciseId = (tester.widget(logButton.first).key! as ValueKey<String>)
         .value
         .substring('lift-log-'.length);
+    final sheet = find.byKey(const ValueKey('lift-save'));
     await tester.tap(logButton.first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('lift-unit-kg')));
     await tester.pumpAndSettle();
     // Số hợp lệ cho cả kg lẫn nấc máy (1–50).
     await tester.enterText(find.byKey(const ValueKey('lift-start-input')), '7');
@@ -181,6 +184,13 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('lift-save')));
     final value = find.byKey(ValueKey('lift-value-$exerciseId'));
     final liftMs = await _msUntil(tester, () => value.evaluate().isNotEmpty);
+    await tester.pumpAndSettle();
+    // Mở S-64 có sẵn số (06 Bản 3 IA3-09): từ lúc chạm con số vừa ghi tới
+    // khi bảng có nút Lưu; đóng ngay (chưa sửa gì nên không hỏi).
+    await tester.tap(value);
+    final sheetMs = await _msUntil(tester, () => sheet.evaluate().isNotEmpty);
+    await tester.pumpAndSettle();
+    await tester.tapAt(const Offset(20, 80));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('session-back')));
     await tester.pumpAndSettle();
@@ -220,11 +230,17 @@ void main() {
       'startup_ms': startupMs,
       'mark_ms': markMs,
       'lift_ms': liftMs,
+      'lift_sheet_ms': sheetMs,
     };
     // ignore: avoid_print
     print('PERF ${binding.reportData}');
     expect(startupMs, lessThan(2000), reason: 'IA-04: mở app dưới 2 giây');
     expect(markMs, lessThan(100), reason: 'IA-04: đánh dấu dưới 100 ms');
     expect(liftMs, lessThan(100), reason: 'IA2-05: lưu mức tạ dưới 100 ms');
+    expect(
+      sheetMs,
+      lessThan(100),
+      reason: 'IA3-09: mở bảng ghi tạ dưới 100 ms',
+    );
   });
 }

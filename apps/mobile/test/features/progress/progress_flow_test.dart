@@ -171,6 +171,7 @@ void main() {
       await pump(tester);
       await go(tester, sessionPath(AppTab.schedule, LocalDate(2026, 10, 12)));
       await tapKey(tester, 'lift-log-${press.id}');
+      await tapKey(tester, 'lift-unit-kg');
       await tester.enterText(key('lift-start-input'), '10');
       await tester.enterText(key('lift-end-input'), '12');
       await tester.pumpAndSettle();

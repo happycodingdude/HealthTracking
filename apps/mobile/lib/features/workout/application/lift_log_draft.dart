@@ -5,95 +5,198 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 enum LiftField { start, end }
 
 /// Mở S-64 cho bài [exercise] trong buổi ngày [date]: [existing] = bản ghi
-/// của buổi (chế độ sửa), [previous] = buổi trước của bài (FR2-06), [unit] =
-/// đơn vị hiện tại của bài, null khi chưa từng ghi (F21-R41).
+/// của buổi (chế độ sửa), [previous] = buổi trước của bài (FA3-01), [unit] =
+/// đơn vị hiện tại của bài, null khi chưa từng ghi (F21-R41); [note] = ghi
+/// chú của buổi, [previousNote] = ghi chú buổi trước (FA3-02).
 typedef LiftDraftArgs = ({
   LocalDate date,
   Exercise exercise,
   LiftLog? existing,
   LiftLog? previous,
   LiftUnit? unit,
+  ExerciseNote? note,
+  ExerciseNote? previousNote,
 });
 
-/// Hai ô số của S-64 (04 Bản 2 S-64, UA2-10, UA2-11): chữ Bạn gõ, lỗi sau
-/// khi bấm Lưu, cảnh báo F21-R8 tính ngay khi ô Kết thúc có số hợp lệ.
+/// Bảng ghi tạ S-64 (04 Bản 3 §6.6, 05 Bản 3 §6.4.2 `liftLogDraftProvider`):
+/// hai ô (điền sẵn xám / đã sửa), đơn vị, lỗi sau khi bấm Lưu, cảnh báo
+/// F21-R45 (chỉ khi ô Kết thúc đã sửa, FA3-07), ghi chú, [isDirty] (ED3-12).
 final class LiftDraft {
   const LiftDraft({
+    required this.args,
     required this.unit,
-    this.start = '',
-    this.end = '',
-    this.previous,
+    required this.start,
+    required this.end,
+    required this.note,
+    this.startEdited = false,
+    this.endEdited = false,
+    this.stepped = false,
     this.input,
   });
 
-  /// Đơn vị của bài; lần ghi đầu: đơn vị sẽ gắn cho bài.
-  final LiftUnit unit;
+  factory LiftDraft.open(LiftDraftArgs args) {
+    final (:startX10, :endX10, fromPrevious: _) = LiftPrefill.of(
+      today: args.existing,
+      previous: args.previous,
+    );
+    String text(int? x10) => x10 == null ? '' : LiftKg.format(x10);
+    return LiftDraft(
+      args: args,
+      unit: args.unit,
+      start: text(startX10),
+      end: text(endX10),
+      note: args.note?.text ?? '',
+    );
+  }
+
+  final LiftDraftArgs args;
+
+  /// Đơn vị của bài, hoặc đơn vị Bạn vừa chọn ở lần ghi đầu; null = chưa
+  /// chọn (F21-V41).
+  final LiftUnit? unit;
 
   /// Chữ trong ô, luôn dùng dấu phẩy (UR-10).
   final String start;
   final String end;
+  final String note;
 
-  /// Buổi trước của bài; null = lần ghi đầu tiên.
-  final LiftLog? previous;
+  /// Ô đã được Bạn sửa (gõ hoặc bấm ±bước): số chuyển màu thường (UA3-06).
+  final bool startEdited;
+  final bool endEdited;
 
-  /// Kết quả kiểm tra lần bấm Lưu gần nhất; null = chưa bấm hoặc đã sửa ô.
+  /// Đã bấm ±bước, kể cả khi số không đổi (UA3-03).
+  final bool stepped;
+
+  /// Kết quả kiểm tra lần bấm Lưu gần nhất; null = chưa bấm hoặc đã sửa.
   final LiftInput? input;
+
+  /// Bài bụng: chỉ có ô ghi chú (S-64-4, UA3-08).
+  bool get noteOnly => !args.exercise.logsWeight;
+
+  /// Lần ghi đầu: hiện thanh chọn kg | nấc máy (UA3-09).
+  bool get choosingUnit => !noteOnly && args.unit == null;
+
+  /// Hai ô là mức buổi trước (chưa có bản ghi hôm nay).
+  bool get prefilled => args.existing == null && args.previous != null;
 
   String text(LiftField f) => f == LiftField.start ? start : end;
 
-  /// Lỗi hiện dưới hai ô (F21-V1 → V4): lỗi của ô Bắt đầu trước.
-  LiftInputError? get error => input?.startError ?? input?.endError;
+  bool edited(LiftField f) => f == LiftField.start ? startEdited : endEdited;
 
-  /// F21-R8: so mức kết thúc với buổi trước; null khi ô Kết thúc chưa hợp lệ.
+  /// Số còn là gợi ý (màu xám, UA3-06).
+  bool isGray(LiftField f) => prefilled && !edited(f);
+
+  bool get bothEmpty => start.trim().isEmpty && end.trim().isEmpty;
+
+  /// Lỗi sau khi bấm Lưu: thiếu đơn vị (dưới thanh chọn) hoặc lỗi ô số.
+  LiftInputError? get error => input?.error;
+
+  /// Ghi chú khác lúc mở bảng.
+  bool get noteChanged =>
+      ExerciseNoteRules.normalize(note) !=
+      ExerciseNoteRules.normalize(args.note?.text ?? '');
+
+  /// UA3-03, ED3-12: số khác lúc mở, ghi chú khác lúc mở, hoặc đã bấm ±bước.
+  bool get isDirty {
+    final initial = LiftDraft.open(args);
+    return stepped ||
+        start != initial.start ||
+        end != initial.end ||
+        note != initial.note;
+  }
+
+  /// F21-R45: so mức kết thúc với buổi trước khi ô Kết thúc có số hợp lệ và
+  /// đã sửa (FA3-07); null khi không cảnh báo.
   EndWarning? get warning {
-    final (endX10, invalid) = LiftKg.check(end, unit);
+    final u = unit;
+    if (u == null || noteOnly) return null;
+    final (endX10, invalid) = LiftKg.check(end, u);
     if (invalid != null) return null;
-    return EndWarning.of(previous?.endKgX10, endX10!, unit);
-  }
-
-  /// Nút − / + của ô [f] bấm được: ô đã có số; riêng ô Kết thúc trống thì
-  /// lấy mức Bắt đầu làm điểm xuất phát (UA2-10).
-  bool canStep(LiftField f) => _base(f) != null;
-
-  int? _base(LiftField f) {
-    final (value, _) = LiftKg.parse(text(f));
-    if (value != null) return value;
-    if (f == LiftField.end && end.trim().isEmpty) {
-      return LiftKg.parse(start).$1;
-    }
-    return null;
-  }
-
-  LiftDraft edit(LiftField f, String text) {
-    final shown = text.replaceAll('.', ',');
-    return LiftDraft(
-      unit: unit,
-      start: f == LiftField.start ? shown : start,
-      end: f == LiftField.end ? shown : end,
-      previous: previous,
+    return EndWarning.of(
+      args.previous?.endKgX10,
+      endX10!,
+      u,
+      edited: endEdited,
     );
   }
 
-  /// Thêm [delta] bước vào ô [f] (0,5 kg; 1 thanh), chặn ở hai đầu khoảng
-  /// (F21-V2).
-  LiftDraft step(LiftField f, int delta) {
-    final base = _base(f);
-    if (base == null) return this;
-    return edit(f, LiftKg.format(LiftKg.stepped(base, delta, unit)));
+  LiftDraft _copy({
+    LiftUnit? unit,
+    String? start,
+    String? end,
+    String? note,
+    bool? startEdited,
+    bool? endEdited,
+    bool? stepped,
+  }) => LiftDraft(
+    args: args,
+    unit: unit ?? this.unit,
+    start: start ?? this.start,
+    end: end ?? this.end,
+    note: note ?? this.note,
+    startEdited: startEdited ?? this.startEdited,
+    endEdited: endEdited ?? this.endEdited,
+    stepped: stepped ?? this.stepped,
+  );
+
+  LiftDraft edit(LiftField f, String text) {
+    final shown = text.replaceAll('.', ',');
+    if (shown == this.text(f)) return this;
+    return f == LiftField.start
+        ? _copy(start: shown, startEdited: true)
+        : _copy(end: shown, endEdited: true);
   }
 
-  LiftDraft check() => LiftDraft(
-    unit: unit,
-    start: start,
-    end: end,
-    previous: previous,
-    input: LiftInput.of(start, end, unit),
-  );
+  /// Nút −bước / +bước (F21-R43): ô trống hoặc chưa chọn đơn vị → không tác
+  /// dụng (FA3-05); ra ngoài khoảng → giữ nguyên (F21-E44, E45).
+  LiftDraft step(LiftField f, int delta) {
+    final u = unit;
+    final (value, _) = LiftKg.parse(text(f));
+    final next = u == null ? null : LiftStep.apply(value, delta, u);
+    final changed = next != null && next != value;
+    final shown = changed ? LiftKg.format(next) : text(f);
+    return f == LiftField.start
+        ? _copy(
+            start: shown,
+            startEdited: startEdited || changed,
+            stepped: true,
+          )
+        : _copy(end: shown, endEdited: endEdited || changed, stepped: true);
+  }
+
+  LiftDraft chooseUnit(LiftUnit unit) => _copy(unit: unit);
+
+  /// F26-V1, E1: không quá 200 ký tự.
+  LiftDraft editNote(String text) => _copy(note: ExerciseNoteRules.clip(text));
+
+  /// Kiểm tra khi bấm Lưu (F21-V41 → V45). Hai ô trống thì chỉ lưu ghi chú
+  /// (F21-R49) nên không kiểm số; riêng lần ghi đầu chưa chọn đơn vị và chưa
+  /// có gì để lưu → báo chọn đơn vị (F21-AC43, UX-AC49).
+  LiftDraft check() {
+    final LiftInput? input;
+    if (noteOnly) {
+      input = null;
+    } else if (bothEmpty) {
+      input = choosingUnit && unit == null && !noteChanged
+          ? LiftInput.of('', '', null)
+          : null;
+    } else {
+      input = LiftInput.of(start, end, unit);
+    }
+    return LiftDraft(
+      args: args,
+      unit: unit,
+      start: start,
+      end: end,
+      note: note,
+      startEdited: startEdited,
+      endEdited: endEdited,
+      stepped: stepped,
+      input: input,
+    );
+  }
 }
 
-/// Bản nháp của S-64 (05 Bản 2 §6.4.2 `liftLogDraftProvider`). Chế độ sửa
-/// điền sẵn bản ghi đã có; lần đầu cả hai ô trống — không điền mức của buổi
-/// trước để app không gợi ý mức tạ (UA2-10, A2-09).
 final liftLogDraftProvider = NotifierProvider.autoDispose
     .family<LiftLogDraft, LiftDraft, LiftDraftArgs>(LiftLogDraft.new);
 
@@ -103,25 +206,19 @@ class LiftLogDraft extends Notifier<LiftDraft> {
   final LiftDraftArgs args;
 
   @override
-  LiftDraft build() {
-    final existing = args.existing;
-    return LiftDraft(
-      // Tạm tới VS-36 (S-64 Bản 3 có thanh chọn kg | nấc máy ở lần ghi đầu,
-      // F21-V41): bảng Bản 2 ghi lần đầu bằng kg.
-      unit: args.unit ?? LiftUnit.kg,
-      start: existing == null ? '' : LiftKg.format(existing.startKgX10),
-      end: existing == null ? '' : LiftKg.format(existing.endKgX10),
-      previous: args.previous,
-    );
-  }
+  LiftDraft build() => LiftDraft.open(args);
 
   void edit(LiftField f, String text) => state = state.edit(f, text);
 
   void step(LiftField f, int delta) => state = state.step(f, delta);
 
-  /// Kiểm tra F21-V1 → V4 khi bấm Lưu; true = hợp lệ.
+  void chooseUnit(LiftUnit unit) => state = state.chooseUnit(unit);
+
+  void editNote(String text) => state = state.editNote(text);
+
+  /// Kiểm tra F21-V41 → V45 khi bấm Lưu; true = lưu được.
   bool check() {
     state = state.check();
-    return state.input!.isValid;
+    return state.input?.isValid ?? true;
   }
 }

@@ -11,6 +11,9 @@ import 'package:mobile/app/router.dart';
 import 'package:mobile/app/shell/app_tab.dart';
 import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/features/library/data/video_player_gateway.dart';
+import 'package:mobile/features/schedule/data/schedule_repository.dart';
+import 'package:mobile/features/workout/data/exercise_note_repository.dart';
+import 'package:mobile/features/workout/data/exercise_unit_repository.dart';
 import 'package:mobile/features/workout/data/lift_log_repository.dart';
 import 'package:mobile/features/workout/presentation/session_screen.dart';
 
@@ -19,25 +22,21 @@ import '../../support/golden.dart';
 import '../../support/library_fixture.dart';
 import '../../support/schedule_fixture.dart';
 
-/// 06 Bản 2 VS27-T07 (golden): S-63 (3 biến thể), S-64 (4 biến thể), S-67 có
-/// khu mức tạ, S-10 có phần bài tập — sáng/tối × cỡ chữ (UX-AC43).
+/// 06 Bản 3 VS36-T06 (golden): S-63 (3 biến thể theo mock S-63-1 → 3), S-64
+/// (4 dạng theo mock S-64-1 → 4), khu mức tạ của S-67, S-10 có phần bài tập
+/// — sáng/tối × cỡ chữ lớn nhất (UX-AC63). Dữ liệu `sessionChestV3`.
 void main() {
   final mon = LocalDate(2026, 10, 12);
   final tue = LocalDate(2026, 10, 13);
+  final prevMon = LocalDate(2026, 10, 5);
 
   late List<Exercise> library;
   late FixedClock clock;
 
-  Exercise ex(MuscleRegion region, [String? equipment]) =>
-      exerciseOf(library, region, equipment);
-
-  Future<AppDatabase> seeded() async {
-    final db = AppDatabase(NativeDatabase.memory());
-    addTearDown(db.close);
-    await seedSetUp(db);
-    library = await seedLibrary(db);
-    return db;
-  }
+  List<Exercise> group(MuscleGroup g) => [
+    for (final e in library)
+      if (e.group == g) e,
+  ];
 
   Future<void> log(
     AppDatabase db,
@@ -48,6 +47,35 @@ void main() {
   ) => LiftLogRepository(db).put(
     LiftLog(date: date, exerciseId: e.id, startKgX10: start, endKgX10: end),
   );
+
+  Future<void> unit(AppDatabase db, Exercise e, LiftUnit u) =>
+      ExerciseUnitRepository(
+        db,
+      ).put(ExerciseUnit(exerciseId: e.id, unit: u, changedOn: prevMon));
+
+  Future<void> note(AppDatabase db, LocalDate date, Exercise e, String text) =>
+      ExerciseNoteRepository(
+        db,
+      ).put(ExerciseNote(date: date, exerciseId: e.id, text: text));
+
+  /// Ngực: "Máy ép ngực" 40 → 45 kg, "Nằm ghế ngang đẩy thanh tạ" 50 → 55 kg
+  /// (ghi chú "máy 2 hỏng, tập máy 5"), "Nằm máy dốc lên" 8 → 10 nấc, bài 4
+  /// chưa từng ghi — đều của thứ 2 tuần trước.
+  Future<AppDatabase> seeded() async {
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    await seedSetUp(db);
+    library = await seedLibrary(db, realLibraryV3());
+    final chest = group(MuscleGroup.chest);
+    await unit(db, chest[0], LiftUnit.kg);
+    await log(db, prevMon, chest[0], 400, 450);
+    await unit(db, chest[1], LiftUnit.kg);
+    await log(db, prevMon, chest[1], 500, 550);
+    await note(db, prevMon, chest[1], 'máy 2 hỏng, tập máy 5');
+    await unit(db, chest[2], LiftUnit.steps);
+    await log(db, prevMon, chest[2], 80, 100);
+    return db;
+  }
 
   Future<ProviderContainer> pump(
     WidgetTester tester,
@@ -110,113 +138,126 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  Future<void> unfocus(WidgetTester tester) async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpAndSettle();
+  }
+
   Future<void> snap(String name) => expectLater(
     find.byType(MaterialApp),
     matchesGoldenFile('goldens/$name.png'),
   );
 
   for (final v in GoldenVariant.all) {
-    testWidgets('S-63-1 trong cửa sổ, đã ghi 2 bài, thanh đáy "Đã tập" '
-        '${v.name}', (tester) async {
+    testWidgets('S-63-1 trong cửa sổ: buổi trước mờ, bài đã ghi, biểu tượng '
+        'ghi chú, "Ghi" ${v.name}', (tester) async {
       final db = await seeded();
-      await log(db, mon, ex(MuscleRegion.chestUpper, 'machine'), 70, 80);
-      await log(db, mon, ex(MuscleRegion.chestUpper, 'free-weight'), 100, 120);
+      final chest = group(MuscleGroup.chest);
+      await log(db, mon, chest[0], 400, 475);
+      await note(db, mon, chest[0], 'ghế số 3');
       final c = await pump(tester, v, db, DateTime(2026, 10, 12, 18, 30));
       await go(tester, c, sessionPath(AppTab.today, mon));
       await snap('s63_window_${v.name}');
     });
 
-    testWidgets('S-63-2 chưa đến giờ, chỉ xem ${v.name}', (tester) async {
+    testWidgets('S-63-2 buổi Chân và Bụng: danh sách phẳng theo nhóm, bài bụng '
+        'có "Ghi chú" ${v.name}', (tester) async {
       final db = await seeded();
-      final c = await pump(tester, v, db, DateTime(2026, 10, 12, 17));
-      await go(tester, c, sessionPath(AppTab.today, mon));
-      await snap('s63_upcoming_${v.name}');
-    });
-
-    testWidgets('S-63-3 buổi tập thêm Vai và Bụng ${v.name}', (tester) async {
-      final db = await seeded();
-      await seedExtra(db, tue, const [MuscleGroup.shoulders, MuscleGroup.abs]);
-      await log(db, tue, ex(MuscleRegion.deltFront, 'machine'), 50, 60);
-      final c = await pump(tester, v, db, DateTime(2026, 10, 13, 20, 30));
-      await go(tester, c, sessionPath(AppTab.today, tue));
-      await snap('s63_extra_${v.name}');
-    });
-
-    testWidgets('S-64-1 lần ghi đầu tiên ${v.name}', (tester) async {
-      final db = await seeded();
-      final e = ex(MuscleRegion.chestMid, 'machine');
+      final legs = group(MuscleGroup.legs);
+      await unit(db, legs[0], LiftUnit.kg);
+      await log(db, prevMon, legs[0], 800, 900);
+      await unit(db, legs[1], LiftUnit.steps);
+      await log(db, prevMon, legs[1], 80, 100);
+      final schedule = ScheduleRepository(db);
+      final day = (await schedule.day(mon))!;
+      await schedule.putDay(
+        PlanDay(
+          date: mon,
+          kind: DayKind.workout,
+          time: day.time,
+          muscles: const [MuscleGroup.legs, MuscleGroup.abs],
+          source: DaySource.override,
+        ),
+      );
       final c = await pump(tester, v, db, DateTime(2026, 10, 12, 18, 30));
       await go(tester, c, sessionPath(AppTab.today, mon));
-      await tapRow(tester, 'lift-log-${e.id}');
-      await tester.enterText(
-        find.byKey(const ValueKey('lift-start-input')),
-        '7',
-      );
-      await tester.pumpAndSettle();
-      FocusManager.instance.primaryFocus?.unfocus();
-      await tester.pumpAndSettle();
-      await snap('s64_first_${v.name}');
+      await snap('s63_legs_abs_${v.name}');
     });
 
-    testWidgets('S-64-2 sửa, có cảnh báo, vẫn lưu được ${v.name}', (
+    testWidgets('S-63-3 buổi ngày mai: chỉ xem, "GẦN NHẤT" ${v.name}', (
       tester,
     ) async {
       final db = await seeded();
-      final e = ex(MuscleRegion.chestUpper, 'free-weight');
-      await log(db, LocalDate(2026, 10, 5), e, 120, 140);
-      await log(db, mon, e, 100, 120);
-      final c = await pump(tester, v, db, DateTime(2026, 10, 12, 18, 30));
-      await go(tester, c, sessionPath(AppTab.today, mon));
-      await tapRow(tester, 'lift-value-${e.id}');
-      await snap('s64_edit_warning_${v.name}');
+      final back = group(MuscleGroup.back);
+      await unit(db, back[0], LiftUnit.kg);
+      await log(db, LocalDate(2026, 10, 7), back[0], 350, 400);
+      await unit(db, back[2], LiftUnit.steps);
+      await log(db, LocalDate(2026, 10, 7), back[2], 90, 100);
+      final c = await pump(tester, v, db, DateTime(2026, 10, 13, 18, 30));
+      await go(
+        tester,
+        c,
+        sessionPath(AppTab.schedule, LocalDate(2026, 10, 14)),
+      );
+      await snap('s63_upcoming_${v.name}');
     });
 
-    testWidgets('S-64-3 lỗi nhập liệu ${v.name}', (tester) async {
+    testWidgets('S-64-1 điền sẵn, +2,5 ở Kết thúc, ghi chú buổi trước mờ '
+        '${v.name}', (tester) async {
       final db = await seeded();
-      final e = ex(MuscleRegion.chestMid, 'machine');
+      final chest = group(MuscleGroup.chest);
       final c = await pump(tester, v, db, DateTime(2026, 10, 12, 18, 30));
       await go(tester, c, sessionPath(AppTab.today, mon));
-      await tapRow(tester, 'lift-log-${e.id}');
-      await tester.enterText(
-        find.byKey(const ValueKey('lift-start-input')),
-        '7',
-      );
-      await tester.enterText(
-        find.byKey(const ValueKey('lift-end-input')),
-        '31',
-      );
-      await tester.pumpAndSettle();
-      await tapKey(tester, 'lift-save');
-      FocusManager.instance.primaryFocus?.unfocus();
-      await tester.pumpAndSettle();
-      await snap('s64_error_${v.name}');
+      await tapRow(tester, 'lift-prev-tap-${chest[1].id}');
+      await tapKey(tester, 'lift-end-plus');
+      await unfocus(tester);
+      await snap('s64_prefill_${v.name}');
     });
 
-    testWidgets('S-64-4 lưu sau 00:00, buổi đã khóa ${v.name}', (tester) async {
+    testWidgets('S-64-2 lần ghi đầu: chọn kg ${v.name}', (tester) async {
       final db = await seeded();
-      final e = ex(MuscleRegion.chestMid, 'machine');
-      final c = await pump(tester, v, db, DateTime(2026, 10, 12, 23, 58));
+      final chest = group(MuscleGroup.chest);
+      final c = await pump(tester, v, db, DateTime(2026, 10, 12, 18, 30));
       await go(tester, c, sessionPath(AppTab.today, mon));
-      await tapRow(tester, 'lift-log-${e.id}');
+      await tapRow(tester, 'lift-log-${chest[3].id}');
+      await tapKey(tester, 'lift-unit-kg');
+      await snap('s64_first_${v.name}');
+    });
+
+    testWidgets('S-64-3 nấc máy, sửa bản ghi, cảnh báo cao hơn 5 nấc '
+        '${v.name}', (tester) async {
+      final db = await seeded();
+      final chest = group(MuscleGroup.chest);
+      await log(db, mon, chest[2], 80, 140);
+      final c = await pump(tester, v, db, DateTime(2026, 10, 12, 18, 30));
+      await go(tester, c, sessionPath(AppTab.today, mon));
+      await tapRow(tester, 'lift-value-${chest[2].id}');
+      await tapKey(tester, 'lift-end-plus');
+      await unfocus(tester);
+      await snap('s64_steps_warning_${v.name}');
+    });
+
+    testWidgets('S-64-4 ghi chú bài bụng ${v.name}', (tester) async {
+      final db = await seeded();
+      final plank = exerciseOf(library, MuscleRegion.absMid);
+      await note(db, LocalDate(2026, 10, 6), plank, 'giữ được 45 giây');
+      await seedExtra(db, tue, const [MuscleGroup.abs]);
+      final c = await pump(tester, v, db, DateTime(2026, 10, 13, 20, 30));
+      await go(tester, c, sessionPath(AppTab.today, tue));
+      await tapRow(tester, 'note-log-${plank.id}');
       await tester.enterText(
-        find.byKey(const ValueKey('lift-start-input')),
-        '7',
+        find.byKey(const ValueKey('note-input')),
+        'giữ được 60 giây, lần 3 hơi run',
       );
-      await tester.enterText(find.byKey(const ValueKey('lift-end-input')), '8');
-      await tester.pumpAndSettle();
-      FocusManager.instance.primaryFocus?.unfocus();
-      await tester.pumpAndSettle();
-      clock.set(DateTime(2026, 10, 13, 0, 1));
-      await tapKey(tester, 'lift-save');
-      await snap('s64_locked_${v.name}');
+      await unfocus(tester);
+      await snap('s64_note_only_${v.name}');
     });
 
     testWidgets('S-67 khu mức tạ mở từ S-63, có buổi trước ${v.name}', (
       tester,
     ) async {
       final db = await seeded();
-      final e = ex(MuscleRegion.chestUpper, 'free-weight');
-      await log(db, LocalDate(2026, 10, 5), e, 120, 140);
+      final e = group(MuscleGroup.chest)[1];
       final c = await pump(tester, v, db, DateTime(2026, 10, 12, 18, 30));
       await go(tester, c, sessionExercisePath(AppTab.today, mon, e.id));
       await tester.scrollUntilVisible(
@@ -232,8 +273,14 @@ void main() {
       tester,
     ) async {
       final db = await seeded();
-      await log(db, mon, ex(MuscleRegion.chestUpper, 'machine'), 70, 80);
-      await log(db, mon, ex(MuscleRegion.tricepsLong), 100, 125);
+      await log(db, mon, group(MuscleGroup.chest)[0], 400, 450);
+      await log(
+        db,
+        mon,
+        exerciseOf(library, MuscleRegion.tricepsLong),
+        100,
+        125,
+      );
       await pump(tester, v, db, DateTime(2026, 10, 12, 18, 30));
       await snap('s10_session_exercises_${v.name}');
     });

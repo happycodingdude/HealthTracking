@@ -16,7 +16,9 @@ class SectionBar<T> extends StatelessWidget {
   });
 
   final List<T> items;
-  final T selected;
+
+  /// null: chưa mục nào được chọn (S-64 lần ghi đầu, UA3-09).
+  final T? selected;
   final String Function(T) label;
   final ValueChanged<T> onSelected;
 

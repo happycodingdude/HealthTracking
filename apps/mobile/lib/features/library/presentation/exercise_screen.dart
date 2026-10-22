@@ -332,7 +332,6 @@ class _LiftArea extends ConsumerWidget {
         key: const ValueKey('exercise-lift-this-session'),
         style: context.text.titleMedium?.copyWith(fontWeight: FontWeight.w700),
       );
-      final log = thisSession;
       content = [
         if (inWindow)
           Wrap(
@@ -346,12 +345,8 @@ class _LiftArea extends ConsumerWidget {
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size(64, 44),
                 ),
-                onPressed: () => showLiftLogSheet(
-                  context,
-                  date: date,
-                  exercise: exercise,
-                  existing: log,
-                ),
+                onPressed: () =>
+                    showLiftLogSheet(context, date: date, exercise: exercise),
                 child: const Text(S.edit),
               ),
             ],

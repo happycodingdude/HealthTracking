@@ -24,6 +24,7 @@ export 'src/schedule/day_edit.dart';
 export 'src/schedule/month_plan.dart';
 export 'src/schedule/weekly_template.dart';
 export 'src/session/extra_session.dart';
+export 'src/session/lift_row.dart';
 export 'src/session/schedule_state.dart';
 export 'src/session/session.dart';
 export 'src/time/clock.dart';

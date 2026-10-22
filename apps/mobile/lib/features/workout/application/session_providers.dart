@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/time_ticker.dart';
 import '../../../data/sync/sync_providers.dart';
 import '../../schedule/application/schedule_providers.dart';
+import 'lift_unit.dart';
 
 /// Vì sao S-63 chỉ xem (04 Bản 2 S-63, bảng dòng trạng thái, UA2-16).
 enum LiftReadOnly {
@@ -88,60 +89,112 @@ final allExercisesProvider = StreamProvider<List<Exercise>>(
   (ref) => ref.watch(exerciseRepositoryProvider).watchAll(),
 );
 
-/// Một bài trong buổi kèm bản ghi của buổi đó (F20-R9).
-typedef SessionExercise = ({Exercise exercise, LiftLog? log});
+/// Mọi ghi chú, cũ → mới (ghi chú buổi trước, FA3-02).
+final allExerciseNotesProvider = StreamProvider<List<ExerciseNote>>(
+  (ref) => ref.watch(exerciseNoteRepositoryProvider).watchAll(),
+);
 
-/// Một vùng cơ và các bài của vùng trong buổi.
-typedef SessionRegion = ({MuscleRegion region, List<SessionExercise> items});
+/// Một bài trong buổi (05 Bản 3 §6.4.2 `sessionExercisesProvider`): bản ghi
+/// và ghi chú của buổi, buổi trước (FA3-01), ghi chú buổi trước (FA3-02),
+/// đơn vị hiện tại, trạng thái dòng (ED3-11) và biểu tượng ghi chú.
+typedef SessionExercise = ({
+  Exercise exercise,
+  LiftLog? log,
+  LiftLog? previous,
+  ExerciseNote? note,
+  ExerciseNote? previousNote,
+  LiftUnit? unit,
+  LiftRowState state,
+  NoteMark noteMark,
+});
 
-/// Một nhóm cơ của buổi và các vùng của nhóm.
-typedef SessionGroup = ({MuscleGroup group, List<SessionRegion> regions});
+/// Một nhóm cơ của buổi và các bài của nhóm, danh sách phẳng (F20-R41).
+typedef SessionGroup = ({MuscleGroup group, List<SessionExercise> items});
 
-/// Bài của buổi (05 Bản 2 §6.4.2 `sessionExercisesProvider`).
+/// Bài của buổi.
 final class SessionExercises {
   const SessionExercises(this.groups);
 
   final List<SessionGroup> groups;
 
-  Iterable<SessionExercise> get _all => [
-    for (final g in groups)
-      for (final r in g.regions) ...r.items,
-  ];
+  Iterable<SessionExercise> get _all => [for (final g in groups) ...g.items];
 
   /// Số bài ghi mức tạ được (không tính bài bụng, 04 Bản 2 S-63).
   int get total => _all.where((i) => i.exercise.logsWeight).length;
 
-  /// Số bài đã có mức tạ trong buổi.
-  int get logged => _all.where((i) => i.log != null).length;
+  /// Số bài đã có mức tạ trong buổi; bài chỉ có ghi chú không tính (UA3-01).
+  int get logged =>
+      _all.where((i) => i.exercise.logsWeight && i.log != null).length;
 }
 
-/// Bài của buổi ngày [date]: nhóm cơ của buổi → vùng → bài, thứ tự F18-R9,
-/// chỉ bài thuộc nhóm cơ của buổi (F20-R5); bài đã rời thư viện chỉ hiện khi
-/// buổi có bản ghi của bài đó (F20-E1). Sửa riêng nhóm cơ hôm nay thì danh
-/// sách đổi theo ngay (F20-E2). Đọc từ Drift, không chờ mạng (UR2-10).
+/// Bài của buổi ngày [date]: nhóm cơ theo thứ tự trong lịch (FA3-16), mỗi
+/// nhóm là danh sách phẳng theo thứ tự thư viện (F20-R41, F18-R43); bài đã
+/// rời thư viện chỉ hiện khi buổi có bản ghi của bài đó (F20-E1); bài bỏ ở
+/// Bản 3 đã bị xóa khỏi máy (F20-E41). Sửa riêng nhóm cơ hôm nay thì danh sách
+/// đổi theo ngay (F20-E2). Đọc từ Drift, không chờ mạng (UR2-10).
 final sessionExercisesProvider = Provider.family<SessionExercises?, LocalDate>((
   ref,
   date,
 ) {
   final session = ref.watch(sessionProvider(date));
   final library = ref.watch(allExercisesProvider).value;
-  final logs = ref.watch(dayLiftLogsProvider(date)).value;
-  if (session == null || library == null || logs == null) return null;
-  final byExercise = {for (final l in logs) l.exerciseId: l};
+  final logs = ref.watch(allLiftLogsProvider).value;
+  final notes = ref.watch(allExerciseNotesProvider).value;
+  final units = ref.watch(exerciseUnitsProvider).value;
+  if (session == null ||
+      library == null ||
+      logs == null ||
+      notes == null ||
+      units == null) {
+    return null;
+  }
+  final dayLogs = {
+    for (final l in logs)
+      if (l.date == date) l.exerciseId: l,
+  };
+  final dayNotes = {
+    for (final n in notes)
+      if (n.date == date) n.exerciseId: n,
+  };
+  SessionExercise item(Exercise e) {
+    final log = dayLogs[e.id];
+    final previous = LiftLogRules.previousSession(logs, e.id, date);
+    final note = dayNotes[e.id];
+    final previousNote = ExerciseNoteRules.previous(
+      notes: notes,
+      logs: logs,
+      exercise: e,
+      date: date,
+    );
+    return (
+      exercise: e,
+      log: log,
+      previous: previous,
+      note: note,
+      previousNote: previousNote,
+      unit: units[e.id]?.unit,
+      state: LiftRowRules.of(
+        window: session.window,
+        logsWeight: e.logsWeight,
+        active: e.active,
+        sessionLog: log,
+        previous: previous,
+      ),
+      noteMark: LiftRowRules.noteMark(
+        sessionNote: note,
+        previousNote: previousNote,
+      ),
+    );
+  }
+
   return SessionExercises([
     for (final group in session.muscles)
       (
         group: group,
-        regions: [
-          for (final region in MuscleRegion.of(group))
-            if ([
-                  for (final e in library)
-                    if (e.region == region &&
-                        (e.active || byExercise.containsKey(e.id)))
-                      (exercise: e, log: byExercise[e.id]),
-                ]
-                case final items when items.isNotEmpty)
-              (region: region, items: items),
+        items: [
+          for (final e in library)
+            if (e.group == group && (e.active || dayLogs.containsKey(e.id)))
+              item(e),
         ],
       ),
   ]);

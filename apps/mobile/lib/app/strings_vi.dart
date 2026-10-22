@@ -608,7 +608,6 @@ abstract final class S {
       'Chỉ xem · Buổi tập thêm cho ngày đã qua không ghi mức tạ';
   static const liftStart = 'Bắt đầu';
   static const liftEnd = 'Kết thúc';
-  static const liftStepHint = 'Bước 0,5 kg · chạm vào số để gõ';
   static const liftFirstTime = 'Lần ghi đầu tiên của bài này';
   static const deleteLift = 'Xóa mức tạ';
   static const deleteLiftConfirm = 'Xóa mức tạ của bài này?';
@@ -618,8 +617,6 @@ abstract final class S {
   static const liftNotNumber = 'Mức tạ chưa đúng';
 
   /// Nhãn VoiceOver của nút − / + (giả định câu chữ, chờ Bạn xem).
-  static const liftDecrease = 'Giảm 0,5 kg';
-  static const liftIncrease = 'Tăng 0,5 kg';
 
   /// "Buổi tập · Ngực và Tay sau".
   static String sessionTitle(String muscles) => 'Buổi tập · $muscles';
@@ -767,6 +764,10 @@ abstract final class S {
   /// S-64 dòng hướng dẫn dưới hai ô (UA3-06): [step] là "2,5 kg" / "1 nấc".
   static String liftStepGuide(String step) =>
       'Số mờ là mức buổi trước · chạm vào số để gõ · bước $step';
+
+  /// Nhãn đọc màn hình của nút −bước / +bước: "Giảm 2,5 kg", "Tăng 1 nấc".
+  static String liftDecreaseBy(String step) => 'Giảm $step';
+  static String liftIncreaseBy(String step) => 'Tăng $step';
 
   /// S-64 lần ghi đầu: "Chạm vào số để gõ · bước 2,5 kg".
   static String liftStepGuideFirst(String step) =>
@@ -1103,7 +1104,6 @@ abstract final class S {
     'readOnlyPastExtra': readOnlyPastExtra,
     'liftStart': liftStart,
     'liftEnd': liftEnd,
-    'liftStepHint': liftStepHint,
     'liftFirstTime': liftFirstTime,
     'deleteLift': deleteLift,
     'deleteLiftConfirm': deleteLiftConfirm,
@@ -1111,8 +1111,6 @@ abstract final class S {
     'liftLockedAtMidnight': liftLockedAtMidnight,
     'liftMissing': liftMissing,
     'liftNotNumber': liftNotNumber,
-    'liftDecrease': liftDecrease,
-    'liftIncrease': liftIncrease,
     'progressHint': progressHint,
     'viewExercise': viewExercise,
     'viewChart': viewChart,

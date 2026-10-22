@@ -348,7 +348,6 @@ readOnlyLocked: "Chỉ xem · Mức tạ của buổi này đã khóa"
 readOnlyPastExtra: "Chỉ xem · Buổi tập thêm cho ngày đã qua không ghi mức tạ"
 liftStart: "Bắt đầu"
 liftEnd: "Kết thúc"
-liftStepHint: "Bước 0,5 kg · chạm vào số để gõ"
 liftFirstTime: "Lần ghi đầu tiên của bài này"
 deleteLift: "Xóa mức tạ"
 deleteLiftConfirm: "Xóa mức tạ của bài này?"
@@ -356,8 +355,6 @@ liftDeleted: "Đã xóa mức tạ"
 liftLockedAtMidnight: "Mức tạ của buổi này đã khóa lúc 00:00."
 liftMissing: "Vui lòng nhập cả mức tạ bắt đầu và kết thúc"
 liftNotNumber: "Mức tạ chưa đúng"
-liftDecrease: "Giảm 0,5 kg" # GIẢ ĐỊNH — nhãn VoiceOver của nút −, spec không ghi câu
-liftIncrease: "Tăng 0,5 kg" # GIẢ ĐỊNH — nhãn VoiceOver của nút +, spec không ghi câu
 
 # 04 Bản 2 S-68, S-69, §6.12; 03 Bản 2 F22-E1
 progressHint: "Mức tạ gần nhất của từng bài · bài tập gần nhất lên đầu"
