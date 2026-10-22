@@ -62,7 +62,7 @@ void main() {
     final db = AppDatabase(NativeDatabase.memory());
     addTearDown(db.close);
     await seedSetUp(db);
-    await seedLibrary(db, library);
+    await seedLibrary(db, library ?? realLibraryV3());
     return db;
   }
 
@@ -85,16 +85,29 @@ void main() {
       await snap('s66_${v.name}');
     });
 
+    testWidgets('S-66-2 Thư viện, nhóm Chân ${v.name}', (tester) async {
+      final container = await pump(tester, v, await seeded());
+      await openSection(tester, container, TrainingSection.library);
+      // Viên "Chân" nằm ngoài màn hình bên phải: hàng nhóm tự cuộn tới.
+      final legs = find.byKey(const ValueKey('group-legs'));
+      await tester.ensureVisible(legs);
+      await tester.pumpAndSettle();
+      await tester.tap(legs);
+      await tester.pumpAndSettle();
+      expect(find.text('Đùi trước'), findsWidgets);
+      await snap('s66_legs_${v.name}');
+    });
+
     testWidgets('S-67 Chi tiết bài từ thư viện, video chưa phát ${v.name}', (
       tester,
     ) async {
-      final library = realLibrary();
+      final library = realLibraryV3();
       final container = await pump(tester, v, await seeded());
       container
           .read(routerProvider)
           .go(
             exercisePath(
-              exerciseOf(library, MuscleRegion.chestUpper, 'machine').id,
+              exerciseOf(library, MuscleRegion.quads).id,
               ExerciseFrom.library,
             ),
           );
@@ -104,8 +117,8 @@ void main() {
 
     testWidgets('S-67 video không khả dụng, bài đã rời thư viện, hồ sơ Nữ '
         '${v.name}', (tester) async {
-      final library = realLibrary();
-      final e = exerciseOf(library, MuscleRegion.lats, 'free-weight');
+      final library = realLibraryV3();
+      final e = exerciseOf(library, MuscleRegion.hamstrings);
       final db = await seeded(
         library: [
           for (final x in library)
@@ -130,7 +143,7 @@ void main() {
     });
 
     testWidgets('S-67 không có mạng ${v.name}', (tester) async {
-      final library = realLibrary();
+      final library = realLibraryV3();
       final container = await pump(
         tester,
         v,

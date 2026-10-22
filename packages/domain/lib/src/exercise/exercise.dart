@@ -1,6 +1,7 @@
 import '../schedule/weekly_template.dart';
 import '../time/local_date.dart';
 import 'muscle_region.dart';
+import 'removed_v2.dart';
 
 /// Lý do video không khả dụng (05 Bản 2 §6.10.3).
 enum VideoUnavailableReason {
@@ -225,6 +226,37 @@ abstract final class LibraryRules {
     if ([...e.guideSteps, ...e.guideSafety].any(_numberWithUnit.hasMatch))
       'guide',
   ];
+
+  /// Số bài mỗi nhóm của thư viện Bản 3 (03 Bản 3 §6.4, F18-R41): tổng 28.
+  static const v3GroupCounts = {
+    MuscleGroup.chest: 4,
+    MuscleGroup.back: 4,
+    MuscleGroup.shoulders: 6,
+    MuscleGroup.biceps: 3,
+    MuscleGroup.triceps: 3,
+    MuscleGroup.abs: 3,
+    MuscleGroup.legs: 5,
+  };
+
+  /// Bước 2 của `library import` Bản 3 (05 Bản 3 §6.10.2, ED3-05, TAC3-04):
+  /// đúng 28 bài, phân bố theo [v3GroupCounts], đủ 15 bài giữ của Bản 2
+  /// (giữ `id` để giữ lịch sử mức tạ), không có bài bỏ.
+  static List<LibraryIssue> v3Errors(Iterable<Exercise> library) {
+    final list = library.toList();
+    final ids = {for (final e in list) e.id};
+    return [
+      if (list.length != 28)
+        (exerciseId: null, rule: 'cần đúng 28 bài, đang có ${list.length}'),
+      for (final MapEntry(key: g, value: n) in v3GroupCounts.entries)
+        if (list.where((e) => e.group == g).length case final c when c != n)
+          (exerciseId: null, rule: '${g.name}: cần $n bài, đang có $c'),
+      for (final id in LibraryV3.keptV2Ids)
+        if (!ids.contains(id))
+          (exerciseId: id, rule: 'thiếu bài giữ của Bản 2'),
+      for (final id in LibraryV3.removedV2Ids)
+        if (ids.contains(id)) (exerciseId: id, rule: 'bài đã bỏ ở Bản 3'),
+    ];
+  }
 
   /// Trên tập bài đang có trong thư viện: id và tên tiếng Việt không trùng
   /// (LIB-R1). Bản 3 bỏ quy tắc máy/tạ mỗi vùng (F18-R41, LIB-R25).

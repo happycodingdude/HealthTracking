@@ -11,7 +11,7 @@ import 'package:server/src/auth/token_service.dart';
 ///   admin migrate
 ///   admin reset-password --phone 0901234567
 ///   admin budget --show
-///   admin library import data/v2__exercises.json [--check-only]
+///   admin library import data/v3__exercises.json [--check-only]
 ///   admin library check-videos
 Future<void> main(List<String> args) async {
   final parser = ArgParser()

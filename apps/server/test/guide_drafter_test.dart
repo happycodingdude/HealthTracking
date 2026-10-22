@@ -31,11 +31,10 @@ final class FakeGuideProvider implements AiProvider {
 
 void main() {
   Map<String, Object?> libraryWithNewExercise() {
-    final json = libraryMinJson();
-    final added =
-        fixtureEntry(MuscleRegion.lats, LegacyEquipment.machine, suffix: 'b')
-          ..remove('guide')
-          ..remove('approvedAt');
+    final json = library28Json();
+    final added = fixtureEntry('lats-machine-b', MuscleRegion.lats)
+      ..remove('guide')
+      ..remove('approvedAt');
     (json['exercises']! as List).add(added);
     return json;
   }
@@ -52,7 +51,7 @@ void main() {
     final report = await GuideDrafter(ai, const AiConfig()).run(library);
     expect(report.drafted, ['lats-machine-b']);
     expect(ai.requests, hasLength(1));
-    expect(ai.requests.single.user, contains('Bài machine lats b'));
+    expect(ai.requests.single.user, contains('Bài lats-machine-b'));
     final list = (library['exercises']! as List).cast<Map<String, Object?>>();
     expect(list.last['guideDraft'], good);
     expect(list.last.containsKey('guide'), isFalse);
@@ -65,7 +64,7 @@ void main() {
       report.drafted,
       date: '2026-11-12',
     );
-    expect(md, contains('## Bài machine lats b'));
+    expect(md, contains('## Bài lats-machine-b'));
     expect(md, contains('https://www.youtube.com/watch?v='));
     expect(md, contains('1. Ngồi vào máy'));
     expect(md, contains('- Dừng khi đau vai'));

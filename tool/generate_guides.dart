@@ -2,7 +2,7 @@
 // ED2-12, VS22-T03; 05 Bản 2 §6.9.4). Chạy tay trên máy dev, ngoài app:
 //
 //   ANTHROPIC_API_KEY=<khóa dev giới hạn 1 USD> \
-//     dart run tool/generate_guides.dart [data/v2__exercises.json]
+//     dart run tool/generate_guides.dart [data/v3__exercises.json]
 //
 // Với mỗi bài chưa có `guide`: gọi Claude Haiku 4.5, ghi bản nháp vào
 // `guideDraft` của file, xuất `build/library-review-<ngày>.md` để Bạn duyệt.
@@ -20,7 +20,7 @@ import 'package:domain/domain.dart';
 import 'package:server/server.dart';
 
 Future<void> main(List<String> args) async {
-  final path = args.isEmpty ? 'data/v2__exercises.json' : args.single;
+  final path = args.isEmpty ? 'data/v3__exercises.json' : args.single;
   final env = {
     ...ServerConfig.parseDotEnv(
       File('.env').existsSync() ? File('.env').readAsStringSync() : '',

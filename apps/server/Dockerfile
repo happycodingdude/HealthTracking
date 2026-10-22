@@ -39,7 +39,7 @@ WORKDIR /app
 COPY --from=build /out/server /out/admin ./
 COPY apps/server/migrations ./migrations
 COPY apps/server/db/schema.sql ./db/schema.sql
-COPY data/v2__exercises.json ./data/v2__exercises.json
+COPY data/v3__exercises.json ./data/v3__exercises.json
 USER app
 ENV HOST=0.0.0.0 PORT=8080 MIGRATIONS_DIR=/app/migrations
 EXPOSE 8080

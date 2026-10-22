@@ -28,109 +28,151 @@ void main() {
   LibraryFile fileOf(Map<String, Object?> json) =>
       LibraryFile.parse(jsonEncode(json));
 
-  group('TAC2-12 (phần nạp), 05 Bản 2 §6.10.2', () {
-    LibraryFile duplicateName() {
-      final json = libraryMinJson();
-      final list = json['exercises']! as List;
-      (list[1] as Map)['nameVi'] = (list[0] as Map)['nameVi'];
-      return fileOf(json);
-    }
+  Future<List<List<Object?>>> snapshot() async => [
+    for (final r in await app.tdb.pool.execute(
+      'SELECT id, server_version, active FROM exercises ORDER BY id',
+    ))
+      r.toList(),
+  ];
 
-    test(
-      'file sai (trùng tên, LIB-R1) → từ chối toàn bộ, database không đổi',
-      () async {
-        final r = await importer.run(duplicateName());
+  group('TAC3-04, 05 Bản 3 §6.10.2: nạp thư viện Bản 3', () {
+    test('thiếu bài giữ, 27 bài, có bài bỏ → từ chối toàn bộ, database không '
+        'đổi', () async {
+      await importer.run(library28());
+      final before = await snapshot();
+      for (final (json, issue) in [
+        (
+          library28MissingKeptJson(),
+          'chest-mid-machine-pec-deck: thiếu bài giữ của Bản 2',
+        ),
+        (library27Json(), 'cần đúng 28 bài, đang có 27'),
+        (
+          library28WithRemovedJson(),
+          'chest-lower-free-weight-decline-barbell-bench-press: bài đã bỏ ở '
+              'Bản 3',
+        ),
+      ]) {
+        final r = await importer.run(fileOf(json));
         expect(r.ok, isFalse);
-        expect(r.issues.single, contains('nameVi trùng'));
-        expect(await count(), 0);
-
-        await importer.run(libraryMin());
-        final before = await app.tdb.pool.execute(
-          'SELECT id, server_version FROM exercises ORDER BY id',
-        );
-        expect((await importer.run(duplicateName())).ok, isFalse);
-        final after = await app.tdb.pool.execute(
-          'SELECT id, server_version FROM exercises ORDER BY id',
-        );
-        expect(
-          [for (final r in after) r.toList()],
-          [for (final r in before) r.toList()],
-        );
-      },
-    );
-
-    test(
-      'file hợp lệ → 29 bài, thứ tự TD3-07; mọi tài khoản nhận qua pull',
-      () async {
-        final r = await importer.run(libraryMin());
-        expect((r.ok, r.added, r.updated, r.deactivated), (true, 29, 0, 0));
-        expect(r.describe(), contains('thêm 29'));
-        final order = await app.tdb.pool.execute(
-          'SELECT id FROM exercises ORDER BY sort_order',
-        );
-        expect(order.first[0], 'chest-upper-machine-a');
-        expect(order[1][0], 'chest-upper-free-weight-a');
-        expect(order[6][0], 'lats-machine-a', reason: 'Lưng ngay sau Ngực');
-        expect(order.last[0], 'obliques-bodyweight-a');
-
-        final token = (await app.register()).accessToken;
-        final pulled = [
-          for (final c in (await app.pull(token)).changes)
-            if (c.entity == 'exercise')
-              const ExerciseCodec().decode(c.key, c.data!),
-        ];
-        expect(pulled, hasLength(29));
-        expect(pulled.every((e) => e.active && e.videoAvailable), isTrue);
-        expect(
-          pulled.firstWhere((e) => e.group == MuscleGroup.abs).logsWeight,
-          isFalse,
-        );
-      },
-    );
-
-    test('nạp lại file không đổi → không cấp server_version mới', () async {
-      await importer.run(libraryMin());
-      final v1 =
-          (await app.tdb.pool.execute(
-                'SELECT max(server_version) FROM exercises',
-              )).single[0]!
-              as int;
-      final r = await importer.run(libraryMin());
-      expect((r.added, r.updated, r.deactivated), (0, 0, 0));
-      final v2 =
-          (await app.tdb.pool.execute(
-                'SELECT max(server_version) FROM exercises',
-              )).single[0]!
-              as int;
-      expect(v2, v1);
+        expect(r.issues, contains(issue));
+        expect(r.describe(), contains('database không đổi'));
+        expect(await snapshot(), before);
+      }
+      final r27 = await importer.run(fileOf(library27Json()));
+      expect(r27.issues, contains('legs: cần 5 bài, đang có 4'));
     });
 
-    test('bỏ một bài khỏi file → active = false, không xóa dòng (TA2-10); '
-        'đưa lại thì active = true', () async {
-      final withExtra = libraryMinJson();
-      (withExtra['exercises']! as List).add(
-        fixtureEntry(MuscleRegion.lats, LegacyEquipment.machine, suffix: 'b'),
+    test('ED3-05: còn trường equipment → file bị từ chối', () {
+      expect(
+        () => fileOf(library28WithEquipmentJson()),
+        throwsA(
+          isA<LibraryFileException>().having((e) => e.issues, 'issues', [
+            'chest-mid-machine-pec-deck: equipment: trường ngoài lược đồ',
+          ]),
+        ),
       );
-      await importer.run(fileOf(withExtra));
-      expect(await count('active'), 30);
+      expect(
+        LibraryFile.parse(
+          jsonEncode(library28WithEquipmentJson()),
+          allowEquipment: true,
+        ).equipment,
+        {'chest-mid-machine-pec-deck': 'machine'},
+        reason: 'chỉ dữ liệu Bản 2 của test, dev được đọc equipment',
+      );
+    });
 
-      final r = await importer.run(libraryMin());
-      expect(r.deactivated, 1);
-      expect(await count(), 30);
+    test('file đúng → 28 bài, sort_in_group và sort_order theo F18-R43, '
+        'equipment NULL; mọi tài khoản nhận qua pull', () async {
+      final r = await importer.run(library28());
+      expect((r.ok, r.added, r.updated, r.deactivated), (true, 28, 0, 0));
+      expect(r.describe(), contains('thêm 28'));
+      final rows = await app.tdb.pool.execute(
+        'SELECT id, sort_in_group, sort_order, equipment FROM exercises '
+        'ORDER BY sort_order',
+      );
+      expect(
+        [for (final r in rows) r[0]],
+        [for (final (id, _) in library28Ids) id],
+      );
+      expect(rows.first.toList(), ['chest-mid-machine-pec-deck', 1, 101, null]);
+      expect(rows[4].toList().take(3), [
+        'back-back-mid-standing-cable-row-bar',
+        1,
+        201,
+      ]);
+      expect(rows.last.toList().take(3), [
+        'legs-calves-standing-calf-raise-machine',
+        5,
+        705,
+      ]);
+
+      final token = (await app.register()).accessToken;
+      final pulled = [
+        for (final c in (await app.pull(token)).changes)
+          if (c.entity == 'exercise')
+            const ExerciseCodec().decode(c.key, c.data!),
+      ];
+      expect(pulled, hasLength(28));
+      expect(pulled.where((e) => e.group == MuscleGroup.legs), hasLength(5));
+      expect(
+        pulled.firstWhere((e) => e.group == MuscleGroup.abs).logsWeight,
+        isFalse,
+      );
+    });
+
+    test('nạp lại file không đổi → không cấp server_version mới', () async {
+      await importer.run(library28());
+      final before = await snapshot();
+      final r = await importer.run(library28());
+      expect((r.added, r.updated, r.deactivated), (0, 0, 0));
+      expect(await snapshot(), before);
+    });
+
+    test('nạp đè database Bản 2: bài giữ dùng lại id (tên Bản 3, equipment '
+        'NULL), bài khác không có trong file → active = false (F18-R46), 14 '
+        'bài bỏ không bị đụng tới (để library purge xử lý)', () async {
+      await insertV2Library(app.tdb.pool);
+      await app.tdb.pool.execute(
+        'INSERT INTO exercises (id, muscle_group, muscle_region, logs_weight, '
+        'name_vi, youtube_video_id, video_channel, guide_steps, guide_safety, '
+        'approved_at, sort_order, library_version, server_version) VALUES '
+        "('lats-extra-a', 'back', 'lats', true, 'Bài thêm', 'abcdefghijk', "
+        "'Kênh', ARRAY['a','b','c'], ARRAY['a','b'], '2026-10-11', 999, 1, "
+        "nextval('sync_version_seq'))",
+      );
+      Future<List<List<Object?>>> removed() async => [
+        for (final r in await app.tdb.pool.execute(
+          Sql.named(
+            'SELECT id, server_version, active, equipment::text FROM exercises '
+            'WHERE id = ANY(@ids) ORDER BY id',
+          ),
+          parameters: {'ids': LibraryV3.removedV2Ids.toList()},
+        ))
+          r.toList(),
+      ];
+      final removedBefore = await removed();
+      expect(removedBefore, hasLength(14));
+      final r = await importer.run(library28());
+      expect(r.ok, isTrue);
+      expect((r.added, r.updated, r.deactivated), (13, 15, 1));
+      final kept = (await app.tdb.pool.execute(
+        'SELECT name_vi, equipment, active FROM exercises '
+        "WHERE id = 'chest-mid-machine-pec-deck'",
+      )).single;
+      expect(kept.toList(), ['Bài chest-mid-machine-pec-deck', null, true]);
       expect(
         (await app.tdb.pool.execute(
-          "SELECT active FROM exercises WHERE id = 'lats-machine-b'",
+          "SELECT active FROM exercises WHERE id = 'lats-extra-a'",
         )).single[0],
         isFalse,
       );
-      await importer.run(fileOf(withExtra));
-      expect(await count('active'), 30);
+      expect(await removed(), removedBefore);
     });
 
     test('LIB-AC5, FA2-14: thay video giữ id → lịch sử mức tạ còn nguyên; '
         'trạng thái video làm lại từ đầu', () async {
-      await importer.run(libraryMin());
-      const id = 'chest-upper-free-weight-a';
+      await importer.run(library28());
+      const id = 'chest-mid-free-weight-flat-barbell-bench-press';
       final user = (await app.register()).accessToken;
       final userId =
           (await app.tdb.pool.execute(
@@ -139,37 +181,30 @@ void main() {
               as String;
       expect(user, isNotEmpty);
       await app.tdb.pool.execute(
-        Sql.named('''
-          INSERT INTO month_plans (user_id, month, start_date, template_hash, generated_at,
-                                   server_version, client_updated_at)
-          VALUES (@u, '2026-11', '2026-11-02', @h, now(), 1, now());
-        '''),
-        parameters: {'u': userId, 'h': 'a' * 64},
-      );
-      await app.tdb.pool.execute(
         Sql.named(
-          '''
-          INSERT INTO days (user_id, date, kind, time, muscles, server_version, client_updated_at)
-          VALUES (@u, '2026-11-12', 'workout', '18:00', ARRAY['chest']::muscle_group[], 1, now())''',
+          'INSERT INTO days (user_id, date, kind, time, muscles, server_version, '
+          "client_updated_at) VALUES (@u, '2026-11-12', 'workout', '18:00', "
+          "ARRAY['chest']::muscle_group[], 1, now())",
         ),
         parameters: {'u': userId},
       );
       await app.tdb.pool.execute(
-        Sql.named('''
-          INSERT INTO lift_logs (user_id, date, exercise_id, start_kg_x10, end_kg_x10, logged_at,
-                                 server_version, client_updated_at)
-          VALUES (@u, '2026-11-12', @id, 120, 140, now(), 1, now())'''),
+        Sql.named(
+          'INSERT INTO lift_logs (user_id, date, exercise_id, start_kg_x10, '
+          'end_kg_x10, logged_at, server_version, client_updated_at) VALUES '
+          "(@u, '2026-11-12', @id, 120, 140, now(), 1, now())",
+        ),
         parameters: {'u': userId, 'id': id},
       );
       await app.tdb.pool.execute(
-        Sql.named('''
-          UPDATE exercises SET video_available = false, video_unavailable_reason = 'private',
-                               video_checked_at = now()
-          WHERE id = @id'''),
+        Sql.named(
+          "UPDATE exercises SET video_available = false, video_unavailable_reason = 'private', "
+          'video_checked_at = now() WHERE id = @id',
+        ),
         parameters: {'id': id},
       );
 
-      final newVideo = libraryMinJson();
+      final newVideo = library28Json();
       final entry =
           (newVideo['exercises']! as List).firstWhere(
                 (e) => (e as Map)['id'] == id,
@@ -179,9 +214,10 @@ void main() {
       final r = await importer.run(fileOf(newVideo));
       expect(r.updated, 1);
       final row = (await app.tdb.pool.execute(
-        Sql.named('''
-          SELECT youtube_video_id, video_available, video_unavailable_reason, video_checked_at
-          FROM exercises WHERE id = @id'''),
+        Sql.named(
+          'SELECT youtube_video_id, video_available, video_unavailable_reason, '
+          'video_checked_at FROM exercises WHERE id = @id',
+        ),
         parameters: {'id': id},
       )).single;
       expect(row.toList(), ['newVideo001', true, null, null]);
@@ -194,17 +230,17 @@ void main() {
     });
   });
 
-  group('cổng phát hành `--check-only` (IR2-06, LIB-AC1 → AC3)', () {
+  group('cổng phát hành `--check-only` (IR3-06, LIB-AC21 → AC23)', () {
     test('file đạt → không ghi gì vào database', () async {
-      final r = await importer.run(libraryMin(), checkOnly: true);
+      final r = await importer.run(library28(), checkOnly: true);
       expect(r.ok, isTrue);
-      expect(r.describe(), contains('Đạt: 29 bài'));
+      expect(r.describe(), contains('Đạt: 28 bài'));
       expect(await count(), 0);
     });
 
     test('thiếu độ dài video, video > 60 giây, hướng dẫn có "12 lần" → '
         'không đạt', () async {
-      final json = libraryMinJson();
+      final json = library28Json();
       final list = json['exercises']! as List;
       ((list[0] as Map)['video'] as Map)['durationSeconds'] = null;
       ((list[1] as Map)['video'] as Map)['durationSeconds'] = 61;
@@ -216,9 +252,9 @@ void main() {
       final r = await importer.run(fileOf(json), checkOnly: true);
       expect(r.ok, isFalse);
       expect(r.issues, [
-        'chest-upper-machine-a: video.durationSeconds',
-        'chest-upper-free-weight-a: video.durationSeconds',
-        'chest-mid-machine-a: guide',
+        'chest-mid-machine-pec-deck: video.durationSeconds',
+        'chest-mid-free-weight-flat-barbell-bench-press: video.durationSeconds',
+        'chest-upper-machine-incline-machine-chest-press: guide',
       ]);
       // Không phải cổng phát hành: thiếu độ dài vẫn nạp được trong lúc dev;
       // quá 60 giây thì không.
@@ -228,7 +264,7 @@ void main() {
 
     test('trường ngoài lược đồ (guideDraft, video.title, videoBackup) hoặc '
         'thiếu ngày duyệt → file bị từ chối', () {
-      final json = libraryMinJson();
+      final json = library28Json();
       final list = json['exercises']! as List;
       (list[0] as Map)['guideDraft'] = {'steps': <String>[]};
       ((list[1] as Map)['video'] as Map)['title'] = 'Tiêu đề';
@@ -238,13 +274,47 @@ void main() {
         () => fileOf(json),
         throwsA(
           isA<LibraryFileException>().having((e) => e.issues, 'issues', [
-            'chest-upper-machine-a: guideDraft: trường ngoài lược đồ',
-            'chest-upper-free-weight-a: video.title: trường ngoài lược đồ',
-            'chest-mid-machine-a: videoBackup: trường ngoài lược đồ',
-            'chest-mid-free-weight-a: approvedAt',
+            'chest-mid-machine-pec-deck: guideDraft: trường ngoài lược đồ',
+            'chest-mid-free-weight-flat-barbell-bench-press: video.title: '
+                'trường ngoài lược đồ',
+            'chest-upper-machine-incline-machine-chest-press: videoBackup: '
+                'trường ngoài lược đồ',
+            'chest-chest-lower-decline-plate-loaded-press: approvedAt',
           ]),
         ),
       );
+    });
+
+    test('LIB-AC21 → AC23 trên file thật data/v3__exercises.json', () async {
+      final file = LibraryFile.parse(
+        repoFile('data/v3__exercises.json').readAsStringSync(),
+      );
+      expect((await importer.run(file, checkOnly: true)).ok, isTrue);
+      expect(file.libraryVersion, 2);
+      // LIB-AC21: 28 bài khớp 03 §6.12 về nhóm, vùng, thứ tự.
+      expect([for (final e in file.exercises) (e.id, e.region)], library28Ids);
+      // LIB-AC22: 13 bài làm mới có ngày duyệt, kênh, độ dài ≤ 60 giây.
+      final fresh = [
+        for (final e in file.exercises)
+          if (!LibraryV3.keptV2Ids.contains(e.id)) e,
+      ];
+      expect(fresh, hasLength(13));
+      for (final e in fresh) {
+        expect(e.approvedAt, LocalDate(2026, 10, 21), reason: e.id);
+        expect(e.videoChannel, isNotEmpty);
+        expect(e.videoDurationS, inInclusiveRange(1, 60), reason: e.id);
+      }
+      // LIB-AC23: 15 bài giữ có đúng video và hướng dẫn đã duyệt ở Bản 2.
+      final v2 = {for (final e in v2Library().exercises) e.id: e};
+      for (final e in file.exercises) {
+        final old = v2[e.id];
+        if (old == null) continue;
+        expect(e.youtubeVideoId, old.youtubeVideoId, reason: e.id);
+        expect(e.videoChannel, old.videoChannel, reason: e.id);
+        expect(e.guideSteps, old.guideSteps, reason: e.id);
+        expect(e.guideSafety, old.guideSafety, reason: e.id);
+        expect(e.approvedAt, old.approvedAt, reason: e.id);
+      }
     });
   });
 

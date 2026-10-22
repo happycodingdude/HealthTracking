@@ -6,18 +6,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/app.dart';
+import 'package:mobile/app/router.dart';
 import 'package:mobile/app/shell/app_tab_bar.dart';
 import 'package:mobile/app/strings_vi.dart';
+import 'package:mobile/app/theme.dart';
 import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/features/schedule/application/month_materializer.dart';
 import 'package:mobile/features/schedule/data/schedule_repository.dart';
 import 'package:mobile/features/schedule/presentation/day_sheet.dart';
+import 'package:mobile/features/schedule/presentation/muscle_picker.dart';
 import 'package:mobile/features/schedule/presentation/schedule_screen.dart';
+import 'package:mobile/features/workout/presentation/session_screen.dart';
 
 import '../../support/app_harness.dart';
 import '../../support/fake_notifications.dart';
 import '../../support/fake_server.dart';
 import '../../support/fake_sync.dart';
+import '../../support/golden.dart' show maxTextScale;
+import '../../support/library_fixture.dart';
 import '../../support/schedule_fixture.dart';
 
 void main() {
@@ -433,4 +439,142 @@ void main() {
       );
     },
   );
+
+  group('VS-33: Chân trong lịch (F03-R41 → R43)', () {
+    List<Finder> pills() => [
+      for (final m in MuscleGroup.pickerOrder)
+        find.byKey(ValueKey('muscle-${m.name}')),
+    ];
+
+    /// UA3-10, UX-AC44: 7 viên theo thứ tự bộ chọn, Chân cuối, đọc từ trái
+    /// sang phải rồi xuống hàng, không cuộn ngang.
+    void expectSevenPills(WidgetTester tester, {int rows = 2}) {
+      expect(
+        [
+          for (final p in pills())
+            tester
+                .widget<Text>(
+                  find.descendant(of: p, matching: find.byType(Text)),
+                )
+                .data,
+        ],
+        ['Ngực', 'Tay sau', 'Vai', 'Bụng', 'Lưng', 'Tay trước', 'Chân'],
+      );
+      final at = [for (final p in pills()) tester.getTopLeft(p)];
+      expect({for (final o in at) o.dy}, hasLength(rows));
+      for (var i = 1; i < at.length; i++) {
+        expect(
+          at[i].dy > at[i - 1].dy ||
+              (at[i].dy == at[i - 1].dy && at[i].dx > at[i - 1].dx),
+          isTrue,
+          reason: 'viên ${i + 1} đứng sau viên $i',
+        );
+      }
+      expect(
+        find.ancestor(
+          of: pills().first,
+          matching: find.byWidgetPredicate(
+            (w) => w is Scrollable && w.axisDirection == AxisDirection.right,
+          ),
+        ),
+        findsNothing,
+      );
+    }
+
+    testWidgets('F03-AC41, UX-AC44: S-22 và S-21 → bộ chọn 7 viên, Chân ở '
+        'cuối, hai hàng; F03-R42: lịch hiện có không có buổi Chân, không '
+        'nhắc xếp Chân', (tester) async {
+      await seedSetUp(db);
+      await pump(tester);
+      expect(find.textContaining('Chân'), findsNothing);
+      expect(find.byKey(const ValueKey('redistribute-banner')), findsNothing);
+
+      await tapKey(tester, 'open-weekly');
+      await tapKey(tester, 'day-row-3');
+      expectSevenPills(tester);
+      await tapKey(tester, 'weekly-back');
+
+      await open(tester, LocalDate(2026, 10, 22));
+      await tapKey(tester, 'day-schedule');
+      expectSevenPills(tester);
+    });
+
+    testWidgets('UA3-10: màn hẹp nhất (320 pt cho bộ chọn) cỡ chữ mặc định → '
+        'hai hàng; cỡ chữ lớn nhất → xuống thêm hàng, không tràn, không cuộn '
+        'ngang', (tester) async {
+      for (final (scale, rows) in [(1.0, 2), (maxTextScale, 5)]) {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.light(),
+            home: MediaQuery(
+              data: MediaQueryData(textScaler: TextScaler.linear(scale)),
+              child: Scaffold(
+                body: Align(
+                  alignment: Alignment.topLeft,
+                  child: SizedBox(
+                    width: 320,
+                    child: MusclePicker(selected: const [], onChanged: (_) {}),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        expect(tester.takeException(), isNull, reason: 'cỡ chữ $scale');
+        expectSevenPills(tester, rows: rows);
+      }
+    });
+
+    testWidgets('F03-AC43, F03-E41: S-22 đổi thứ 6 từ Nghỉ sang Chân → chia '
+        'lại → lịch tháng từ thứ 6 16/10 có buổi Chân, ngày đã qua giữ '
+        'nguyên; buổi Chân mở ra thấy 5 bài chân', (tester) async {
+      await seedSetUp(
+        db,
+        template: WeeklyTemplate({
+          1: templateAc2.day(1),
+          3: templateAc2.day(3),
+        }),
+      );
+      final library = await seedLibrary(db, realLibraryV3());
+      await pump(tester);
+      await tapKey(tester, 'open-weekly');
+      await tapKey(tester, 'day-switch-5');
+      await tapKey(tester, 'day-time-5');
+      await tester.tap(find.text(S.done).last);
+      await tester.pumpAndSettle();
+      await tapKey(tester, 'muscle-legs');
+      await tester.ensureVisible(find.widgetWithText(FilledButton, S.save));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, S.save));
+      await tester.pumpAndSettle();
+      await tapKey(tester, 'redistribute');
+      await tapKey(tester, 'confirm-redistribute');
+
+      expect((await day(9)).isWorkout, isFalse, reason: 'đã qua');
+      for (final d in [16, 23, 30]) {
+        final fri = await day(d);
+        expect(fri.time, LocalTime(18, 0), reason: '$d/10');
+        expect(fri.muscles, [MuscleGroup.legs], reason: '$d/10');
+      }
+      expect(find.text('T6 16/10'), findsOneWidget);
+
+      container.read(routerProvider).go('/schedule/session/2026-10-16');
+      await tester.pumpAndSettle();
+      final legs = [
+        for (final e in library)
+          if (e.group == MuscleGroup.legs) e.id,
+      ];
+      expect(legs, hasLength(5));
+      for (final id in legs) {
+        expect(
+          find.descendant(
+            of: find.byType(SessionScreen),
+            matching: find.byKey(ValueKey('exercise-$id'), skipOffstage: false),
+          ),
+          findsOneWidget,
+          reason: id,
+        );
+      }
+    });
+  });
 }

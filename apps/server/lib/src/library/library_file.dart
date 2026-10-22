@@ -23,11 +23,12 @@ abstract final class LegacyEquipment {
   static const values = {machine, freeWeight, bodyweight};
 }
 
-/// Nội dung file thư viện (`data/*.json`) — nguồn duy nhất của thư viện
-/// (TD2-05). Trường ngoài lược đồ (kể cả `guideDraft`, `video.title`,
-/// `videoBackup`) bị từ chối (06 Bản 2 VS21-T03, C2-3, ED2-12). Trường
-/// `equipment` của file Bản 2 (không bắt buộc) được giữ riêng ở
-/// [equipment].
+/// Nội dung file thư viện (`data/v3__exercises.json`) — nguồn duy nhất của
+/// thư viện (TD2-05, TR3-08). Trường ngoài lược đồ (kể cả `guideDraft`,
+/// `video.title`, `videoBackup`, và `equipment` từ Bản 3, ED3-05) bị từ chối
+/// (06 Bản 2 VS21-T03, C2-3, ED2-12). [allowEquipment] chỉ dùng để đọc file
+/// Bản 2 (`data/v2__exercises.json`) cho test và dữ liệu dev; `equipment` khi
+/// đó được giữ riêng ở [equipment].
 final class LibraryFile {
   const LibraryFile(
     this.libraryVersion,
@@ -36,7 +37,7 @@ final class LibraryFile {
   });
 
   /// Đọc và kiểm lược đồ. Ném [LibraryFileException] với đủ mọi lỗi tìm thấy.
-  factory LibraryFile.parse(String source) {
+  factory LibraryFile.parse(String source, {bool allowEquipment = false}) {
     final Object? json;
     try {
       json = jsonDecode(source);
@@ -57,7 +58,7 @@ final class LibraryFile {
       issues.add('exercises');
     } else {
       for (var i = 0; i < list.length; i++) {
-        final e = _exercise(list[i], i, issues);
+        final e = _exercise(list[i], i, issues, allowEquipment);
         if (e == null) continue;
         exercises.add(e);
         final raw = (list[i]! as Map<String, Object?>)['equipment'];
@@ -79,7 +80,6 @@ final class LibraryFile {
     'id',
     'muscleGroup',
     'muscleRegion',
-    'equipment',
     'nameVi',
     'nameEn',
     'video',
@@ -100,7 +100,12 @@ final class LibraryFile {
     }
   }
 
-  static Exercise? _exercise(Object? raw, int index, List<String> issues) {
+  static Exercise? _exercise(
+    Object? raw,
+    int index,
+    List<String> issues,
+    bool allowEquipment,
+  ) {
     if (raw is! Map<String, Object?>) {
       issues.add('exercises[$index]: phải là object');
       return null;
@@ -108,7 +113,12 @@ final class LibraryFile {
     final id = raw['id'] is String ? raw['id']! as String : '#$index';
     final before = issues.length;
     void bad(String field) => issues.add('$id: $field');
-    _unknownKeys(raw, _exerciseKeys, '$id: ', issues);
+    _unknownKeys(
+      raw,
+      allowEquipment ? {..._exerciseKeys, 'equipment'} : _exerciseKeys,
+      '$id: ',
+      issues,
+    );
 
     String? str(Map<String, Object?> m, String k, String field) {
       final v = m[k];

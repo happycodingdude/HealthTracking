@@ -13,9 +13,16 @@ const fixtureVideoSeconds = 48;
 /// 29 bài của thư viện Bản 2 (`data/v2__exercises.json`, Bạn đã duyệt), thứ
 /// tự như `library import` (TD3-07). Độ dài video cố định
 /// [fixtureVideoSeconds] để golden không đổi khi file được đo.
-List<Exercise> realLibrary() {
+List<Exercise> realLibrary() => _readLibrary('v2__exercises.json');
+
+/// 28 bài của thư viện Bản 3 (`data/v3__exercises.json`, Bạn đã duyệt), thứ
+/// tự như `library import` (TD3-07). Độ dài video cố định
+/// [fixtureVideoSeconds].
+List<Exercise> realLibraryV3() => _readLibrary('v3__exercises.json');
+
+List<Exercise> _readLibrary(String file) {
   final json =
-      jsonDecode(File('../../data/v2__exercises.json').readAsStringSync())
+      jsonDecode(File('../../data/$file').readAsStringSync())
           as Map<String, Object?>;
   return LibraryRules.sorted([
     for (final raw in json['exercises']! as List)

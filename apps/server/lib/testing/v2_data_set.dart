@@ -16,8 +16,10 @@ File repoFile(String path) {
 }
 
 /// Thư viện Bản 2 (29 bài Bạn duyệt, `data/v2__exercises.json`) đọc từ file.
-LibraryFile v2Library() =>
-    LibraryFile.parse(repoFile('data/v2__exercises.json').readAsStringSync());
+LibraryFile v2Library() => LibraryFile.parse(
+  repoFile('data/v2__exercises.json').readAsStringSync(),
+  allowEquipment: true,
+);
 
 /// Nạp thư viện Bản 2 như server Bản 2 đã nạp trên production: chỉ các cột
 /// của `0001_baseline` (kèm `equipment`), nên chạy được cả trên database chỉ

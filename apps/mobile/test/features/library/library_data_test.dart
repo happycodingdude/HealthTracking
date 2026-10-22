@@ -66,8 +66,9 @@ void main() {
   final gone = _ex(MuscleRegion.chestLower, 'machine', 5, active: false);
   final back = _ex(MuscleRegion.lats, 'machine', 7);
 
-  test('VS21-T07: pull exercise vào Drift; thư viện của nhóm theo vùng, máy '
-      'trước tạ sau, chỉ bài đang có (F18-R9)', () async {
+  test('VS21-T07, VS33-T05: pull exercise vào Drift; thư viện của nhóm là '
+      'danh sách phẳng theo thứ tự thư viện, chỉ bài đang có; tombstone bài '
+      'bỏ → xóa dòng (F18-R42, F18-R43)', () async {
     api.pages[0] = PullResponse(
       changes: [
         _change(upperFree, 1),
@@ -75,14 +76,21 @@ void main() {
         _change(gone, 3),
         _change(upperMachine, 4),
         _change(back, 5),
+        SyncChange(
+          entity: SyncEntities.exercise,
+          key: back.id,
+          deleted: true,
+          serverVersion: 6,
+        ),
       ],
-      nextCursor: 5,
+      nextCursor: 6,
       hasMore: false,
       remaining: 0,
       meta: SyncMeta(serverTime: DateTime.utc(2026, 10, 12)),
     );
     expect(await engine.syncNow(), SyncOutcome.synced);
     expect(await repo.get(upperFree.id), upperFree);
+    expect(await repo.get(back.id), isNull, reason: 'tombstone bài bỏ');
 
     final container = ProviderContainer(
       overrides: [databaseProvider.overrideWithValue(db)],
@@ -93,11 +101,7 @@ void main() {
     final chest = await container.read(
       libraryProvider(MuscleGroup.chest).future,
     );
-    expect(
-      [for (final r in chest) r.region],
-      [MuscleRegion.chestUpper, MuscleRegion.chestMid],
-    );
-    expect(chest.first.exercises, [upperMachine, upperFree]);
+    expect(chest, [upperMachine, upperFree, mid]);
     final one = container.listen(exerciseProvider(gone.id), (_, _) {});
     addTearDown(one.close);
     expect(

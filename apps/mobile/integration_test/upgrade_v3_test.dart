@@ -107,8 +107,8 @@ void main() {
     expect(state.cursor, isNot(812));
     expect(
       await db.select(db.exercises).get(),
-      hasLength(29),
-      reason: 'pull lại từ 0 có đủ thư viện của server',
+      hasLength(28),
+      reason: 'pull lại từ 0 có đủ thư viện của server (28 bài Bản 3)',
     );
     expect(await db.select(db.muscleRegions).get(), hasLength(19));
     final after = (await http.get<Map<String, Object?>>(

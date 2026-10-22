@@ -2,7 +2,7 @@
 // VS21-T05). Chạy tay trên máy dev với khóa YouTube Data API thật; không chạy
 // trong CI.
 //
-//   dart run tool/video_durations.dart [data/v2__exercises.json]
+//   dart run tool/video_durations.dart [data/v3__exercises.json]
 //
 // Khóa: biến YOUTUBE_API_KEY của tiến trình, rồi `.env` ở gốc repo, rồi
 // `apps/server/.env` (IR2-09: khóa không vào git, không vào app).
@@ -17,7 +17,7 @@ import 'dart:io';
 import 'package:server/server.dart';
 
 Future<void> main(List<String> args) async {
-  final path = args.isEmpty ? 'data/v2__exercises.json' : args.single;
+  final path = args.isEmpty ? 'data/v3__exercises.json' : args.single;
   final key = _apiKey();
   if (key == null) {
     stderr.writeln(

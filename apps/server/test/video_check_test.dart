@@ -1,8 +1,6 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:api_contract/api_contract.dart';
-import 'package:domain/domain.dart';
 import 'package:postgres/postgres.dart';
 import 'package:server/server.dart';
 import 'package:server/src/sync/sync_service.dart';
@@ -27,7 +25,7 @@ void main() {
 
   setUp(() async {
     app = await TestApp.create(now: DateTime.utc(2026, 11, 12, 11));
-    await LibraryImporter(app.tdb.pool).run(libraryMin());
+    await LibraryImporter(app.tdb.pool).run(library28());
     youtube = FakeYouTubeApi();
     for (final r in await app.tdb.pool.execute(
       'SELECT youtube_video_id FROM exercises',
@@ -44,14 +42,8 @@ void main() {
   });
   tearDown(() => app.dispose());
 
-  /// Mã video của bài [id] theo fixture `libraryMin`.
-  String videoOf(String id) =>
-      ((((libraryMinJson()['exercises']! as List).firstWhere(
-                    (e) => (e as Map)['id'] == id,
-                  )
-                  as Map)['video']
-              as Map)['youtubeId']
-          as String);
+  /// Mã video của bài [id] theo fixture `library28`.
+  String videoOf(String id) => fixtureVideoId(id);
 
   Future<List<Object?>> row(String id) async => (await app.tdb.pool.execute(
     Sql.named(
@@ -60,14 +52,14 @@ void main() {
     parameters: {'id': id},
   )).single.toList();
 
-  const target = 'chest-mid-free-weight-a';
+  const target = 'chest-mid-free-weight-flat-barbell-bench-press';
 
   test(
-    'mọi video đạt → không ghi gì, không cảnh báo; 29 video = 1 lần gọi',
+    'mọi video đạt → không ghi gì, không cảnh báo; 28 video = 1 lần gọi',
     () async {
       final before = await row(target);
       final r = await job.run();
-      expect((r.checked, r.failed), (29, false));
+      expect((r.checked, r.failed), (28, false));
       expect(r.changes, isEmpty);
       expect(youtube.calls, 1);
       expect(await row(target), before);
@@ -163,17 +155,15 @@ void main() {
     },
   );
 
-  test('bài đã rời thư viện không được kiểm', () async {
-    final json = libraryMinJson();
-    (json['exercises']! as List).add(
-      fixtureEntry(MuscleRegion.lats, LegacyEquipment.machine, suffix: 'b'),
+  test('bài đã rời thư viện (gỡ sau ra mắt, bài bỏ) không được kiểm', () async {
+    await app.tdb.pool.execute(
+      "UPDATE exercises SET active = false WHERE id = 'lats-machine-lat-pulldown'",
     );
-    await LibraryImporter(
-      app.tdb.pool,
-    ).run(LibraryFile.parse(jsonEncode(json)));
-    await LibraryImporter(app.tdb.pool).run(libraryMin());
+    await app.tdb.pool.execute(
+      "UPDATE exercises SET active = false, deleted = true WHERE id = 'legs-quads-leg-press'",
+    );
     final r = await job.run();
-    expect(r.checked, 29);
+    expect(r.checked, 26);
   });
 
   group('lịch job (TD2-17): hằng ngày 03:30 giờ Việt Nam', () {

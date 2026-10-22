@@ -12,7 +12,7 @@ import 'package:mobile/data/sync/sync_api.dart';
 import 'package:mobile/data/sync/sync_engine.dart';
 import 'package:postgres/postgres.dart';
 import 'package:server/server.dart' show LibraryImporter;
-import 'package:server/testing.dart' show libraryMin;
+import 'package:server/testing.dart' show library28;
 
 import 'sync_e2e_harness.dart';
 
@@ -176,21 +176,28 @@ void main() {
     },
   );
 
-  test('VS21-T07: thư viện nạp trên server (libraryMin) đến máy qua pull, dòng '
-      'dùng chung không phụ thuộc tài khoản', () async {
-    final report = await LibraryImporter(server.tdb.pool).run(libraryMin());
-    expect(report.ok, isTrue);
-    final a = device();
-    await a.register();
-    expect(await a.sync(), SyncOutcome.synced);
-    final chest = await a.exercises.watchGroup(MuscleGroup.chest).first;
-    expect(chest, hasLength(6));
-    expect(chest.first.id, 'chest-upper-machine-a');
-    expect(
-      (await a.exercises.watchGroup(MuscleGroup.abs).first).map(
-        (e) => e.logsWeight,
-      ),
-      everyElement(isFalse),
-    );
-  });
+  test(
+    'VS21-T07, VS33: thư viện 28 bài nạp trên server (library28) đến máy '
+    'qua pull, danh sách phẳng, dòng dùng chung không phụ thuộc tài khoản',
+    () async {
+      final report = await LibraryImporter(server.tdb.pool).run(library28());
+      expect(report.ok, isTrue);
+      final a = device();
+      await a.register();
+      expect(await a.sync(), SyncOutcome.synced);
+      final chest = await a.exercises.watchGroup(MuscleGroup.chest).first;
+      expect(chest, hasLength(4));
+      expect(chest.first.id, 'chest-mid-machine-pec-deck');
+      expect(
+        await a.exercises.watchGroup(MuscleGroup.legs).first,
+        hasLength(5),
+      );
+      expect(
+        (await a.exercises.watchGroup(MuscleGroup.abs).first).map(
+          (e) => e.logsWeight,
+        ),
+        everyElement(isFalse),
+      );
+    },
+  );
 }

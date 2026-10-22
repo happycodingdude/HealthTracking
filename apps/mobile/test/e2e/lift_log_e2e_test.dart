@@ -8,7 +8,7 @@ import 'package:flutter_test/flutter_test.dart' hide pumpEventQueue;
 import 'package:mobile/data/sync/sync_engine.dart';
 import 'package:mobile/features/onboarding/data/onboarding_draft_repository.dart';
 import 'package:server/server.dart' show LibraryImporter;
-import 'package:server/testing.dart' show libraryMin;
+import 'package:server/testing.dart' show library28;
 
 import 'sync_e2e_harness.dart';
 
@@ -20,7 +20,7 @@ void main() {
   setUpAll(() => HttpOverrides.global = null);
   setUp(() async {
     server = await E2eServer.start();
-    expect((await LibraryImporter(server.tdb.pool).run(libraryMin())).ok, true);
+    expect((await LibraryImporter(server.tdb.pool).run(library28())).ok, true);
   });
   tearDown(() async {
     for (final d in devices) {

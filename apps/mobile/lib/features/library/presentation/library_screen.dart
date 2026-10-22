@@ -17,11 +17,12 @@ import '../application/library_providers.dart';
 import 'body_map.dart';
 import 'exercise_screen.dart';
 
-/// S-66 — Thư viện bài tập (mục Bài tập của tab Tập luyện, 04 Bản 2 §6.8):
-/// hàng 6 nhóm cơ theo thứ tự F18-R9; mặc định Ngực, hoặc nhóm cơ đầu tiên
-/// của buổi tập hôm nay; bài chia theo vùng, máy trước tạ sau. Dữ liệu nằm sẵn
-/// trong app: không có vòng xoay, không cần mạng, không phụ thuộc ngân sách AI
-/// hay lịch (F18-R4, UR2-10).
+/// S-66 — Thư viện bài tập (mục Bài tập của tab Tập luyện, 04 Bản 3 §6.6):
+/// hàng 7 nhóm cơ theo thứ tự thư viện, cuộn ngang; mặc định Ngực, hoặc nhóm
+/// cơ đầu tiên của buổi tập hôm nay (UA3-11); danh sách phẳng các bài của
+/// nhóm, vùng cơ là nhãn dưới tên, không có tiêu đề vùng, không nhãn dụng cụ
+/// (PD3-01, UR3-03). Dữ liệu nằm sẵn trong app: không có vòng xoay, không cần
+/// mạng, không phụ thuộc ngân sách AI hay lịch (F18-R4, UR3-14).
 class LibraryScreen extends ConsumerStatefulWidget {
   const LibraryScreen({super.key});
 
@@ -42,7 +43,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         (session == null || session.isEmpty
             ? MuscleGroup.chest
             : session.first);
-    final regions = ref.watch(libraryProvider(group)).value ?? const [];
+    final exercises = ref.watch(libraryProvider(group)).value ?? const [];
     final palette = context.palette;
 
     return TabPage(
@@ -58,28 +59,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           selected: group,
           onSelected: (g) => setState(() => _chosen = g),
         ),
-        for (final r in regions) ...[
-          const SizedBox(height: 20),
-          Semantics(
-            header: true,
-            child: Padding(
-              padding: const EdgeInsets.only(left: 4, bottom: 8),
-              child: Text(
-                Fmt.region(r.region).toUpperCase(),
-                key: ValueKey('region-${r.region.id}'),
-                style: context.text.labelLarge?.copyWith(
-                  color: palette.textSecondary,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.4,
-                ),
-              ),
-            ),
-          ),
+        if (exercises.isNotEmpty) ...[
+          const SizedBox(height: 16),
           Card(
             clipBehavior: Clip.antiAlias,
             child: Column(
               children: [
-                for (final (i, e) in r.exercises.indexed) ...[
+                for (final (i, e) in exercises.indexed) ...[
                   if (i > 0) const Divider(indent: 16, endIndent: 16),
                   ExerciseRow(
                     exercise: e,
@@ -102,8 +88,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   }
 }
 
-/// Hàng 6 nhóm cơ dạng viên thuốc, cuộn ngang nếu thiếu chỗ (04 Bản 2 S-66,
-/// UA2-14).
+/// Hàng 7 nhóm cơ dạng viên thuốc theo thứ tự thư viện, cuộn ngang (04 Bản 3
+/// S-66, UR3-04, UA3-11).
 class _GroupChips extends StatelessWidget {
   const _GroupChips({required this.selected, required this.onSelected});
 

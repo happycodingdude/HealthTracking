@@ -22,7 +22,7 @@ docker compose -f "$ROOT/deploy/docker-compose.dev.yml" exec -T db psql -U "$POS
   dart run bin/admin.dart migrate >/dev/null)
 # Thư viện bài tập Bạn đã duyệt (mục Bài tập, chi tiết bài; 05 Bản 2 §6.10.2).
 (cd "$ROOT/apps/server" && DATABASE_URL="$(dev_db_url "$DBNAME")" JWT_SECRET="$JWT_SECRET" \
-  dart run bin/admin.dart library import "$ROOT/data/v2__exercises.json" >/dev/null)
+  dart run bin/admin.dart library import "$ROOT/data/v3__exercises.json" >/dev/null)
 mkdir -p "$ROOT/build"
 (cd "$ROOT/apps/server" && DATABASE_URL="$(dev_db_url "$DBNAME")" HOST=127.0.0.1 PORT=$PORT \
   JWT_SECRET="$JWT_SECRET" BCRYPT_COST=4 \

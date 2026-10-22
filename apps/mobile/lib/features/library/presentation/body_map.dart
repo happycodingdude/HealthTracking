@@ -19,9 +19,10 @@ final bodyMapSvgProvider = FutureProvider.family<String, String>(
   ),
 );
 
-/// Tô màu sơ đồ cơ (05 Bản 2 §6.4.5, 06 Bản 2 ED2-10): mỗi vùng là một
-/// `<g id=…>`; file không có `fill`/`stroke` nên app đặt `fill` cho từng nhóm
-/// bằng xử lý chuỗi. Kết quả được nhớ theo (file, vùng, màu).
+/// Tô màu sơ đồ cơ (05 Bản 2 §6.4.5, 06 Bản 2 ED2-10, 05 Bản 3 TD3-19): mỗi
+/// vùng là một `<g id=…>`; app thay cả thẻ mở của nhóm bằng `fill` của mình
+/// (4 SVG Bản 3 giữ nguyên văn gói duyệt, có sẵn `class`, `fill` để xem
+/// trước). Kết quả được nhớ theo (file, vùng, màu).
 abstract final class BodyMapPainter {
   static final _cache = <String, String>{};
 
@@ -37,17 +38,18 @@ abstract final class BodyMapPainter {
     final key =
         '${svg.hashCode}|$regionId|${highlight.toARGB32()}|'
         '${body.toARGB32()}|${muscle.toARGB32()}';
-    return _cache[key] ??= svg.replaceAllMapped(RegExp(r'<g id="([a-z_]+)">'), (
-      m,
-    ) {
-      final id = m.group(1)!;
-      final color = id == 'body'
-          ? body
-          : id == regionId
-          ? highlight
-          : muscle;
-      return '<g id="$id" fill="${_hex(color)}">';
-    });
+    return _cache[key] ??= svg.replaceAllMapped(
+      RegExp(r'<g id="([a-z_]+)"[^>]*>'),
+      (m) {
+        final id = m.group(1)!;
+        final color = id == 'body'
+            ? body
+            : id == regionId
+            ? highlight
+            : muscle;
+        return '<g id="$id" fill="${_hex(color)}">';
+      },
+    );
   }
 
   static String _hex(Color c) =>

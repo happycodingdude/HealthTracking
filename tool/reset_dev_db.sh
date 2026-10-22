@@ -2,7 +2,8 @@
 # Tạo lại database dev bằng migration từ 0001 (05 Bản 3 TR3-05, 06 Bản 3
 # VS32-T02) rồi nạp dữ liệu thử. Dùng mỗi khi cấu trúc database đổi.
 # Dữ liệu thử cũ trên database dev bị xóa; app trên simulator/iPhone cần cài lại.
-#   tool/reset_dev_db.sh            tạo lại + nạp dữ liệu thử
+#   tool/reset_dev_db.sh            tạo lại + nạp dữ liệu thử (thư viện Bản 3)
+#   tool/reset_dev_db.sh --v2       tạo lại + dữ liệu kiểu Bản 2 (thử library purge)
 #   tool/reset_dev_db.sh --no-seed  chỉ tạo lại, database trống
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -25,6 +26,6 @@ HASH="$(shasum -a 256 "$SCHEMA" | cut -d' ' -f1)"
 echo "Đã tạo lại database $DB bằng migration (apps/server/migrations)."
 
 if [ "${1:-}" != "--no-seed" ]; then
-  (cd "$ROOT" && DATABASE_URL="$(dev_db_url "$DB")" dart run tool/seed_dev.dart)
+  (cd "$ROOT" && DATABASE_URL="$(dev_db_url "$DB")" dart run tool/seed_dev.dart ${1:+"$1"})
 fi
 echo "Nhớ cài lại app dev trên simulator/iPhone (database trên máy dùng cấu trúc cũ)."

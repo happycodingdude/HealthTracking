@@ -3,6 +3,9 @@
 //
 //   tool/reset_dev_db.sh            # xóa, tạo lại, rồi chạy file này
 //   dart run tool/seed_dev.dart     # chỉ nạp (bỏ qua tài khoản đã có)
+//   dart run tool/seed_dev.dart --v2
+//                                   # database kiểu Bản 2 đang chạy
+//                                   # production (thử `library purge`)
 //
 // Kết nối: DATABASE_URL của tiến trình, rồi apps/server/.env (code không chứa
 // tài khoản database). CHỈ dùng cho dev: mật khẩu thử in ra màn hình.
@@ -10,21 +13,22 @@
 // Tài khoản thử (mật khẩu chung: DEV_SEED_PASSWORD của tiến trình, rồi .env ở
 // gốc repo; code không chứa mật khẩu, kể cả mật khẩu thử):
 // - 0900000001 "Minh": như Bản 1 — đã xếp lịch từ 40 ngày trước (trải qua 2
-//   tháng), có buổi đã đánh dấu, buổi chờ đánh dấu, vài số cân; mức tạ kiểu
-//   Bản 2 của các buổi trước tuần này, tăng dần theo từng buổi, trên 3 bài
-//   giữ (2 bài máy ghi số thanh, 1 bài tạ ghi kg) và 2 bài bỏ (06 Bản 3
-//   VS32-T09) để thử `library purge`.
+//   tháng), có buổi đã đánh dấu, buổi chờ đánh dấu, vài số cân; mức tạ của
+//   các buổi trước tuần này, tăng dần theo từng buổi, trên 3 bài giữ (2 bài
+//   máy, 1 bài tạ) và — với `--v2` — 2 bài bỏ (06 Bản 3 VS32-T09).
 // - 0900000002 "Lan": đã hoàn tất thiết lập nhưng "Để sau" lịch tuần (chưa có
 //   lịch, 03 Bản 2 §6.1), công tắc nhắc bật.
 //
-// Thư viện bài tập: nạp data/v2__exercises.json (29 bài Bản 2, có
-// `equipment`) bằng cùng LibraryImporter của `admin library import` như
-// production Bản 2 (06 Bản 2 VS21-T08).
+// Thư viện bài tập: mặc định nạp data/v3__exercises.json (28 bài Bản 3) bằng
+// cùng LibraryImporter của `admin library import` (06 Bản 3 VS33-T09). `--v2`:
+// 29 bài Bản 2 kèm `equipment` như production Bản 2, mức tạ bài máy ghi số
+// thanh (FX2-03).
 import 'dart:io';
 
 import 'package:domain/domain.dart';
 import 'package:postgres/postgres.dart';
 import 'package:server/server.dart';
+import 'package:server/testing.dart' show insertV2Library, v2Library;
 
 final _password = _seedPassword();
 const _timezone = 'Asia/Ho_Chi_Minh';
@@ -41,13 +45,14 @@ DateTime _utc(DateTime wall) => DateTime.utc(
   wall.second,
 ).subtract(_vnOffset);
 
-Future<void> main() async {
+Future<void> main(List<String> args) async {
+  final v2 = args.contains('--v2');
   final conn = await Connection.openFromUrl(_withSslMode(_databaseUrl()));
   try {
     // Giờ trên iPhone của Bạn (giờ Việt Nam), không phụ thuộc múi giờ của Mac.
     final now = DateTime.now().toUtc().add(_vnOffset);
     final local = DateTime(now.year, now.month, now.day, now.hour, now.minute);
-    final library = await _seedLibrary(conn);
+    final library = v2 ? await _seedLibraryV2(conn) : await _seedLibrary(conn);
     await _seedScheduled(conn, local, library);
     await _seedNoSchedule(conn, local);
   } finally {
@@ -103,12 +108,18 @@ String _withSslMode(String url) {
 
 Future<List<Exercise>> _seedLibrary(Connection c) async {
   final file = LibraryFile.parse(
-    File('data/v2__exercises.json').readAsStringSync(),
+    File('data/v3__exercises.json').readAsStringSync(),
   );
   final report = await LibraryImporter(c).run(file);
   stdout.writeln('Thư viện: ${report.describe()}');
   if (!report.ok) exitCode = 1;
   return LibraryRules.sorted(file.exercises);
+}
+
+Future<List<Exercise>> _seedLibraryV2(Connection c) async {
+  final count = await insertV2Library(c);
+  stdout.writeln('Thư viện Bản 2: đã nạp $count bài (có equipment).');
+  return LibraryRules.sorted(v2Library().exercises);
 }
 
 /// Tạo tài khoản; null khi số đã có (bỏ qua, giữ dữ liệu cũ).

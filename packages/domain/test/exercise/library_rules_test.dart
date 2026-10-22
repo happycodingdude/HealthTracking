@@ -3,13 +3,14 @@ import 'package:test/test.dart';
 
 Exercise _ex(
   MuscleRegion r, {
+  String? id,
   String suffix = 'a',
   int? seconds = 45,
   List<String> steps = const ['Một', 'Hai', 'Ba'],
   List<String> safety = const ['Một', 'Hai'],
   bool active = true,
 }) => Exercise(
-  id: '${r.id}-$suffix'.replaceAll('_', '-'),
+  id: id ?? '${r.id}-$suffix'.replaceAll('_', '-'),
   region: r,
   nameVi: 'Bài ${r.id} $suffix',
   youtubeVideoId: 'abcdefghijk',
@@ -165,5 +166,61 @@ void main() {
     expect(LibraryV3.removedV2Ids, hasLength(14));
     expect(LibraryV3.keptV2Ids, hasLength(15));
     expect(LibraryV3.removedV2Ids.intersection(LibraryV3.keptV2Ids), isEmpty);
+  });
+
+  group('TAC3-04, F18-R44: thư viện Bản 3 (28 bài, số bài mỗi nhóm, bài giữ, '
+      'bài bỏ)', () {
+    test('tổng 28 = 4 + 4 + 6 + 3 + 3 + 3 + 5, đủ 7 nhóm', () {
+      expect(
+        LibraryRules.v3GroupCounts.keys,
+        unorderedEquals(MuscleGroup.values),
+      );
+      expect(LibraryRules.v3GroupCounts.values.reduce((a, b) => a + b), 28);
+      expect(LibraryRules.v3GroupCounts[MuscleGroup.legs], 5);
+    });
+
+    test('thư viện rỗng → thiếu tổng, thiếu từng nhóm, thiếu 15 bài giữ', () {
+      final issues = LibraryRules.v3Errors(const []);
+      expect(issues.first, (
+        exerciseId: null,
+        rule: 'cần đúng 28 bài, đang có 0',
+      ));
+      expect(
+        issues,
+        contains((exerciseId: null, rule: 'legs: cần 5 bài, đang có 0')),
+      );
+      expect([
+        for (final i in issues)
+          if (i.rule == 'thiếu bài giữ của Bản 2') i.exerciseId,
+      ], unorderedEquals(LibraryV3.keptV2Ids));
+    });
+
+    test(
+      'bài giữ đủ, có một bài bỏ → báo đúng bài bỏ; bài giữ không bị báo',
+      () {
+        final removed = LibraryV3.removedV2Ids.first;
+        final issues = LibraryRules.v3Errors([
+          for (final id in LibraryV3.keptV2Ids)
+            _ex(MuscleRegion.biceps, id: id),
+          _ex(MuscleRegion.chestLower, id: removed),
+        ]);
+        expect(
+          issues,
+          contains((exerciseId: removed, rule: 'bài đã bỏ ở Bản 3')),
+        );
+        expect(
+          issues.where((i) => i.rule == 'thiếu bài giữ của Bản 2'),
+          isEmpty,
+        );
+        expect(
+          issues,
+          contains((exerciseId: null, rule: 'cần đúng 28 bài, đang có 16')),
+        );
+        expect(
+          issues,
+          contains((exerciseId: null, rule: 'biceps: cần 3 bài, đang có 15')),
+        );
+      },
+    );
   });
 }

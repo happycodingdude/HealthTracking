@@ -1,0 +1,766 @@
+{
+  "libraryVersion": 2,
+  "exercises": [
+    {
+      "id": "chest-mid-machine-pec-deck",
+      "muscleGroup": "chest",
+      "muscleRegion": "chest_mid",
+      "nameVi": "Máy ép ngực",
+      "nameEn": "Pec Deck / Machine Chest Fly",
+      "video": {
+        "youtubeId": "XZg28DIf1oc",
+        "channel": "Andrew Kwong (DeltaBolic)",
+        "durationSeconds": 16
+      },
+      "guide": {
+        "steps": [
+          "Chỉnh ghế để khi ngồi, tay cầm (hoặc đệm tay) ngang với giữa ngực; lưng và đầu áp sát tựa ghế.",
+          "Nắm tay cầm, khuỷu hơi cong và giữ nguyên độ cong đó suốt động tác; bả vai kéo ra sau, ngực ưỡn.",
+          "Thở ra, khép hai tay vào trước ngực theo đường vòng cung, siết ngực ở điểm gần nhau nhất.",
+          "Hít vào, mở tay ra chậm có kiểm soát đến khi ngực được kéo giãn vừa phải, không để tay ra quá sâu sau vai.",
+          "Lặp lại với nhịp đều."
+        ],
+        "safety": [
+          "Không mở tay ra quá sâu ra sau vai; dừng ở điểm ngực căng nhẹ.",
+          "Giữ khuỷu hơi cong cố định; không duỗi – gập khuỷu như động tác đẩy.",
+          "Nếu đau phía trước vai, giảm biên độ hoặc giảm mức tạ."
+        ]
+      },
+      "approvedAt": "2026-10-11"
+    },
+    {
+      "id": "chest-mid-free-weight-flat-barbell-bench-press",
+      "muscleGroup": "chest",
+      "muscleRegion": "chest_mid",
+      "nameVi": "Nằm ghế ngang đẩy thanh tạ",
+      "nameEn": "Flat Barbell Bench Press",
+      "video": {
+        "youtubeId": "t3f2L7NRRUY",
+        "channel": "Barbell Logic",
+        "durationSeconds": 55
+      },
+      "guide": {
+        "steps": [
+          "Nằm trên ghế phẳng, mắt ngay dưới thanh đòn; hai chân đặt chắc trên sàn, mông, lưng trên và đầu áp ghế, bả vai kéo ra sau và xuống, ngực ưỡn.",
+          "Nắm thanh rộng hơn vai một chút, cổ tay thẳng trên cẳng tay; nhấc thanh ra khỏi giá và đưa thanh ra ngay trên vai, tay thẳng.",
+          "Hít vào, hạ thanh chậm có kiểm soát xuống chạm nhẹ phần giữa ngực, khuỷu tay chếch khoảng 45 độ so với thân (không dang ngang vuông góc).",
+          "Thở ra, đẩy thanh lên về lại vị trí ngay trên vai cho đến khi tay thẳng, không khóa cứng khuỷu bằng cách giật.",
+          "Kết thúc hiệp: đưa thanh về giá, chạm cọc giá rồi mới hạ xuống móc."
+        ],
+        "safety": [
+          "Luôn có khóa chặn hai đầu thanh; nên có người canh hoặc dùng thanh chặn an toàn khi tập nặng.",
+          "Không bật thanh nảy khỏi ngực, không nhấc mông khỏi ghế khi đẩy.",
+          "Không dang khuỷu tay ngang vuông góc với thân; cổ tay không gập ngửa.",
+          "Nếu không đẩy lên được, hạ thanh xuống ngực rồi lăn về phía hông và ngồi dậy; không cố vặn người."
+        ]
+      },
+      "approvedAt": "2026-10-11"
+    },
+    {
+      "id": "chest-upper-machine-incline-machine-chest-press",
+      "muscleGroup": "chest",
+      "muscleRegion": "chest_upper",
+      "nameVi": "Nằm máy dốc lên có gắn bánh tạ",
+      "nameEn": "Incline Machine Chest Press",
+      "video": {
+        "youtubeId": "TrTSvn5-MTk",
+        "channel": "Renaissance Periodization",
+        "durationSeconds": 13
+      },
+      "guide": {
+        "steps": [
+          "Chỉnh ghế sao cho khi ngồi tựa lưng, tay cầm ngang với phần trên ngực (khoảng xương đòn), lưng và đầu áp sát tựa ghế, hai chân đặt chắc trên sàn.",
+          "Nắm tay cầm, kéo hai bả vai ra sau và xuống, ngực hơi ưỡn; giữ tư thế này suốt động tác.",
+          "Thở ra, đẩy tay cầm ra trước – lên trên cho đến khi tay gần thẳng, không khóa cứng khuỷu.",
+          "Hít vào, hạ chậm có kiểm soát về vị trí bắt đầu cho đến khi cảm nhận ngực trên được kéo giãn nhẹ.",
+          "Lặp lại với nhịp đều, không dùng đà."
+        ],
+        "safety": [
+          "Không để vai nhô lên phía tai hay cuộn ra trước; bả vai luôn ép vào ghế.",
+          "Không khóa cứng khuỷu tay ở điểm đẩy cao nhất.",
+          "Nếu đau nhói ở vai hoặc khớp, dừng lại và giảm biên độ hoặc đổi bài."
+        ]
+      },
+      "approvedAt": "2026-10-11"
+    },
+    {
+      "id": "chest-chest-lower-decline-plate-loaded-press",
+      "muscleGroup": "chest",
+      "muscleRegion": "chest_lower",
+      "nameVi": "Nằm máy dốc xuống có gắn bánh tạ",
+      "nameEn": "Decline Plate-Loaded Chest Press (Hammer Strength Decline Press)",
+      "video": {
+        "youtubeId": "JKmttegRluQ",
+        "channel": "Bradley Bowden (BradleyBowden PT)",
+        "durationSeconds": 19
+      },
+      "guide": {
+        "steps": [
+          "Gắn bánh tạ hai bên, chỉnh ghế để khi ngồi tựa lưng, tay cầm ngang với phần dưới ngực; lưng, đầu và mông áp sát ghế, hai chân đặt chắc trên sàn hoặc bệ để chân.",
+          "Nắm tay cầm, kéo hai bả vai ra sau và xuống, ngực hơi ưỡn; giữ tư thế này suốt động tác.",
+          "Thở ra, đẩy tay cầm ra trước theo đường hơi chếch xuống cho đến khi tay gần thẳng, không khóa cứng khuỷu.",
+          "Hít vào, hạ chậm có kiểm soát về vị trí bắt đầu cho đến khi cảm nhận ngực dưới được kéo giãn nhẹ; không để bánh tạ chạm đáy mạnh.",
+          "Lặp lại với nhịp đều; kết thúc hiệp thì đưa tay cầm về chốt khóa (nếu máy có) rồi mới buông tay."
+        ],
+        "safety": [
+          "Không để vai nhô lên phía tai hay cuộn ra trước; bả vai luôn ép vào ghế.",
+          "Không khóa cứng khuỷu tay ở điểm đẩy xa nhất.",
+          "Nếu máy có chốt khởi động, dùng chốt để đưa tay cầm về vị trí bắt đầu thay vì kéo tay cầm lại bằng sức.",
+          "Nếu đau phía trước vai, giảm biên độ hoặc đổi bài."
+        ]
+      },
+      "approvedAt": "2026-10-21"
+    },
+    {
+      "id": "back-back-mid-standing-cable-row-bar",
+      "muscleGroup": "back",
+      "muscleRegion": "back_mid",
+      "nameVi": "Đứng kéo cáp với thanh ngang",
+      "nameEn": "Standing Cable Row (straight bar)",
+      "video": {
+        "youtubeId": "uiAeKNCF8Y8",
+        "channel": "Andrew Kwong (DeltaBolic)",
+        "durationSeconds": 18
+      },
+      "guide": {
+        "steps": [
+          "Gắn thanh ngang vào ròng rọc ở khoảng ngang bụng hoặc thấp hơn một chút. Đứng đối diện máy, hai chân rộng bằng vai, gối hơi chùng, nắm thanh rộng hơn vai một chút.",
+          "Lùi một bước nhỏ để cáp căng; thân trên hơi nghiêng về trước, lưng thẳng, ngực ưỡn, bả vai thả tự nhiên về phía trước.",
+          "Thở ra, kéo thanh về phía bụng trên bằng cách kéo khuỷu ra sau và siết hai bả vai lại; khuỷu đi sát thân.",
+          "Giữ một nhịp ở điểm siết chặt nhất, rồi hít vào và duỗi tay chậm có kiểm soát cho đến khi bả vai được kéo giãn nhẹ.",
+          "Lặp lại với nhịp đều, thân người giữ yên, không lắc."
+        ],
+        "safety": [
+          "Giữ lưng thẳng suốt động tác; không khom lưng hay ngửa người ra sau để lấy đà.",
+          "Kéo bằng lưng, không kéo bằng cánh tay; khuỷu dẫn động tác.",
+          "Chọn mức tạ mà thân trên không bị kéo chúi về trước khi duỗi tay."
+        ]
+      },
+      "approvedAt": "2026-10-21"
+    },
+    {
+      "id": "lats-machine-lat-pulldown",
+      "muscleGroup": "back",
+      "muscleRegion": "lats",
+      "nameVi": "Ngồi kéo cáp dọc xuống",
+      "nameEn": "Lat Pulldown",
+      "video": {
+        "youtubeId": "hnSqbBk15tw",
+        "channel": "Jeff Nippard",
+        "durationSeconds": 48
+      },
+      "guide": {
+        "steps": [
+          "Chỉnh đệm giữ đùi vừa khít để đùi được giữ chắc khi ngồi; nắm thanh kéo rộng hơn vai, lòng bàn tay hướng ra trước.",
+          "Ngồi xuống, thân trên hơi ngả ra sau, ngực ưỡn, bả vai hạ xuống trước khi kéo.",
+          "Thở ra, kéo thanh xuống về phía phần trên ngực bằng cách đưa khuỷu tay xuống và ra sau; siết hai bên lưng ở điểm thấp nhất.",
+          "Hít vào, trả thanh lên chậm có kiểm soát cho đến khi tay gần thẳng và lưng được kéo giãn.",
+          "Lặp lại với nhịp đều, thân người giữ ổn định."
+        ],
+        "safety": [
+          "Không kéo thanh ra sau gáy; luôn kéo về phía trước ngực.",
+          "Không ngả người quá sâu hay dùng đà của thân để kéo.",
+          "Không để thanh bật ngược lên nhanh khi trả về."
+        ]
+      },
+      "approvedAt": "2026-10-12"
+    },
+    {
+      "id": "back-mid-machine-seated-cable-row",
+      "muscleGroup": "back",
+      "muscleRegion": "back_mid",
+      "nameVi": "Ngồi kéo cáp ngang",
+      "nameEn": "Seated Cable Row",
+      "video": {
+        "youtubeId": "8QuMq1GMMng",
+        "channel": "Colossus Fitness",
+        "durationSeconds": 15
+      },
+      "guide": {
+        "steps": [
+          "Ngồi trên máy, hai chân đặt lên bàn đạp, đầu gối hơi cong; nắm tay cầm chữ V, thân trên thẳng, ngực ưỡn.",
+          "Bắt đầu với tay thẳng, bả vai hơi đưa ra trước để lưng được kéo giãn.",
+          "Thở ra, kéo tay cầm về phía bụng, đưa khuỷu tay ra sau sát thân và ép hai bả vai vào nhau.",
+          "Hít vào, trả tay cầm về trước chậm có kiểm soát cho đến khi tay thẳng.",
+          "Lặp lại, thân trên giữ gần như thẳng suốt động tác."
+        ],
+        "safety": [
+          "Không ngả người ra sau rồi bật tới để lấy đà; thân chỉ hơi dao động.",
+          "Giữ lưng dưới thẳng, không gù lưng khi trả tay cầm về trước.",
+          "Không để vai nhô lên khi kéo; bả vai hạ xuống và ép vào nhau."
+        ]
+      },
+      "approvedAt": "2026-10-12"
+    },
+    {
+      "id": "back-back-mid-plate-loaded-row-machine",
+      "muscleGroup": "back",
+      "muscleRegion": "back_mid",
+      "nameVi": "Máy dốc gắn bánh tạ",
+      "nameEn": "Plate-Loaded Row Machine (chest-supported / Hammer Strength Row)",
+      "video": {
+        "youtubeId": "2E6psSHltl4",
+        "channel": "Iconic Personal Training & Online Coaching",
+        "durationSeconds": 58
+      },
+      "guide": {
+        "steps": [
+          "Gắn bánh tạ, chỉnh ghế để khi ngồi, đệm ngực tựa vào giữa ngực và tay cầm ngang với phần dưới ngực; hai chân đặt chắc.",
+          "Tựa ngực vào đệm, nắm tay cầm, duỗi tay để bả vai được kéo giãn nhẹ về phía trước; lưng thẳng, ngực ưỡn.",
+          "Thở ra, kéo tay cầm về phía thân bằng cách kéo khuỷu ra sau và siết hai bả vai lại; ngực luôn áp vào đệm.",
+          "Giữ một nhịp ở điểm siết chặt nhất, rồi hít vào và duỗi tay chậm có kiểm soát về vị trí bắt đầu.",
+          "Lặp lại với nhịp đều, không nhấc ngực khỏi đệm."
+        ],
+        "safety": [
+          "Ngực luôn áp vào đệm; không ngửa người ra sau để kéo thêm.",
+          "Không giật tay cầm; kéo và thả đều.",
+          "Nếu máy cho chọn tay cầm ngang hoặc dọc, chọn kiểu mà cổ tay thẳng, không gập."
+        ]
+      },
+      "approvedAt": "2026-10-21"
+    },
+    {
+      "id": "delt-front-machine-machine-shoulder-press",
+      "muscleGroup": "shoulders",
+      "muscleRegion": "delt_front",
+      "nameVi": "Ngồi máy đẩy vai",
+      "nameEn": "Machine Shoulder Press",
+      "video": {
+        "youtubeId": "6v4nrRVySj0",
+        "channel": "Andrew Kwong (DeltaBolic)",
+        "durationSeconds": 11
+      },
+      "guide": {
+        "steps": [
+          "Chỉnh ghế để tay cầm ngang với vai khi ngồi; lưng và đầu áp sát tựa ghế, hai chân đặt chắc trên sàn.",
+          "Nắm tay cầm, khuỷu tay ở dưới cổ tay, bả vai hạ xuống, bụng siết nhẹ.",
+          "Thở ra, đẩy tay cầm lên trên cho đến khi tay gần thẳng, không khóa cứng khuỷu.",
+          "Hít vào, hạ chậm về vị trí tay cầm ngang vai hoặc hơi thấp hơn, không để tạ chạm cữ.",
+          "Lặp lại với nhịp đều."
+        ],
+        "safety": [
+          "Không ưỡn thắt lưng rời khỏi tựa ghế khi đẩy.",
+          "Không hạ tay cầm xuống quá thấp nếu thấy đau phía trước vai.",
+          "Không khóa cứng khuỷu ở điểm cao nhất."
+        ]
+      },
+      "approvedAt": "2026-10-11"
+    },
+    {
+      "id": "delt-front-free-weight-seated-dumbbell-shoulder-press",
+      "muscleGroup": "shoulders",
+      "muscleRegion": "delt_front",
+      "nameVi": "Ngồi ghế đẩy tạ đơn",
+      "nameEn": "Seated Dumbbell Shoulder Press",
+      "video": {
+        "youtubeId": "JmJzqda_0XQ",
+        "channel": "Chris Schaum",
+        "durationSeconds": 43
+      },
+      "guide": {
+        "steps": [
+          "Chỉnh ghế có tựa lưng gần thẳng đứng; ngồi, đặt hai tạ đơn lên đùi rồi dùng đùi hất từng tạ lên ngang vai.",
+          "Lòng bàn tay hướng ra trước, khuỷu tay ở dưới cổ tay và hơi chếch về trước, lưng áp ghế, bụng siết.",
+          "Thở ra, đẩy hai tạ lên trên đầu cho đến khi tay gần thẳng, hai tạ gần chạm nhau ở trên.",
+          "Hít vào, hạ tạ chậm về ngang vai hoặc hơi thấp hơn.",
+          "Kết thúc hiệp: hạ tạ về đùi rồi đặt xuống sàn, không thả tạ."
+        ],
+        "safety": [
+          "Không ưỡn thắt lưng khỏi ghế để đẩy; nếu phải ưỡn, mức tạ đang quá nặng.",
+          "Không hạ tạ thấp hơn mức thấy thoải mái ở vai.",
+          "Cổ tay thẳng, không gập ngửa khi đẩy."
+        ]
+      },
+      "approvedAt": "2026-10-11"
+    },
+    {
+      "id": "shoulders-delt-side-plate-loaded-lateral-raise",
+      "muscleGroup": "shoulders",
+      "muscleRegion": "delt_side",
+      "nameVi": "Bay vai với máy có gắn bánh tạ",
+      "nameEn": "Plate-Loaded Lateral Raise Machine",
+      "video": {
+        "youtubeId": "0o07iGKUarI",
+        "channel": "Renaissance Periodization",
+        "durationSeconds": 12
+      },
+      "guide": {
+        "steps": [
+          "Gắn bánh tạ, chỉnh ghế để khi ngồi, trục xoay của máy ngang với khớp vai; đệm tay nằm ngay trên khuỷu hoặc cẳng tay.",
+          "Ngồi thẳng, lưng áp tựa ghế, hai chân đặt chắc; đặt cánh tay vào đệm, tay nắm nhẹ tay cầm, khuỷu hơi cong.",
+          "Thở ra, nâng hai khuỷu sang ngang cho đến khi cánh tay ngang vai; dẫn động tác bằng khuỷu, không bằng bàn tay.",
+          "Giữ một nhịp ở điểm cao nhất, rồi hít vào và hạ chậm có kiểm soát về vị trí bắt đầu, không để bánh tạ chạm đáy mạnh.",
+          "Lặp lại với nhịp đều, vai không nhún lên."
+        ],
+        "safety": [
+          "Không nâng cao quá ngang vai; không nhún vai lên phía tai.",
+          "Giữ lưng áp ghế, không ngả người để đẩy tạ lên.",
+          "Nếu đau ở đỉnh vai, giảm biên độ hoặc giảm mức tạ."
+        ]
+      },
+      "approvedAt": "2026-10-21"
+    },
+    {
+      "id": "delt-side-machine-cable-lateral-raise",
+      "muscleGroup": "shoulders",
+      "muscleRegion": "delt_side",
+      "nameVi": "Bay vai 1 tay với cáp",
+      "nameEn": "Cable Lateral Raise",
+      "video": {
+        "youtubeId": "HCfU6LGpgMk",
+        "channel": "Nelson Lee",
+        "durationSeconds": 60
+      },
+      "guide": {
+        "steps": [
+          "Đặt ròng rọc ở vị trí thấp nhất, gắn tay cầm đơn. Đứng nghiêng, vai xa ròng rọc hơn; tay xa ròng rọc nắm tay cầm, dây cáp đi chéo trước thân.",
+          "Đứng thẳng, tay kia vịn máy để giữ thăng bằng, khuỷu tay hơi cong và giữ nguyên.",
+          "Thở ra, nâng tay sang ngang theo đường vòng cung cho đến khi cánh tay ngang vai, khuỷu dẫn trước, lòng bàn tay hướng xuống.",
+          "Hít vào, hạ tay chậm về trước thân có kiểm soát.",
+          "Tập đủ số lần một bên rồi đổi bên."
+        ],
+        "safety": [
+          "Không nâng tay cao hơn vai và không nhún vai khi nâng.",
+          "Không nghiêng hay lắc thân để lấy đà; mức tạ ở bài này luôn nhẹ.",
+          "Khuỷu tay hơi cong, không duỗi thẳng cứng."
+        ]
+      },
+      "approvedAt": "2026-10-11"
+    },
+    {
+      "id": "shoulders-delt-rear-cable-face-pull",
+      "muscleGroup": "shoulders",
+      "muscleRegion": "delt_rear",
+      "nameVi": "Kéo cáp ngang đầu",
+      "nameEn": "Cable Face Pull (rope)",
+      "video": {
+        "youtubeId": "tkLTR4b6cAk",
+        "channel": "Bodybuilding.com",
+        "durationSeconds": 30
+      },
+      "guide": {
+        "steps": [
+          "Gắn dây thừng vào ròng rọc ở ngang mặt hoặc cao hơn một chút. Nắm hai đầu dây theo kiểu ngón cái hướng về phía mình, lùi một bước để cáp căng, hai chân một trước một sau.",
+          "Đứng thẳng, ngực ưỡn, tay duỗi ra trước ngang mặt, bả vai thả tự nhiên.",
+          "Thở ra, kéo hai đầu dây về phía hai bên mặt, khuỷu đi ra ngoài và ngang vai; cuối động tác hai bàn tay ở ngang tai, bả vai siết lại.",
+          "Giữ một nhịp, rồi hít vào và duỗi tay chậm có kiểm soát về vị trí bắt đầu.",
+          "Lặp lại với nhịp đều, thân người giữ yên."
+        ],
+        "safety": [
+          "Khuỷu cao ngang vai, không hạ khuỷu xuống thành động tác kéo cáp ngang.",
+          "Chọn mức tạ nhẹ để kéo bằng vai sau, không ngả người ra sau để lấy đà.",
+          "Không nhún vai lên phía tai khi kéo."
+        ]
+      },
+      "approvedAt": "2026-10-21"
+    },
+    {
+      "id": "delt-rear-machine-reverse-pec-deck",
+      "muscleGroup": "shoulders",
+      "muscleRegion": "delt_rear",
+      "nameVi": "Vai sau với máy",
+      "nameEn": "Reverse Pec Deck / Rear Delt Fly Machine",
+      "video": {
+        "youtubeId": "H5UxZFl0lgk",
+        "channel": "Andrew Kwong (DeltaBolic)",
+        "durationSeconds": 11
+      },
+      "guide": {
+        "steps": [
+          "Chỉnh tay cầm của máy ép ngực về phía sau (chế độ mở ngược); chỉnh ghế để tay cầm ngang vai khi ngồi.",
+          "Ngồi quay mặt vào tựa ghế, ngực áp vào đệm, nắm tay cầm với lòng bàn tay hướng vào nhau hoặc hướng xuống, khuỷu hơi cong.",
+          "Thở ra, mở hai tay ra sau theo đường vòng cung cho đến khi cánh tay ngang với thân; siết phía sau vai.",
+          "Hít vào, đưa tay về trước chậm có kiểm soát, không để tạ chạm cữ.",
+          "Lặp lại với nhịp đều."
+        ],
+        "safety": [
+          "Không đưa tay ra sau quá mức ngang thân.",
+          "Không nhún vai hay rướn cổ về trước khi mở tay.",
+          "Khuỷu hơi cong cố định, không duỗi – gập khuỷu."
+        ]
+      },
+      "approvedAt": "2026-10-11"
+    },
+    {
+      "id": "biceps-biceps-incline-dumbbell-curl",
+      "muscleGroup": "biceps",
+      "muscleRegion": "biceps",
+      "nameVi": "Ngồi ghế dốc lên với tạ đơn",
+      "nameEn": "Seated Incline Dumbbell Curl",
+      "video": {
+        "youtubeId": "uCUaRFlA9vE",
+        "channel": "Andrew Kwong (DeltaBolic)",
+        "durationSeconds": 13
+      },
+      "guide": {
+        "steps": [
+          "Chỉnh ghế dốc lên vừa phải (khoảng 45–60 độ). Ngồi tựa lưng và đầu vào ghế, mỗi tay cầm một tạ đơn, hai tay buông thẳng xuống hai bên, lòng bàn tay hướng ra trước.",
+          "Giữ cánh tay buông thẳng và hơi ra sau thân, vai ép xuống; đây là vị trí bắt đầu.",
+          "Thở ra, cuộn tạ lên bằng cách gập khuỷu, cánh tay giữ nguyên vị trí, cho đến khi cẳng tay gần chạm bắp tay.",
+          "Giữ một nhịp ở điểm siết chặt nhất, rồi hít vào và hạ tạ chậm có kiểm soát cho đến khi tay duỗi gần thẳng.",
+          "Lặp lại với nhịp đều; có thể cuộn hai tay cùng lúc hoặc luân phiên."
+        ],
+        "safety": [
+          "Cánh tay không được đưa ra trước khi cuộn; khuỷu giữ nguyên vị trí sau thân.",
+          "Không ngửa cổ tay; cổ tay thẳng với cẳng tay.",
+          "Kết thúc hiệp thì đặt tạ xuống đùi hoặc sàn, không thả rơi.",
+          "Chọn mức tạ kiểm soát được cả lúc hạ, vì tư thế này kéo giãn bắp tay nhiều hơn bình thường."
+        ]
+      },
+      "approvedAt": "2026-10-21"
+    },
+    {
+      "id": "biceps-biceps-cable-bar-curl",
+      "muscleGroup": "biceps",
+      "muscleRegion": "biceps",
+      "nameVi": "Kéo cáp dọc lên với thanh ngang",
+      "nameEn": "Standing Cable Curl (straight bar, low pulley)",
+      "video": {
+        "youtubeId": "i2vx6IsNEuo",
+        "channel": "SET FOR SET",
+        "durationSeconds": 30
+      },
+      "guide": {
+        "steps": [
+          "Gắn thanh ngang vào ròng rọc thấp nhất. Đứng đối diện máy, hai chân rộng bằng vai, gối hơi chùng, nắm thanh rộng bằng vai, lòng bàn tay hướng lên.",
+          "Đứng thẳng, hai cánh tay duỗi xuống, khuỷu áp sát hai bên sườn; vai ép xuống.",
+          "Thở ra, cuộn thanh lên bằng cách gập khuỷu, cánh tay giữ nguyên, cho đến khi cẳng tay gần chạm bắp tay.",
+          "Giữ một nhịp ở điểm siết chặt nhất, rồi hít vào và hạ thanh chậm có kiểm soát cho đến khi tay duỗi gần thẳng, cáp vẫn căng.",
+          "Lặp lại với nhịp đều, thân người giữ yên."
+        ],
+        "safety": [
+          "Khuỷu luôn sát sườn; không đưa khuỷu ra trước hay ngả người ra sau để kéo thêm.",
+          "Cổ tay thẳng; không ngửa cổ tay ở điểm cao nhất.",
+          "Không khóa cứng khuỷu khi hạ hết; dừng khi tay gần thẳng."
+        ]
+      },
+      "approvedAt": "2026-10-21"
+    },
+    {
+      "id": "biceps-machine-machine-preacher-curl",
+      "muscleGroup": "biceps",
+      "muscleRegion": "biceps",
+      "nameVi": "Ngồi máy cuộn tay",
+      "nameEn": "Machine Preacher Curl",
+      "video": {
+        "youtubeId": "S4dDLfp3e8w",
+        "channel": "Andrew Kwong (DeltaBolic)",
+        "durationSeconds": 9
+      },
+      "guide": {
+        "steps": [
+          "Chỉnh ghế để khi ngồi, nách tựa thoải mái lên mép đệm tay và cánh tay áp hết lên đệm.",
+          "Nắm tay cầm với lòng bàn tay hướng lên, tay gần thẳng nhưng không khóa cứng khuỷu.",
+          "Thở ra, cuốn tay cầm lên về phía vai cho đến khi cẳng tay gần chạm bắp tay; siết bắp tay.",
+          "Hít vào, hạ tay chậm có kiểm soát về vị trí gần thẳng.",
+          "Lặp lại, cánh tay không rời đệm."
+        ],
+        "safety": [
+          "Không duỗi thẳng cứng khuỷu ở điểm thấp nhất.",
+          "Không nhấc cánh tay khỏi đệm hay nhún vai để kéo.",
+          "Nếu đau ở mặt trong khuỷu, dừng lại và giảm mức tạ."
+        ]
+      },
+      "approvedAt": "2026-10-11"
+    },
+    {
+      "id": "triceps-triceps-lateral-medial-single-arm-cable-pushdown",
+      "muscleGroup": "triceps",
+      "muscleRegion": "triceps_lateral_medial",
+      "nameVi": "Kéo cáp dọc xuống với tay cầm",
+      "nameEn": "Single-Arm Cable Pushdown (D-handle)",
+      "video": {
+        "youtubeId": "Cp_bShvMY4c",
+        "channel": "Renaissance Periodization",
+        "durationSeconds": 11
+      },
+      "guide": {
+        "steps": [
+          "Gắn tay cầm đơn vào ròng rọc cao. Đứng đối diện máy, một tay nắm tay cầm, lòng bàn tay hướng xuống hoặc hướng vào trong, tay kia đặt lên hông hoặc vịn máy.",
+          "Đứng thẳng, hơi nghiêng về trước, khuỷu áp sát sườn, cẳng tay gập lên ngang ngực; đây là vị trí bắt đầu.",
+          "Thở ra, đẩy tay cầm xuống bằng cách duỗi khuỷu cho đến khi tay thẳng, cánh tay giữ nguyên vị trí sát sườn.",
+          "Giữ một nhịp ở điểm duỗi thẳng, rồi hít vào và gập khuỷu chậm có kiểm soát về vị trí bắt đầu.",
+          "Hết số lần thì đổi tay, lặp lại với tay kia."
+        ],
+        "safety": [
+          "Khuỷu không được bung ra ngoài hay đưa ra trước; chỉ cẳng tay di chuyển.",
+          "Không dùng vai hay thân người đè xuống để lấy đà.",
+          "Cổ tay thẳng suốt động tác."
+        ]
+      },
+      "approvedAt": "2026-10-21"
+    },
+    {
+      "id": "triceps-lateral-medial-machine-cable-triceps-pushdown",
+      "muscleGroup": "triceps",
+      "muscleRegion": "triceps_lateral_medial",
+      "nameVi": "Kéo cáp dọc xuống với thanh ngang",
+      "nameEn": "Cable Triceps Pushdown",
+      "video": {
+        "youtubeId": "-PqzEk57xiw",
+        "channel": "Andrew Kwong (DeltaBolic)",
+        "durationSeconds": 10
+      },
+      "guide": {
+        "steps": [
+          "Đặt ròng rọc ở vị trí cao, gắn thanh thẳng hoặc dây thừng. Đứng thẳng cách máy một bước nhỏ, thân hơi nghiêng về trước, nắm tay cầm với lòng bàn tay hướng xuống.",
+          "Kéo khuỷu tay xuống sát hai bên thân, cẳng tay gập lên; đây là vị trí bắt đầu.",
+          "Thở ra, duỗi thẳng tay đẩy tay cầm xuống dưới cho đến khi tay thẳng, khuỷu giữ nguyên sát thân; siết tay sau.",
+          "Hít vào, gập khuỷu đưa tay cầm lên chậm có kiểm soát cho đến khi cẳng tay cao hơn ngang.",
+          "Lặp lại với nhịp đều, vai và thân giữ yên."
+        ],
+        "safety": [
+          "Khuỷu tay giữ sát thân, không đưa ra trước hay dang rộng.",
+          "Không dùng thân đè xuống để đẩy; nếu phải làm vậy, giảm mức tạ.",
+          "Không khóa cứng khuỷu ở điểm thấp nhất."
+        ]
+      },
+      "approvedAt": "2026-10-11"
+    },
+    {
+      "id": "triceps-long-free-weight-overhead-dumbbell-triceps-extension",
+      "muscleGroup": "triceps",
+      "muscleRegion": "triceps_long",
+      "nameVi": "Nâng tạ đơn qua đầu",
+      "nameEn": "Overhead Dumbbell Triceps Extension",
+      "video": {
+        "youtubeId": "b_r_LW4HEcM",
+        "channel": "Andrew Kwong (DeltaBolic)",
+        "durationSeconds": 11
+      },
+      "guide": {
+        "steps": [
+          "Ngồi trên ghế có tựa lưng hoặc đứng thẳng; cầm một tạ đơn bằng hai tay, lòng bàn tay đỡ mặt trong của đĩa tạ phía trên.",
+          "Đưa tạ lên thẳng trên đầu, cánh tay sát tai, khuỷu hướng về trước.",
+          "Hít vào, gập khuỷu hạ tạ chậm xuống sau đầu cho đến khi tay sau được kéo giãn, cánh tay giữ yên.",
+          "Thở ra, duỗi thẳng tay đưa tạ trở lại trên đầu; siết tay sau ở điểm cao nhất.",
+          "Kết thúc hiệp: hạ tạ ra trước ngực rồi đặt xuống, không thả tạ ra sau."
+        ],
+        "safety": [
+          "Khuỷu tay giữ gần tai, không dang rộng.",
+          "Không ưỡn thắt lưng; nếu đứng, siết bụng và đầu gối hơi cong.",
+          "Cầm chắc tạ bằng hai tay; nếu vai cứng, không hạ tạ quá sâu."
+        ]
+      },
+      "approvedAt": "2026-10-11"
+    },
+    {
+      "id": "abs-lower-bodyweight-hanging-leg-raise",
+      "muscleGroup": "abs",
+      "muscleRegion": "abs_lower",
+      "nameVi": "Nâng chân treo người",
+      "nameEn": "Hanging Leg Raise / Hanging Knee Raise",
+      "video": {
+        "youtubeId": "9g3mmngdbpE",
+        "channel": "V Shred",
+        "durationSeconds": 27
+      },
+      "guide": {
+        "steps": [
+          "Treo người trên xà, hai tay nắm rộng bằng vai, vai hạ xuống (không rũ vai), chân thẳng và khép.",
+          "Siết bụng, hơi cuộn xương chậu về trước để lưng dưới không bị ưỡn.",
+          "Thở ra, nâng hai chân lên trước cho đến khi đùi ngang với sàn hoặc cao hơn; ở điểm cao nhất, cuộn thêm hông lên một chút.",
+          "Hít vào, hạ chân chậm có kiểm soát về vị trí ban đầu, không để thân đung đưa.",
+          "Nếu khó, gập đầu gối và nâng đầu gối lên thay vì chân thẳng."
+        ],
+        "safety": [
+          "Không đung đưa thân để lấy đà; dừng hẳn giữa các lần.",
+          "Không ưỡn lưng dưới khi hạ chân; nếu không giữ được, gập gối lại.",
+          "Nếu tay mỏi trước bụng, dùng đai treo khuỷu tay hoặc tập trên ghế nâng chân."
+        ]
+      },
+      "approvedAt": "2026-10-11"
+    },
+    {
+      "id": "abs-mid-bodyweight-forearm-plank",
+      "muscleGroup": "abs",
+      "muscleRegion": "abs_mid",
+      "nameVi": "Plank",
+      "nameEn": "Forearm Plank",
+      "video": {
+        "youtubeId": "6xWUlLvltvQ",
+        "channel": "FitnessBlender",
+        "durationSeconds": 54
+      },
+      "guide": {
+        "steps": [
+          "Nằm sấp, chống hai cẳng tay xuống sàn, khuỷu ở ngay dưới vai, hai bàn chân khép hoặc rộng bằng hông.",
+          "Nâng thân lên, chỉ cẳng tay và mũi chân chạm sàn; thân tạo một đường thẳng từ đầu đến gót.",
+          "Siết bụng và mông, cuộn nhẹ xương chậu để lưng dưới không võng; mắt nhìn xuống sàn, cổ thẳng.",
+          "Giữ tư thế, thở đều, không nín thở.",
+          "Hạ gối xuống sàn để kết thúc, nghỉ rồi lặp lại."
+        ],
+        "safety": [
+          "Không để hông võng xuống hay nhô cao; khi không giữ thẳng được nữa thì dừng.",
+          "Không nín thở trong lúc giữ.",
+          "Nếu đau vai hoặc lưng dưới, hạ gối chống sàn để giảm tải."
+        ]
+      },
+      "approvedAt": "2026-10-11"
+    },
+    {
+      "id": "obliques-bodyweight-side-plank",
+      "muscleGroup": "abs",
+      "muscleRegion": "obliques",
+      "nameVi": "Plank nghiêng",
+      "nameEn": "Side Plank",
+      "video": {
+        "youtubeId": "V2cUr7zG4hw",
+        "channel": "SWEAT (Kayla Itsines)",
+        "durationSeconds": 21
+      },
+      "guide": {
+        "steps": [
+          "Nằm nghiêng, chống cẳng tay dưới xuống sàn, khuỷu ở ngay dưới vai, hai chân duỗi thẳng chồng lên nhau.",
+          "Nâng hông lên khỏi sàn cho đến khi thân tạo một đường thẳng từ đầu đến bàn chân; tay trên đặt lên hông hoặc giơ thẳng lên.",
+          "Siết bụng bên dưới và mông, không để hông xoay về trước hay ra sau.",
+          "Giữ tư thế, thở đều.",
+          "Hạ hông xuống để kết thúc, đổi bên và lặp lại."
+        ],
+        "safety": [
+          "Không để hông võng xuống; dừng khi không giữ thẳng được nữa.",
+          "Vai không nhô lên phía tai; khuỷu luôn ở dưới vai.",
+          "Nếu đau vai, gập gối dưới chống sàn để giảm tải."
+        ]
+      },
+      "approvedAt": "2026-10-11"
+    },
+    {
+      "id": "legs-quads-leg-press",
+      "muscleGroup": "legs",
+      "muscleRegion": "quads",
+      "nameVi": "Nằm máy đạp chân",
+      "nameEn": "Leg Press (45° plate-loaded or lying leg press)",
+      "video": {
+        "youtubeId": "3R0SOJ3alTA",
+        "channel": "Bodybuilding.com",
+        "durationSeconds": 49
+      },
+      "guide": {
+        "steps": [
+          "Gắn bánh tạ (nếu máy cần), ngồi tựa lưng và mông áp sát ghế, đặt hai bàn chân lên bệ đạp rộng bằng vai, ở khoảng giữa bệ, mũi chân hơi hướng ra ngoài.",
+          "Đạp bệ lên vừa đủ để mở chốt an toàn (hai tay mở chốt), rồi giữ bệ bằng chân với gối gần thẳng, không khóa cứng.",
+          "Hít vào, hạ bệ chậm có kiểm soát bằng cách gập gối cho đến khi đùi và cẳng chân tạo góc khoảng 90 độ, hoặc tới khi mông bắt đầu rời ghế thì dừng.",
+          "Thở ra, đạp bệ lên qua cả bàn chân (nhất là gót) cho đến khi gối gần thẳng.",
+          "Lặp lại với nhịp đều; kết thúc hiệp thì đạp bệ lên, khóa chốt an toàn rồi mới thả chân."
+        ],
+        "safety": [
+          "Luôn kiểm tra chốt an toàn trước khi mở và khóa lại trước khi rời máy.",
+          "Không khóa cứng gối ở điểm đạp cao nhất.",
+          "Không hạ bệ sâu đến mức lưng dưới và mông cong lên khỏi ghế.",
+          "Gối đi theo hướng mũi chân, không khép vào trong."
+        ]
+      },
+      "approvedAt": "2026-10-21"
+    },
+    {
+      "id": "legs-quads-seated-leg-extension",
+      "muscleGroup": "legs",
+      "muscleRegion": "quads",
+      "nameVi": "Ngồi máy duỗi chân",
+      "nameEn": "Seated Leg Extension Machine",
+      "video": {
+        "youtubeId": "4ZDm5EbiFI8",
+        "channel": "PureGym",
+        "durationSeconds": 14
+      },
+      "guide": {
+        "steps": [
+          "Chỉnh ghế để khớp gối ngang với trục xoay của máy, lưng áp tựa ghế; chỉnh đệm chân nằm ngay trên cổ chân.",
+          "Ngồi thẳng, hai tay nắm tay vịn hai bên để giữ mông áp ghế; mũi chân hướng lên.",
+          "Thở ra, duỗi hai chân lên chậm cho đến khi gối gần thẳng, siết đùi trước ở điểm cao nhất.",
+          "Giữ một nhịp, rồi hít vào và hạ chân chậm có kiểm soát về vị trí bắt đầu, không để chồng tạ chạm đáy mạnh.",
+          "Lặp lại với nhịp đều, thân trên giữ yên."
+        ],
+        "safety": [
+          "Không đá chân lên bằng đà; nâng và hạ đều.",
+          "Giữ mông và lưng áp ghế, không ngả người ra sau để nâng thêm.",
+          "Nếu đau ở xương bánh chè, giảm biên độ phần hạ thấp nhất hoặc giảm mức tạ."
+        ]
+      },
+      "approvedAt": "2026-10-21"
+    },
+    {
+      "id": "legs-hamstrings-lying-leg-curl",
+      "muscleGroup": "legs",
+      "muscleRegion": "hamstrings",
+      "nameVi": "Nằm máy cuộn chân",
+      "nameEn": "Lying Leg Curl Machine",
+      "video": {
+        "youtubeId": "SbSNUXPRkc8",
+        "channel": "PureGym",
+        "durationSeconds": 16
+      },
+      "guide": {
+        "steps": [
+          "Chỉnh đệm chân nằm ngay trên gót (dưới bắp chân), khớp gối ngang với trục xoay của máy. Nằm sấp, hông áp sát đệm, hai tay nắm tay vịn.",
+          "Duỗi thẳng hai chân, mũi chân hướng xuống hoặc thả tự nhiên; đây là vị trí bắt đầu.",
+          "Thở ra, cuộn gót về phía mông bằng cách gập gối cho đến khi cẳng chân gần vuông góc hoặc đệm chạm mông, siết đùi sau.",
+          "Giữ một nhịp, rồi hít vào và hạ chân chậm có kiểm soát cho đến khi gối gần thẳng.",
+          "Lặp lại với nhịp đều, hông không nhấc khỏi đệm."
+        ],
+        "safety": [
+          "Hông luôn áp đệm; không nhấc mông lên để cuộn thêm.",
+          "Không khóa cứng gối khi duỗi; dừng khi gối gần thẳng.",
+          "Nếu bị chuột rút đùi sau, dừng lại, duỗi chân và giảm mức tạ."
+        ]
+      },
+      "approvedAt": "2026-10-21"
+    },
+    {
+      "id": "legs-hamstrings-barbell-romanian-deadlift",
+      "muscleGroup": "legs",
+      "muscleRegion": "hamstrings",
+      "nameVi": "Đứng kéo thanh đòn gập hông",
+      "nameEn": "Barbell Romanian Deadlift (RDL)",
+      "video": {
+        "youtubeId": "bT5OOBgY4bc",
+        "channel": "OPEX Fitness",
+        "durationSeconds": 17
+      },
+      "guide": {
+        "steps": [
+          "Đứng hai chân rộng bằng hông, thanh đòn cầm ở trước đùi, nắm rộng hơn vai một chút, lòng bàn tay hướng vào thân; vai kéo ra sau, lưng thẳng.",
+          "Hít vào, giữ gối hơi chùng và cố định, đẩy hông ra sau để hạ thanh xuống dọc theo đùi, thanh luôn sát chân.",
+          "Hạ cho đến khi cảm nhận đùi sau được kéo giãn rõ, thường là khi thanh đến ngang giữa cẳng chân, lưng vẫn thẳng.",
+          "Thở ra, đẩy hông về trước và đứng thẳng dậy, siết mông và đùi sau ở điểm cao nhất; không ngửa người ra sau.",
+          "Lặp lại với nhịp đều; thanh luôn gần sát chân."
+        ],
+        "safety": [
+          "Lưng giữ thẳng tự nhiên suốt động tác; không khom lưng khi hạ thanh.",
+          "Động tác là đẩy hông ra sau, không phải ngồi xuống; gối chỉ hơi chùng.",
+          "Không hạ thanh xuống sâu hơn mức giữ được lưng thẳng.",
+          "Thanh sát chân; thanh đi xa chân sẽ dồn lực lên lưng dưới."
+        ]
+      },
+      "approvedAt": "2026-10-21"
+    },
+    {
+      "id": "legs-calves-standing-calf-raise-machine",
+      "muscleGroup": "legs",
+      "muscleRegion": "calves",
+      "nameVi": "Đứng máy nhón gót",
+      "nameEn": "Standing Calf Raise Machine",
+      "video": {
+        "youtubeId": "VIUg0nNw5BE",
+        "channel": "Testosterone Nation",
+        "durationSeconds": 16
+      },
+      "guide": {
+        "steps": [
+          "Chỉnh đệm vai cho vừa chiều cao; đặt mũi và phần trước bàn chân lên bệ, gót thừa ra ngoài, đứng thẳng dưới đệm vai, hai tay nắm tay vịn.",
+          "Đứng thẳng, gối gần thẳng và giữ cố định; hạ gót xuống dưới mức bệ chậm cho đến khi bắp chân được kéo giãn rõ.",
+          "Thở ra, nhón gót lên cao hết mức, dồn lực qua phần trước bàn chân, siết bắp chân ở điểm cao nhất.",
+          "Giữ một nhịp, rồi hít vào và hạ gót chậm có kiểm soát về điểm kéo giãn.",
+          "Lặp lại với nhịp đều, thân người giữ thẳng, không nhún bằng gối."
+        ],
+        "safety": [
+          "Không nảy ở điểm thấp nhất; hạ và nâng đều.",
+          "Gối giữ gần thẳng và cố định; không gập gối để lấy đà.",
+          "Nếu đau gân gót, giảm biên độ phần hạ thấp hoặc giảm mức tạ."
+        ]
+      },
+      "approvedAt": "2026-10-21"
+    }
+  ]
+}

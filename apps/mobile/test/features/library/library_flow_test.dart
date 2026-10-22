@@ -45,7 +45,7 @@ void main() {
     db = AppDatabase(NativeDatabase.memory());
     connectivity = FakeConnectivity();
     video = FakeVideoGateway();
-    library = realLibrary();
+    library = realLibraryV3();
   });
 
   Finder tabBarText(String text) =>
@@ -126,32 +126,13 @@ void main() {
     await tapKey(tester, 'exercise-${e.id}');
   }
 
-  /// Tiêu đề vùng ở S-66 theo thứ tự từ trên xuống.
-  List<String> regionHeaders(WidgetTester tester) {
-    final found =
-        find
-            .descendant(
-              of: find.byType(LibraryScreen),
-              matching: find.byWidgetPredicate(
-                (w) =>
-                    w.key is ValueKey<String> &&
-                    (w.key! as ValueKey<String>).value.startsWith('region-'),
-              ),
-              skipOffstage: false,
-            )
-            .evaluate()
-            .toList()
-          ..sort(
-            (a, b) => tester
-                .getTopLeft(find.byWidget(a.widget))
-                .dy
-                .compareTo(tester.getTopLeft(find.byWidget(b.widget)).dy),
-          );
-    return [
-      for (final e in found)
-        (e.widget.key! as ValueKey<String>).value.substring(7),
-    ];
-  }
+  /// S-66 không còn tiêu đề vùng (PD3-01, UR3-03).
+  Finder regionHeadings() => find.byWidgetPredicate(
+    (w) =>
+        w.key is ValueKey<String> &&
+        (w.key! as ValueKey<String>).value.startsWith('region-'),
+    skipOffstage: false,
+  );
 
   /// Bài ở S-66 theo thứ tự từ trên xuống.
   List<String> rows(WidgetTester tester) {
@@ -198,7 +179,7 @@ void main() {
     ) async {
       final semantics = tester.ensureSemantics();
       await seedSetUp(db);
-      await seedLibrary(db);
+      await seedLibrary(db, library);
       await pump(tester);
       expect(tabBarText(S.tabTraining), findsOneWidget);
       expect(find.text('Lịch tập'), findsNothing);
@@ -246,14 +227,13 @@ void main() {
         'viện dùng bình thường (mặc định Ngực)', (tester) async {
       await AccountRepository(db).put('Minh');
       await ProfileRepository(db).put(completedProfile());
-      await seedLibrary(db);
+      await seedLibrary(db, library);
       await pump(tester);
       expect(await sectionBar(tester, 'library'), findsOneWidget);
       await openLibrary(tester);
-      expect(regionHeaders(tester), [
-        'chest_upper',
-        'chest_mid',
-        'chest_lower',
+      expect(rows(tester), [
+        for (final e in library)
+          if (e.group == MuscleGroup.chest) e.id,
       ]);
       expect(find.byType(CircularProgressIndicator), findsNothing);
     });
@@ -280,120 +260,144 @@ void main() {
     });
   });
 
-  group('S-66 thư viện (VS23-T04)', () {
-    testWidgets('mặc định chọn nhóm cơ đầu tiên của buổi hôm nay (thứ 4: '
-        'Lưng); hàng 6 nhóm theo thứ tự Ngực · Lưng · Vai · Tay trước · Tay '
-        'sau · Bụng; mỗi nhóm: vùng theo F18-R9, máy trước tạ sau; dòng cuối; '
-        'không vòng xoay', (tester) async {
-      final semantics = tester.ensureSemantics();
-      await seedSetUp(db);
-      await seedLibrary(db);
-      await pump(tester);
-      await openLibrary(tester);
-      expect(
-        tester.getSemantics(find.byKey(const ValueKey('group-back'))),
-        isSemantics(isSelected: true),
-      );
-      expect(regionHeaders(tester), ['lats', 'back_mid', 'back_lower']);
-
-      final xs = [
-        for (final g in LibraryRules.groupOrder)
-          tester.getTopLeft(find.byKey(ValueKey('group-${g.name}'))).dx,
-      ];
-      expect(xs, [...xs]..sort(), reason: 'UA2-14');
-      expect(
-        [
-          for (final g in LibraryRules.groupOrder)
-            tester
-                .widget<Text>(
-                  find.descendant(
-                    of: find.byKey(ValueKey('group-${g.name}')),
-                    matching: find.byType(Text),
-                  ),
-                )
-                .data,
-        ],
-        ['Ngực', 'Lưng', 'Vai', 'Tay trước', 'Tay sau', 'Bụng', 'Chân'],
-      );
-
-      // Thư viện Bản 2 chưa có bài Chân (28 bài Bản 3 vào ở VS-33).
-      for (final g in LibraryRules.groupOrder.where(
-        (g) => g != MuscleGroup.legs,
-      )) {
-        await tapKey(tester, 'group-${g.name}');
-        expect(regionHeaders(tester), [
-          for (final r in MuscleRegion.of(g)) r.id,
-        ], reason: '$g');
-        expect(rows(tester), [
-          for (final e in library)
-            if (e.group == g) e.id,
-        ], reason: '$g');
-        for (final e in library.where((e) => e.group == g)) {
-          final row = find.byKey(ValueKey('exercise-${e.id}'));
-          expect(
-            find.descendant(of: row, matching: find.text(e.nameVi)),
-            findsOneWidget,
-          );
-          expect(
-            find.descendant(of: row, matching: find.text(Fmt.region(e.region))),
-            findsOneWidget,
-          );
-        }
+  group('S-66 thư viện (VS33-T05)', () {
+    testWidgets(
+      'UA3-11: mặc định chọn nhóm cơ đầu tiên của buổi hôm nay '
+      '(thứ 4: Lưng); UR3-04, UX-AC44: hàng 7 nhóm theo thứ tự Ngực · Lưng · '
+      'Vai · Tay trước · Tay sau · Bụng · Chân; F18-AC41 → AC44, UX-AC45: mỗi '
+      'nhóm là danh sách phẳng theo thứ tự thư viện, nhãn vùng dưới tên, '
+      'không tiêu đề vùng, không nhãn dụng cụ; dòng cuối; không vòng xoay',
+      (tester) async {
+        final semantics = tester.ensureSemantics();
+        await seedSetUp(db);
+        await seedLibrary(db, library);
+        await pump(tester);
+        await openLibrary(tester);
         expect(
-          find.text(Fmt.region(MuscleRegion.of(g).first).toUpperCase()),
+          tester.getSemantics(find.byKey(const ValueKey('group-back'))),
+          isSemantics(isSelected: true),
+        );
+
+        final xs = [
+          for (final g in LibraryRules.groupOrder)
+            tester.getTopLeft(find.byKey(ValueKey('group-${g.name}'))).dx,
+        ];
+        expect(xs, [...xs]..sort(), reason: 'UR3-04');
+        expect(
+          [
+            for (final g in LibraryRules.groupOrder)
+              tester
+                  .widget<Text>(
+                    find.descendant(
+                      of: find.byKey(ValueKey('group-${g.name}')),
+                      matching: find.byType(Text),
+                    ),
+                  )
+                  .data,
+          ],
+          ['Ngực', 'Lưng', 'Vai', 'Tay trước', 'Tay sau', 'Bụng', 'Chân'],
+        );
+
+        final counts = <MuscleGroup, int>{};
+        for (final g in LibraryRules.groupOrder) {
+          await tapKey(tester, 'group-${g.name}');
+          expect(regionHeadings(), findsNothing, reason: '$g');
+          final ids = rows(tester);
+          counts[g] = ids.length;
+          expect(ids, [
+            for (final e in library)
+              if (e.group == g) e.id,
+          ], reason: '$g');
+          for (final e in library.where((e) => e.group == g)) {
+            final row = find.byKey(ValueKey('exercise-${e.id}'));
+            expect(
+              find.descendant(of: row, matching: find.text(e.nameVi)),
+              findsOneWidget,
+            );
+            expect(
+              find.descendant(
+                of: row,
+                matching: find.text(Fmt.region(e.region)),
+              ),
+              findsOneWidget,
+            );
+          }
+          for (final word in ['Máy', 'Tạ', 'Không dụng cụ']) {
+            expect(find.text(word), findsNothing, reason: '$g: $word');
+          }
+        }
+        expect(counts, {
+          MuscleGroup.chest: 4,
+          MuscleGroup.back: 4,
+          MuscleGroup.shoulders: 6,
+          MuscleGroup.biceps: 3,
+          MuscleGroup.triceps: 3,
+          MuscleGroup.abs: 3,
+          MuscleGroup.legs: 5,
+        });
+        expect(
+          find.text(S.libraryFootnote, skipOffstage: false),
           findsOneWidget,
         );
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+        expectReadOnly();
+        semantics.dispose();
+      },
+    );
+
+    testWidgets('F18-AC42: hôm nay không có buổi tập → mặc định Ngực, 4 bài '
+        'theo thứ tự mục 6.12, mỗi bài có nhãn vùng', (tester) async {
+      await seedSetUp(db);
+      await seedLibrary(db, library);
+      await pump(tester, now: tue13);
+      await openLibrary(tester);
+      expect(rows(tester), [
+        'chest-mid-machine-pec-deck',
+        'chest-mid-free-weight-flat-barbell-bench-press',
+        'chest-upper-machine-incline-machine-chest-press',
+        'chest-chest-lower-decline-plate-loaded-press',
+      ]);
+      for (final label in ['Ngực giữa', 'Ngực trên', 'Ngực dưới']) {
+        expect(find.text(label), findsWidgets, reason: label);
       }
-      // Máy trước tạ sau trong một vùng.
-      await tapKey(tester, 'group-chest');
-      expect(
-        [
-          for (final id in rows(tester).take(2))
-            id.contains('-machine-') ? 'machine' : 'free-weight',
-        ],
-        ['machine', 'free-weight'],
-      );
-      expect(find.text(S.libraryFootnote, skipOffstage: false), findsOneWidget);
-      expect(find.byType(CircularProgressIndicator), findsNothing);
-      expectReadOnly();
-      semantics.dispose();
     });
 
-    testWidgets('hôm nay không có buổi tập → mặc định Ngực', (tester) async {
+    testWidgets('F18-AC43, F18-E41: nhóm Chân 5 bài nhãn đùi trước / đùi sau '
+        '/ bắp chân; Tay trước 3 bài cùng một vùng vẫn phẳng, nhãn vùng dưới '
+        'mỗi bài', (tester) async {
       await seedSetUp(db);
-      await seedLibrary(db);
+      await seedLibrary(db, library);
       await pump(tester, now: tue13);
       await openLibrary(tester);
-      expect(regionHeaders(tester), [
-        'chest_upper',
-        'chest_mid',
-        'chest_lower',
-      ]);
-    });
-
-    testWidgets('F18-E4: vùng tạm chỉ còn 1 bài → hiện bài còn lại, không có '
-        'ghi chú; bài đã rời thư viện không hiện', (tester) async {
-      await seedSetUp(db);
-      final gone = exerciseOf(library, MuscleRegion.chestUpper, 'free-weight');
-      await seedLibrary(db, [
-        for (final e in library)
-          e.id == gone.id ? e.copyWith(active: false) : e,
-      ]);
-      await pump(tester, now: tue13);
-      await openLibrary(tester);
-      expect(
-        rows(tester).first,
-        exerciseOf(library, MuscleRegion.chestUpper).id,
-      );
-      expect(rows(tester), isNot(contains(gone.id)));
+      await tapKey(tester, 'group-legs');
       expect(rows(tester), hasLength(5));
+      expect(find.text('Đùi trước'), findsNWidgets(2));
+      expect(find.text('Đùi sau'), findsNWidgets(2));
+      expect(find.text('Bắp chân'), findsOneWidget);
+      await tapKey(tester, 'group-biceps');
+      expect(rows(tester), hasLength(3));
+      expect(find.text('Bắp tay'), findsNWidgets(3));
+      expect(regionHeadings(), findsNothing);
+    });
+
+    testWidgets('F18-R46: bài gỡ sau ra mắt (active = false) không hiện; ghi '
+        'chú "Không còn trong thư viện" không có ở thư viện', (tester) async {
+      await seedSetUp(db);
+      const gone = 'chest-upper-machine-incline-machine-chest-press';
+      await seedLibrary(db, [
+        for (final e in library) e.id == gone ? e.copyWith(active: false) : e,
+      ]);
+      await pump(tester, now: tue13);
+      await openLibrary(tester);
+      expect(rows(tester), hasLength(3));
+      expect(rows(tester), isNot(contains(gone)));
       expect(find.text(S.notInLibrary), findsNothing);
     });
 
     testWidgets('F18-AC4: đã chạm trần ngân sách AI → thư viện và chi tiết bài '
         'dùng bình thường', (tester) async {
       await seedSetUp(db);
-      await seedLibrary(db);
+      await seedLibrary(db, library);
       await (db.update(db.syncState)..where((s) => s.id.equals(1))).write(
         SyncStateCompanion(
           aiBudget: Value(
@@ -423,7 +427,7 @@ void main() {
         'Cách tập đánh số, Lưu ý an toàn, nhãn hướng dẫn; không có khu mức tạ '
         '(F19-AC4), không có lối thêm/sửa/xóa (F18-AC7)', (tester) async {
       await seedSetUp(db);
-      await seedLibrary(db);
+      await seedLibrary(db, library);
       await pump(tester, tall: true);
       final e = exerciseOf(library, MuscleRegion.chestUpper, 'machine');
       await openExercise(tester, e);
@@ -470,13 +474,14 @@ void main() {
       expect(find.byType(LibraryScreen), findsOneWidget);
     });
 
-    testWidgets('F19-AC1, F18-AC2: cả 29 bài mở được, đủ video, tên, nhóm · '
-        'vùng · dụng cụ, hình vùng cơ, hướng dẫn', (tester) async {
+    testWidgets('F19-AC1, F18-AC41: cả 28 bài mở được, đủ video, tên, dòng '
+        'phụ "{Nhóm} · {Vùng}", hình vùng cơ, hướng dẫn; F19-AC43: không bài '
+        'nào có chữ dụng cụ', (tester) async {
       await seedSetUp(db);
-      await seedLibrary(db);
+      await seedLibrary(db, library);
       await pump(tester, tall: true);
       final router = container.read(routerProvider);
-      expect(library, hasLength(29));
+      expect(library, hasLength(28));
       for (final e in library) {
         router.go(exercisePath(e.id, ExerciseFrom.library));
         await tester.pumpAndSettle();
@@ -502,6 +507,54 @@ void main() {
           find.text(S.exerciseGuideNote, skipOffstage: false),
           findsOneWidget,
         );
+        for (final word in ['Máy', 'Tạ', 'Không dụng cụ']) {
+          expect(
+            find.text(word, skipOffstage: false),
+            findsNothing,
+            reason: '${e.id}: $word',
+          );
+          expect(
+            find.textContaining(' · $word', skipOffstage: false),
+            findsNothing,
+            reason: '${e.id}: $word',
+          );
+        }
+      }
+    });
+
+    testWidgets('F18-E42: hồ sơ Nữ, bài chân → hình vùng cơ bản nữ đúng vùng '
+        'chân (đùi trước ở mặt trước; đùi sau, bắp chân ở mặt sau)', (
+      tester,
+    ) async {
+      await seedSetUp(db);
+      await seedLibrary(db, library);
+      await ProfileRepository(
+        db,
+      ).put(completedProfile().copyWith(sex: Sex.female));
+      await pump(tester, tall: true);
+      final router = container.read(routerProvider);
+      for (final (region, file) in [
+        (MuscleRegion.quads, 'female_front'),
+        (MuscleRegion.hamstrings, 'female_back'),
+        (MuscleRegion.calves, 'female_back'),
+      ]) {
+        router.go(
+          exercisePath(exerciseOf(library, region).id, ExerciseFrom.library),
+        );
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(ValueKey('body-map-$file-${region.id}')),
+          findsOneWidget,
+          reason: region.id,
+        );
+        expect(
+          find.byWidgetPredicate(
+            (w) =>
+                w.key is ValueKey<String> &&
+                (w.key! as ValueKey<String>).value.startsWith('body-map-male'),
+          ),
+          findsNothing,
+        );
       }
     });
 
@@ -509,7 +562,7 @@ void main() {
         'đang phát; tải lỗi → câu F18-E3 + "Thử lại" → tải lại; rời màn hình '
         '→ hủy trình phát', (tester) async {
       await seedSetUp(db);
-      await seedLibrary(db);
+      await seedLibrary(db, library);
       await pump(tester);
       final e = exerciseOf(library, MuscleRegion.lats, 'machine');
       await openExercise(tester, e);
@@ -587,7 +640,7 @@ void main() {
         'không vòng xoay; khu video "Cần kết nối internet để xem video.", '
         'không tạo trình phát; có mạng lại → nút phát', (tester) async {
       await seedSetUp(db);
-      await seedLibrary(db);
+      await seedLibrary(db, library);
       connectivity.online = false;
       await pump(tester);
       await openLibrary(tester);
@@ -619,7 +672,7 @@ void main() {
     testWidgets('F10-AC21: nhãn hướng dẫn có ở chi tiết bài; chạm → bảng giải '
         'thích như nhãn "tham khảo" của Bản 1', (tester) async {
       await seedSetUp(db);
-      await seedLibrary(db);
+      await seedLibrary(db, library);
       await pump(tester, tall: true);
       await openExercise(tester, exerciseOf(library, MuscleRegion.biceps));
       expect(
@@ -670,7 +723,7 @@ void main() {
   testWidgets('dữ liệu đổi trong lúc S-67 che thư viện (đồng bộ kéo về buổi '
       'hôm nay) → quay lại không lỗi, thư viện cập nhật', (tester) async {
     await seedSetUp(db);
-    await seedLibrary(db);
+    await seedLibrary(db, library);
     await pump(tester);
     await openLibrary(tester);
     final e = exerciseOf(library, MuscleRegion.lats, 'machine');
@@ -691,7 +744,7 @@ void main() {
   testWidgets('dữ liệu đổi khi đang ở tab khác (tab Tập luyện tạm dừng) → '
       'quay lại tab không lỗi', (tester) async {
     await seedSetUp(db);
-    await seedLibrary(db);
+    await seedLibrary(db, library);
     await pump(tester);
     await openLibrary(tester);
     await tester.tap(tabBarText(S.tabMe));
@@ -718,21 +771,29 @@ void main() {
   testWidgets('UX-AC40, F18-AC6: hồ sơ Nữ → hình thu nhỏ và hình lớn bản nữ; '
       'đổi sang Nam → bản nam ngay', (tester) async {
     await seedSetUp(db);
-    await seedLibrary(db);
+    await seedLibrary(db, library);
     final profiles = ProfileRepository(db);
     await profiles.put(completedProfile().copyWith(sex: Sex.female));
     await pump(tester);
     await openLibrary(tester);
+    // Nhóm Lưng Bản 3: 3 bài lưng giữa, 1 bài xô (03 Bản 3 §6.12).
     expect(
-      find.byKey(const ValueKey('body-map-female_back-lats')),
-      findsNWidgets(2),
+      find.byKey(const ValueKey('body-map-female_back-back_mid')),
+      findsNWidgets(3),
     );
-    expect(find.byKey(const ValueKey('body-map-male_back-lats')), findsNothing);
-    final e = exerciseOf(library, MuscleRegion.lats, 'machine');
+    expect(
+      find.byKey(const ValueKey('body-map-male_back-back_mid')),
+      findsNothing,
+    );
+    final e = exerciseOf(library, MuscleRegion.lats);
     await tapKey(tester, 'exercise-${e.id}');
     expect(
       find.byKey(const ValueKey('body-map-female_back-lats')),
       findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('body-map-female_back-back_mid')),
+      findsNothing,
     );
 
     await profiles.put(completedProfile().copyWith(sex: Sex.male));
@@ -747,8 +808,8 @@ void main() {
     );
     await tapKey(tester, 'exercise-back');
     expect(
-      find.byKey(const ValueKey('body-map-male_back-lats')),
-      findsNWidgets(2),
+      find.byKey(const ValueKey('body-map-male_back-back_mid')),
+      findsNWidgets(3),
     );
   });
 }

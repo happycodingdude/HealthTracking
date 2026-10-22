@@ -258,5 +258,27 @@ void main() {
       await tester.pumpAndSettle();
       await snap('s22_${v.name}');
     });
+
+    testWidgets('S-22 mở thứ 6, bộ chọn 7 viên đã chọn Chân (VS-33, UA3-10) '
+        '${v.name}', (tester) async {
+      await seedOctober(tester, v, changed: true);
+      final open = find.byKey(const ValueKey('open-weekly'));
+      await tester.scrollUntilVisible(
+        open,
+        -300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(open);
+      await tester.pumpAndSettle();
+      for (final key in ['day-row-5', 'muscle-shoulders', 'muscle-legs']) {
+        final f = find.byKey(ValueKey(key));
+        await tester.ensureVisible(f);
+        await tester.pumpAndSettle();
+        await tester.tap(f);
+        await tester.pumpAndSettle();
+      }
+      await snap('s22_legs_${v.name}');
+    });
   }
 }
