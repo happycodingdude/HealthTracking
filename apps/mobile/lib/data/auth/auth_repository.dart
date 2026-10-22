@@ -33,6 +33,13 @@ final class AuthRepository {
   Future<MeResponse> fetchMe() async =>
       MeResponse.fromJson(await _api.getJson('/v1/me'));
 
+  /// Đăng xuất (05 Bản 3 §6.6.6 bước 3): server thu hồi chuỗi của
+  /// [refreshToken] và xóa token thẻ màn hình khóa (TD3-18).
+  Future<void> logout(String refreshToken) => _api.postJson(
+    '/v1/auth/logout',
+    LogoutRequest(refreshToken: refreshToken).toJson(),
+  );
+
   /// Gọi `POST /v1/auth/refresh` (dùng cho [TokenManager]).
   static Future<TokenPair> refreshWith(
     ApiClient api,

@@ -10,11 +10,13 @@ import '../../../core/widgets/phone_input_formatter.dart';
 import '../../../core/widgets/settings_card.dart';
 import '../../../data/sync/sync_providers.dart';
 import '../../../data/sync/sync_status.dart';
+import '../../account/presentation/logout_dialogs.dart';
 import '../../auth/application/auth_controller.dart';
 import '../application/update_display_name.dart';
 import 'edit_display_name_sheet.dart';
 
 /// S-56 — Tài khoản và dữ liệu (F09). Không có mục xóa tài khoản ở Bản 1 (IA-02).
+/// Bản 3: nhóm "Thiết bị này" với "Đăng xuất" (F-27).
 class AccountDataScreen extends ConsumerWidget {
   const AccountDataScreen({super.key});
 
@@ -89,6 +91,41 @@ class AccountDataScreen extends ConsumerWidget {
                   ),
                 ),
               ),
+            // Thiết bị này (04 Bản 3 S-56, UA3-16): "Đăng xuất" chữ thường,
+            // chỉ hộp xác nhận mới có nút đỏ.
+            const SizedBox(height: 24),
+            Semantics(
+              header: true,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 4, bottom: 8),
+                child: Text(
+                  S.thisDevice.toUpperCase(),
+                  style: context.text.labelLarge?.copyWith(
+                    color: context.palette.textSecondary,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+              ),
+            ),
+            SettingsCard(
+              children: [
+                SettingsRow(
+                  key: const ValueKey('row-logout'),
+                  label: S.logout,
+                  onTap: () => confirmLogout(context, ref),
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 12, 4, 0),
+              child: Text(
+                S.logoutHint,
+                style: context.text.bodyMedium?.copyWith(
+                  color: context.palette.textSecondary,
+                ),
+              ),
+            ),
           ],
         ),
       ),

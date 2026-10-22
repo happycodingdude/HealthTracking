@@ -36,7 +36,11 @@ dependencies:
   go_router: ^17.0.0
   # Phiên bản app cho header X-App-Version (06 Bản 2 ED2-02).
   package_info_plus: ^10.2.1
+  # Xóa file SQLite và thư mục dish_images khi đăng xuất (05 Bản 3 TD3-17).
+  path_provider: ^2.1.6
   sentry_flutter: ^9.30.1
+  # Cờ logout_pending trong UserDefaults (05 Bản 3 TD3-17).
+  shared_preferences: ^2.5.6
   timezone: ^0.10.1
   url_launcher: ^6.3.2
   uuid: ^4.6.0

@@ -30,7 +30,8 @@ void main() {
     );
   });
 
-  test('UX-AC17: màu đỏ chỉ ở lỗi nhập liệu và nút xóa', () {
+  test('UX-AC17, UX-AC62: màu đỏ chỉ ở lỗi nhập liệu, nút xóa và nút "Đăng '
+      'xuất" trong hộp xác nhận', () {
     // Mỗi file được duyệt tay: câu lỗi dưới ô/dưới dòng, hoặc nút xóa.
     const reviewed = {
       'lib/app/theme.dart', // định nghĩa colorScheme.error
@@ -44,6 +45,8 @@ void main() {
       'lib/features/weight/presentation/weight_sheet.dart', // nút xóa
       // F21-V1 → V4 dưới hai ô, nút "Xóa mức tạ" (UX-AC42).
       'lib/features/workout/presentation/lift_log_sheet.dart',
+      // Nút "Đăng xuất" trong hộp xác nhận S-73 (04 Bản 3 UA3-16, UX-AC62).
+      'lib/features/account/presentation/logout_dialogs.dart',
     };
     final used = filesUsing(
       RegExp(r'colors\.error\b|colorScheme\.error\b|Colors\.red'),

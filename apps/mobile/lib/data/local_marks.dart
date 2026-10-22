@@ -6,6 +6,9 @@ abstract interface class LocalMarks {
   Future<int?> lastAgeYear();
 
   Future<void> setLastAgeYear(int year);
+
+  /// Đăng xuất (05 Bản 3 TD3-17).
+  Future<void> clear();
 }
 
 /// Lưu trong Keychain cạnh phiên đăng nhập: không cần thêm cột vào schema đã
@@ -31,6 +34,9 @@ final class SecureLocalMarks implements LocalMarks {
   @override
   Future<void> setLastAgeYear(int year) =>
       _s.write(key: _ageYear, value: '$year');
+
+  @override
+  Future<void> clear() => _s.delete(key: _ageYear);
 }
 
 /// Bản trong bộ nhớ (test).
@@ -44,4 +50,7 @@ final class MemoryLocalMarks implements LocalMarks {
 
   @override
   Future<void> setLastAgeYear(int year) async => _year = year;
+
+  @override
+  Future<void> clear() async => _year = null;
 }

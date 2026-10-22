@@ -59,6 +59,19 @@ final class RefreshRequest {
   Map<String, Object?> toJson() => {'refreshToken': refreshToken};
 }
 
+/// `POST /v1/auth/logout` (05 Bản 3 §6.12): refresh token của phiên trên máy
+/// này; server thu hồi cả chuỗi của nó (TD3-18).
+final class LogoutRequest {
+  const LogoutRequest({required this.refreshToken});
+
+  factory LogoutRequest.fromJson(Object? json) =>
+      LogoutRequest(refreshToken: JsonReader(json).string('refreshToken'));
+
+  final String refreshToken;
+
+  Map<String, Object?> toJson() => {'refreshToken': refreshToken};
+}
+
 /// Cặp token trả về khi đăng ký, đăng nhập, làm mới (TD-10).
 final class TokenPair {
   const TokenPair({

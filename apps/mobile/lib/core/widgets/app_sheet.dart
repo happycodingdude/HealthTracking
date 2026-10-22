@@ -32,14 +32,17 @@ Future<T?> showAppSheet<T>(
 }
 
 /// Mở hộp thoại; trang phía sau giữ nguyên, chỉ phủ lớp mờ (UR-16).
+/// [barrierDismissible] = false: chạm lớp mờ không đóng (hộp không có nút).
 Future<T?> showAppDialog<T>(
   BuildContext context, {
   required WidgetBuilder builder,
+  bool barrierDismissible = true,
 }) {
   return showDialog<T>(
     context: context,
     useRootNavigator: true,
     barrierColor: context.palette.scrim,
+    barrierDismissible: barrierDismissible,
     builder: builder,
   );
 }

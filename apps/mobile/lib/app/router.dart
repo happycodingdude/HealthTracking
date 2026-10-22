@@ -94,6 +94,13 @@ const onboardingSteps = {
   '/onboarding/5',
 };
 
+/// Màn đầu tiên khi mở app: Hôm nay (NAV-1); sau đăng xuất là màn Đăng nhập
+/// S-01b (05 Bản 3 §6.6.6 bước 6).
+final initialLocationProvider = Provider<String>((ref) => AppTab.today.path);
+
+/// Màn Đăng nhập S-01b.
+const loginPath = '/welcome/login';
+
 /// Router của app (TD-03). Mở app vào Hôm nay (NAV-1).
 final routerProvider = Provider<GoRouter>((ref) {
   final auth = ValueNotifier<AuthState>(ref.read(authControllerProvider));
@@ -109,7 +116,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     ..onDispose(setup.dispose);
 
   final router = GoRouter(
-    initialLocation: AppTab.today.path,
+    initialLocation: ref.read(initialLocationProvider),
     refreshListenable: Listenable.merge([auth, setup]),
     redirect: (context, state) =>
         appRedirect(auth.value, setup.value, state.matchedLocation),

@@ -14,7 +14,10 @@ import 'package:mobile/app/providers.dart';
 import 'package:mobile/app/shell/app_tab_bar.dart';
 import 'package:mobile/app/strings_vi.dart';
 import 'package:mobile/core/formatters.dart';
+import 'package:mobile/data/auth/session_store.dart';
 import 'package:mobile/data/db/app_database.dart';
+import 'package:mobile/data/logout_flag.dart';
+import 'package:mobile/features/auth/presentation/login_screen.dart';
 import 'package:mobile/main.dart' as app;
 
 import 'flow_helpers.dart';
@@ -442,6 +445,43 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.textContaining(S.calorieAuto), findsOneWidget);
       expect(find.text('0đ / 50.000đ'), findsNothing, reason: 'F09-AC3');
+    },
+  );
+
+  testWidgets(
+    'VS-38, F27-E2: tắt app sau khi bật cờ đăng xuất → mở lại xóa nốt → màn '
+    'Đăng nhập; đăng nhập lại khôi phục; đăng xuất qua S-56 (TAC3-10 phần app) '
+    '→ Keychain, cờ trống, mở lại app vào màn Chào mừng',
+    (tester) async {
+      // Máy đang đăng nhập (test trước) bị tắt ngay sau bước bật cờ.
+      await tester.pumpWidget(const SizedBox());
+      await PrefsLogoutFlag().set();
+      await launch();
+      await pumpUntil(tester, find.byType(LoginScreen));
+      expect(await SecureSessionStore().read(), isNull);
+      expect(await PrefsLogoutFlag().isPending(), isFalse);
+
+      await enter(tester, S.fieldPhone, '0912345678');
+      await enter(tester, S.fieldPassword, password);
+      await reveal(tester, find.widgetWithText(FilledButton, S.login));
+      await tester.tap(find.widgetWithText(FilledButton, S.login));
+      await pumpUntil(tester, find.text(S.restored));
+      expect(find.textContaining(S.greeting('Minh Anh')), findsOneWidget);
+
+      await tester.tap(tabLabel(S.tabMe));
+      await tester.pumpAndSettle();
+      await tapVisible(tester, find.byKey(const ValueKey('row-account-data')));
+      await tapVisible(tester, find.byKey(const ValueKey('row-logout')));
+      await tester.tap(find.byKey(const ValueKey('logout-confirm')));
+      await pumpUntil(tester, find.byType(LoginScreen));
+      expect(find.byType(AppTabBar), findsNothing);
+      expect(await SecureSessionStore().read(), isNull);
+      expect(await PrefsLogoutFlag().isPending(), isFalse);
+
+      await tester.pumpWidget(const SizedBox());
+      await launch();
+      await pumpUntil(tester, find.widgetWithText(OutlinedButton, S.login));
+      expect(find.byType(AppTabBar), findsNothing);
     },
   );
 

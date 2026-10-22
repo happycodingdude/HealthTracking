@@ -154,6 +154,24 @@ final class TokenService {
     return result;
   }
 
+  /// Đăng xuất (05 Bản 3 TD3-18): thu hồi cả chuỗi của [refreshToken] nếu
+  /// token thuộc [userId]. Token lạ, của tài khoản khác hoặc chuỗi đã thu hồi
+  /// → không đổi gì (gọi lại được). Chuỗi khác của cùng tài khoản (máy khác)
+  /// giữ nguyên (TA3-09).
+  Future<void> revokeFamily(Session tx, String userId, String refreshToken) =>
+      tx.execute(
+        Sql.named('''
+          UPDATE refresh_tokens SET revoked_at = @now
+          WHERE revoked_at IS NULL AND family_id = (
+            SELECT family_id FROM refresh_tokens
+            WHERE token_hash = @hash:bytea AND user_id = @user)'''),
+        parameters: {
+          'now': _now(),
+          'hash': hashRefreshToken(refreshToken),
+          'user': userId,
+        },
+      );
+
   /// Thu hồi mọi phiên của tài khoản (admin đặt lại mật khẩu, VS01-T07).
   Future<void> revokeAll(Session tx, String userId) => tx.execute(
     Sql.named(

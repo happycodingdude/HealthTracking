@@ -114,6 +114,23 @@ final class SyncEngine {
     return run;
   }
 
+  /// Đăng xuất (05 Bản 3 §6.6.6 bước 2): chờ lần đồng bộ đang chạy rồi push
+  /// toàn bộ outbox, không pull. Lỗi mạng / server → [SyncOutcome.failed],
+  /// không hẹn thử lại; outbox giữ nguyên phần chưa gửi được (F27-R3).
+  Future<SyncOutcome> flush() async {
+    await _running;
+    try {
+      await _pushAll();
+      return SyncOutcome.synced;
+    } on ServerFailure catch (e) {
+      return e.error.code == ErrorCode.unauthorized
+          ? SyncOutcome.sessionExpired
+          : SyncOutcome.failed;
+    } on ApiFailure {
+      return SyncOutcome.failed;
+    }
+  }
+
   Future<SyncOutcome> _runLoop() async {
     SyncOutcome outcome;
     do {

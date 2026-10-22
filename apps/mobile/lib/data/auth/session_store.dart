@@ -24,6 +24,9 @@ abstract interface class SessionStore {
 
   /// Phiên hết hạn: bỏ refresh token, giữ userId và số điện thoại.
   Future<void> expire();
+
+  /// Đăng xuất (05 Bản 3 TD3-17): xóa hết, như lần cài mới.
+  Future<void> clear();
 }
 
 /// Keychain của iPhone. `first_unlock_this_device`: không chép sang máy khác
@@ -73,6 +76,13 @@ final class SecureSessionStore implements SessionStore {
 
   @override
   Future<void> expire() => _s.delete(key: _refresh);
+
+  @override
+  Future<void> clear() async {
+    for (final key in [_userId, _phone, _refresh]) {
+      await _s.delete(key: key);
+    }
+  }
 }
 
 /// Dùng trong test.
@@ -104,4 +114,7 @@ final class MemorySessionStore implements SessionStore {
     final s = session;
     if (s != null) session = StoredSession(userId: s.userId, phone: s.phone);
   }
+
+  @override
+  Future<void> clear() async => session = null;
 }

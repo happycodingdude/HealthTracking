@@ -11,6 +11,7 @@ import 'ai/menu_service.dart';
 import 'auth/auth_routes.dart';
 import 'auth/auth_service.dart';
 import 'auth/login_rate_limiter.dart';
+import 'auth/logout.dart';
 import 'auth/token_service.dart';
 import 'db/database.dart';
 import 'health/health_routes.dart';
@@ -104,6 +105,7 @@ Handler buildApp(AppDeps deps) {
   final router = Router(notFoundHandler: notFoundHandler)
     ..get('/healthz', healthHandler(deps.db));
   addAuthRoutes(router, deps.auth, trustProxy: deps.trustProxy);
+  addLogoutRoute(router, deps.db.pool, deps.tokens);
   addMeRoutes(router, deps.db.pool, deps.tokens);
   addSyncRoutes(router, deps.sync, deps.tokens);
   addMenuRoutes(router, deps.menus, deps.tokens);
