@@ -4,7 +4,7 @@
 //   tool/reset_dev_db.sh            # xóa, tạo lại, rồi chạy file này
 //   dart run tool/seed_dev.dart     # chỉ nạp (bỏ qua tài khoản đã có)
 //   dart run tool/seed_dev.dart --v2
-//                                   # database kiểu Bản 2 đang chạy
+//                                   # dừng ở database kiểu Bản 2 đang chạy
 //                                   # production (thử `library purge`)
 //
 // Kết nối: DATABASE_URL của tiến trình, rồi apps/server/.env (code không chứa
@@ -15,20 +15,22 @@
 // - 0900000001 "Minh": như Bản 1 — đã xếp lịch từ 40 ngày trước (trải qua 2
 //   tháng), có buổi đã đánh dấu, buổi chờ đánh dấu, vài số cân; mức tạ của
 //   các buổi trước tuần này, tăng dần theo từng buổi, trên 3 bài giữ (2 bài
-//   máy, 1 bài tạ) và — với `--v2` — 2 bài bỏ (06 Bản 3 VS32-T09).
+//   máy, 1 bài tạ) và 2 bài bỏ (06 Bản 3 VS32-T09; mất sau purge).
 // - 0900000002 "Lan": đã hoàn tất thiết lập nhưng "Để sau" lịch tuần (chưa có
 //   lịch, 03 Bản 2 §6.1), công tắc nhắc bật.
 //
-// Thư viện bài tập: mặc định nạp data/v3__exercises.json (28 bài Bản 3) bằng
-// cùng LibraryImporter của `admin library import` (06 Bản 3 VS33-T09). `--v2`:
-// 29 bài Bản 2 kèm `equipment` như production Bản 2, mức tạ bài máy ghi số
-// thanh (FX2-03).
+// Thư viện bài tập, đi đúng đường lên Bản 3 của production (05 Bản 3
+// §6.11.3): database trống → 29 bài Bản 2 kèm `equipment`, mức tạ bài máy ghi
+// số thanh (FX2-03) → `library purge` (xóa 2 bài bỏ có mức tạ, đơn vị nấc
+// máy / kg cho bài giữ đã ghi) → nạp data/v3__exercises.json bằng cùng
+// LibraryImporter của `admin library import` (06 Bản 3 VS33-T09, VS34). `--v2`
+// dừng trước purge. Database đã có thư viện: chỉ nạp lại file Bản 3.
 import 'dart:io';
 
 import 'package:domain/domain.dart';
 import 'package:postgres/postgres.dart';
 import 'package:server/server.dart';
-import 'package:server/testing.dart' show insertV2Library, v2Library;
+import 'package:server/testing.dart' show insertV2Library;
 
 final _password = _seedPassword();
 const _timezone = 'Asia/Ho_Chi_Minh';
@@ -46,15 +48,25 @@ DateTime _utc(DateTime wall) => DateTime.utc(
 ).subtract(_vnOffset);
 
 Future<void> main(List<String> args) async {
-  final v2 = args.contains('--v2');
+  final v2Only = args.contains('--v2');
   final conn = await Connection.openFromUrl(_withSslMode(_databaseUrl()));
   try {
     // Giờ trên iPhone của Bạn (giờ Việt Nam), không phụ thuộc múi giờ của Mac.
     final now = DateTime.now().toUtc().add(_vnOffset);
     final local = DateTime(now.year, now.month, now.day, now.hour, now.minute);
-    final library = v2 ? await _seedLibraryV2(conn) : await _seedLibrary(conn);
-    await _seedScheduled(conn, local, library);
+    final fresh =
+        (await conn.execute('SELECT count(*) FROM exercises')).single[0] == 0;
+    if (fresh) {
+      stdout.writeln(
+        'Thư viện Bản 2: đã nạp ${await insertV2Library(conn)} bài (có '
+        'equipment).',
+      );
+    }
+    await _seedScheduled(conn, local, await _activeIds(conn));
     await _seedNoSchedule(conn, local);
+    if (v2Only) return;
+    if (fresh) await _purge(conn);
+    await _seedLibrary(conn);
   } finally {
     await conn.close();
   }
@@ -106,21 +118,32 @@ String _withSslMode(String url) {
             .toString();
 }
 
-Future<List<Exercise>> _seedLibrary(Connection c) async {
+Future<void> _seedLibrary(Connection c) async {
   final file = LibraryFile.parse(
     File('data/v3__exercises.json').readAsStringSync(),
   );
   final report = await LibraryImporter(c).run(file);
-  stdout.writeln('Thư viện: ${report.describe()}');
+  stdout.writeln('Thư viện Bản 3: ${report.describe()}');
   if (!report.ok) exitCode = 1;
-  return LibraryRules.sorted(file.exercises);
 }
 
-Future<List<Exercise>> _seedLibraryV2(Connection c) async {
-  final count = await insertV2Library(c);
-  stdout.writeln('Thư viện Bản 2: đã nạp $count bài (có equipment).');
-  return LibraryRules.sorted(v2Library().exercises);
+/// `library purge` như lúc phát hành (đã "Đồng ý" với bảng vừa đếm).
+Future<void> _purge(Connection c) async {
+  final purge = LibraryPurge(c, const SystemClock());
+  final r = await purge.apply(confirmCount: (await purge.dryRun()).total);
+  stdout.writeln(
+    'library purge: xóa ${r.liftLogs} mức tạ của bài bỏ; đơn vị cho bài giữ '
+    'đã ghi: ${r.stepsUnits} nấc máy, ${r.kgUnits} kg.',
+  );
 }
+
+/// Bài đang có trong thư viện (chưa gỡ, chưa xóa).
+Future<Set<String>> _activeIds(Connection c) async => {
+  for (final r in await c.execute(
+    'SELECT id FROM exercises WHERE active AND NOT deleted',
+  ))
+    r[0]! as String,
+};
 
 /// Tạo tài khoản; null khi số đã có (bỏ qua, giữ dữ liệu cũ).
 Future<String?> _user(Connection c, String phone, String name) async {
@@ -165,7 +188,7 @@ Future<void> _profile(
 Future<void> _seedScheduled(
   Connection c,
   DateTime now,
-  List<Exercise> library,
+  Set<String> library,
 ) async {
   final user = await _user(c, '0900000001', 'Minh');
   if (user == null) return;
@@ -283,7 +306,7 @@ Future<int> _liftLogs(
   Connection c,
   String user,
   List<PlanDay> days,
-  List<Exercise> library,
+  Set<String> library,
 ) async {
   // (bài, mức bắt đầu buổi đầu × 10, bước × 10).
   const plan = {
@@ -301,13 +324,12 @@ Future<int> _liftLogs(
       ('delt-front-free-weight-seated-dumbbell-shoulder-press', 120, 25),
     ],
   };
-  final ids = {for (final e in library) e.id};
   final sessions = <String, int>{};
   var count = 0;
   for (final d in days) {
     for (final g in d.sessionMuscles) {
       for (final (id, base, step) in plan[g] ?? const <(String, int, int)>[]) {
-        if (!ids.contains(id)) continue;
+        if (!library.contains(id)) continue;
         final n = sessions.update(id, (n) => n + 1, ifAbsent: () => 0);
         final start = base + step * n - (n % 4 == 3 ? 3 * step : 0);
         final at = _utc(d.date.atTime(d.time!).add(const Duration(hours: 1)));

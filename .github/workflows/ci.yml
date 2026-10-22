@@ -69,11 +69,11 @@ jobs:
             exit 1
           fi
 
-      - name: compat_e2e — app 2.x với server Bản 3 khi PR đụng đồng bộ, contract, cấu trúc (06 Bản 3 §6.11.1)
+      - name: compat_e2e — app 2.x với server Bản 3 khi PR đụng đồng bộ, contract, cấu trúc, purge, nạp thư viện (06 Bản 3 §6.11.1)
         if: github.event_name == 'pull_request'
         run: |
           if git diff --name-only "${{ github.event.pull_request.base.sha }}" HEAD \
-            | grep -qE '^(apps/server/lib/src/(sync|account|auth)/|apps/server/migrations/|packages/api_contract/|tool/compat)'; then
+            | grep -qE '^(apps/server/lib/src/(sync|account|auth)/|apps/server/lib/src/library/(purge|library_importer)\.dart|apps/server/migrations/|packages/api_contract/|tool/compat|data/v3__exercises\.json)'; then
             tool/compat_e2e.sh
           fi
 

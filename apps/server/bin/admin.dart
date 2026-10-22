@@ -12,6 +12,7 @@ import 'package:server/src/auth/token_service.dart';
 ///   admin reset-password --phone 0901234567
 ///   admin budget --show
 ///   admin library import data/v3__exercises.json [--check-only]
+///   admin library purge --dry-run | --apply --confirm-count=N
 ///   admin library check-videos
 Future<void> main(List<String> args) async {
   final parser = ArgParser()
@@ -28,6 +29,13 @@ Future<void> main(List<String> args) async {
           'import',
           ArgParser()..addFlag('check-only', negatable: false),
         )
+        ..addCommand(
+          'purge',
+          ArgParser()
+            ..addFlag('dry-run', negatable: false)
+            ..addFlag('apply', negatable: false)
+            ..addOption('confirm-count'),
+        )
         ..addCommand('check-videos'),
     );
   final ArgResults parsed;
@@ -42,6 +50,14 @@ Future<void> main(List<String> args) async {
             library.rest.length != (library.name == 'import' ? 1 : 0))) {
       throw const FormatException('Thiếu lệnh con hoặc đường dẫn file');
     }
+    if (library?.name == 'purge' &&
+        (library!.flag('dry-run') == library.flag('apply') ||
+            (library.flag('apply') &&
+                int.tryParse(library.option('confirm-count') ?? '') == null))) {
+      throw const FormatException(
+        'library purge: chọn --dry-run, hoặc --apply kèm --confirm-count',
+      );
+    }
   } on FormatException catch (e) {
     stderr
       ..writeln(e.message)
@@ -50,6 +66,9 @@ Future<void> main(List<String> args) async {
       ..writeln('      admin budget --show')
       ..writeln(
         '      admin library import <file thư viện .json> [--check-only]',
+      )
+      ..writeln(
+        '      admin library purge --dry-run | --apply --confirm-count=<tổng>',
       )
       ..writeln('      admin library check-videos');
     exitCode = 64;
@@ -104,6 +123,32 @@ Future<void> main(List<String> args) async {
         ).run();
         (result.failed ? stderr : stdout).writeln(result.describe());
         if (result.failed) exitCode = 1;
+      case 'library' when parsed.command!.command!.name == 'purge':
+        // 05 Bản 3 §6.11: --dry-run in bảng để gửi Bạn; --apply chỉ sau khi
+        // Bạn trả lời "Đồng ý", với tổng của bảng đó (TA3-07).
+        final cmd = parsed.command!.command!;
+        final purge = LibraryPurge(db.pool, const SystemClock());
+        if (cmd.flag('dry-run')) {
+          final report = await purge.dryRun();
+          stdout
+            ..writeln(report.table())
+            ..writeln()
+            ..writeln(_purgeSummary(report, done: false));
+          return;
+        }
+        try {
+          final report = await purge.apply(
+            confirmCount: int.parse(cmd.option('confirm-count')!),
+          );
+          stdout.writeln(
+            report.nothingToDo
+                ? 'Không có gì để xóa.'
+                : '${report.table()}\n\n${_purgeSummary(report, done: true)}',
+          );
+        } on PurgeRefused catch (e) {
+          stderr.writeln(e.message);
+          exitCode = 1;
+        }
       case 'library':
         // 05 Bản 2 §6.10.2. File không đọc được → in lỗi, mã thoát 1.
         final cmd = parsed.command!.command!;
@@ -137,3 +182,15 @@ Future<void> main(List<String> args) async {
     await db.close();
   }
 }
+
+String _purgeSummary(PurgeReport r, {required bool done}) => [
+  done
+      ? 'Đã xóa ${r.total} bản ghi (${r.liftLogs} mức tạ, ${r.notes} ghi chú); '
+            '${r.exercisesLeft} bài bỏ rời thư viện.'
+      : 'Sẽ xóa ${r.total} bản ghi (${r.liftLogs} mức tạ, ${r.notes} ghi '
+            'chú); ${r.exercisesLeft}/14 bài bỏ còn trong thư viện. Chưa đổi '
+            'gì.',
+  '${done ? 'Đơn vị đã tạo' : 'Đơn vị sẽ tạo'} cho bài giữ đã ghi: '
+      '${r.stepsUnits} nấc máy, ${r.kgUnits} kg.',
+  if (!done) 'Áp dụng: admin library purge --apply --confirm-count=${r.total}',
+].join('\n');

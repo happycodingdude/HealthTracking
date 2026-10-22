@@ -65,18 +65,20 @@ typedef V2Lift = ({String date, String exerciseId, int start, int end});
 
 /// `v2DataSet` (06 Bản 3 §6.11.2): database kiểu Bản 2 — một tài khoản có
 /// lịch Ngực + Tay sau / Lưng + Tay trước / Vai + Bụng, mức tạ ở 3 bài giữ (2
-/// bài máy ghi số thanh, 1 bài tạ ghi kg, FX2-03) và 2 bài bỏ (4 bản ghi),
-/// thư viện 29 bài có `equipment`. Chỉ dùng cột của `0001_baseline`.
+/// bài máy ghi số thanh: "Máy ép ngực" 7 → 8 thanh ngày 05/11, lưu 70 → 80;
+/// 1 bài tạ ghi kg: 40 → 45 kg, lưu 400 → 450; FX2-03) và 2 bài bỏ (4 bản
+/// ghi), thư viện 29 bài có `equipment`. Chỉ dùng cột của `0001_baseline`.
+/// Sau purge: 2 bài máy `steps`, bài tạ `kg` (TA3-04).
 abstract final class V2DataSet {
   static const phone = '0911000001';
 
   /// Bài giữ: máy (số thanh × 10) và tạ (kg × 10).
   static const keptLifts = <V2Lift>[
     (
-      date: '2026-11-02',
+      date: '2026-11-05',
       exerciseId: 'chest-mid-machine-pec-deck',
-      start: 40,
-      end: 50,
+      start: 70,
+      end: 80,
     ),
     (
       date: '2026-11-02',
@@ -123,6 +125,7 @@ abstract final class V2DataSet {
   static const _days = {
     '2026-11-02': ['chest', 'triceps'],
     '2026-11-04': ['back', 'biceps'],
+    '2026-11-05': ['chest', 'triceps'],
     '2026-11-06': ['shoulders', 'abs'],
     '2026-11-09': ['chest', 'triceps'],
     '2026-11-11': ['back', 'biceps'],

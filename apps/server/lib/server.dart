@@ -23,6 +23,7 @@ export 'src/jobs/job_scheduler.dart';
 export 'src/library/guide_drafter.dart';
 export 'src/library/library_file.dart';
 export 'src/library/library_importer.dart';
+export 'src/library/purge.dart';
 export 'src/library/video_check.dart';
 export 'src/library/youtube_api.dart';
 export 'src/logging/logger.dart';

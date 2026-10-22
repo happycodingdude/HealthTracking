@@ -58,5 +58,6 @@ echo "==> App 2.x ↔ server Bản 3"
 cd "$OUT/apps/mobile"
 COMPAT_SERVER_URL="http://127.0.0.1:$PORT" \
 COMPAT_DATABASE_URL="$(db_url "$DBNAME")?sslmode=disable" \
+COMPAT_ADMIN_DATABASE_URL="$(db_url "$DBNAME")" \
 COMPAT_ROOT="$ROOT" \
   flutter test -r expanded test/compat_v2_test.dart

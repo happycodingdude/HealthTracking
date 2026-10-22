@@ -39,6 +39,8 @@ import 'package:mobile/features/today/application/mark_session.dart';
 import 'package:mobile/features/weight/application/weight_edits.dart';
 import 'package:mobile/features/weight/data/weight_repository.dart';
 import 'package:mobile/features/workout/application/lift_log_edits.dart';
+import 'package:mobile/features/workout/data/exercise_note_repository.dart';
+import 'package:mobile/features/workout/data/exercise_unit_repository.dart';
 import 'package:mobile/features/workout/data/lift_log_repository.dart';
 import 'package:server/server.dart';
 import 'package:server/testing.dart';
@@ -196,6 +198,8 @@ final class E2eDevice {
         SyncEntities.aiDailyUsage: AiDailyUsageStore(menus),
         SyncEntities.exercise: ExerciseStore(exercises),
         SyncEntities.liftLog: LiftLogStore(liftLogs),
+        SyncEntities.exerciseUnit: ExerciseUnitStore(units),
+        SyncEntities.exerciseNote: ExerciseNoteStore(notes),
       },
       clock: clock,
       reporter: reporter,
@@ -218,6 +222,8 @@ final class E2eDevice {
   late final MenuRepository menus;
   late final ExerciseRepository exercises;
   late final LiftLogRepository liftLogs;
+  late final ExerciseUnitRepository units = ExerciseUnitRepository(db);
+  late final ExerciseNoteRepository notes = ExerciseNoteRepository(db);
   late final SaveLiftLog saveLift;
   late final DeleteLiftLog deleteLift;
   late final MarkSessionDone markDone;

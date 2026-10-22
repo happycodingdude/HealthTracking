@@ -61,6 +61,8 @@ final class ServerApp {
       log.info('daily_cleanup', {
         'mutations': removed.mutations,
         'refreshTokens': removed.refreshTokens,
+        'liftLogTombstones': removed.liftLogs,
+        'exerciseNoteTombstones': removed.exerciseNotes,
       });
     }
 

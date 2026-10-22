@@ -5,15 +5,18 @@
 // chạy ở tiến trình riêng.
 //
 // Biến môi trường (tool/compat_e2e.sh đặt):
-//   COMPAT_SERVER_URL    server Bản 3, ví dụ http://127.0.0.1:18090
-//   COMPAT_DATABASE_URL  database của server đó (đọc, ghi dữ liệu thử)
+//   COMPAT_SERVER_URL          server Bản 3, ví dụ http://127.0.0.1:18090
+//   COMPAT_DATABASE_URL        database của server đó (đọc, ghi dữ liệu thử)
+//   COMPAT_ADMIN_DATABASE_URL  cùng database, cho admin CLI Bản 3
+//   COMPAT_ROOT                gốc repo của cây code Bản 3 (admin CLI, file
+//                              thư viện Bản 3)
 import 'dart:io';
 
 import 'package:api_contract/api_contract.dart';
 import 'package:dio/dio.dart';
 import 'package:domain/domain.dart';
 import 'package:domain/testing.dart';
-import 'package:drift/drift.dart' show driftRuntimeOptions;
+import 'package:drift/drift.dart' show OrderingTerm, driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/data/api/api_client.dart';
@@ -39,6 +42,24 @@ import 'package:server/server.dart' show LibraryFile, LibraryImporter;
 import 'support/fake_sync.dart';
 
 final _serverUrl = Platform.environment['COMPAT_SERVER_URL']!;
+
+/// 14 bài bỏ (03 Bản 3 §6.12). Code 2.x chưa có `LibraryV3` của domain Bản 3.
+const _removedV2Ids = {
+  'chest-upper-free-weight-incline-dumbbell-press',
+  'chest-lower-machine-high-to-low-cable-crossover',
+  'chest-lower-free-weight-decline-barbell-bench-press',
+  'lats-free-weight-one-arm-dumbbell-row',
+  'back-mid-free-weight-barbell-bent-over-row',
+  'back-lower-machine-back-extension-machine',
+  'back-lower-free-weight-romanian-deadlift',
+  'delt-side-free-weight-dumbbell-lateral-raise',
+  'delt-rear-free-weight-bent-over-dumbbell-rear-delt-raise',
+  'biceps-free-weight-dumbbell-biceps-curl',
+  'brachialis-forearm-machine-cable-rope-hammer-curl',
+  'brachialis-forearm-free-weight-dumbbell-hammer-curl',
+  'triceps-long-machine-overhead-cable-triceps-extension',
+  'triceps-lateral-medial-free-weight-close-grip-bench-press',
+};
 final _password = randomTestPassword();
 
 /// Một iPhone chạy app 2.x. [version] = null: không gửi `X-App-Version`.
@@ -289,5 +310,107 @@ void main() {
     expect((data['muscleGroup'], data['sortInGroup']), ('legs', 1));
     expect(data.containsKey('equipment'), isFalse);
     expect(changes, hasLength(30));
+  });
+
+  /// Admin CLI của server Bản 3 (cây code hiện tại), như khi phát hành.
+  Future<String> admin(List<String> args) async {
+    final root = Platform.environment['COMPAT_ROOT']!;
+    final r = await Process.run(
+      'dart',
+      ['run', 'bin/admin.dart', ...args],
+      workingDirectory: '$root/apps/server',
+      environment: {
+        'DATABASE_URL': Platform.environment['COMPAT_ADMIN_DATABASE_URL']!,
+        'JWT_SECRET': randomTestSecret(),
+      },
+    );
+    expect(r.exitCode, 0, reason: '${r.stdout}${r.stderr}');
+    return r.stdout as String;
+  }
+
+  test('TAC3-01: app 2.x đang có mức tạ của bài bỏ → server purge (dry-run, '
+      'apply với tổng của bảng) rồi nạp thư viện Bản 3 → pull không lỗi, 14 '
+      'bài bỏ và bản ghi của chúng biến mất, bài giữ còn lịch sử và giữ bản '
+      'Bản 2, không thấy bài mới, cursor tiến hết', () async {
+    final a = V2Device();
+    addTearDown(a.close);
+    await a.login(phone);
+    expect(await a.engine.syncNow(), SyncOutcome.synced);
+    final user = await userId();
+    // Mức tạ kiểu Bản 2: 1 bài giữ với máy (số thanh), 1 bài giữ với tạ,
+    // 1 bài bỏ (chưa bị test trước gỡ).
+    const lifts = [
+      ('2026-11-16', 'lats-machine-lat-pulldown', 70, 80),
+      (
+        '2026-11-16',
+        'chest-mid-free-weight-flat-barbell-bench-press',
+        400,
+        450,
+      ),
+      (
+        '2026-11-16',
+        'chest-upper-free-weight-incline-dumbbell-press',
+        125,
+        150,
+      ),
+    ];
+    await sql.execute(
+      Sql.named('''
+        INSERT INTO days (user_id, date, kind, time, muscles, server_version, client_updated_at)
+        VALUES (@u, '2026-11-16', 'workout', '18:00', ARRAY['chest','back']::muscle_group[],
+                nextval('sync_version_seq'), now())'''),
+      parameters: {'u': user},
+    );
+    for (final (date, id, start, end) in lifts) {
+      await sql.execute(
+        Sql.named(
+          '''
+          INSERT INTO lift_logs (user_id, date, exercise_id, start_kg_x10, end_kg_x10,
+                                 logged_at, server_version, client_updated_at)
+          VALUES (@u, @d::date, @e, @s, @t, now(), nextval('sync_version_seq'), now())''',
+        ),
+        parameters: {'u': user, 'd': date, 'e': id, 's': start, 't': end},
+      );
+    }
+    expect(await a.engine.syncNow(), SyncOutcome.synced);
+    Future<List<(String, int?, int?)>> logs() async => [
+      for (final l in await (a.db.select(
+        a.db.liftLogs,
+      )..orderBy([(l) => OrderingTerm(expression: l.exerciseId)])).get())
+        (l.exerciseId, l.startKgX10, l.endKgX10),
+    ];
+    expect(await logs(), hasLength(3));
+    final libraryBefore = await a.exerciseIds();
+
+    final preview = await admin(['library', 'purge', '--dry-run']);
+    final total = RegExp(
+      r'--confirm-count=(\d+)',
+    ).firstMatch(preview)!.group(1)!;
+    expect(int.parse(total), greaterThanOrEqualTo(1));
+    await admin(['library', 'purge', '--apply', '--confirm-count=$total']);
+    await admin([
+      'library',
+      'import',
+      '${Platform.environment['COMPAT_ROOT']}/data/v3__exercises.json',
+    ]);
+
+    expect(await a.engine.syncNow(), SyncOutcome.synced);
+    expect(a.reporter.reasons, isEmpty);
+    expect(await logs(), [
+      ('chest-mid-free-weight-flat-barbell-bench-press', 400, 450),
+      ('lats-machine-lat-pulldown', 70, 80),
+    ]);
+    final ids = await a.exerciseIds();
+    expect(ids.intersection(_removedV2Ids), isEmpty);
+    expect(
+      ids,
+      libraryBefore.difference(_removedV2Ids),
+      reason: 'bài giữ còn, không thêm bài mới hay bài Chân',
+    );
+    final lats = await a.exercises.get('lats-machine-lat-pulldown');
+    expect(lats!.equipment, Equipment.machine, reason: 'giữ bản Bản 2');
+    final rest = await a.syncApi.pull(cursor: await a.cursor());
+    expect(rest.changes, isEmpty);
+    expect(rest.hasMore, isFalse);
   });
 }
