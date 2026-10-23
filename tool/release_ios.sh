@@ -53,6 +53,8 @@ flutter build ios --release --config-only --build-number="$BUILD_NUMBER" \
 xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -configuration Release \
   -archivePath "$OUT/Runner.xcarchive" -destination 'generic/platform=iOS' \
   DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGNING_ALLOWED=NO archive
+# Archive không ký thì không mang quyền App Group, aps-environment; gắn trước khi export.
+"$ROOT/tool/archive_entitlements.sh" "$OUT/Runner.xcarchive"
 cp ios/ExportOptions.plist "$OUT/ExportOptions.plist"
 /usr/libexec/PlistBuddy -c "Add :teamID string $TEAM_ID" "$OUT/ExportOptions.plist"
 xcodebuild -exportArchive -archivePath "$OUT/Runner.xcarchive" -exportPath "$OUT" \

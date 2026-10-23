@@ -58,5 +58,21 @@ else
   fi
 fi
 
+# 06 Bản 3 VS42-T07, TD3-22: bản đã ký phân phối giữ quyền thông báo bản thật
+# và App Group cho app, cùng App Group cho extension; thiếu thì widget, thẻ màn
+# hình khóa không chạy. Bản build không ký (kiểm trên Mac) không có quyền nào.
+if [ -f "$APP/embedded.mobileprovision" ] && [ -d "$APPEX" ]; then
+  codesign -d --entitlements :- "$APP" 2>/dev/null | plutil -convert xml1 -o "$WORK/app.ent" - 2>/dev/null || true
+  codesign -d --entitlements :- "$APPEX" 2>/dev/null | plutil -convert xml1 -o "$WORK/ext.ent" - 2>/dev/null || true
+  value() { /usr/libexec/PlistBuddy -c "Print :$1" "$2" 2>/dev/null || true; }
+  APS="$(value aps-environment "$WORK/app.ent")"
+  APP_GROUP="$(value com.apple.security.application-groups:0 "$WORK/app.ent")"
+  EXT_GROUP="$(value com.apple.security.application-groups:0 "$WORK/ext.ent")"
+  if [ "$APS" != production ] || [ -z "$APP_GROUP" ] || [ "$APP_GROUP" != "$EXT_GROUP" ]; then
+    echo "VS42-T07: bản đã ký thiếu quyền (aps-environment='$APS', App Group app='$APP_GROUP', extension='$EXT_GROUP')" >&2
+    FAIL=1
+  fi
+fi
+
 [ "$FAIL" = 0 ] && echo "scan_ipa: OK ($(basename "$IPA"))"
 exit "$FAIL"
