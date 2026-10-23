@@ -298,6 +298,24 @@ void main() {
       );
     });
 
+    test('TA3-08, §6.15: nội dung ghi chú không vào log server (kể cả khi bị '
+        'từ chối); exercise_notes.text không có index tìm kiếm', () async {
+      await push([note(pecDeck, 'máy 2 hỏng, tập máy 5')]);
+      await push([note(bench, 'ghế số 3 ${'x' * 200}')]);
+      final log = app.log.lines.join('\n');
+      expect(log, isNot(contains('máy 2 hỏng')));
+      expect(log, isNot(contains('ghế số 3')));
+      final indexes = await app.tdb.pool.execute(
+        "SELECT indexdef FROM pg_indexes WHERE tablename = 'exercise_notes'",
+      );
+      expect(indexes, isNotEmpty);
+      for (final r in indexes) {
+        final def = r[0]! as String;
+        expect(def, isNot(contains('text')), reason: def);
+        expect(def, contains('btree'), reason: def);
+      }
+    });
+
     test('00:01 → lift_window_closed; bài bụng trong buổi có Bụng → applied '
         '(không xét logsWeight); bài khác nhóm → '
         'lift_exercise_not_in_session; ngày không có buổi → '

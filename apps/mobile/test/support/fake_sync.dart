@@ -129,12 +129,14 @@ final class _FakeTimer {
 final class RecordingReporter implements ErrorReporter {
   final reasons = <String?>[];
 
+  /// Nội dung lỗi đã báo (để kiểm không có dữ liệu cá nhân).
+  final errors = <String>[];
+
   @override
-  Future<void> report(
-    Object error,
-    StackTrace? stack, {
-    String? reason,
-  }) async => reasons.add(reason);
+  Future<void> report(Object error, StackTrace? stack, {String? reason}) async {
+    reasons.add(reason);
+    errors.add('$error');
+  }
 }
 
 /// Chờ các microtask/timer 0 xử lý xong.

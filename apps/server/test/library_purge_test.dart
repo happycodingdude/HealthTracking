@@ -91,8 +91,8 @@ void main() {
     expect(await snapshot(), before);
   });
 
-  test('TAC3-05: --apply đúng tổng → tombstone đủ trong một lần, đơn vị theo '
-      'loại bài Bản 2 (máy → nấc, tạ → kg), con số mức tạ bài giữ không đổi; '
+  test('TAC3-05, LIB-AC24: --apply đúng tổng → tombstone đủ trong một lần, '
+      'đơn vị theo loại bài Bản 2 (máy → nấc, tạ → kg), con số mức tạ bài giữ không đổi; '
       'mọi dòng đổi có version mới; máy nhận qua pull', () async {
     await addNote(
       'chest-upper-free-weight-incline-dumbbell-press',

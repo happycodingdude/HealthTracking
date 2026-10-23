@@ -49,8 +49,8 @@ void main() {
     'chest-lower-machine-high-to-low-cable-crossover',
   ];
 
-  test('F20-E41, FA3-15, F22-AC43, FR3-13: sau purge + import, máy không còn '
-      '14 bài bỏ và bản ghi của chúng; buổi cũ còn, "Không tập" đếm theo bản '
+  test('F20-E41, FA3-15, F22-AC43, FR3-13, LIB-AC24: sau purge + import, '
+      'máy không còn 14 bài bỏ và bản ghi của chúng; buổi cũ còn, "Không tập" đếm theo bản '
       'ghi còn lại; bài máy đã ghi có đơn vị nấc với đúng số cũ', () async {
     final a = E2eDevice(server);
     devices.add(a);

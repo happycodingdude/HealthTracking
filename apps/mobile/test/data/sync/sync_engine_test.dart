@@ -189,6 +189,32 @@ void main() {
     },
   );
 
+  test('TA3-08: ghi chú bị server từ chối → báo lỗi không có nội dung ghi '
+      'chú', () async {
+    await startIdle();
+    api.onPush = (m) => PushResult(
+      mutationId: m.mutationId,
+      status: PushStatus.rejected,
+      code: ErrorCode.validationFailed,
+      field: 'text',
+    );
+    await outbox.enqueue(
+      SyncEntities.exerciseNote,
+      '2026-10-07:chest-mid-machine-pec-deck',
+      SyncOp.upsert,
+      {
+        'date': '2026-10-07',
+        'exerciseId': 'chest-mid-machine-pec-deck',
+        'text': 'máy 2 hỏng, tập máy 5',
+      },
+    );
+    await engine.syncNow();
+    await pumpEventQueue();
+    expect(reporter.reasons, ['sync_rejected']);
+    expect(reporter.errors.single, contains('exercise_note'));
+    expect(reporter.errors.single, isNot(contains('máy 2')));
+  });
+
   test(
     'kết quả của lần gửi cũ không xóa, không ghi đè thay đổi mới hơn sửa trong lúc đang gửi',
     () async {

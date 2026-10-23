@@ -120,9 +120,9 @@ void main() {
     'logs': await d.liftLogs.watchAll().first,
   };
 
-  test('F27-AC3, F09-AC42, TAC3-10: ghi 2 bài khi mất mạng → đăng xuất (đồng '
-      'bộ trước) → refresh token cũ bị từ chối → đăng nhập lại → đủ mức tạ, '
-      'đơn vị, ghi chú như trước', () async {
+  test('F27-AC3, F27-AC5, F09-AC42, TAC3-10: ghi 2 bài khi mất mạng → đăng '
+      'xuất (đồng bộ trước) → refresh token cũ bị từ chối → đăng nhập lại → '
+      'đủ hồ sơ, cân nặng, lịch, mức tạ, đơn vị, ghi chú như trước', () async {
     final a = device();
     await a.register();
     final ids = await setUpDevice(a);

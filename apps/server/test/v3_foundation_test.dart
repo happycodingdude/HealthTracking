@@ -113,6 +113,74 @@ void main() {
         expect(n.single[0], 0, reason: table);
       }
     });
+
+    test('F03-AC42, F03-R42: cập nhật lên Bản 3 theo thứ tự phát hành (0002 '
+        '→ purge → import 28 bài) → lịch tuần, lịch tháng, các ngày y như '
+        'trước; không có ngày Chân', () async {
+      await tdb.pool.execute(
+        repoFile('apps/server/migrations/0001_baseline.sql').readAsStringSync(),
+        queryMode: QueryMode.simple,
+      );
+      final user = await V2DataSet.load(tdb.pool);
+      final hash = 'a' * 64;
+      await tdb.pool.execute(
+        Sql.named('''
+          INSERT INTO weekly_templates (user_id, days, content_hash,
+                                        server_version, client_updated_at)
+          VALUES (@u, @days::jsonb, @h, nextval('sync_version_seq'), now())'''),
+        parameters: {
+          'u': user,
+          'h': hash,
+          'days':
+              '{"1": {"enabled": true, "time": "18:00", '
+              '"muscles": ["chest", "triceps"]}, "3": {"enabled": true, '
+              '"time": "18:00", "muscles": ["back", "biceps"]}}',
+        },
+      );
+      await tdb.pool.execute(
+        Sql.named('''
+          INSERT INTO month_plans (user_id, month, start_date, template_hash,
+                                   generated_at, server_version,
+                                   client_updated_at)
+          VALUES (@u, '2026-11', '2026-11-01', @h, now(),
+                  nextval('sync_version_seq'), now())'''),
+        parameters: {'u': user, 'h': hash},
+      );
+      Future<List<List<Object?>>> schedule() async => [
+        for (final sql in [
+          'SELECT days::text, content_hash, server_version, deleted '
+              'FROM weekly_templates',
+          'SELECT month, start_date::text, template_hash, server_version, '
+              'deleted FROM month_plans',
+          'SELECT date::text, kind::text, time::text, muscles::text, mark::text, '
+              'actual_muscles::text, server_version, deleted FROM days '
+              'ORDER BY date',
+        ])
+          for (final r in await tdb.pool.execute(sql)) r.toList(),
+      ];
+      final before = await schedule();
+
+      expect(
+        await Migrator(
+          tdb.pool,
+          serverMigrationsDir(),
+          Logger((_) {}),
+        ).migrate(),
+        ['0002_v3'],
+      );
+      final purge = LibraryPurge(
+        tdb.pool,
+        FixedClock(DateTime.utc(2026, 11, 12, 10)),
+      );
+      await purge.apply(confirmCount: (await purge.dryRun()).total);
+      expect((await LibraryImporter(tdb.pool).run(library28())).ok, isTrue);
+
+      expect(await schedule(), before);
+      final legs = await tdb.pool.execute(
+        "SELECT count(*) FROM days WHERE 'legs' = ANY(muscles)",
+      );
+      expect(legs.single[0], 0);
+    });
   });
 
   group('CHECK bảng Bản 3', () {

@@ -52,8 +52,8 @@ void main() {
     }
   });
 
-  test('VS33-T03, TD3-19: đủ 19 id (11 mặt trước: 10 + quads; 8 mặt sau: 6 + '
-      'hamstrings, calves) cùng body và other_muscles; mỗi vùng không rỗng và '
+  test('VS33-T03, TD3-19, LIB-AC25: đủ 19 id (11 mặt trước: 10 + quads; 8 '
+      'mặt sau: 6 + hamstrings, calves) cùng body và other_muscles; mỗi vùng không rỗng và '
       'có đủ hai bên', () {
     final front = [
       for (final r in MuscleRegion.values)

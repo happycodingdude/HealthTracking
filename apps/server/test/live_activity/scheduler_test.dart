@@ -184,8 +184,8 @@ void main() {
   });
   tearDown(() => app.dispose());
 
-  test('TAC3-07, F25-AC1: 17:59 không gửi; 18:00 gửi đúng một start (nhóm '
-      'cơ, bài kế tiếp, buổi trước, stale-date 00:00); 18:01 không gửi lại; '
+  test('TAC3-07, F25-AC1, F25-AC5: 17:59 không gửi; 18:00 gửi đúng một '
+      'start (nhóm cơ, bài kế tiếp, buổi trước, stale-date 00:00); 18:01 không gửi lại; '
       '00:00 gửi end một lần tới token cập nhật', () async {
     await setUpSchedule();
     await seedPrevious();
@@ -268,37 +268,35 @@ void main() {
     expect((await sessions()).single[2], isTrue);
   });
 
-  test(
-    'TAC3-07: ngày sửa riêng thành nghỉ, buổi tập thêm → không gửi',
-    () async {
-      await setUpSchedule();
-      await putToken();
-      await setNow(DateTime.utc(2026, 10, 12, 9));
-      await push([
-        dayMutation(
-          PlanDay(date: monday, kind: DayKind.rest, source: DaySource.override),
-          DateTime.utc(2026, 10, 12, 9),
-        ),
-      ]);
-      await runAt(DateTime.utc(2026, 10, 12, 11));
-      expect(apns.sent, isEmpty);
-      // Thứ 3 13/10 nghỉ, có buổi tập thêm lúc 18:00.
-      final tuesday = generated.days.firstWhere(
-        (d) => d.date == LocalDate(2026, 10, 13),
-      );
-      await setNow(DateTime.utc(2026, 10, 13, 11));
-      await push([
-        dayMutation(
-          tuesday.withExtra(const [
-            MuscleGroup.abs,
-          ], loggedAt: DateTime.utc(2026, 10, 13, 11)),
-          DateTime.utc(2026, 10, 13, 11),
-        ),
-      ]);
-      await runAt(DateTime.utc(2026, 10, 13, 11, 1));
-      expect(apns.sent, isEmpty);
-    },
-  );
+  test('TAC3-07, F25-AC4: ngày sửa riêng thành nghỉ, buổi tập thêm → không '
+      'gửi', () async {
+    await setUpSchedule();
+    await putToken();
+    await setNow(DateTime.utc(2026, 10, 12, 9));
+    await push([
+      dayMutation(
+        PlanDay(date: monday, kind: DayKind.rest, source: DaySource.override),
+        DateTime.utc(2026, 10, 12, 9),
+      ),
+    ]);
+    await runAt(DateTime.utc(2026, 10, 12, 11));
+    expect(apns.sent, isEmpty);
+    // Thứ 3 13/10 nghỉ, có buổi tập thêm lúc 18:00.
+    final tuesday = generated.days.firstWhere(
+      (d) => d.date == LocalDate(2026, 10, 13),
+    );
+    await setNow(DateTime.utc(2026, 10, 13, 11));
+    await push([
+      dayMutation(
+        tuesday.withExtra(const [
+          MuscleGroup.abs,
+        ], loggedAt: DateTime.utc(2026, 10, 13, 11)),
+        DateTime.utc(2026, 10, 13, 11),
+      ),
+    ]);
+    await runAt(DateTime.utc(2026, 10, 13, 11, 1));
+    expect(apns.sent, isEmpty);
+  });
 
   test('TA3-01: APNs lỗi → thử lại mỗi phút tới 18:10 rồi thôi, cảnh báo ở '
       'lần lỗi thứ 3; không ghi dòng', () async {
@@ -385,6 +383,20 @@ void main() {
       );
     },
   );
+
+  test('IA3-09: job xử lý một tài khoản (đọc lịch, tính nội dung, gửi start, '
+      'ghi phiên) dưới 50 ms', () async {
+    await setUpSchedule();
+    await seedPrevious();
+    await seedPreviousLog();
+    await putToken();
+    await runAt(DateTime.utc(2026, 10, 12, 10, 59)); // làm nóng, chưa gửi
+    final watch = Stopwatch()..start();
+    await runAt(DateTime.utc(2026, 10, 12, 11));
+    watch.stop();
+    expect(apns.sent, hasLength(1));
+    expect(watch.elapsedMilliseconds, lessThan(50));
+  });
 
   test('Chưa có lịch tuần → không gửi', () async {
     await putToken();

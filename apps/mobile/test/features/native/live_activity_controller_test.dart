@@ -6,6 +6,7 @@ import 'package:domain/testing.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/app/strings_vi.dart';
 import 'package:mobile/data/auth/session_store.dart';
 import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/features/native/live_activity_controller.dart';
@@ -231,7 +232,7 @@ void main() {
     expect(native.activities.keys, ['today']);
   });
 
-  test('qua 00:00 lúc app mở → thẻ hôm qua tắt', () async {
+  test('F25-AC5: qua 00:00 lúc app mở → thẻ hôm qua tắt', () async {
     final c = await setUpPhone(now: DateTime(2026, 10, 13, 0, 1));
     native.startActivity('today', monday);
     await c.refresh();
@@ -256,5 +257,62 @@ void main() {
     ).readAsStringSync();
     expect(dart, isNot(contains('request')));
     expect(NativeBridge, isNotNull);
+  });
+
+  /// Mã Swift của extension (widget, thẻ) và cầu trong Runner.
+  Iterable<File> swiftSources() => [
+    ...Directory('ios/Runner').listSync(),
+    ...Directory('ios/IronlyWidgets').listSync(),
+  ].whereType<File>().where((f) => f.path.endsWith('.swift'));
+
+  test('F25-AC6, F25-R6, F24-R1: thẻ và widget không có nút nào (không '
+      'Button, Toggle, Link, AppIntent); chạm thẻ mở buổi hôm nay', () {
+    final widgets = Directory(
+      'ios/IronlyWidgets',
+    ).listSync().whereType<File>().where((f) => f.path.endsWith('.swift'));
+    for (final f in widgets) {
+      expect(
+        f.readAsStringSync(),
+        isNot(matches(RegExp(r'\b(Button|Toggle|Link)\s*[({]|AppIntent'))),
+        reason: f.path,
+      );
+    }
+    final activity = File(
+      'ios/IronlyWidgets/IronlySessionActivity.swift',
+    ).readAsStringSync();
+    expect(activity, contains('"ironly://session/today"'));
+    expect(RegExp(r'\.widgetURL\(').allMatches(activity), hasLength(2));
+  });
+
+  test('F25-AC8, F25-R7, A3-10: app không đọc quyền thẻ và không có câu nào '
+      'nhắc về quyền thẻ; tắt quyền thì iOS không hiện thẻ, app không báo', () {
+    for (final f in swiftSources()) {
+      expect(
+        f.readAsStringSync(),
+        isNot(
+          matches(
+            RegExp(
+              'ActivityAuthorizationInfo|areActivitiesEnabled|'
+              'activityEnablementUpdates',
+            ),
+          ),
+        ),
+        reason: f.path,
+      );
+    }
+    final dart = Directory('lib')
+        .listSync(recursive: true)
+        .whereType<File>()
+        .where((f) => f.path.endsWith('.dart'));
+    for (final f in dart) {
+      expect(
+        f.readAsStringSync(),
+        isNot(matches(RegExp('areActivitiesEnabled|activitiesEnabled'))),
+        reason: f.path,
+      );
+    }
+    for (final MapEntry(:key, :value) in S.catalog.entries) {
+      expect(value, isNot(contains('màn hình khóa')), reason: key);
+    }
   });
 }

@@ -295,40 +295,38 @@ void main() {
     expect(await b.weights.all(), [(week: LocalDate(2026, 9, 21), kgX10: 800)]);
   });
 
-  test(
-    'TA-10: phiên hết hạn → dữ liệu và thay đổi chưa gửi được giữ; đăng nhập '
-    'lại cùng tài khoản → gửi tiếp, server nhận',
-    () async {
-      final a = device();
-      await a.register();
-      await setUp5Steps(a, DateTime(2026, 9, 14, 5));
-      expect(await a.sync(), SyncOutcome.synced);
-      a.clock.set(DateTime(2026, 9, 21, 7));
-      await a.weightEdits.log(LocalDate(2026, 9, 21), 790);
-      // Server thu hồi phiên; access token trên máy cũng hết hạn.
-      await server.tdb.pool.execute('DELETE FROM refresh_tokens');
-      a.tokens.setPair(
-        TokenPair(
-          accessToken: randomTestSecret(),
-          refreshToken: (await a.store.read())!.refreshToken!,
-          accessTokenExpiresAt: DateTime.utc(2020),
-        ),
-      );
-      expect(await a.sync(), SyncOutcome.sessionExpired);
-      // Số cân và đề xuất mức calo (Bạn tự đặt) chờ gửi, vẫn còn.
-      expect(await a.db.select(a.db.outbox).get(), hasLength(2));
+  test('TA-10, F27-AC6, F27-R7: phiên hết hạn → dữ liệu và thay đổi chưa gửi '
+      'được giữ; đăng nhập '
+      'lại cùng tài khoản → gửi tiếp, server nhận', () async {
+    final a = device();
+    await a.register();
+    await setUp5Steps(a, DateTime(2026, 9, 14, 5));
+    expect(await a.sync(), SyncOutcome.synced);
+    a.clock.set(DateTime(2026, 9, 21, 7));
+    await a.weightEdits.log(LocalDate(2026, 9, 21), 790);
+    // Server thu hồi phiên; access token trên máy cũng hết hạn.
+    await server.tdb.pool.execute('DELETE FROM refresh_tokens');
+    a.tokens.setPair(
+      TokenPair(
+        accessToken: randomTestSecret(),
+        refreshToken: (await a.store.read())!.refreshToken!,
+        accessTokenExpiresAt: DateTime.utc(2020),
+      ),
+    );
+    expect(await a.sync(), SyncOutcome.sessionExpired);
+    // Số cân và đề xuất mức calo (Bạn tự đặt) chờ gửi, vẫn còn.
+    expect(await a.db.select(a.db.outbox).get(), hasLength(2));
 
-      await a.login();
-      expect(await a.sync(), SyncOutcome.synced);
-      expect(await a.db.select(a.db.outbox).get(), isEmpty);
-      final rows = await server.tdb.pool.execute(
-        Sql.named(
-          "SELECT weight_kg_x10 FROM weights WHERE week_start = '2026-09-21'",
-        ),
-      );
-      expect(rows.single[0], 790);
-    },
-  );
+    await a.login();
+    expect(await a.sync(), SyncOutcome.synced);
+    expect(await a.db.select(a.db.outbox).get(), isEmpty);
+    final rows = await server.tdb.pool.execute(
+      Sql.named(
+        "SELECT weight_kg_x10 FROM weights WHERE week_start = '2026-09-21'",
+      ),
+    );
+    expect(rows.single[0], 790);
+  });
 
   test('VS14-T06: khôi phục dữ liệu 1 năm (≈ 310 ngày, 52 số cân) trên mạng di '
       'động mô phỏng (300 ms mỗi lần gọi) dưới 10 giây', () async {

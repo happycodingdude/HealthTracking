@@ -15,6 +15,7 @@ import 'package:mobile/features/library/data/video_player_gateway.dart';
 import 'package:mobile/features/schedule/application/schedule_edits.dart';
 import 'package:mobile/features/schedule/data/schedule_repository.dart';
 import 'package:mobile/features/schedule/presentation/day_sheet.dart';
+import 'package:mobile/features/training/application/training_section.dart';
 import 'package:mobile/features/workout/application/lift_log_edits.dart';
 import 'package:mobile/features/workout/data/exercise_note_repository.dart';
 import 'package:mobile/features/workout/data/exercise_unit_repository.dart';
@@ -22,6 +23,7 @@ import 'package:mobile/features/workout/data/lift_log_repository.dart';
 import 'package:mobile/features/workout/presentation/session_screen.dart';
 
 import '../../support/app_harness.dart';
+import '../../support/fake_native.dart';
 import '../../support/fake_server.dart';
 import '../../support/fake_sync.dart';
 import '../../support/library_fixture.dart';
@@ -96,7 +98,13 @@ void main() {
     await logLift(prevMon, decline, 80, 100);
   });
 
-  Future<void> pump(WidgetTester tester, {bool tall = true}) async {
+  Future<void> pump(
+    WidgetTester tester, {
+    bool tall = true,
+    FakeServer? server,
+    FakeConnectivity? connectivity,
+    FakeNativeBridge? native,
+  }) async {
     tester.view
       ..physicalSize = Size(390 * 3, (tall ? 2600 : 844) * 3)
       ..devicePixelRatio = 3;
@@ -108,7 +116,9 @@ void main() {
           db: db,
           clock: clock,
           scheduler: scheduler,
-          server: FakeServer(),
+          server: server ?? FakeServer(),
+          connectivity: connectivity,
+          native: native,
         ),
         videoPlayerGatewayProvider.overrideWithValue(FakeVideoGateway()),
       ],
@@ -880,4 +890,83 @@ void main() {
       expect(key('lift-log-${shoulderSide.id}'), findsOneWidget);
     },
   );
+  group('UX-AC61 không mạng', () {
+    testWidgets('UX-AC61, UR3-14: tắt mạng → S-63, S-64 (mức tạ, ghi chú), '
+        '"Đã tập" vẫn ghi nội dung widget mới; S-67, S-72, S-66, S-68, S-69 '
+        'dùng bình thường; không vòng xoay', (tester) async {
+      final server = FakeServer()..offline = true;
+      final native = FakeNativeBridge();
+      await pump(
+        tester,
+        server: server,
+        connectivity: FakeConnectivity()..online = false,
+        native: native,
+      );
+      Finder spinner() => find.byType(CircularProgressIndicator);
+
+      // S-63 → S-64: ghi mức tạ 2 chạm, ghi chú.
+      await go(tester, sessionPath(AppTab.today, mon));
+      expect(inRow(pecDeck, find.text('40 → 45 kg')), findsOneWidget);
+      expect(spinner(), findsNothing);
+      await tapKey(tester, 'lift-prev-tap-${pecDeck.id}');
+      await tapKey(tester, 'lift-end-plus');
+      await tapKey(tester, 'lift-save');
+      expect(find.text(S.liftSaved('40', '47,5', S.unitKg)), findsOneWidget);
+      expect(inRow(pecDeck, find.text('40 → 47,5 kg')), findsOneWidget);
+      final saved = (await logs.get(mon, pecDeck.id))!;
+      expect((saved.startKgX10, saved.endKgX10), (400, 475));
+      await tapKey(tester, 'lift-log-${incline.id}');
+      await tester.enterText(key('note-input'), 'máy 2 hỏng, tập máy 5');
+      await tapKey(tester, 'lift-save');
+      expect(find.text(S.noteSaved), findsOneWidget);
+      expect((await notes.get(mon, incline.id))!.text, 'máy 2 hỏng, tập máy 5');
+
+      // "Đã tập" khi không có mạng → widget có nội dung mới (TR3-10).
+      final before = native.written.length;
+      await tester.pump(const Duration(seconds: 5)); // thông báo nhanh tắt
+      await tester.pumpAndSettle();
+      await tapKey(tester, 'session-done');
+      await tapKey(tester, 'lock-confirm-save');
+      expect(native.written.length, greaterThan(before));
+      final today = (native.written.last['days']! as List).first as Map;
+      expect((today['date'], today['mark']), ('2026-10-12', 'done'));
+
+      // S-67 → S-72: đổi đơn vị.
+      await go(tester, sessionExercisePath(AppTab.today, mon, bench.id));
+      expect(spinner(), findsNothing);
+      await tapKey(tester, 'exercise-change-unit');
+      await tapKey(tester, 'change-unit-confirm');
+      expect(find.text(S.unitChanged(S.unitStepsFull)), findsOneWidget);
+      expect((await units.get(bench.id))!.unit, LiftUnit.steps);
+
+      // S-66: thư viện 7 nhóm, nhóm Chân 5 bài.
+      await go(tester, '/schedule');
+      container
+          .read(trainingTabProvider.notifier)
+          .select(TrainingSection.library);
+      await tester.pumpAndSettle();
+      await tapKey(tester, 'group-legs');
+      for (final e in library.where((e) => e.group == MuscleGroup.legs)) {
+        expect(key('exercise-${e.id}'), findsOneWidget);
+      }
+      expect(spinner(), findsNothing);
+
+      // S-68 → S-69: Tiến bộ và biểu đồ theo đơn vị.
+      container
+          .read(trainingTabProvider.notifier)
+          .select(TrainingSection.progress);
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: key('progress-${pecDeck.id}'),
+          matching: find.text('40 → 47,5 kg'),
+        ),
+        findsOneWidget,
+      );
+      await tapKey(tester, 'progress-${pecDeck.id}');
+      expect(tester.widget<Text>(key('chart-axis-unit')).data, S.unitKg);
+      expect(spinner(), findsNothing);
+      expect(server.requests, isEmpty, reason: 'không request nào tới được');
+    });
+  });
 }
