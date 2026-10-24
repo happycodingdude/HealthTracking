@@ -383,6 +383,7 @@ discardChanges: "Bỏ thay đổi chưa lưu?"
 keepLogging: "Tiếp tục ghi"
 noteSaved: "Đã lưu ghi chú"
 beforeUnitChange: "· trước khi đổi" # S-69 (UA3-13)
+bodyMapLicense: "Sơ đồ cơ: Jsplice/MuscleMap, giấy phép MIT" # 06 Bản 2 VS31-T05
 # S-56, S-73; 03 Bản 3 F-27
 thisDevice: "Thiết bị này"
 logout: "Đăng xuất"

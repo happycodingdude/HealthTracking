@@ -8,6 +8,7 @@ import 'app/app_root.dart';
 import 'app/env.dart';
 import 'app/providers.dart';
 import 'app/router.dart';
+import 'app/third_party_licenses.dart';
 import 'core/error_reporting.dart';
 import 'data/auth/session_store.dart';
 import 'data/db/app_database.dart';
@@ -36,6 +37,7 @@ Future<void> runIronlyApp({
   AppDatabase? database,
 }) async {
   WidgetsFlutterBinding.ensureInitialized();
+  registerThirdPartyLicenses();
   final env = AppEnv.fromEnvironment();
   await runWithErrorReporting(env, () async {
     final version = AppVersion.parse(

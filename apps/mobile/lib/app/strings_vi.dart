@@ -820,6 +820,9 @@ abstract final class S {
   static String activityPrevious(String lift) => 'Buổi trước: $lift';
   static String activityNextLift(String lift) => 'Kế tiếp: $lift';
 
+  /// Ghi nhận bộ sơ đồ cơ trong giấy phép bên thứ ba (06 Bản 2 VS31-T05).
+  static const bodyMapLicense = 'Sơ đồ cơ: Jsplice/MuscleMap, giấy phép MIT';
+
   static const Map<String, String> catalog = {
     'back': back,
     'understood': understood,
@@ -1165,5 +1168,6 @@ abstract final class S {
     'activityAbsOnly': activityAbsOnly,
     'activityNextNone': activityNextNone,
     'beforeUnitChange': beforeUnitChange,
+    'bodyMapLicense': bodyMapLicense,
   };
 }
