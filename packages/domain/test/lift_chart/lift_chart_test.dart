@@ -56,25 +56,35 @@ void main() {
       expect(chart.isEmpty, isFalse);
     });
 
-    test('F22-R9: chỉ nối hai ngày liền nhau; ngày trống ngắt đường', () {
+    test('F22-R9 (sửa 24/10/2026, mock S-69-1): nối các buổi trong tháng, '
+        'kể cả khi giữa hai buổi có ngày không tập', () {
       final chart = MonthlyLiftChart.of(
         [
           log(press, 10, 5, 100, 120),
           log(press, 10, 6, 100, 120),
           log(press, 10, 9, 100, 120),
+          log(press, 10, 16, 100, 120),
         ],
         press.id,
         YearMonth(2026, 10),
       );
-      expect(
-        [
-          for (final s in chart.segments) [for (final l in s) l.date.day],
-        ],
-        [
-          [5, 6],
-          [9],
-        ],
-      );
+      List<List<int>> days(List<List<LiftLog>> segments) => [
+        for (final s in segments) [for (final l in s) l.date.day],
+      ];
+      expect(days(chart.segments()), [
+        [5, 6, 9, 16],
+      ]);
+      // UA3-13: không nối qua mốc đổi đơn vị.
+      expect(days(chart.segments(unitChangeOn: LocalDate(2026, 10, 9))), [
+        [5, 6],
+        [9, 16],
+      ]);
+      expect(days(chart.segments(unitChangeOn: LocalDate(2026, 10, 1))), [
+        [5, 6, 9, 16],
+      ]);
+      expect(days(chart.segments(unitChangeOn: LocalDate(2026, 10, 20))), [
+        [5, 6, 9, 16],
+      ]);
     });
 
     test('F22-AC2, F22-AC3: tháng sớm nhất là tháng có bản ghi đầu tiên; '
@@ -84,7 +94,7 @@ void main() {
       expect(MonthlyLiftChart.earliestMonth(all, plank.id), isNull);
       final nov = MonthlyLiftChart.of(all, press.id, YearMonth(2026, 11));
       expect(nov.logs, hasLength(1));
-      expect(nov.segments, hasLength(1));
+      expect(nov.segments(), hasLength(1));
     });
 
     test('F22-E1: tháng giữa không có bản ghi → trống', () {

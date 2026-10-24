@@ -29,18 +29,26 @@ final class MonthlyLiftChart {
   /// F22-E1: tháng không có bản ghi.
   bool get isEmpty => logs.isEmpty;
 
-  /// Các đoạn nối được của một chuỗi (F22-R9): chỉ nối hai điểm ở hai ngày
-  /// liền nhau; ngày không có bản ghi thì đường không kéo qua.
-  List<List<LiftLog>> get segments {
-    final result = <List<LiftLog>>[];
-    for (final l in logs) {
-      if (result.isNotEmpty && result.last.last.date.addDays(1) == l.date) {
-        result.last.add(l);
-      } else {
-        result.add([l]);
-      }
-    }
-    return result;
+  /// Các đoạn nối của một chuỗi (F22-R9, sửa 24/10/2026 theo mock S-69-1):
+  /// nối các buổi liên tiếp trong tháng, ngày không có bản ghi chỉ không có
+  /// điểm. Không nối qua mốc đổi đơn vị [unitChangeOn] (UA3-13): con số hai
+  /// bên mốc khác đơn vị.
+  List<List<LiftLog>> segments({LocalDate? unitChangeOn}) {
+    bool before(LiftLog l) =>
+        unitChangeOn != null && l.date.isBefore(unitChangeOn);
+    return [
+      for (final part in [
+        [
+          for (final l in logs)
+            if (before(l)) l,
+        ],
+        [
+          for (final l in logs)
+            if (!before(l)) l,
+        ],
+      ])
+        if (part.isNotEmpty) part,
+    ];
   }
 
   /// Mức tạ nhỏ nhất và lớn nhất (kg × 10) của cả hai chuỗi; null khi trống.

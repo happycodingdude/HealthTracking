@@ -325,8 +325,8 @@ class _MonthBar extends StatelessWidget {
 /// Biểu đồ một tháng (UA2-13): trục ngang cả tháng, trục dọc kg (bài máy:
 /// số thanh) tự co giãn có khoảng dư; Bắt đầu tròn rỗng nét đứt, Kết thúc
 /// tròn đặc nét liền, cùng màu chủ đạo; bằng nhau → điểm đặc to, viền đậm
-/// (F22-E3). Ngày trống ngắt đường (F22-R9). Chạm một ngày → "{dd/mm} · {a}
-/// → {b} kg".
+/// (F22-E3). Nối các buổi trong tháng, không nối qua mốc đổi đơn vị
+/// (F22-R9). Chạm một ngày → "{dd/mm} · {a} → {b} kg".
 class _LiftChart extends StatefulWidget {
   const _LiftChart({
     super.key,
@@ -377,8 +377,9 @@ class _LiftChartState extends State<_LiftChart> {
     final byDay = {for (final l in chart.logs) l.date.day: l};
 
     FlSpot spot(LiftLog l, int x10) => FlSpot(l.date.day.toDouble(), x10 / 10);
+    final segments = chart.segments(unitChangeOn: widget.change?.on);
     final startBars = [
-      for (final seg in chart.segments)
+      for (final seg in segments)
         LineChartBarData(
           spots: [for (final l in seg) spot(l, l.startKgX10)],
           color: colors.primary,
@@ -395,7 +396,7 @@ class _LiftChartState extends State<_LiftChart> {
         ),
     ];
     final endBars = [
-      for (final seg in chart.segments)
+      for (final seg in segments)
         LineChartBarData(
           spots: [for (final l in seg) spot(l, l.endKgX10)],
           color: colors.primary,
