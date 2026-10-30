@@ -1,117 +1,213 @@
 import SwiftUI
 
-/// S-70 cỡ vừa, hai cột (04 Bản 3 §6.7, UA3-14, UD3-03 = A). Câu chữ theo
-/// `03` Bản 3 §6.13 (trùng `strings_vi.dart`, có test đối chiếu).
+/// S-70 cỡ vừa (04 Bản 4 §6.8): nền than, **trái** thứ in hoa chữ phụ 10 ·
+/// nhóm cơ 20 / 600 trắng (đã tập: dấu tích cam trước tên; không tập: gạch
+/// ngang; nghỉ: "Nghỉ" chữ phụ + "+1 buổi thêm" cam) · giờ chữ phụ; **phải**
+/// "TUẦN NÀY" · "2" cam 24 / 600 + "/4" chữ phụ · chấm 8 pt (cam đã tập, viền
+/// cam hôm nay, thẻ nổi còn lại). Không chữ "Ironly", "Chưa tập" (FR4-04,
+/// FR4-05); nội dung, nguồn dữ liệu, URL như Bản 3 (F4-R9). Dấu hiệu có
+/// `accessibilityLabel` là câu chữ Bản 3 (TD4-07). Màu đặt thẳng theo token,
+/// không theo sáng / tối của máy (TA4-08).
 struct WidgetContentView: View {
   let display: WidgetDisplay
-
-  @Environment(\.dynamicTypeSize) private var typeSize
-  @ScaledMetric(relativeTo: .title) private var titleSize: CGFloat = 26
 
   var body: some View {
     content
       // Widget cỡ vừa có chỗ cố định: chữ lớn tới mức xxxLarge, lớn hơn thì
-      // giữ ở mức này để không cắt chữ (04 Bản 3 §6.7).
+      // giữ ở mức này để không cắt chữ.
       .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+      .foregroundStyle(Tokens.color.textPrimary)
   }
 
+  @ViewBuilder
   private var content: some View {
-    HStack(alignment: .top, spacing: 12) {
-      VStack(alignment: .leading, spacing: 2) {
-        Text(display.weekday.map { "Ironly · \($0)" } ?? "Ironly")
-          .font(.caption)
-          .foregroundStyle(.secondary)
-        Text(title)
-          .font(.system(size: titleSize, weight: .bold))
-          .lineLimit(2)
-          .minimumScaleFactor(0.6)
-          .fixedSize(horizontal: false, vertical: true)
-        if let status {
-          Text(status)
-            .font(.subheadline)
-            .lineLimit(2)
-        }
-      }
-      .frame(maxWidth: .infinity, alignment: .leading)
-      if let week {
-        WeekColumn(week: week, dot: typeSize >= .xxLarge ? 12 : 16)
-      }
-    }
-    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-  }
-
-  private var title: String {
     switch display {
-    case .signedOut: return "Mở app để đăng nhập"
-    case .noSchedule: return "Chưa có lịch tập"
-    case .day(let day):
-      return day.kind == "workout" ? day.groups.joined(separator: " + ") : "Nghỉ"
+    case .signedOut:
+      Text("Mở app để đăng nhập")
+        .scaledFont(Tokens.type.subtitle, .semibold)
+        .multilineTextAlignment(.center)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    case .noSchedule(let weekday):
+      HStack(alignment: .top) {
+        VStack(alignment: .leading, spacing: Tokens.space.s1) {
+          WidgetCaption(weekday)
+          Text("Chưa có lịch tập")
+            .scaledFont(Tokens.type.widgetTitle, .semibold)
+            .lineLimit(2)
+            .minimumScaleFactor(0.6)
+        }
+        Spacer(minLength: 0)
+      }
+      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    case .day(let day, let todayDot):
+      HStack(alignment: .top, spacing: Tokens.space.s4) {
+        DayColumn(day: day)
+        Spacer(minLength: 0)
+        WeekColumn(week: day.week, todayDot: day.mark == nil ? todayDot : nil)
+      }
+      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
-  }
-
-  private var status: String? {
-    guard case .day(let day) = display else { return nil }
-    if day.kind != "workout" { return day.extra ? "+1 buổi thêm" : nil }
-    switch day.mark {
-    case "done": return "Đã tập"
-    case "skipped": return "Không tập"
-    default: return day.time.map { "Chưa tập · \($0)" } ?? "Chưa tập"
-    }
-  }
-
-  private var week: WidgetWeekFile? {
-    guard case .day(let day) = display else { return nil }
-    return day.week
   }
 }
 
-/// Cột phải: "Tuần này", một chấm cho mỗi buổi theo lịch (đặc = Đã tập),
-/// "{X}/{Y}" kèm "+{n}" (FA3-10). Chấm cùng một màu, không xanh / đỏ (UR3-13).
-private struct WeekColumn: View {
-  let week: WidgetWeekFile
-  let dot: CGFloat
+/// Chữ phụ 10 in hoa ("THỨ 2", "TUẦN NÀY").
+private struct WidgetCaption: View {
+  let text: String
+  init(_ text: String) { self.text = text }
 
   var body: some View {
-    VStack(alignment: .trailing, spacing: 6) {
+    Text(text)
+      .textCase(.uppercase)
+      .scaledFont(Tokens.type.widgetCaption, .medium)
+      .tracking(0.4)
+      .foregroundStyle(Tokens.color.textSecondary)
+      .lineLimit(1)
+  }
+}
+
+/// Cột trái: thứ, nhóm cơ (kèm dấu hiệu trạng thái), giờ.
+private struct DayColumn: View {
+  let day: WidgetDayFile
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: Tokens.space.s1) {
+      WidgetCaption(day.weekday)
+      if day.kind == "workout" {
+        HStack(alignment: .center, spacing: Tokens.space.s2) {
+          switch day.mark {
+          case "done":
+            Image(systemName: "checkmark")
+              .scaledFont(15, .bold)
+              .foregroundStyle(Tokens.color.accent)
+              .accessibilityLabel("Đã tập")
+          case "skipped":
+            Image(systemName: "minus")
+              .scaledFont(15, .bold)
+              .foregroundStyle(Tokens.color.textSecondary)
+              .accessibilityLabel("Không tập")
+          default:
+            EmptyView()
+          }
+          Text(day.groups.joined(separator: " + "))
+            .scaledFont(Tokens.type.widgetTitle, .semibold)
+            .lineLimit(2)
+            .minimumScaleFactor(0.6)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+        if let time = day.time {
+          Text(time)
+            .scaledFont(Tokens.type.caption)
+            .foregroundStyle(Tokens.color.textSecondary)
+            // Hôm nay chờ đánh dấu: VoiceOver đọc như Bản 3.
+            .accessibilityLabel(day.mark == nil ? "Chưa tập · \(time)" : time)
+        }
+      } else {
+        Text("Nghỉ")
+          .scaledFont(Tokens.type.widgetTitle, .semibold)
+          .foregroundStyle(Tokens.color.textSecondary)
+        if day.extra {
+          // Dấu "+" cam = buổi tập thêm (03 Bản 4 §6.4); file widget không có
+          // nhóm cơ của buổi thêm nên giữ câu "+1 buổi thêm".
+          Text("+1 buổi thêm")
+            .scaledFont(Tokens.type.caption2, .semibold)
+            .foregroundStyle(Tokens.color.accent)
+        }
+      }
+    }
+  }
+}
+
+/// Cột phải: "TUẦN NÀY", "{X}" cam lớn + "/{Y}" chữ phụ (+ "+{n}" buổi thêm),
+/// một chấm cho mỗi buổi theo lịch (FA3-10): cam đã tập, viền cam hôm nay chờ
+/// đánh dấu, thẻ nổi còn lại. Cùng một màu cho mọi chấm, không xanh / đỏ.
+private struct WeekColumn: View {
+  let week: WidgetWeekFile
+  let todayDot: Int?
+
+  var body: some View {
+    VStack(alignment: .trailing, spacing: Tokens.space.s1) {
       if week.total == 0 {
         Text("Tuần này không có buổi")
-          .font(.caption)
-          .foregroundStyle(.secondary)
+          .scaledFont(Tokens.type.caption)
+          .foregroundStyle(Tokens.color.textSecondary)
           .multilineTextAlignment(.trailing)
       } else {
-        Text("Tuần này")
-          .font(.caption)
-          .foregroundStyle(.secondary)
-        HStack(spacing: dot * 0.4) {
-          ForEach(Array(week.dots.enumerated()), id: \.offset) { _, done in
-            Circle()
-              .fill(done ? Color.ironlyPrimary : Color.clear)
-              .overlay(Circle().strokeBorder(done ? Color.clear : Color.ironlyEmptyDot, lineWidth: 2))
-              .frame(width: dot, height: dot)
+        WidgetCaption("Tuần này")
+        HStack(alignment: .firstTextBaseline, spacing: 1) {
+          Text("\(week.done)")
+            .scaledFont(Tokens.type.widgetNumber, .semibold)
+            .foregroundStyle(Tokens.color.accent)
+          Text("/\(week.total)")
+            .scaledFont(Tokens.type.caption2)
+            .foregroundStyle(Tokens.color.textSecondary)
+          if week.extra > 0 {
+            Text(" +\(week.extra)")
+              .scaledFont(Tokens.type.caption2, .semibold)
+              .foregroundStyle(Tokens.color.accent)
           }
         }
-        Text(week.extra > 0 ? "\(week.done)/\(week.total) +\(week.extra)" : "\(week.done)/\(week.total)")
-          .font(.headline)
+        .accessibilityElement(children: .combine)
+        ProgressDots(dots: week.dots, todayDot: todayDot)
+          .accessibilityLabel("Đã tập \(week.done)/\(week.total) buổi theo lịch")
       }
     }
     .fixedSize()
   }
 }
 
-extension Color {
-  /// Màu chủ đạo của app (`AppTheme`): teal sáng / tối.
-  static let ironlyPrimary = Color(light: 0x0E766C, dark: 0x55C5B6)
-  static let ironlyEmptyDot = Color(light: 0x9AA5A2, dark: 0xA5B1AE)
-  static let ironlyWidgetBackground = Color(light: 0xFFFFFF, dark: 0x1A2220)
+/// Chấm tiến độ 8 pt (04 Bản 4 S-70): cam đã tập, viền cam hôm nay, thẻ nổi
+/// còn lại — cùng dấu hiệu với `ProgressDots` của app.
+struct ProgressDots: View {
+  let dots: [Bool]
+  let todayDot: Int?
+  var size: CGFloat = Tokens.size.dot
 
-  init(light: UInt32, dark: UInt32) {
-    self.init(UIColor { traits in
-      let hex = traits.userInterfaceStyle == .dark ? dark : light
-      return UIColor(
-        red: CGFloat((hex >> 16) & 0xFF) / 255,
-        green: CGFloat((hex >> 8) & 0xFF) / 255,
-        blue: CGFloat(hex & 0xFF) / 255,
-        alpha: 1)
-    })
+  var body: some View {
+    HStack(spacing: size * 0.5) {
+      ForEach(Array(dots.enumerated()), id: \.offset) { i, done in
+        Circle()
+          .fill(done ? Tokens.color.accent : (i == todayDot ? Tokens.color.transparent : Tokens.color.surfaceRaised))
+          .overlay(
+            Circle().strokeBorder(
+              Tokens.color.accent,
+              lineWidth: !done && i == todayDot ? 1.5 : 0))
+          .frame(width: size, height: size)
+      }
+    }
+  }
+}
+
+/// Cỡ chữ token nhân theo cỡ chữ hệ thống (Dynamic Type) tới mức xxxLarge
+/// (các view gốc đã chặn ở mức này để không cắt chữ), như `@ScaledMetric`
+/// của Bản 3 nhưng áp cho mọi chữ.
+struct ScaledFont: ViewModifier {
+  let size: CGFloat
+  let weight: Font.Weight
+
+  @Environment(\.dynamicTypeSize) private var typeSize
+
+  func body(content: Content) -> some View {
+    content.font(.system(size: size * typeSize.ironlyScale, weight: weight))
+  }
+}
+
+extension View {
+  func scaledFont(_ size: CGFloat, _ weight: Font.Weight = .regular) -> some View {
+    modifier(ScaledFont(size: size, weight: weight))
+  }
+}
+
+extension DynamicTypeSize {
+  /// Hệ số theo bậc cỡ chữ của iOS (mặc định "Large" = 1).
+  var ironlyScale: CGFloat {
+    switch self {
+    case .xSmall: return 0.85
+    case .small: return 0.9
+    case .medium: return 0.95
+    case .large: return 1
+    case .xLarge: return 1.1
+    case .xxLarge: return 1.2
+    default: return 1.3
+    }
   }
 }

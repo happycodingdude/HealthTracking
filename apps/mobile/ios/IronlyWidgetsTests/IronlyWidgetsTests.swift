@@ -2,10 +2,10 @@ import SwiftUI
 import XCTest
 
 /// 06 Bản 3 VS39-T08 (Swift): đọc `widget_state.json`, file hỏng / thiếu không
-/// crash (ED3-07), timeline 00:00 (TAC3-09), URL theo NAV-15, ảnh chụp 7 trạng
-/// thái × sáng / tối × cỡ chữ lớn (UX-AC57, UX-AC63; ED3-14). VS41-T06: thẻ
-/// S-71 — `content-state` thiếu trường không crash, ảnh chụp 4 trạng thái ×
-/// sáng / tối × cỡ chữ lớn, Dynamic Island thu gọn / mở rộng (UX-AC58).
+/// crash (ED3-07), timeline 00:00 (TAC3-09), URL theo NAV-15. VS41-T06: thẻ
+/// S-71 — `content-state` thiếu trường không crash. 06 Bản 4 VS50-T03: ảnh
+/// chụp S-70 × 7, S-71 × 4 + Dynamic Island × 2, cỡ chữ lớn, theo token (màu
+/// không đổi theo sáng / tối của máy, TA4-08); vị trí chấm hôm nay (S-70).
 final class IronlyWidgetsTests: XCTestCase {
   private var calendar: Calendar = {
     var c = Calendar(identifier: .gregorian)
@@ -41,11 +41,38 @@ final class IronlyWidgetsTests: XCTestCase {
 
   func testF24AC1TuesdayBackNotDone() throws {
     let f = try XCTUnwrap(file([day("2026-10-13", "Thứ 3", week: week(1, 4))]))
-    guard case .day(let d) = WidgetTimeline.display(f, at: at(13), calendar: calendar) else {
+    guard case .day(let d, let today) = WidgetTimeline.display(f, at: at(13), calendar: calendar) else {
       return XCTFail("phải là ngày có lịch")
     }
     XCTAssertEqual(d.groups, ["Lưng"])
     XCTAssertEqual(d.week.dots, [true, false, false, false])
+    XCTAssertEqual(today, 3, "file chỉ có hôm nay (thứ 3) nên hôm nay là chấm cuối")
+  }
+
+  /// 04 Bản 4 S-70: viền cam hôm nay — vị trí suy từ các buổi còn lại trong
+  /// tuần có trong file; buổi trước đó bỏ qua không làm lệch.
+  func testVS50TodayDotFromRemainingSessionsOfWeek() throws {
+    // Tuần: thứ 2 (bỏ qua), thứ 3 (hôm nay), thứ 5, thứ 7; chủ nhật và tuần
+    // sau không tính.
+    let f = try XCTUnwrap(file([
+      day("2026-10-13", "Thứ 3", week: week(0, 4)),
+      day("2026-10-14", "Thứ 4", kind: "rest", groups: [], time: nil, week: week(0, 4)),
+      day("2026-10-15", "Thứ 5", week: week(0, 4)),
+      day("2026-10-16", "Thứ 6", kind: "rest", groups: [], time: nil, week: week(0, 4)),
+      day("2026-10-17", "Thứ 7", week: week(0, 4)),
+      day("2026-10-18", "Chủ nhật", kind: "rest", groups: [], time: nil, week: week(0, 4)),
+      day("2026-10-19", "Thứ 2", week: week(0, 4)),
+      day("2026-10-20", "Thứ 3", week: week(0, 4)),
+    ]))
+    guard case .day(_, let today) = WidgetTimeline.display(f, at: at(13), calendar: calendar) else {
+      return XCTFail()
+    }
+    XCTAssertEqual(today, 1)
+    let rest = try XCTUnwrap(file([day("2026-10-14", "Thứ 4", kind: "rest", groups: [], time: nil, week: week(1, 4))]))
+    guard case .day(_, let none) = WidgetTimeline.display(rest, at: at(14), calendar: calendar) else {
+      return XCTFail()
+    }
+    XCTAssertNil(none, "ngày nghỉ không có chấm hôm nay")
   }
 
   func testED307BrokenOrMissingFileShowsSignedOut() {
@@ -73,7 +100,7 @@ final class IronlyWidgetsTests: XCTestCase {
     ]))
     let entries = WidgetTimeline.entries(f, now: at(17, 20), calendar: calendar)
     XCTAssertEqual(entries.map(\.date), [at(17, 20), at(18, 0), at(19, 0)])
-    guard case .day(let monday) = entries[2].display else { return XCTFail() }
+    guard case .day(let monday, _) = entries[2].display else { return XCTFail() }
     XCTAssertEqual(monday.weekday, "Thứ 2")
     XCTAssertEqual(monday.week.done, 0, "thứ 2 tuần mới về 0/Y")
   }
@@ -121,8 +148,8 @@ final class IronlyWidgetsTests: XCTestCase {
     let full = try state(
       #"{"lastLogged":{"name":"Máy ép ngực","lift":"40 → 47,5 kg"},"next":{"name":"Nằm ghế ngang đẩy thanh tạ","prev":"50 → 55 kg"},"allLogged":false,"absOnly":false}"#)
     XCTAssertEqual(ActivityText.lastLogged(full), "Máy ép ngực · 40 → 47,5 kg")
-    XCTAssertEqual(ActivityText.next(full), "Nằm ghế ngang đẩy thanh tạ · Buổi trước: 50 → 55 kg")
-    XCTAssertEqual(ActivityText.compact(full), "Kế tiếp: 50 → 55 kg")
+    XCTAssertEqual(ActivityText.next(full), "Nằm ghế ngang đẩy thanh tạ · 50 → 55 kg")
+    XCTAssertEqual(ActivityText.compact(full), "→ 50 → 55 kg")
 
     let empty = try state("{}")
     XCTAssertEqual(ActivityText.lastLogged(empty), "Chưa ghi bài nào")
@@ -132,7 +159,7 @@ final class IronlyWidgetsTests: XCTestCase {
     let broken = try state(#"{"lastLogged":{"name":1},"next":{"name":"Máy ép ngực"},"absOnly":"x","extra":true}"#)
     XCTAssertNil(broken.lastLogged)
     XCTAssertEqual(ActivityText.next(broken), "Máy ép ngực · Buổi trước: chưa ghi")
-    XCTAssertEqual(ActivityText.compact(broken), "Kế tiếp: chưa ghi")
+    XCTAssertEqual(ActivityText.compact(broken), "→")
     XCTAssertFalse(broken.allLogged)
     XCTAssertFalse(broken.absOnly)
   }
@@ -157,23 +184,22 @@ final class IronlyWidgetsTests: XCTestCase {
   @MainActor
   func testActivitySnapshots() throws {
     let firstRun = !FileManager.default.fileExists(
-      atPath: snapshotDir.appendingPathComponent("s71_logging_light.png").path)
+      atPath: snapshotDir.appendingPathComponent("s71_logging.png").path)
     let recording = firstRun || ProcessInfo.processInfo.environment["SNAPSHOT_RECORD"] == "1"
     var failures: [String] = []
     for (name, groups, state) in activityStates {
-      for (variant, scheme, size) in [
-        ("light", ColorScheme.light, DynamicTypeSize.large),
-        ("dark", ColorScheme.dark, DynamicTypeSize.large),
-        ("light_maxtext", ColorScheme.light, DynamicTypeSize.accessibility3),
-      ] {
+      for (variant, size) in [("", DynamicTypeSize.large), ("_maxtext", DynamicTypeSize.accessibility3)] {
         let card = LockScreenActivityView(groups: groups, state: state)
           .frame(width: 361)
-          .background(Color.ironlyWidgetBackground)
+          .background(Tokens.color.surface)
           .clipShape(RoundedRectangle(cornerRadius: 22))
-        let image = try snapshot(card, scheme: scheme, size: size)
-        if let problem = try compare(image, name: "s71_\(name)_\(variant)", record: recording) {
+        let image = try snapshot(card, scheme: .dark, size: size)
+        if let problem = try compare(image, name: "s71_\(name)\(variant)", record: recording) {
           failures.append(problem)
         }
+        // TA4-08: màu theo token, máy đặt sáng vẽ y hệt.
+        let light = try snapshot(card, scheme: .light, size: size)
+        XCTAssertEqual(light.pngData(), image.pngData(), "\(name)\(variant): sáng / tối phải như nhau")
       }
     }
     // Dynamic Island: nền đen, máy sáng hay tối vẽ như nhau.
@@ -217,14 +243,12 @@ final class IronlyWidgetsTests: XCTestCase {
     for json in try FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil)
     where json.pathExtension == "json" {
       let demo = try JSONDecoder().decode(Demo.self, from: Data(contentsOf: json))
-      for (variant, scheme) in [("light", ColorScheme.light), ("dark", ColorScheme.dark)] {
-        let card = LockScreenActivityView(groups: demo.groups, state: demo.state)
-          .frame(width: 361)
-          .background(Color.ironlyWidgetBackground)
-          .clipShape(RoundedRectangle(cornerRadius: 22))
-        let png = try XCTUnwrap(try snapshot(card, scheme: scheme, size: .large).pngData())
-        try png.write(to: json.deletingPathExtension().appendingPathExtension("\(variant).png"))
-      }
+      let card = LockScreenActivityView(groups: demo.groups, state: demo.state)
+        .frame(width: 361)
+        .background(Tokens.color.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 22))
+      let cardPng = try XCTUnwrap(try snapshot(card, scheme: .dark, size: .large).pngData())
+      try cardPng.write(to: json.deletingPathExtension().appendingPathExtension("png"))
       let island = IslandExpandedView(groups: demo.groups, state: demo.state)
         .padding(24).frame(width: 371).background(Color.black)
         .clipShape(RoundedRectangle(cornerRadius: 44))
@@ -255,19 +279,19 @@ final class IronlyWidgetsTests: XCTestCase {
   func testSnapshots() throws {
     // Chưa có bộ ảnh cho bản iOS này (ví dụ máy CI chạy iOS khác): ghi bộ ảnh
     // để xem lại, không so.
-    let firstRun = !FileManager.default.fileExists(atPath: snapshotDir.path)
+    let firstRun = !FileManager.default.fileExists(
+      atPath: snapshotDir.appendingPathComponent("s70_not_done.png").path)
     let recording = firstRun || ProcessInfo.processInfo.environment["SNAPSHOT_RECORD"] == "1"
     var failures: [String] = []
     for (name, display) in try states() {
-      for (variant, scheme, size) in [
-        ("light", ColorScheme.light, DynamicTypeSize.large),
-        ("dark", ColorScheme.dark, DynamicTypeSize.large),
-        ("light_maxtext", ColorScheme.light, DynamicTypeSize.accessibility3),
-      ] {
-        let image = try render(display, scheme: scheme, size: size)
-        if let problem = try compare(image, name: "s70_\(name)_\(variant)", record: recording) {
+      for (variant, size) in [("", DynamicTypeSize.large), ("_maxtext", DynamicTypeSize.accessibility3)] {
+        let image = try render(display, scheme: .dark, size: size)
+        if let problem = try compare(image, name: "s70_\(name)\(variant)", record: recording) {
           failures.append(problem)
         }
+        // TA4-08: màu theo token, máy đặt sáng vẽ y hệt.
+        let light = try render(display, scheme: .light, size: size)
+        XCTAssertEqual(light.pngData(), image.pngData(), "\(name)\(variant): sáng / tối phải như nhau")
       }
     }
     XCTAssertTrue(failures.isEmpty, failures.joined(separator: "\n"))
@@ -287,10 +311,8 @@ final class IronlyWidgetsTests: XCTestCase {
       let file = WidgetStateFile.decode(try? Data(contentsOf: json))
       let first = file?.days.first.flatMap { WidgetTimeline.dayStart($0.date, calendar: .current) }
       let display = WidgetTimeline.display(file, at: first ?? Date())
-      for (variant, scheme) in [("light", ColorScheme.light), ("dark", ColorScheme.dark)] {
-        let png = try XCTUnwrap(try render(display, scheme: scheme, size: .large).pngData())
-        try png.write(to: json.deletingPathExtension().appendingPathExtension("\(variant).png"))
-      }
+      let png = try XCTUnwrap(try render(display, scheme: .dark, size: .large).pngData())
+      try png.write(to: json.deletingPathExtension().appendingPathExtension("png"))
     }
   }
 
@@ -301,7 +323,7 @@ final class IronlyWidgetsTests: XCTestCase {
       WidgetContentView(display: display)
         .padding(16)
         .frame(width: 338, height: 158)
-        .background(Color.ironlyWidgetBackground)
+        .background(Tokens.color.bg)
         .clipShape(RoundedRectangle(cornerRadius: 22)),
       scheme: scheme, size: size)
   }

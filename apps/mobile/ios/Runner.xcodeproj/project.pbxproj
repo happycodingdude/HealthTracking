@@ -20,6 +20,8 @@
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
 		7670B6B8E9ABACC94167576E /* IronlySessionAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B97A2F947B2D215E85B4EDC /* IronlySessionAttributes.swift */; };
 		7D3334C0FF4BC52C72782A77 /* WidgetModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF1348B9B64BCAF465AB7F10 /* WidgetModels.swift */; };
+		B2D5F1C6E3A7B8C9D0E1F2A3 /* Tokens.g.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1C4E0B5D2F6A7B8C9D0E1F2 /* Tokens.g.swift */; };
+		C3E6A2D7F4B8C9D0E1F2A3B4 /* Tokens.g.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1C4E0B5D2F6A7B8C9D0E1F2 /* Tokens.g.swift */; };
 		82054CE29ED3ED07FF5E7AF1 /* WidgetTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B8975EE5C5438C523D80228 /* WidgetTimeline.swift */; };
 		8571F4938F5612757DC2B84F /* IronlySessionAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B97A2F947B2D215E85B4EDC /* IronlySessionAttributes.swift */; };
 		8DFF873FF7BAC19DABDC82E7 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 17E34B6C35635BBB8F4F1459 /* Pods_Runner.framework */; };
@@ -122,6 +124,7 @@
 		B3B5AB47E3D131D8AB3FDEEF /* Pods-Runner.profile-dev.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile-dev.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile-dev.xcconfig"; sourceTree = "<group>"; };
 		B7ED0AA3053BC292B244F518 /* IronlyWidgets.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = IronlyWidgets.entitlements; sourceTree = "<group>"; };
 		BF1348B9B64BCAF465AB7F10 /* WidgetModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetModels.swift; sourceTree = "<group>"; };
+		A1C4E0B5D2F6A7B8C9D0E1F2 /* Tokens.g.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Tokens.g.swift; sourceTree = "<group>"; };
 		C1523465719830DCF038F1C9 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		C7F3FAEA15FF65E277A6727C /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
 		D3BBAAB75F49042289FA9281 /* SharedState.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SharedState.swift; sourceTree = "<group>"; };
@@ -201,6 +204,7 @@
 				709C13211DFE51BA24DDD1AF /* IronlyWidgetsBundle.swift */,
 				3036CE9DB07F57F8E9BD850F /* IronlyWidget.swift */,
 				BF1348B9B64BCAF465AB7F10 /* WidgetModels.swift */,
+				A1C4E0B5D2F6A7B8C9D0E1F2 /* Tokens.g.swift */,
 				4B8975EE5C5438C523D80228 /* WidgetTimeline.swift */,
 				EC9FEF3C14B31DECDDC5625A /* WidgetContentView.swift */,
 				D3BBAAB75F49042289FA9281 /* SharedState.swift */,
@@ -555,6 +559,7 @@
 			files = (
 				25DEC2DB9408DE567E4652F9 /* IronlyWidgetsTests.swift in Sources */,
 				7D3334C0FF4BC52C72782A77 /* WidgetModels.swift in Sources */,
+				B2D5F1C6E3A7B8C9D0E1F2A3 /* Tokens.g.swift in Sources */,
 				46D38C018D76DF10CC2347BA /* WidgetTimeline.swift in Sources */,
 				674F5D91B311721E01F5D226 /* WidgetContentView.swift in Sources */,
 				20DA7DCCB1B2ECF1E96824CD /* SharedState.swift in Sources */,
@@ -570,6 +575,7 @@
 				BFEE948FCB3AD311EC53DD75 /* IronlyWidgetsBundle.swift in Sources */,
 				059C77C5EE9D6211E5562AC1 /* IronlyWidget.swift in Sources */,
 				BFDCD5AFDBFE60FFA561F44A /* WidgetModels.swift in Sources */,
+				C3E6A2D7F4B8C9D0E1F2A3B4 /* Tokens.g.swift in Sources */,
 				82054CE29ED3ED07FF5E7AF1 /* WidgetTimeline.swift in Sources */,
 				BBEA50A2A4BDF6896E9C9893 /* WidgetContentView.swift in Sources */,
 				5C169300CDF1BB28C398201A /* SharedState.swift in Sources */,

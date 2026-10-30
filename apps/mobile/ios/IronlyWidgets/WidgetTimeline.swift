@@ -14,7 +14,24 @@ enum WidgetTimeline {
     if !file.signedIn { return .signedOut(weekday: day?.weekday) }
     guard let day else { return .signedOut(weekday: nil) }
     if !file.hasSchedule { return .noSchedule(weekday: day.weekday) }
-    return .day(day)
+    return .day(day, todayDot: todayDot(file, day: day, calendar: calendar))
+  }
+
+  /// Vị trí chấm của buổi hôm nay trong `week.dots` (một chấm mỗi buổi theo
+  /// lịch của tuần, theo ngày): tổng chấm trừ số buổi theo lịch còn lại trong
+  /// tuần (các ngày sau hôm nay trong file, tới chủ nhật) trừ 1. File không
+  /// ghi vị trí nên suy từ 8 ngày đã có (05 Bản 3 §6.8.1).
+  static func todayDot(_ file: WidgetStateFile, day: WidgetDayFile, calendar: Calendar) -> Int? {
+    guard day.kind == "workout", let start = dayStart(day.date, calendar: calendar) else { return nil }
+    let weekday = calendar.component(.weekday, from: start)  // 1 = chủ nhật … 7 = thứ 7
+    let toNextMonday = (9 - weekday) % 7 == 0 ? 7 : (9 - weekday) % 7
+    guard let nextMonday = calendar.date(byAdding: .day, value: toNextMonday, to: start) else { return nil }
+    let upcoming = file.days.filter { d in
+      guard d.kind == "workout", let s = dayStart(d.date, calendar: calendar) else { return false }
+      return s > start && s < nextMonday
+    }.count
+    let index = day.week.dots.count - upcoming - 1
+    return day.week.dots.indices.contains(index) ? index : nil
   }
 
   /// Mục "bây giờ" và mục 00:00 cho mỗi ngày sau hôm nay trong file

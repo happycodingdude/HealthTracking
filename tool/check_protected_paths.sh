@@ -37,4 +37,20 @@ if [ -n "$HITS" ]; then
   printf '%s' "$HITS" >&2
   exit 1
 fi
-echo "check_protected_paths: OK (không đụng domain / server / data / contract)"
+# ED4-08: Swift ở VS-50 chỉ đổi file view; file dùng chung app ↔ extension
+# (App Group, ActivityAttributes / ContentState, cầu MethodChannel) phải y hệt
+# main (so hash blob).
+FROZEN=(
+  apps/mobile/ios/IronlyWidgets/SharedState.swift
+  apps/mobile/ios/IronlyWidgets/IronlySessionAttributes.swift
+  apps/mobile/ios/Runner/NativeBridge.swift
+)
+for f in "${FROZEN[@]}"; do
+  BASE_HASH="$(git rev-parse -q --verify "$MERGE_BASE:$f" 2>/dev/null || true)"
+  NOW_HASH="$(git hash-object "$f" 2>/dev/null || true)"
+  if [ "$BASE_HASH" != "$NOW_HASH" ]; then
+    echo "check_protected_paths: $f khác với main (ED4-08: file Swift dùng chung không được đổi)" >&2
+    exit 1
+  fi
+done
+echo "check_protected_paths: OK (không đụng domain / server / data / contract; ${#FROZEN[@]} file Swift dùng chung y hệt main)"

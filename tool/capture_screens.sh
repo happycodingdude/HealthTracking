@@ -21,6 +21,22 @@ OUT="$ROOT/docs/review/v4"
 SHOTS="$ROOT/apps/mobile/build/review"
 mkdir -p "$OUT" "$SHOTS"
 
+if [ "$CAPTURE" = 1 ] && [ "$M" = "M21" ]; then
+  # M21: ảnh widget / thẻ là snapshot của XCTest (VS50-T03) theo bản iOS của
+  # simulator đang bật; chép sang build/review với tiền tố m21_.
+  OS="ios$(xcrun simctl list -j devices booted | python3 -c '
+import json, sys, re
+d = json.load(sys.stdin)["devices"]
+rt = next(rt for rt, ds in d.items() if any(x["state"] == "Booted" for x in ds))
+print(re.search(r"iOS-(\d+)", rt).group(1))')"
+  SNAP="$ROOT/apps/mobile/ios/IronlyWidgetsTests/__Snapshots__/$OS"
+  [ -d "$SNAP" ] || { echo "Chưa có snapshot $SNAP: chạy xcodebuild test (check.sh) trước" >&2; exit 1; }
+  for f in "$SNAP"/s70_*.png "$SNAP"/s71_*.png; do
+    cp "$f" "$SHOTS/m21_$(basename "$f")"
+  done
+  CAPTURE=0
+fi
+
 if [ "$CAPTURE" = 1 ]; then
   if [ -z "$DEVICE" ]; then
     DEVICE="$(xcrun simctl list devices booted | grep -Eo '\([0-9A-F-]{36}\)' | head -1 | tr -d '()')"

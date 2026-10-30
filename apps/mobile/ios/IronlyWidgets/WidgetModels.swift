@@ -44,14 +44,16 @@ enum WidgetDisplay: Equatable {
   case signedOut(weekday: String?)
   /// Chưa có lịch tập.
   case noSchedule(weekday: String)
-  /// Có lịch: buổi theo lịch hoặc ngày nghỉ.
-  case day(WidgetDayFile)
+  /// Có lịch: buổi theo lịch hoặc ngày nghỉ. [todayDot]: vị trí chấm của buổi
+  /// hôm nay trong `week.dots` (viền cam khi chờ đánh dấu, 04 Bản 4 S-70);
+  /// nil khi hôm nay không phải buổi theo lịch.
+  case day(WidgetDayFile, todayDot: Int?)
 
   var weekday: String? {
     switch self {
     case .signedOut(let weekday): return weekday
     case .noSchedule(let weekday): return weekday
-    case .day(let day): return day.weekday
+    case .day(let day, _): return day.weekday
     }
   }
 
@@ -60,7 +62,7 @@ enum WidgetDisplay: Equatable {
     switch self {
     case .signedOut: return URL(string: "ironly://login")!
     case .noSchedule: return URL(string: "ironly://today")!
-    case .day(let day):
+    case .day(let day, _):
       return URL(string: day.kind == "workout" || day.extra
         ? "ironly://session/today" : "ironly://today")!
     }
