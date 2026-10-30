@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
+import '../../../ui/theme.dart';
+
 /// Một trình phát đã tạo (chỉ sau khi Bạn chạm phát).
 abstract interface class VideoPlayerHandle {
   /// Trình phát để đặt vào khung 16:9.
@@ -132,7 +134,7 @@ final class _YoutubeHandle implements VideoPlayerHandle {
   @override
   Widget get view => YoutubePlayer(
     controller: _controller,
-    backgroundColor: Colors.transparent,
+    backgroundColor: TokenColor.surface,
   );
 
   @override

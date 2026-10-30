@@ -10,7 +10,7 @@ void main() {
   ) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: AppTheme.light(),
+        theme: IronlyTheme.dark(),
         home: Builder(
           builder: (context) => Scaffold(
             body: Column(
@@ -46,8 +46,8 @@ void main() {
     );
     expect(find.text('Trong bảng'), findsOneWidget);
     expect(find.text('Nội dung phía sau'), findsOneWidget);
-    expect(scrimColor(tester), AppPalette.light.scrim);
-    expect(AppPalette.light.scrim.a, inExclusiveRange(0, 1));
+    expect(scrimColor(tester), TokenColor.scrim);
+    expect(TokenColor.scrim.a, inExclusiveRange(0, 1));
     // Chạm vùng mờ để đóng.
     await tester.tapAt(const Offset(10, 10));
     await tester.pumpAndSettle();
@@ -66,6 +66,6 @@ void main() {
     );
     expect(find.text('Hộp'), findsOneWidget);
     expect(find.text('Nội dung phía sau'), findsOneWidget);
-    expect(scrimColor(tester), AppPalette.light.scrim);
+    expect(scrimColor(tester), TokenColor.scrim);
   });
 }

@@ -7,11 +7,11 @@ import 'package:mobile/app/app.dart';
 import 'package:mobile/app/router.dart';
 import 'package:mobile/app/shell/app_shell.dart';
 import 'package:mobile/app/shell/app_tab.dart';
-import 'package:mobile/app/shell/app_tab_bar.dart';
 import 'package:mobile/app/shell/tab_scroll.dart';
 import 'package:mobile/app/shell/tab_stacks.dart';
 import 'package:mobile/app/strings_vi.dart';
 import 'package:mobile/core/widgets/tab_page.dart';
+import 'package:mobile/ui/components/ironly_tab_bar.dart';
 
 import '../support/app_harness.dart';
 
@@ -32,8 +32,10 @@ void main() {
     return container;
   }
 
-  Finder tabLabel(String label) =>
-      find.descendant(of: find.byType(AppTabBar), matching: find.text(label));
+  Finder tabLabel(String label) => find.descendant(
+    of: find.byType(IronlyTabBar),
+    matching: find.text(label),
+  );
 
   testWidgets(
     'UX-AC1: đúng 5 tab theo thứ tự, Hôm nay là nút tròn ở giữa, luôn có chữ',
@@ -55,7 +57,8 @@ void main() {
       expect(circle, findsOneWidget);
       // Nút tròn nhô lên trên mép thanh tab (04 §6.3.2).
       final barTop =
-          tester.getTopLeft(find.byType(AppTabBar)).dy + AppTabBar.protrusion;
+          tester.getTopLeft(find.byType(IronlyTabBar)).dy +
+          IronlyTabBar.protrusion;
       expect(tester.getTopLeft(circle).dy, lessThan(barTop));
       expect(find.bySemanticsLabel(S.tabToday), findsWidgets);
     },

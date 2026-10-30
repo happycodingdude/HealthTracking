@@ -87,10 +87,9 @@ class _VideoAreaState extends ConsumerState<VideoArea> {
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    // Khung video có màu riêng cho chế độ tối (04 Bản 2 §6.13).
-    final frame = dark ? const Color(0xFF0B1116) : const Color(0xFF1F2933);
-    const onFrame = Color(0xFFFFFFFF);
+    // Khung video nền thẻ (04 Bản 4 S-67).
+    final frame = context.tokens.surface;
+    final onFrame = context.tokens.textPrimary;
     final palette = context.palette;
     final duration = widget.exercise.videoDurationS;
 
@@ -150,11 +149,7 @@ class _VideoAreaState extends ConsumerState<VideoArea> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
-                      Icons.play_arrow_rounded,
-                      size: 56,
-                      color: onFrame,
-                    ),
+                    Icon(Icons.play_arrow_rounded, size: 56, color: onFrame),
                     if (duration != null)
                       Text(
                         Fmt.videoDuration(duration),

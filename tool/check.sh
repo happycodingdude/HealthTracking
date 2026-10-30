@@ -28,11 +28,22 @@ step "câu chữ Swift của widget (06 Bản 3 VS39-T07)"
 step "schema.sql khớp tổng các migration (06 Bản 3 ED3-01)"
 "$ROOT/tool/gen_schema.sh" --check
 
+step "hàng rào đường dẫn Bản 4 (06 Bản 4 ED4-02)"
+"$ROOT/tool/check_protected_paths.sh"
+
+step "token sinh khớp tokens.json (05 Bản 4 TD4-02)"
+dart run tool/gen_tokens.dart --check
+
+if command -v rsvg-convert >/dev/null; then
+  step "icon app khớp app_icon.svg (05 Bản 4 TD4-09)"
+  "$ROOT/tool/gen_app_icon.sh" --check
+fi
+
 step "pub get"
 flutter pub get >/dev/null
 
 step "format"
-dart format --output=none --set-exit-if-changed packages apps/server apps/mobile/lib apps/mobile/test tool
+dart format --output=none --set-exit-if-changed packages apps/server apps/mobile/lib apps/mobile/test apps/mobile/tool apps/mobile/integration_test tool
 
 step "analyze"
 dart analyze --fatal-infos

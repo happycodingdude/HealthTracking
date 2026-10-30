@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/app.dart';
-import 'package:mobile/app/theme.dart';
+import 'package:mobile/ui/theme.dart';
 
 import '../support/app_harness.dart';
 import '../support/golden.dart';
@@ -16,10 +16,7 @@ void main() {
       tester,
     ) async {
       setPhoneSurface(tester);
-      tester.platformDispatcher
-        ..platformBrightnessTestValue = variant.brightness
-        ..textScaleFactorTestValue = variant.textScale;
-      addTearDown(tester.platformDispatcher.clearAllTestValues);
+      applyVariant(tester, variant);
       final container = ProviderContainer(
         retry: (_, _) => null,
         overrides: appOverrides(),
@@ -35,7 +32,7 @@ void main() {
       expect(
         Theme.of(
           tester.element(find.byType(Scaffold).first),
-        ).extension<AppPalette>(),
+        ).extension<IronlyTokens>(),
         isNotNull,
       );
       await expectLater(

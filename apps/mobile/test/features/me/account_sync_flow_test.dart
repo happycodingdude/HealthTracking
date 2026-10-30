@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/app.dart';
-import 'package:mobile/app/shell/app_tab_bar.dart';
 import 'package:mobile/app/strings_vi.dart';
 import 'package:mobile/core/widgets/labeled_field.dart';
 import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/features/me/data/account_repository.dart';
+import 'package:mobile/ui/components/ironly_tab_bar.dart';
 
 import '../../support/app_harness.dart';
 import '../../support/fake_server.dart';
@@ -42,7 +42,10 @@ void main() {
 
   Future<void> openAccount(WidgetTester tester) async {
     await tester.tap(
-      find.descendant(of: find.byType(AppTabBar), matching: find.text(S.tabMe)),
+      find.descendant(
+        of: find.byType(IronlyTabBar),
+        matching: find.text(S.tabMe),
+      ),
     );
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('row-account-data')));
@@ -78,7 +81,7 @@ void main() {
       await pump(tester);
       await tester.tap(
         find.descendant(
-          of: find.byType(AppTabBar),
+          of: find.byType(IronlyTabBar),
           matching: find.text(S.tabMe),
         ),
       );
@@ -91,7 +94,7 @@ void main() {
       expect(find.text(S.syncedAt('18:42')), findsOneWidget);
       expect(find.text(S.syncLossWarning), findsNothing);
       expect(
-        find.byType(AppTabBar),
+        find.byType(IronlyTabBar),
         findsOneWidget,
         reason: 'S-56 nằm trong tab Tôi',
       );

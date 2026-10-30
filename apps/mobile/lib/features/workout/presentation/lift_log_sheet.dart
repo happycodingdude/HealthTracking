@@ -478,7 +478,7 @@ class _StepperField extends StatelessWidget {
     final step = u == null ? null : LiftKg.format(LiftStep.of(u));
     final stepText = u == null ? null : LiftFormat.value(LiftStep.of(u), u);
     final numberStyle = context.text.headlineLarge?.copyWith(
-      fontSize: 30,
+      fontSize: TokenType.numberField,
       fontWeight: FontWeight.w700,
       color: gray ? palette.textSecondary : colors.onSurface,
     );
@@ -552,7 +552,7 @@ class _StepperField extends StatelessWidget {
                                   Text(
                                     Fmt.liftUnit(u),
                                     style: context.text.bodyMedium?.copyWith(
-                                      fontSize: 14,
+                                      fontSize: TokenType.body,
                                       color: palette.textSecondary,
                                     ),
                                   ),
@@ -576,7 +576,7 @@ class _StepperField extends StatelessWidget {
                           showCursor: false,
                           enableInteractiveSelection: false,
                           style: numberStyle?.copyWith(
-                            color: Colors.transparent,
+                            color: TokenColor.transparent,
                           ),
                           keyboardType: TextInputType.numberWithOptions(
                             decimal: !steps,

@@ -17,8 +17,8 @@ void main() {
       if (pattern.hasMatch(e.value)) e.key,
   };
 
-  test('UX-AC23: mọi bảng trượt và hộp thoại mở qua app_sheet.dart (có lớp '
-      'mờ, trang phía sau giữ nguyên)', () {
+  test('UX-AC23: mọi bảng trượt và hộp thoại mở qua ironly_sheet.dart / '
+      'app_sheet.dart (có lớp mờ, trang phía sau giữ nguyên)', () {
     expect(
       filesUsing(
         RegExp(
@@ -26,7 +26,10 @@ void main() {
           r'showGeneralDialog|showBottomSheet\(',
         ),
       ),
-      {'lib/core/widgets/app_sheet.dart'},
+      {
+        'lib/core/widgets/app_sheet.dart',
+        'lib/ui/components/ironly_sheet.dart',
+      },
     );
   });
 

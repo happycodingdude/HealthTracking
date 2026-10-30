@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:api_contract/api_contract.dart';
 import 'package:domain/domain.dart';
 import 'package:domain/testing.dart';
 import 'package:drift/native.dart';
@@ -21,6 +20,7 @@ import '../../support/fake_native.dart';
 import '../../support/fake_server.dart';
 import '../../support/library_fixture.dart';
 import '../../support/schedule_fixture.dart';
+import '../../support/version_fixture.dart';
 
 /// 06 Bản 3 VS41-T06 (Dart): `LiveActivityController` với cầu giả — mọi đường
 /// của bảng 05 Bản 3 §6.4.4; gửi token chỉ khi đổi hoặc sau 24 giờ (TA3-12);
@@ -115,7 +115,7 @@ void main() {
       'activityPushToken': update,
       'activityDate': '2026-10-12',
       'environment': 'sandbox',
-      'appVersion': AppVersion.v3.toString(),
+      'appVersion': appVersionV4.toString(),
     });
   });
 

@@ -12,7 +12,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:mobile/app/providers.dart';
-import 'package:mobile/app/shell/app_tab_bar.dart';
 import 'package:mobile/app/strings_vi.dart';
 import 'package:mobile/core/formatters.dart';
 import 'package:mobile/data/auth/session_store.dart';
@@ -22,6 +21,7 @@ import 'package:mobile/features/auth/presentation/login_screen.dart';
 import 'package:mobile/features/native/live_activity_controller.dart';
 import 'package:mobile/features/native/native_bridge.dart';
 import 'package:mobile/main.dart' as app;
+import 'package:mobile/ui/components/ironly_tab_bar.dart';
 
 import 'flow_helpers.dart';
 
@@ -63,7 +63,7 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, S.register));
     await pumpUntil(tester, find.text(S.disclaimerTitle));
     expect(find.text(S.stepOf(1)), findsOneWidget);
-    expect(find.byType(AppTabBar), findsNothing);
+    expect(find.byType(IronlyTabBar), findsNothing);
 
     // VS-03: S-02 → S-03 (hồ sơ F02-AC1) → S-04.
     await tester.tap(find.text(S.iUnderstand));
@@ -436,7 +436,7 @@ void main() {
       await reveal(tester, find.widgetWithText(FilledButton, S.login));
       await tester.tap(find.widgetWithText(FilledButton, S.login));
       await pumpUntil(tester, find.text(S.restored));
-      expect(find.byType(AppTabBar), findsOneWidget);
+      expect(find.byType(IronlyTabBar), findsOneWidget);
       expect(find.textContaining(S.greeting('Minh Anh')), findsOneWidget);
       final card = find.byKey(const ValueKey('menu-card'));
       await reveal(tester, card);
@@ -478,7 +478,7 @@ void main() {
       // giờ tự bật (ED3-09) → không thẻ nào; cập nhật / tắt thẻ không có
       // không lỗi; push-to-start token (nếu iOS cấp) gửi lên server thật.
       final container = ProviderScope.containerOf(
-        tester.element(find.byType(AppTabBar)),
+        tester.element(find.byType(IronlyTabBar)),
       );
       final bridge = container.read(nativeBridgeProvider);
       expect(await bridge.liveActivities(), isEmpty);
@@ -498,7 +498,7 @@ void main() {
       await tapVisible(tester, find.byKey(const ValueKey('row-logout')));
       await tester.tap(find.byKey(const ValueKey('logout-confirm')));
       await pumpUntil(tester, find.byType(LoginScreen));
-      expect(find.byType(AppTabBar), findsNothing);
+      expect(find.byType(IronlyTabBar), findsNothing);
       expect(await SecureSessionStore().read(), isNull);
       expect(await PrefsLogoutFlag().isPending(), isFalse);
       expect(await PrefsLiveActivityStore().sent(), isNull);
@@ -506,7 +506,7 @@ void main() {
       await tester.pumpWidget(const SizedBox());
       await launch();
       await pumpUntil(tester, find.widgetWithText(OutlinedButton, S.login));
-      expect(find.byType(AppTabBar), findsNothing);
+      expect(find.byType(IronlyTabBar), findsNothing);
     },
   );
 

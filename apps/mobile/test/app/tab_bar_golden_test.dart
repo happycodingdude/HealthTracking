@@ -4,7 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/shell/app_tab.dart';
-import 'package:mobile/app/shell/app_tab_bar.dart';
+import 'package:mobile/ui/components/ironly_tab_bar.dart';
 
 import '../support/golden.dart';
 
@@ -21,7 +21,7 @@ void main() {
               Scaffold(
                 extendBody: true,
                 body: const SizedBox.expand(),
-                bottomNavigationBar: AppTabBar(
+                bottomNavigationBar: IronlyTabBar(
                   current: current,
                   onTap: (_) {},
                   dots: current == AppTab.me

@@ -9,7 +9,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/app.dart';
 import 'package:mobile/app/router.dart';
-import 'package:mobile/app/shell/app_tab_bar.dart';
 import 'package:mobile/app/strings_vi.dart';
 import 'package:mobile/app/time_ticker.dart';
 import 'package:mobile/core/formatters.dart';
@@ -23,6 +22,7 @@ import 'package:mobile/features/me/data/profile_repository.dart';
 import 'package:mobile/features/progress/presentation/progress_screen.dart';
 import 'package:mobile/features/schedule/data/schedule_repository.dart';
 import 'package:mobile/features/schedule/presentation/schedule_screen.dart';
+import 'package:mobile/ui/components/ironly_tab_bar.dart';
 
 import '../../support/app_harness.dart';
 import '../../support/fake_server.dart';
@@ -49,7 +49,7 @@ void main() {
   });
 
   Finder tabBarText(String text) =>
-      find.descendant(of: find.byType(AppTabBar), matching: find.text(text));
+      find.descendant(of: find.byType(IronlyTabBar), matching: find.text(text));
 
   /// Dựng cả app ở [now], mở tab Tập luyện. [tall]: màn hình cao để S-67
   /// dựng đủ mọi phần (danh sách chỉ dựng phần gần khung nhìn).

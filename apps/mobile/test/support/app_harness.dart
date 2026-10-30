@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:api_contract/api_contract.dart' show AppVersion;
 import 'package:domain/domain.dart';
 import 'package:domain/testing.dart';
 import 'package:drift/native.dart';
@@ -29,6 +28,7 @@ import 'fake_native.dart';
 import 'fake_notifications.dart';
 import 'fake_server.dart';
 import 'fake_sync.dart';
+import 'version_fixture.dart';
 
 /// Phiên thử đã đăng nhập (refresh token ngẫu nhiên mỗi lần chạy test).
 final signedInSession = StoredSession(
@@ -143,7 +143,7 @@ List<Override> appOverrides({
     clockProvider.overrideWithValue(
       clock ?? FixedClock(DateTime(2026, 10, 7, 18, 42)),
     ),
-    appVersionProvider.overrideWithValue(AppVersion.v3),
+    appVersionProvider.overrideWithValue(appVersionV4),
     publicApiClientProvider.overrideWith(
       (ref) => fake.client()
         ..dio.interceptors.add(

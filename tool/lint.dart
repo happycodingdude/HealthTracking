@@ -25,7 +25,11 @@ void main() {
 
   for (final file in _dartFiles('apps/mobile/lib')) {
     final path = file.path.replaceAll(r'\', '/');
-    if (path.endsWith('lib/app/strings_vi.dart') || path.endsWith('.g.dart')) {
+    // lib/dev/: dữ liệu mô tả cho công cụ duyệt (06 Bản 4 ED4-04), không
+    // hiện trên màn hình.
+    if (path.endsWith('lib/app/strings_vi.dart') ||
+        path.endsWith('.g.dart') ||
+        path.contains('/lib/dev/')) {
       continue;
     }
     for (final literal in stringLiterals(file.readAsStringSync())) {

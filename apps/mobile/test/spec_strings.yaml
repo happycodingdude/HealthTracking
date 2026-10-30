@@ -415,3 +415,9 @@ activityPreviousNone: "Buổi trước: chưa ghi"
 activityAllLogged: "Đã ghi hết bài"
 activityAbsOnly: "Bài bụng không ghi mức tạ"
 activityNextNone: "Kế tiếp: chưa ghi" # 04 Bản 3 UA3-15 Dynamic Island thu gọn
+
+# 06 Bản 4 ED4-03: câu bị bỏ khỏi màn hình theo 01 Bản 4 (BR4-08, BR4-09,
+# BR4-14, BR4-15), giữ trong file làm nhãn VoiceOver của dấu hiệu
+# (05 Bản 4 TD4-07). Test: test/app/semantics_only_test.dart. Danh sách bổ
+# sung dần theo từng slice khi màn được viết lại.
+semanticsOnly: []

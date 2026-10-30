@@ -90,9 +90,9 @@ class LogoutFinishingApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light(),
-      darkTheme: AppTheme.dark(),
-      themeMode: ThemeMode.system,
+      theme: IronlyTheme.dark(),
+      darkTheme: IronlyTheme.dark(),
+      themeMode: ThemeMode.dark,
       locale: const Locale('vi'),
       supportedLocales: const [Locale('vi')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,

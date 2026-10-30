@@ -8,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/app.dart';
-import 'package:mobile/app/shell/app_tab_bar.dart';
 import 'package:mobile/app/strings_vi.dart';
 import 'package:mobile/core/widgets/labeled_field.dart';
 import 'package:mobile/data/db/app_database.dart';
@@ -16,6 +15,7 @@ import 'package:mobile/features/me/data/profile_repository.dart';
 import 'package:mobile/features/onboarding/application/setup_state.dart';
 import 'package:mobile/features/onboarding/data/onboarding_draft_repository.dart';
 import 'package:mobile/features/weight/data/weight_repository.dart';
+import 'package:mobile/ui/components/ironly_tab_bar.dart';
 
 import '../../support/app_harness.dart';
 import '../../support/fake_server.dart';
@@ -113,7 +113,7 @@ void main() {
       expect(find.text(S.disclaimerTitle), findsOneWidget);
       expect(find.text(S.stepOf(1)), findsOneWidget);
       expect(find.text(S.back), findsNothing);
-      expect(find.byType(AppTabBar), findsNothing);
+      expect(find.byType(IronlyTabBar), findsNothing);
       for (final p in [
         S.disclaimerPoint1,
         S.disclaimerPoint2,

@@ -394,7 +394,7 @@ void main() {
         final barrier = tester
             .widgetList<ModalBarrier>(find.byType(ModalBarrier))
             .last;
-        expect(barrier.color, AppPalette.light.scrim);
+        expect(barrier.color, TokenColor.scrim);
         await tester.tap(find.widgetWithText(FilledButton, S.understood));
         await tester.pumpAndSettle();
         expect(find.text(S.forgotPasswordBody), findsNothing);

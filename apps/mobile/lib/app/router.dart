@@ -30,6 +30,7 @@ import '../features/today/presentation/week_progress_screen.dart';
 import '../features/training/presentation/training_screen.dart';
 import '../features/weight/presentation/weight_screen.dart';
 import '../features/workout/presentation/session_screen.dart';
+import '../ui/gallery.dart';
 import 'providers.dart';
 import 'shell/app_shell.dart';
 import 'shell/app_tab.dart';
@@ -73,7 +74,7 @@ String? appRedirect(AuthState auth, SetupState setup, String location) {
         ? AppTab.today.path
         : landing;
   }
-  if (location == aboutReferencePath) return null;
+  if (location == aboutReferencePath || location == galleryPath) return null;
   final inOnboarding =
       location == '/onboarding' || location.startsWith('/onboarding/');
   if (completed) {
@@ -191,6 +192,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: aboutReferencePath,
         builder: (_, _) => const AboutReferenceScreen(),
       ),
+      // Trang thành phần, chỉ flavor dev (06 Bản 4 VS-43 demo).
+      if (ref.read(envProvider).flavor == 'dev')
+        GoRoute(path: galleryPath, builder: (_, _) => const ComponentGallery()),
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) => AppShell(navigationShell: shell),
         branches: [

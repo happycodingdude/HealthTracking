@@ -6,12 +6,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/app.dart';
-import 'package:mobile/app/shell/app_tab_bar.dart';
 import 'package:mobile/app/strings_vi.dart';
 import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/features/schedule/data/schedule_repository.dart';
 import 'package:mobile/features/schedule/presentation/extra_session_sheet.dart';
 import 'package:mobile/features/schedule/presentation/schedule_screen.dart';
+import 'package:mobile/ui/components/ironly_tab_bar.dart';
 
 import '../../support/app_harness.dart';
 import '../../support/fake_server.dart';
@@ -132,7 +132,7 @@ void main() {
       await pump(tester);
       await tester.tap(
         find.descendant(
-          of: find.byType(AppTabBar),
+          of: find.byType(IronlyTabBar),
           matching: find.text(S.tabTraining),
         ),
       );
@@ -208,7 +208,7 @@ void main() {
       await pump(tester);
       await tester.tap(
         find.descendant(
-          of: find.byType(AppTabBar),
+          of: find.byType(IronlyTabBar),
           matching: find.text(S.tabTraining),
         ),
       );

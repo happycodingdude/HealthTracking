@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/app.dart';
-import 'package:mobile/app/shell/app_tab_bar.dart';
 import 'package:mobile/app/strings_vi.dart';
 import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/features/me/application/reminders.dart';
@@ -12,6 +11,7 @@ import 'package:mobile/features/me/data/profile_repository.dart';
 import 'package:mobile/features/onboarding/application/setup_state.dart';
 import 'package:mobile/features/schedule/data/schedule_repository.dart';
 import 'package:mobile/features/weight/data/weight_repository.dart';
+import 'package:mobile/ui/components/ironly_tab_bar.dart';
 
 import '../../support/app_harness.dart';
 import '../../support/fake_notifications.dart';
@@ -88,8 +88,10 @@ void main() {
     return container;
   }
 
-  Finder tab(String label) =>
-      find.descendant(of: find.byType(AppTabBar), matching: find.text(label));
+  Finder tab(String label) => find.descendant(
+    of: find.byType(IronlyTabBar),
+    matching: find.text(label),
+  );
 
   group('ReminderScheduler', () {
     late ReminderScheduler scheduler;
@@ -263,7 +265,7 @@ void main() {
             .widget<Text>(
               find
                   .descendant(
-                    of: find.byType(AppTabBar),
+                    of: find.byType(IronlyTabBar),
                     matching: find.text(S.tabToday),
                   )
                   .first,

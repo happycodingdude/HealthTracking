@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/app.dart';
 import 'package:mobile/app/shell/app_tab.dart';
-import 'package:mobile/app/shell/app_tab_bar.dart';
 import 'package:mobile/app/shell/tab_scroll.dart';
 import 'package:mobile/app/strings_vi.dart';
 import 'package:mobile/core/widgets/labeled_field.dart';
@@ -14,6 +13,7 @@ import 'package:mobile/data/local_marks.dart';
 import 'package:mobile/features/me/data/profile_repository.dart';
 import 'package:mobile/features/me/presentation/calorie_proposal_sheet.dart';
 import 'package:mobile/features/weight/data/weight_repository.dart';
+import 'package:mobile/ui/components/ironly_tab_bar.dart';
 
 import '../../support/app_harness.dart';
 import '../../support/fake_server.dart';
@@ -55,8 +55,10 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  Finder tab(String label) =>
-      find.descendant(of: find.byType(AppTabBar), matching: find.text(label));
+  Finder tab(String label) => find.descendant(
+    of: find.byType(IronlyTabBar),
+    matching: find.text(label),
+  );
 
   Finder input(String label) => find.descendant(
     of: find.byWidgetPredicate((w) => w is LabeledField && w.label == label),

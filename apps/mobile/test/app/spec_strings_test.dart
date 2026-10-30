@@ -5,9 +5,14 @@ import 'package:mobile/app/strings_vi.dart';
 import 'package:yaml/yaml.dart';
 
 void main() {
-  final spec =
-      (loadYaml(File('test/spec_strings.yaml').readAsStringSync()) as YamlMap)
-          .cast<String, String>();
+  // `semanticsOnly` (06 Bản 4 ED4-03) là danh sách khóa, không phải câu.
+  final spec = {
+    for (final e
+        in (loadYaml(File('test/spec_strings.yaml').readAsStringSync())
+                as YamlMap)
+            .entries)
+      if (e.value is String) e.key as String: e.value as String,
+  };
 
   test(
     'UR-12/ED-12: mọi câu trong spec_strings.yaml đúng nguyên văn trong strings_vi.dart',

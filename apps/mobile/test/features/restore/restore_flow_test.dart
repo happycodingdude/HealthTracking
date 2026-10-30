@@ -8,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/app.dart';
-import 'package:mobile/app/shell/app_tab_bar.dart';
 import 'package:mobile/app/strings_vi.dart';
 import 'package:mobile/core/widgets/labeled_field.dart';
 import 'package:mobile/data/auth/session_store.dart';
@@ -19,6 +18,7 @@ import 'package:mobile/features/me/data/profile_repository.dart';
 import 'package:mobile/features/onboarding/application/setup_state.dart';
 import 'package:mobile/features/restore/presentation/restore_screen.dart';
 import 'package:mobile/features/weight/data/weight_repository.dart';
+import 'package:mobile/ui/components/ironly_tab_bar.dart';
 
 import '../../support/app_harness.dart';
 import '../../support/fake_notifications.dart';
@@ -196,14 +196,14 @@ void main() {
     expect(find.byType(RestoreScreen), findsOneWidget);
     expect(find.text(S.restoreTitle), findsOneWidget);
     expect(find.text(S.restoreSubtitle), findsOneWidget);
-    expect(find.byType(AppTabBar), findsNothing, reason: 'chưa vào app');
+    expect(find.byType(IronlyTabBar), findsNothing, reason: 'chưa vào app');
     final bar = tester.widget<LinearProgressIndicator>(
       find.byKey(const ValueKey('restore-progress')),
     );
     expect(bar.value, 0.5, reason: 'đã nhận 2, còn 2');
     g.complete();
     await tester.pumpAndSettle();
-    expect(find.byType(AppTabBar), findsOneWidget);
+    expect(find.byType(IronlyTabBar), findsOneWidget);
     expect(find.text(S.restored), findsOneWidget);
     expect(find.textContaining('Minh Anh'), findsOneWidget);
     expect(
@@ -221,14 +221,14 @@ void main() {
     me('u1');
     await pump(tester, session: session, restoreAtStart: true);
     expect(find.text(S.restoreFailed), findsOneWidget);
-    expect(find.byType(AppTabBar), findsNothing);
+    expect(find.byType(IronlyTabBar), findsNothing);
     expect(pullCursors, ['0', '2']);
 
     offlineOnPage2 = false;
     await tester.tap(find.byKey(const ValueKey('restore-retry')));
     await tester.pumpAndSettle();
     expect(pullCursors.sublist(2).first, '2', reason: 'không pull lại từ 0');
-    expect(find.byType(AppTabBar), findsOneWidget);
+    expect(find.byType(IronlyTabBar), findsOneWidget);
     expect(find.text(S.restored), findsOneWidget);
   });
 
@@ -238,7 +238,7 @@ void main() {
     me('u1');
     await pump(tester, session: session, restoreAtStart: true);
     expect(notifications.requests, 1);
-    expect(find.byType(AppTabBar), findsOneWidget);
+    expect(find.byType(IronlyTabBar), findsOneWidget);
   });
 
   testWidgets('F09-AC23, F03-E22: tài khoản Chưa có lịch, nhắc bật → khôi '
@@ -266,7 +266,7 @@ void main() {
       await tester.tap(find.widgetWithText(OutlinedButton, S.login));
       await tester.pumpAndSettle();
       await login(tester);
-      expect(find.byType(AppTabBar), findsOneWidget);
+      expect(find.byType(IronlyTabBar), findsOneWidget);
       expect(find.text(S.restored), findsOneWidget);
       expect(find.text(S.stepOf(1)), findsNothing);
     },
@@ -288,7 +288,7 @@ void main() {
       session: const StoredSession(userId: 'u1', phone: '0912345678'),
     );
     await login(tester);
-    expect(find.byType(AppTabBar), findsOneWidget);
+    expect(find.byType(IronlyTabBar), findsOneWidget);
     final weeks = [
       for (final w in await WeightRepository(db).all()) w.week.toKey(),
     ];
@@ -318,7 +318,7 @@ void main() {
       );
       await login(tester);
       expect(find.byType(RestoreScreen), findsNothing);
-      expect(find.byType(AppTabBar), findsOneWidget);
+      expect(find.byType(IronlyTabBar), findsOneWidget);
       expect(find.text(S.restored), findsNothing);
       final pushed = server.calls('POST', '/v1/sync/push');
       expect(pushed, isNotEmpty, reason: 'thay đổi chưa gửi được đồng bộ tiếp');

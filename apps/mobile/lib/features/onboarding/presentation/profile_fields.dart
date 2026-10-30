@@ -120,7 +120,7 @@ class BirthYearField extends StatelessWidget {
                 Expanded(
                   child: Text(
                     year?.toString() ?? '',
-                    style: context.text.bodyLarge?.copyWith(fontSize: 17),
+                    style: context.text.bodyLarge,
                   ),
                 ),
                 if (age != null)

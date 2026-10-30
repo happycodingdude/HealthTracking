@@ -2,11 +2,11 @@
 import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mobile/app/shell/app_tab_bar.dart';
 import 'package:mobile/core/widgets/labeled_field.dart';
+import 'package:mobile/ui/components/ironly_tab_bar.dart';
 
 Finder tabLabel(String label) =>
-    find.descendant(of: find.byType(AppTabBar), matching: find.text(label));
+    find.descendant(of: find.byType(IronlyTabBar), matching: find.text(label));
 
 Finder input(String label) => find.descendant(
   of: find.byWidgetPredicate((w) => w is LabeledField && w.label == label),

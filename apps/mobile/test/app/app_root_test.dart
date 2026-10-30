@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/app_root.dart';
 import 'package:mobile/app/router.dart';
-import 'package:mobile/app/shell/app_tab_bar.dart';
 import 'package:mobile/app/strings_vi.dart';
 import 'package:mobile/data/auth/session_store.dart';
 import 'package:mobile/data/db/app_database.dart';
@@ -15,6 +14,7 @@ import 'package:mobile/data/logout_flag.dart';
 import 'package:mobile/features/account/application/logout.dart';
 import 'package:mobile/features/auth/presentation/login_screen.dart';
 import 'package:mobile/features/me/presentation/account_data_screen.dart';
+import 'package:mobile/ui/components/ironly_tab_bar.dart';
 
 import '../support/app_harness.dart';
 import '../support/fake_logout.dart';
@@ -156,7 +156,10 @@ void main() {
     );
     await tester.pumpAndSettle();
     await tester.tap(
-      find.descendant(of: find.byType(AppTabBar), matching: find.text(S.tabMe)),
+      find.descendant(
+        of: find.byType(IronlyTabBar),
+        matching: find.text(S.tabMe),
+      ),
     );
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('row-account-data')));
@@ -175,12 +178,12 @@ void main() {
 
     expect(find.byType(LoginScreen), findsOneWidget);
     expect(find.byType(AccountDataScreen), findsNothing);
-    expect(find.byType(AppTabBar), findsNothing);
+    expect(find.byType(IronlyTabBar), findsNothing);
     // Lùi từ màn Đăng nhập chỉ về màn Chào mừng, không về app cũ.
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
     expect(find.byType(AccountDataScreen), findsNothing);
-    expect(find.byType(AppTabBar), findsNothing);
+    expect(find.byType(IronlyTabBar), findsNothing);
 
     expect(server.calls('POST', '/v1/auth/logout'), hasLength(1));
     expect(notifications.scheduled, isEmpty);

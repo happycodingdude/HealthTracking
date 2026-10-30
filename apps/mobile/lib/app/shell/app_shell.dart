@@ -8,8 +8,8 @@ import '../../features/me/application/calorie_view.dart';
 import '../../features/me/presentation/budget_screen.dart';
 import '../../features/today/application/today_view.dart';
 import '../../features/training/application/training_section.dart';
+import '../../ui/components/ironly_tab_bar.dart';
 import 'app_tab.dart';
-import 'app_tab_bar.dart';
 import 'tab_scroll.dart';
 import 'tab_stacks.dart';
 
@@ -85,7 +85,7 @@ class _AppShellState extends ConsumerState<AppShell> {
     return Scaffold(
       extendBody: true,
       body: widget.navigationShell,
-      bottomNavigationBar: AppTabBar(
+      bottomNavigationBar: IronlyTabBar(
         current: current,
         dots: ref.watch(tabDotsProvider),
         onTap: _onTap,

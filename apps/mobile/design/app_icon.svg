@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- Icon app Bản 4 (04 Bản 4 §6.8): nền than #1A1A1A, thanh tạ cam #FF6A1A,
+       bo góc do iOS cắt. Sinh PNG bằng tool/gen_app_icon.sh. -->
+  <rect width="1024" height="1024" fill="#1A1A1A"/>
+  <g fill="none" stroke="#FF6A1A" stroke-linecap="round" stroke-width="40">
+    <!-- Thanh đòn -->
+    <line x1="342" y1="512" x2="682" y2="512"/>
+    <!-- Đĩa trong (cao) -->
+    <rect x="286" y="356" width="76" height="312" rx="30" fill="#FF6A1A" stroke="none"/>
+    <rect x="662" y="356" width="76" height="312" rx="30" fill="#FF6A1A" stroke="none"/>
+    <!-- Đĩa ngoài (thấp) -->
+    <rect x="206" y="412" width="60" height="200" rx="26" fill="#FF6A1A" stroke="none"/>
+    <rect x="758" y="412" width="60" height="200" rx="26" fill="#FF6A1A" stroke="none"/>
+    <!-- Đầu thanh -->
+    <line x1="150" y1="512" x2="206" y2="512"/>
+    <line x1="818" y1="512" x2="874" y2="512"/>
+  </g>
+</svg>

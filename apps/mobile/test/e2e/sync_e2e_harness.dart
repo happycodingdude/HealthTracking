@@ -47,6 +47,7 @@ import 'package:server/testing.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 
 import '../support/fake_sync.dart';
+import '../support/version_fixture.dart';
 
 /// Bộ khung `sync_e2e` (06 VS02-T13): server thật (PostgreSQL + HTTP) và nhiều
 /// "máy" chạy SyncEngine thật với Drift. Slice sau thêm entity vào [E2eDevice].
@@ -98,7 +99,7 @@ final class E2eDevice {
     // về việc tạo AppDatabase nhiều lần.
     driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
     final public = ApiClient.create(server.baseUrl)
-      ..dio.interceptors.add(AppVersionInterceptor(AppVersion.v3));
+      ..dio.interceptors.add(AppVersionInterceptor(appVersionV4));
     tokens = TokenManager(
       store: store,
       clock: clock,
@@ -106,7 +107,7 @@ final class E2eDevice {
     );
     api = ApiClient.create(server.baseUrl);
     api.dio.interceptors
-      ..add(AppVersionInterceptor(AppVersion.v3))
+      ..add(AppVersionInterceptor(appVersionV4))
       ..add(AuthInterceptor(api.dio, tokens));
     auth = AuthRepository(api: api, tokens: tokens, store: store);
     accounts = AccountRepository(db);
