@@ -3,7 +3,9 @@
 import 'package:domain/domain.dart';
 import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/features/library/data/exercise_repository.dart';
+import 'package:mobile/features/me/data/profile_repository.dart';
 import 'package:mobile/features/menu/data/menu_repository.dart';
+import 'package:mobile/features/weight/data/weight_repository.dart';
 import 'package:mobile/features/workout/data/exercise_note_repository.dart';
 import 'package:mobile/features/workout/data/exercise_unit_repository.dart';
 import 'package:mobile/features/workout/data/lift_log_repository.dart';
@@ -123,4 +125,25 @@ Future<List<Exercise>> seedCapture(
     await MenuRepository(db).put(day, readyMenu(targetKcal: 1850));
   }
   return library;
+}
+
+/// Cân nặng của mock S-40: thiết lập 31/08, 8 tuần, tuần 05/10 không ghi
+/// (đường ngắt), mới nhất 19/10 = 72,4.
+Future<void> seedWeights(AppDatabase db) async {
+  final profiles = ProfileRepository(db);
+  final p = (await profiles.get())!;
+  await profiles.put(p.copyWith(setupDate: LocalDate(2026, 8, 31)));
+  final weights = WeightRepository(db);
+  await weights.delete(LocalDate(2026, 10, 5));
+  for (final (m, d, kg) in [
+    (8, 31, 750),
+    (9, 7, 746),
+    (9, 14, 742),
+    (9, 21, 743),
+    (9, 28, 734),
+    (10, 12, 728),
+    (10, 19, 724),
+  ]) {
+    await weights.put(LocalDate(2026, m, d), kg);
+  }
 }

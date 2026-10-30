@@ -6,18 +6,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/shell/app_tab.dart';
 import '../../../app/strings_vi.dart';
-import '../../../app/theme.dart';
 import '../../../core/formatters.dart';
-import '../../../core/widgets/app_sheet.dart';
-import '../../../core/widgets/heading.dart';
-import '../../../core/widgets/primary_button.dart';
-import '../../../core/widgets/reference_tag.dart';
-import '../../../core/widgets/tab_page.dart';
 import '../../../data/sync/sync_providers.dart';
+import '../../../ui/components/components.dart';
+import '../../../ui/theme.dart';
 import '../application/menu_generator.dart';
 import '../application/menu_view.dart';
 
-/// Tên bữa theo vị trí trong ngày (mock S-30-3).
+/// Tên bữa theo vị trí trong ngày.
 String mealLabel(Meal meal, SnackTime? snack) => switch (meal.type) {
   MealType.breakfast => S.mealBreakfast,
   MealType.lunch => S.mealLunch,
@@ -26,8 +22,14 @@ String mealLabel(Meal meal, SnackTime? snack) => switch (meal.type) {
     snack == SnackTime.morning ? S.mealMorningSnack : S.mealAfternoonSnack,
 };
 
-/// S-30 — Thực đơn hôm nay (04 §6.9): trống, đang tạo, có thực đơn, hết lượt;
-/// banner F08-E1, F08-E2, F08-E4, lỗi khác, F08-R10; ghi chú F08-R9.
+/// S-30 — Thực đơn hôm nay (04 Bản 4 S-30): "THỨ 2, 26/10" in hoa nhỏ ·
+/// "Thực đơn" 17 · kcal ngày phải; mỗi bữa tiêu đề cam in hoa + thẻ các dòng
+/// món (tên trắng + khẩu phần chữ phụ · kcal); dưới cùng nút phụ viền cam
+/// "↻ Gợi ý lại · 2". Trống: icon bát + nút cam "Gợi ý thực đơn" + "Còn 3
+/// lượt". Đang tạo: tiêu đề bữa + khung chờ + "Đang lên thực đơn…". Banner
+/// (không mạng, chạm trần, mức calo đổi, lỗi): thẻ viền cam dưới tiêu đề,
+/// câu giữ nguyên. Không nhãn "tham khảo", không câu giải thích (BR4-15,
+/// BR4-08). Quy tắc F-08, F-11 như Bản 1.
 class MenuScreen extends ConsumerStatefulWidget {
   const MenuScreen({super.key});
 
@@ -69,26 +71,20 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
 
   Future<void> _regenerate(MenuView view) async {
     final ok =
-        await showAppDialog<bool>(
+        await showIronlyDialog<bool>(
           context,
-          builder: (dialogContext) => AlertDialog(
-            title: const Text(S.regenerateTitle),
-            content: Text(S.regenerateBody(view.remaining)),
-            actions: [
-              OutlinedButton(
-                onPressed: () => Navigator.of(dialogContext).pop(false),
-                child: const Text(S.cancel),
-              ),
-              FilledButton(
-                key: const ValueKey('confirm-regenerate'),
-                onPressed: () => Navigator.of(dialogContext).pop(true),
-                child: const Text(S.regenerate),
-              ),
-            ],
+          builder: (dialogContext) => IronlyDialog(
+            title: S.regenerateTitle,
+            body: S.regenerateBody(view.remaining),
+            secondaryLabel: S.cancel,
+            onSecondary: () => Navigator.of(dialogContext).pop(false),
+            primaryLabel: S.regenerate,
+            primaryKey: const ValueKey('confirm-regenerate'),
+            onPrimary: () => Navigator.of(dialogContext).pop(true),
           ),
         ) ??
         false;
-    if (ok) unawaited(_generate());
+    if (ok) await _generate();
   }
 
   Future<void> _generate() =>
@@ -98,45 +94,33 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
   Widget build(BuildContext context) {
     final view = ref.watch(menuViewProvider);
     if (view == null) {
-      return const TabPage(tab: AppTab.menu, title: S.menuCardTitle);
+      return const IronlyTabPage(tab: AppTab.menu, title: S.tabMenu);
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _poll(view);
     });
-    final palette = context.palette;
     final retryable =
         view.issue == MenuIssue.offline ||
         view.issue == MenuIssue.invalid ||
         view.issue == MenuIssue.provider;
-    return TabPage(
+    final menu = view.menu;
+    return IronlyTabPage(
       tab: AppTab.menu,
-      title: S.menuCardTitle,
+      title: S.tabMenu,
+      header: Fmt.weekdayDate(view.date),
+      // Kcal ngày = mức calo của Bạn (mock S-30 "1.850 kcal"; Bản 3 "Theo mức").
+      trailing: Text(
+        Fmt.kcal(view.targetKcal),
+        key: const ValueKey('menu-date-line'),
+        style: IronlyText.caption,
+      ),
       children: [
-        Wrap(
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 8,
-          runSpacing: 4,
-          children: [
-            Text(
-              S.menuDateLine(
-                Fmt.weekdayDate(view.date),
-                Fmt.kcal(view.targetKcal),
-              ),
-              key: const ValueKey('menu-date-line'),
-              style: context.text.titleMedium?.copyWith(
-                color: palette.textSecondary,
-              ),
-            ),
-            const ReferenceTag(),
-          ],
-        ),
         if (view.usedSafetyFloor) ...[
-          const SizedBox(height: 8),
-          Text(
-            S.menuSafetyFloor(Fmt.kcal(view.targetKcal)),
+          IronlyBanner(
             key: const ValueKey('menu-safety-floor'),
-            style: context.text.bodyLarge,
+            text: S.menuSafetyFloor(Fmt.kcal(view.targetKcal)),
           ),
+          const CardGap(),
         ],
         for (final (key, text, retry) in [
           if (view.blocked)
@@ -150,61 +134,48 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
           if (view.calorieChanged && !view.generating)
             ('menu-banner-calorie', S.calorieChangedRegenerate, false),
         ]) ...[
-          const SizedBox(height: 16),
-          _Banner(
+          IronlyBanner(
             key: ValueKey(key),
             text: text,
-            action: retry && !view.exhausted && !view.blocked
-                ? TextButton(
-                    key: const ValueKey('banner-retry'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: palette.attention,
-                      padding: EdgeInsets.zero,
-                    ),
-                    onPressed: _generate,
-                    child: const Text(S.retry),
-                  )
+            actionLabel: retry && !view.exhausted && !view.blocked
+                ? S.retry
                 : null,
+            actionKey: const ValueKey('banner-retry'),
+            onAction: _generate,
           ),
+          const CardGap(),
         ],
-        const SizedBox(height: 16),
         if (view.generating)
           const _Generating()
-        else if (view.menu == null)
+        else if (menu == null)
           _Empty(
             view: view,
-            label: retryable ? S.retry : S.generateMenu,
+            label: retryable ? S.retry : S.generateMenuShort,
             onPressed: view.blocked || view.exhausted ? null : _generate,
           )
         else ...[
-          for (final (meal, snack) in view.menu!.ordered) ...[
-            _MealCard(meal: meal, snack: snack),
-            const SizedBox(height: 12),
-          ],
-          _Total(kcal: view.totalKcal ?? view.menu!.totalKcal),
-          const SizedBox(height: 16),
-          Text(
-            S.menuEstimateNote,
-            style: context.text.bodyMedium?.copyWith(
-              color: palette.textSecondary,
-            ),
+          for (final (meal, snack) in menu.ordered)
+            _MealSection(meal: meal, snack: snack),
+          Semantics(
+            key: const ValueKey('menu-total'),
+            label:
+                '${S.menuTotal}: ${Fmt.kcal(view.totalKcal ?? menu.totalKcal)}',
+            child: const SizedBox.shrink(),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: TokenSpace.s2),
           if (view.exhausted)
-            Text(
-              S.menuQuotaExhausted,
-              key: const ValueKey('menu-exhausted'),
-              textAlign: TextAlign.center,
-              style: context.text.bodyLarge,
+            const IronlyBanner(
+              key: ValueKey('menu-exhausted'),
+              text: S.menuQuotaExhausted,
             )
           else
-            OutlinedButton(
+            IronlyButton(
               key: const ValueKey('regenerate'),
-              onPressed: view.blocked ? null : () => _regenerate(view),
-              child: Text(
-                S.regenerateWithRemaining(view.remaining),
-                textAlign: TextAlign.center,
-              ),
+              kind: IronlyButtonKind.secondaryAccent,
+              icon: Icons.refresh,
+              label: S.regenerateShort(view.remaining),
+              enabled: !view.blocked,
+              onPressed: () => _regenerate(view),
             ),
         ],
       ],
@@ -212,39 +183,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
   }
 }
 
-/// Banner cảnh báo (màu chú ý, không dùng đỏ, UX-AC17).
-class _Banner extends StatelessWidget {
-  const _Banner({super.key, required this.text, this.action});
-
-  final String text;
-  final Widget? action;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-      decoration: BoxDecoration(
-        color: palette.attentionContainer,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Semantics(
-            liveRegion: true,
-            child: Text(
-              text,
-              style: context.text.bodyLarge?.copyWith(color: palette.attention),
-            ),
-          ),
-          ?action,
-        ],
-      ),
-    );
-  }
-}
-
+/// Trống (04 Bản 4 S-30): thẻ với icon bát + nút cam + "Còn n lượt" chữ phụ.
 class _Empty extends StatelessWidget {
   const _Empty({
     required this.view,
@@ -258,255 +197,126 @@ class _Empty extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
-    return Padding(
-      padding: const EdgeInsets.only(top: 48),
-      child: Column(
-        key: const ValueKey('menu-empty'),
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Center(
-            child: ExcludeSemantics(
-              child: CircleAvatar(
-                radius: 40,
-                backgroundColor: context.colors.primaryContainer,
-                child: Icon(
-                  Icons.radio_button_checked,
-                  size: 40,
-                  color: context.colors.primary,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Heading(
-            S.menuEmptyTitle,
-            textAlign: TextAlign.center,
-            style: context.text.headlineSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            S.menuEmptyBody,
-            textAlign: TextAlign.center,
-            style: context.text.bodyLarge?.copyWith(
-              color: palette.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 24),
-          if (onPressed == null)
-            FilledButton(onPressed: null, child: Text(label))
-          else
-            PrimaryButton(
-              key: const ValueKey('generate-menu'),
-              label: label,
-              onPressed: onPressed!,
-            ),
-          const SizedBox(height: 12),
-          Text(
-            view.exhausted
-                ? S.menuQuotaExhausted
-                : S.remainingToday(view.remaining),
-            textAlign: TextAlign.center,
-            style: context.text.bodyMedium?.copyWith(
-              color: palette.textSecondary,
-            ),
-          ),
-        ],
+    return EmptyAction(
+      key: const ValueKey('menu-empty'),
+      icon: Icons.soup_kitchen_outlined,
+      action: IronlyButton.primary(
+        key: const ValueKey('generate-menu'),
+        label: label,
+        enabled: onPressed != null,
+        onPressed: onPressed,
       ),
+      caption: view.exhausted ? null : S.remainingShort(view.remaining),
     );
   }
 }
 
-/// Khung chờ hình 4 thẻ bữa ăn (04 S-30 "Đang tạo", mock S-30-2).
+/// Đang tạo: tiêu đề bữa + khung chờ + "Đang lên thực đơn…" (chữ đang chờ
+/// còn giữ).
 class _Generating extends StatelessWidget {
   const _Generating();
 
   @override
   Widget build(BuildContext context) {
-    final fill = context.palette.neutralContainer;
-    Widget bar(double widthFactor) => Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: FractionallySizedBox(
-        alignment: Alignment.centerLeft,
-        widthFactor: widthFactor,
-        child: Container(
-          height: 18,
-          decoration: BoxDecoration(
-            color: fill,
-            borderRadius: BorderRadius.circular(9),
-          ),
-        ),
-      ),
-    );
     return Column(
       key: const ValueKey('menu-generating'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        for (final (label, lines) in [
+          (S.mealBreakfast, 2),
+          (S.mealLunch, 3),
+          (S.mealDinner, 2),
+        ]) ...[
+          _MealTitle(label),
+          IronlyCard(child: SkeletonLines(lines: lines)),
+          const SizedBox(height: TokenSpace.s4),
+        ],
         Semantics(
           liveRegion: true,
           child: Text(
             S.menuGenerating,
-            style: context.text.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
+            textAlign: TextAlign.center,
+            style: IronlyText.caption,
           ),
         ),
-        for (final lines in const [
-          [0.3, 0.85, 0.6],
-          [0.25, 0.75],
-          [0.3, 0.8, 0.7, 0.55],
-          [0.25, 0.65],
-        ])
-          Padding(
-            padding: const EdgeInsets.only(top: 16),
-            child: ExcludeSemantics(
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [for (final w in lines) bar(w)],
-                  ),
-                ),
-              ),
-            ),
-          ),
       ],
     );
   }
 }
 
-/// Thẻ một bữa: tên bữa, calo bữa; mỗi món một dòng gồm tên, khẩu phần, calo
-/// (04 S-30, mock S-30-3).
-class _MealCard extends StatelessWidget {
-  const _MealCard({required this.meal, required this.snack});
+class _MealTitle extends StatelessWidget {
+  const _MealTitle(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: TokenSpace.s2, left: 2),
+    child: Semantics(
+      header: true,
+      child: Text(
+        label.toUpperCase(),
+        style: IronlyText.groupLabel.copyWith(color: context.tokens.accent),
+      ),
+    ),
+  );
+}
+
+/// Một bữa: tiêu đề cam in hoa; thẻ các dòng món: tên trắng 14 + khẩu phần
+/// chữ phụ 11 · kcal phải (04 Bản 4 S-30).
+class _MealSection extends StatelessWidget {
+  const _MealSection({required this.meal, required this.snack});
 
   final Meal meal;
   final SnackTime? snack;
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
-    final label = mealLabel(meal, snack);
-    return Card(
+    final t = context.tokens;
+    return Padding(
       key: ValueKey(
         'meal-${meal.type.name}${snack == null ? '' : '-${snack!.name}'}',
       ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _Line(
-              left: Text(
-                label,
-                style: context.text.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              right: Text(
-                Fmt.kcal(meal.kcal),
-                style: context.text.bodyLarge?.copyWith(
-                  color: palette.textSecondary,
-                ),
-              ),
-            ),
-            for (final d in meal.dishes)
+      padding: const EdgeInsets.only(bottom: TokenSpace.s4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(child: _MealTitle(mealLabel(meal, snack))),
               Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: _Line(
-                  left: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(d.name, style: context.text.bodyLarge),
-                      Text(
-                        d.portion,
-                        style: context.text.bodyMedium?.copyWith(
-                          color: palette.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  right: Text(
-                    Fmt.kcal(d.kcal),
-                    style: context.text.bodyLarge?.copyWith(
-                      color: palette.textSecondary,
+                padding: const EdgeInsets.only(bottom: TokenSpace.s2),
+                child: Text(Fmt.kcal(meal.kcal), style: IronlyText.caption),
+              ),
+            ],
+          ),
+          IronlyListCard(
+            children: [
+              for (final d in meal.dishes)
+                IronlyRow(
+                  key: ValueKey('dish-${d.name}'),
+                  title: d.name,
+                  minHeight: 44,
+                  trailing: Text(
+                    Fmt.integer(d.kcal),
+                    style: IronlyText.body.copyWith(
+                      color: t.textSecondary,
+                      fontFeatures: const [FontFeature.tabularFigures()],
                     ),
                   ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Trái và phải trên một hàng; cỡ chữ lớn thì xếp dọc (UX-AC18).
-class _Line extends StatelessWidget {
-  const _Line({required this.left, required this.right});
-
-  final Widget left;
-  final Widget right;
-
-  @override
-  Widget build(BuildContext context) {
-    if (MediaQuery.textScalerOf(context).scale(1) >= 1.6) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [left, right],
-      );
-    }
-    return Row(
-      children: [
-        Expanded(child: left),
-        const SizedBox(width: 12),
-        right,
-      ],
-    );
-  }
-}
-
-/// "Tổng: {X} kcal" kèm nhãn "tham khảo" (04 S-30, F08-AC7).
-class _Total extends StatelessWidget {
-  const _Total({required this.kcal});
-
-  final int kcal;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      key: const ValueKey('menu-total'),
-      label: '${S.menuTotal}: ${Fmt.kcal(kcal)}',
-      child: Wrap(
-        alignment: WrapAlignment.spaceBetween,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: 12,
-        runSpacing: 8,
-        children: [
-          ExcludeSemantics(
-            child: Text(
-              S.menuTotal,
-              style: context.text.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 8,
-            children: [
-              ExcludeSemantics(
-                child: Text(
-                  Fmt.kcal(kcal),
-                  style: context.text.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
+                  semanticsLabel:
+                      '${d.name}, ${d.portion}, ${Fmt.kcal(d.kcal)}',
+                  // Tên trắng 14 + khẩu phần chữ phụ 11 cùng dòng (mock S-30).
+                  titleWidget: Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.end,
+                    spacing: 6,
+                    children: [
+                      Text(d.name, style: IronlyText.body),
+                      if (d.portion.isNotEmpty)
+                        Text(d.portion, style: IronlyText.caption),
+                    ],
                   ),
                 ),
-              ),
-              const ReferenceTag(),
             ],
           ),
         ],

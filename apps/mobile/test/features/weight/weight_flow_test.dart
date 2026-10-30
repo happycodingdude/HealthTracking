@@ -64,28 +64,19 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// Bản 4: nút "Ghi cân" (S-40) → S-41 với một ô số lớn → "Lưu".
   Future<void> logThisWeek(WidgetTester tester, String value) async {
-    final button = find.widgetWithText(FilledButton, S.logThisWeek);
-    await tester.ensureVisible(button);
-    await tester.pumpAndSettle();
-    await tester.tap(button);
-    await tester.pumpAndSettle();
-    await tester.enterText(
-      find.descendant(
-        of: find.byKey(const ValueKey('weight-input')),
-        matching: find.byType(TextField),
-      ),
-      value,
-    );
-    await tester.tap(find.widgetWithText(FilledButton, S.save).last);
-    await tester.pumpAndSettle();
+    await tapKey(tester, 'log-weight');
+    await tester.enterText(find.byKey(const ValueKey('field-weight')), value);
+    await tapKey(tester, 'weight-save');
   }
 
   Future<List<WeightEntry>> all() => WeightRepository(db).all();
 
   testWidgets(
     'F01-AC4: cân ban đầu là số cân tuần thiết lập; F07-E1: mới có 1 số cân → '
-    '"Ghi thêm tuần sau để thấy xu hướng", ẩn "so với lần trước"',
+    'ẩn "lần trước"; Bản 4 (FR4-04): số lớn "80" + "kg", "0 ban đầu", không '
+    'câu "Ghi thêm tuần sau…", không "Mới nhất · Tuần …"',
     (tester) async {
       await seedSetUp(db);
       await pump(tester);
@@ -93,17 +84,19 @@ void main() {
       expect(
         find.descendant(
           of: summary,
-          matching: find.text(S.latestWeek('05/10 – 11/10')),
+          matching: find.text('80 kg', findRichText: true),
         ),
         findsOneWidget,
       );
-      expect(find.text('0 kg so với ban đầu'), findsOneWidget);
-      expect(find.textContaining('so với lần trước'), findsNothing);
-      expect(find.text(S.firstWeightHint), findsOneWidget);
+      expect(find.textContaining('Mới nhất'), findsNothing);
+      expect(find.text(' 0 ban đầu'), findsOneWidget);
+      expect(find.bySemanticsLabel('0 kg so với ban đầu'), findsOneWidget);
+      expect(find.textContaining('lần trước'), findsNothing);
+      expect(find.text(S.firstWeightHint), findsNothing);
       expect(
         find.descendant(
           of: find.byKey(const ValueKey('weight-week-2026-10-05')),
-          matching: find.text('80 kg'),
+          matching: find.text('80'),
         ),
         findsOneWidget,
       );
@@ -149,23 +142,15 @@ void main() {
       await logThisWeek(tester, '7,5');
       expect(find.text(S.invalidWeight), findsOneWidget);
 
-      await tester.enterText(
-        find.descendant(
-          of: find.byKey(const ValueKey('weight-input')),
-          matching: find.byType(TextField),
-        ),
-        '88',
-      );
-      await tester.tap(find.widgetWithText(FilledButton, S.save).last);
-      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const ValueKey('field-weight')), '88');
+      await tapKey(tester, 'weight-save');
       expect(find.text(S.bigWeightChange('8 kg')), findsOneWidget);
       await tester.tap(find.text(S.editAgain));
       await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('weight-input')), findsOneWidget);
+      expect(find.byKey(const ValueKey('field-weight')), findsOneWidget);
       expect(await all(), hasLength(1));
 
-      await tester.tap(find.widgetWithText(FilledButton, S.save).last);
-      await tester.pumpAndSettle();
+      await tapKey(tester, 'weight-save');
       await tapKey(tester, 'confirm-big-change');
       expect(await all(), hasLength(2));
     },
@@ -196,7 +181,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(const ValueKey('weight-summary')),
-          matching: find.text(S.latestWeek('05/10 – 11/10')),
+          matching: find.text('80 kg', findRichText: true),
         ),
         findsOneWidget,
       );
@@ -219,7 +204,9 @@ void main() {
         findsOneWidget,
       );
       await tapKey(tester, 'weight-add-2026-10-12');
-      expect(find.text(S.weightSheetTitle('12/10 – 18/10')), findsOneWidget);
+      // Bản 4 S-41: tiêu đề = khoảng tuần (dòng lịch sử phía sau cũng có).
+      expect(find.text('12/10 – 18/10'), findsWidgets);
+      expect(find.byKey(const ValueKey('field-weight')), findsOneWidget);
       expect(find.textContaining('Tuần này đã ghi'), findsNothing);
     },
   );

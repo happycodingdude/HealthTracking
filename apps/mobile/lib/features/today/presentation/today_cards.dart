@@ -284,7 +284,7 @@ class MenuCard extends ConsumerWidget {
             children: [
               Expanded(child: Text(S.tabMenu, style: IronlyText.cardTitle)),
               Text(
-                Fmt.kcal(view.totalKcal ?? menu?.totalKcal ?? view.targetKcal),
+                Fmt.kcal(view.targetKcal),
                 key: const ValueKey('menu-card-total'),
                 style: IronlyText.caption.copyWith(color: t.textSecondary),
               ),
@@ -306,7 +306,6 @@ class MenuLine extends ConsumerWidget {
     final view = ref.watch(menuViewProvider);
     if (view == null) return const SizedBox.shrink();
     final t = context.tokens;
-    final menu = view.menu;
     return IronlyCard(
       key: const ValueKey('menu-line'),
       onTap: () => context.go(AppTab.menu.path),
@@ -318,7 +317,7 @@ class MenuLine extends ConsumerWidget {
         children: [
           Expanded(child: Text(S.tabMenu, style: IronlyText.body)),
           Text(
-            Fmt.kcal(view.totalKcal ?? menu?.totalKcal ?? view.targetKcal),
+            Fmt.kcal(view.targetKcal),
             key: const ValueKey('menu-card-total'),
             style: IronlyText.caption.copyWith(color: t.textSecondary),
           ),

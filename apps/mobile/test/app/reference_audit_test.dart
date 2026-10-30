@@ -86,15 +86,11 @@ void main() {
     await reveal(tester, card);
     expect(tagIn(card), findsNothing);
 
+    // Bản 4 (FR4-05): S-30 không còn nhãn "tham khảo" và câu ước lượng.
     await tab(tester, S.tabMenu);
-    expect(
-      find.byType(ReferenceTag),
-      findsWidgets,
-      reason: 'S-30 dòng "Theo mức"',
-    );
+    expect(find.byType(ReferenceTag), findsNothing, reason: 'S-30');
     await reveal(tester, find.byKey(const ValueKey('menu-total')));
-    expect(tagIn(find.byKey(const ValueKey('menu-total'))), findsOneWidget);
-    expect(find.text(S.menuEstimateNote), findsOneWidget);
+    expect(find.text(S.menuEstimateNote), findsNothing);
 
     await tab(tester, S.tabMe);
     await tester.tap(find.byKey(const ValueKey('row-calorie')));

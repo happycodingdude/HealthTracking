@@ -4,11 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/shell/app_tab.dart';
 import '../../../app/strings_vi.dart';
-import '../../../app/theme.dart';
 import '../../../core/formatters.dart';
-import '../../../core/widgets/primary_button.dart';
-import '../../../core/widgets/tab_page.dart';
 import '../../../data/sync/sync_providers.dart';
+import '../../../ui/components/components.dart';
+import '../../../ui/theme.dart';
 import '../../me/application/calorie_view.dart';
 import '../../today/application/today_view.dart';
 import 'weight_chart.dart';
@@ -19,9 +18,10 @@ final weightLogProvider = StreamProvider<WeightLog>(
   (ref) => ref.watch(weightRepositoryProvider).watchAll().map(WeightLog.new),
 );
 
-/// S-40 — Cân nặng (04 S-40): tóm tắt (số cân mới nhất, chênh so với lần
-/// trước và ban đầu, F07-R7), "Ghi cân tuần này", biểu đồ xu hướng, lịch sử
-/// từ tuần hiện tại về tuần thiết lập.
+/// S-40 — Cân nặng (04 Bản 4 S-40): thẻ đầu số lớn 36 + "kg" nhỏ, bên phải
+/// "↓ 0,4 lần trước", "↓ 2,5 ban đầu", nút cam "Ghi cân" → S-41; thẻ biểu đồ 8
+/// tuần; thẻ lịch sử theo tuần, tuần chưa ghi dấu "+" cam. Quy tắc F-07 như
+/// Bản 1.
 class WeightScreen extends ConsumerWidget {
   const WeightScreen({super.key});
 
@@ -31,23 +31,27 @@ class WeightScreen extends ConsumerWidget {
     final setup = ref.watch(profileProvider).value?.setupDate;
     final today = ref.watch(todayProvider);
     if (log == null || setup == null) {
-      return const TabPage(tab: AppTab.weight, title: S.tabWeight);
+      return const IronlyTabPage(tab: AppTab.weight, title: S.tabWeight);
     }
     final weeks = WeightLog.weeks(setupDate: setup, today: today);
     final thisWeek = WeightRules.weekKey(today);
-    return TabPage(
+    return IronlyTabPage(
       tab: AppTab.weight,
       title: S.tabWeight,
       children: [
-        if (log.latest != null) _Summary(log: log),
-        const SizedBox(height: 16),
-        PrimaryButton(
-          label: S.logThisWeek,
-          onPressed: () => showWeightSheet(context, thisWeek),
+        _Summary(log: log, thisWeek: thisWeek),
+        const CardGap(),
+        IronlyCard(
+          key: const ValueKey('weight-trend'),
+          padding: const EdgeInsets.fromLTRB(
+            TokenSpace.s3,
+            TokenSpace.s4,
+            TokenSpace.s2,
+            TokenSpace.s2,
+          ),
+          child: WeightChart(weeks: weeks.reversed.toList(), log: log),
         ),
-        const SizedBox(height: 16),
-        _Trend(weeks: weeks.reversed.toList(), log: log),
-        const SizedBox(height: 16),
+        const CardGap(),
         _History(weeks: weeks, log: log),
       ],
     );
@@ -55,152 +59,108 @@ class WeightScreen extends ConsumerWidget {
 }
 
 class _Summary extends StatelessWidget {
-  const _Summary({required this.log});
+  const _Summary({required this.log, required this.thisWeek});
 
   final WeightLog log;
+  final LocalDate thisWeek;
+
+  /// "0,4" / "0" (không đơn vị, 04 Bản 4 S-40); mũi tên vẽ bằng icon (font
+  /// Roboto trên Linux không có ký tự ↓ ↑ — UA-15 giữ cách Bản 1).
+  static String magnitude(int diffX10) =>
+      diffX10 == 0 ? '0' : Fmt.kgNumber(diffX10.abs());
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
-    final latest = log.latest!;
+    final t = context.tokens;
+    final latest = log.latest;
     final previous = log.changeFromPrevious;
+    // (chênh, dòng ngắn trên màn, câu đầy đủ cho VoiceOver — F07-R7).
     final changes = [
-      if (previous != null) (previous, S.vsPrevious),
-      (log.changeFromInitial!, S.vsInitial),
+      if (previous != null) (previous, S.vsPreviousShort, S.vsPrevious),
+      if (log.changeFromInitial case final c?)
+        (c, S.vsInitialShort, S.vsInitial),
     ];
-    final style = context.text.bodyLarge?.copyWith(
-      color: palette.textSecondary,
+    // Cỡ chữ lớn (TA4-04): số lớn không bẻ dòng, hai dòng chênh xuống dưới.
+    final stacked =
+        MediaQuery.textScalerOf(context).scale(1) >= IronlyRow.stackedScale;
+    final number = Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(
+            text: Fmt.kgNumber(latest?.kgX10 ?? 0),
+            style: IronlyText.numberXL,
+          ),
+          TextSpan(text: ' ${S.unitKg}', style: IronlyText.caption),
+        ],
+      ),
+      key: const ValueKey('weight-latest'),
+      softWrap: false,
+      overflow: TextOverflow.visible,
     );
-    return Card(
-      key: const ValueKey('weight-summary'),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+    final deltas = Semantics(
+      container: true,
+      label: [
+        for (final (diff, _, full) in changes) full(Fmt.weightChange(diff)),
+      ].join(' · '),
+      child: ExcludeSemantics(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: stacked
+              ? CrossAxisAlignment.start
+              : CrossAxisAlignment.end,
           children: [
-            Text(
-              S.latestWeek(Fmt.weekRange(latest.week, latest.week.addDays(6))),
-              style: context.text.titleMedium?.copyWith(
-                color: palette.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text.rich(
-              TextSpan(
+            for (final (diff, line, _) in changes)
+              Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  TextSpan(
-                    text: Fmt.kgNumber(latest.kgX10),
-                    style: context.text.displayMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
+                  if (diff != 0)
+                    Icon(
+                      diff < 0 ? Icons.arrow_downward : Icons.arrow_upward,
+                      size: TokenType.caption,
+                      color: t.textSecondary,
                     ),
-                  ),
-                  TextSpan(
-                    text: ' ${S.unitKg}',
-                    style: context.text.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                  Text(
+                    ' ${line(magnitude(diff))}',
+                    style: IronlyText.caption.copyWith(color: t.textSecondary),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 8),
-            // Mũi tên, màu trung tính: tăng nhẹ không phải thất bại (UA-15).
-            // Mũi tên vẽ bằng biểu tượng; VoiceOver đọc cả câu.
-            Semantics(
-              container: true,
-              label: [
-                for (final (diff, line) in changes)
-                  line(Fmt.weightChange(diff)),
-              ].join(' · '),
-              child: ExcludeSemantics(
-                child: Text.rich(
-                  TextSpan(
-                    style: style,
-                    children: [
-                      for (final (i, (diff, line)) in changes.indexed) ...[
-                        if (i > 0) const TextSpan(text: ' · '),
-                        if (diff != 0)
-                          WidgetSpan(
-                            alignment: PlaceholderAlignment.middle,
-                            child: Icon(
-                              diff < 0
-                                  ? Icons.arrow_downward
-                                  : Icons.arrow_upward,
-                              size:
-                                  (style?.fontSize ?? 16) *
-                                  MediaQuery.textScalerOf(context).scale(1),
-                              color: palette.textSecondary,
-                            ),
-                          ),
-                        TextSpan(text: line(Fmt.kg(diff.abs()))),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-            ),
           ],
         ),
+      ),
+    );
+    return IronlyCard(
+      key: const ValueKey('weight-summary'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (latest != null) ...[
+            if (stacked) ...[
+              number,
+              const SizedBox(height: TokenSpace.s2),
+              deltas,
+            ] else
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(child: number),
+                  deltas,
+                ],
+              ),
+            const SizedBox(height: TokenSpace.s4),
+          ],
+          IronlyButton.primary(
+            key: const ValueKey('log-weight'),
+            label: S.logWeight,
+            onPressed: () => showWeightSheet(context, thisWeek),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _Trend extends StatelessWidget {
-  const _Trend({required this.weeks, required this.log});
-
-  /// Cũ → mới.
-  final List<LocalDate> weeks;
-  final WeightLog log;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-    return Card(
-      key: const ValueKey('weight-trend'),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 16, 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Wrap(
-              alignment: WrapAlignment.spaceBetween,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 12,
-              children: [
-                Text(
-                  S.trendTitle,
-                  style: context.text.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                Text(
-                  S.lastEightWeeks,
-                  style: context.text.bodyMedium?.copyWith(
-                    color: palette.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            WeightChart(weeks: weeks, log: log),
-            if (log.points.length == 1) ...[
-              const SizedBox(height: 8),
-              Text(
-                S.firstWeightHint,
-                style: context.text.bodyLarge?.copyWith(
-                  color: palette.textSecondary,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Lịch sử: mới nhất ở trên; tuần chưa ghi có "Chưa ghi" · "Thêm" (04 S-40).
+/// Lịch sử: mới nhất ở trên; "19/10 – 25/10 · 72,4"; tuần chưa ghi: dấu "+"
+/// cam → S-41. Chạm dòng → S-41 (sửa).
 class _History extends StatelessWidget {
   const _History({required this.weeks, required this.log});
 
@@ -210,96 +170,50 @@ class _History extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (final (i, week) in weeks.indexed) ...[
-            if (i > 0) const Divider(indent: 16, endIndent: 16),
-            _HistoryRow(week: week, point: log.at(week), palette: palette),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _HistoryRow extends StatelessWidget {
-  const _HistoryRow({
-    required this.week,
-    required this.point,
-    required this.palette,
-  });
-
-  final LocalDate week;
-  final WeightPoint? point;
-  final AppPalette palette;
-
-  @override
-  Widget build(BuildContext context) {
-    final p = point;
-    final label = Text(
-      S.weekLabel(Fmt.weekRange(week, week.addDays(6))),
-      style: context.text.bodyLarge,
-    );
-    if (p == null) {
-      return Padding(
-        key: ValueKey('weight-week-${week.toKey()}'),
-        padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
-        child: Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 8,
-          children: [
-            label,
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  S.notLogged,
-                  style: context.text.bodyMedium?.copyWith(
-                    color: palette.textSecondary,
+    final t = context.tokens;
+    return IronlyListCard(
+      children: [
+        for (final week in weeks)
+          () {
+            final p = log.at(week);
+            final range = Fmt.weekRange(week, week.addDays(6));
+            if (p == null) {
+              return IronlyRow(
+                key: ValueKey('weight-week-${week.toKey()}'),
+                title: range,
+                minHeight: 44,
+                titleStyle: IronlyText.body.copyWith(color: t.textSecondary),
+                semanticsLabel: '${S.weekLabel(range)}, ${S.notLogged}',
+                trailing: Semantics(
+                  button: true,
+                  label: S.add,
+                  child: ExcludeSemantics(
+                    child: GestureDetector(
+                      key: ValueKey('weight-add-${week.toKey()}'),
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => showWeightSheet(context, week),
+                      child: Padding(
+                        padding: const EdgeInsets.all(TokenSpace.s1),
+                        child: Icon(Icons.add, size: 18, color: t.accent),
+                      ),
+                    ),
                   ),
                 ),
-                TextButton(
-                  key: ValueKey('weight-add-${week.toKey()}'),
-                  onPressed: () => showWeightSheet(context, week),
-                  child: const Text(S.add),
-                ),
-              ],
-            ),
-          ],
-        ),
-      );
-    }
-    return InkWell(
-      key: ValueKey('weight-week-${week.toKey()}'),
-      onTap: () => showWeightSheet(context, week, edit: true),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
-        child: Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 8,
-          children: [
-            label,
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  Fmt.kg(p.kgX10),
-                  style: context.text.bodyLarge?.copyWith(
-                    color: palette.textSecondary,
-                  ),
-                ),
-                Icon(Icons.chevron_right, color: palette.textSecondary),
-              ],
-            ),
-          ],
-        ),
-      ),
+              );
+            }
+            return IronlyRow(
+              key: ValueKey('weight-week-${week.toKey()}'),
+              title: range,
+              minHeight: 44,
+              semanticsLabel: '${S.weekLabel(range)}, ${Fmt.kg(p.kgX10)}',
+              trailing: Text(
+                Fmt.kgNumber(p.kgX10),
+                style: IronlyText.liftNumber,
+              ),
+              onTap: () => showWeightSheet(context, week, edit: true),
+            );
+          }(),
+      ],
     );
   }
 }

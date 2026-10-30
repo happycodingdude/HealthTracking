@@ -90,16 +90,10 @@ void main() {
   /// Ghi cân tuần này ở S-40 → S-41 → "Lưu".
   Future<void> logWeight(WidgetTester tester, String value) async {
     await tapFinder(tester, tab(S.tabWeight));
-    await tapFinder(tester, find.widgetWithText(FilledButton, S.logThisWeek));
-    await tester.enterText(
-      find.descendant(
-        of: find.byKey(const ValueKey('weight-input')),
-        matching: find.byType(TextField),
-      ),
-      value,
-    );
-    await tester.tap(find.widgetWithText(FilledButton, S.save).last);
-    await tester.pumpAndSettle();
+    // Bản 4: nút "Ghi cân" → S-41 một ô số lớn → "Lưu".
+    await tapKey(tester, 'log-weight');
+    await tester.enterText(find.byKey(const ValueKey('field-weight')), value);
+    await tapKey(tester, 'weight-save');
   }
 
   /// Vuốt bảng trượt S-53 xuống để đóng mà không chọn (UA-14).
@@ -264,16 +258,9 @@ void main() {
     expect(meDot(), isFalse);
 
     // Ghi số khác trong tuần: số cân mới nhất đổi → đề xuất lại.
-    await tapFinder(tester, find.widgetWithText(FilledButton, S.logThisWeek));
-    await tester.enterText(
-      find.descendant(
-        of: find.byKey(const ValueKey('weight-input')),
-        matching: find.byType(TextField),
-      ),
-      '72',
-    );
-    await tester.tap(find.widgetWithText(FilledButton, S.save).last);
-    await tester.pumpAndSettle();
+    await tapKey(tester, 'log-weight');
+    await tester.enterText(find.byKey(const ValueKey('field-weight')), '72');
+    await tapKey(tester, 'weight-save');
     await tapText(tester, S.replace);
     expect(find.byType(CalorieProposalSheet), findsOneWidget);
     await tapKey(tester, 'proposal-accept');
@@ -428,7 +415,7 @@ void main() {
     await tapKey(tester, 'row-profile');
     await reveal(tester, find.text('72,5 kg'));
     await tapKey(tester, 'go-weight-tab');
-    expect(find.text(S.logThisWeek), findsOneWidget);
+    expect(find.byKey(const ValueKey('log-weight')), findsOneWidget);
   });
 
   testWidgets('F01-E2, ED-07: mở app ngày 01/01/2027 ở chế độ Bạn tự đặt → đề '

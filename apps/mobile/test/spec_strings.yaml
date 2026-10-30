@@ -430,5 +430,6 @@ statTime: "Giờ"
 thisWeek: "Tuần này"
 extraSessionButton: "+ Buổi thêm"
 generateMenuShort: "Gợi ý thực đơn"
+logWeight: "Ghi cân" # 04 Bản 4 S-40
 
 semanticsOnly: []

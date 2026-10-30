@@ -5,12 +5,13 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import '../../../app/strings_vi.dart';
-import '../../../app/theme.dart';
 import '../../../core/formatters.dart';
+import '../../../ui/theme.dart';
 
-/// Biểu đồ xu hướng cân nặng (04 S-40, F07-R6, UA-13): mỗi tuần một điểm,
-/// mặc định 8 tuần gần nhất, vuốt ngang để xem tuần cũ hơn; tuần không ghi để
-/// trống, đường bị ngắt; chạm vào một điểm để xem số cân và tuần.
+/// Biểu đồ cân nặng 8 tuần (04 Bản 4 S-40, F07-R6, UA-13): đường cam, điểm
+/// đặc, điểm mới nhất rỗng, đường ngắt ở tuần không ghi; trục mờ, chỉ nhãn
+/// đầu – cuối; vuốt ngang xem tuần cũ hơn; chạm điểm xem số cân và tuần.
+/// Con số, trục, mốc như Bản 1 (F4-R8).
 class WeightChart extends StatefulWidget {
   const WeightChart({super.key, required this.weeks, required this.log});
 
@@ -32,7 +33,7 @@ class _WeightChartState extends State<WeightChart> {
   /// Chỉ số tuần đang chạm để xem số cân.
   int? _selected;
 
-  static const _rightReserved = 40.0;
+  static const _rightReserved = 36.0;
 
   int get _count => widget.weeks.length;
 
@@ -52,8 +53,7 @@ class _WeightChartState extends State<WeightChart> {
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
-    final colors = context.colors;
+    final t = context.tokens;
     final index = {for (var i = 0; i < _count; i++) widget.weeks[i]: i};
     final spots = <({int i, int kgX10})>[
       for (final p in widget.log.points)
@@ -66,7 +66,6 @@ class _WeightChartState extends State<WeightChart> {
         if (s.i >= minX - 1 && s.i <= maxX + 1) s.kgX10,
     ];
     final range = visible.isEmpty ? [for (final s in spots) s.kgX10] : visible;
-    // Mốc kg tròn theo bước chia, đệm 0,2 kg để điểm không chạm mép.
     final lo = range.isEmpty ? 0 : ((range.reduce(math.min) - 2) / 10).floor();
     final hi = range.isEmpty ? 1 : ((range.reduce(math.max) + 2) / 10).ceil();
     final step = math.max(1, ((hi - lo) / 4).ceil());
@@ -88,14 +87,15 @@ class _WeightChartState extends State<WeightChart> {
       for (final seg in segments)
         LineChartBarData(
           spots: seg,
-          color: colors.primary,
-          barWidth: 3,
+          color: t.chartLine,
+          barWidth: 2.5,
           dotData: FlDotData(
+            // Điểm mới nhất rỗng, còn lại đặc (04 Bản 4 S-40).
             getDotPainter: (spot, _, _, _) => FlDotCirclePainter(
-              radius: spot.x == latestIndex ? 6 : 4.5,
-              color: spot.x == latestIndex ? colors.primary : palette.card,
-              strokeColor: colors.primary,
-              strokeWidth: 2.5,
+              radius: spot.x == latestIndex ? 5.5 : 4,
+              color: spot.x == latestIndex ? t.surface : t.chartLine,
+              strokeColor: t.chartLine,
+              strokeWidth: 2,
             ),
           ),
         ),
@@ -108,10 +108,15 @@ class _WeightChartState extends State<WeightChart> {
             if (s.x == selected)
               ShowingTooltipIndicators([LineBarSpot(bars[b], b, s)]),
     ];
+    final firstVisible = math.max(0, minX.ceil());
+    final lastVisible = math.min(_count - 1, maxX.floor());
 
+    // Cỡ chữ lớn (TA4-04): chừa chỗ cho nhãn trục theo tỷ lệ chữ.
+    final scale = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0);
+    final rightReserved = _rightReserved * scale;
     return LayoutBuilder(
       builder: (context, constraints) {
-        final drawWidth = constraints.maxWidth - _rightReserved;
+        final drawWidth = constraints.maxWidth - rightReserved;
         final weekWidth = drawWidth / (maxX - minX);
         return GestureDetector(
           key: const ValueKey('weight-chart'),
@@ -129,7 +134,8 @@ class _WeightChartState extends State<WeightChart> {
             setState(() => _selected = hit == _selected ? null : hit);
           },
           child: SizedBox(
-            height: 200,
+            // Cỡ chữ lớn: cao hơn để nhãn trục không chồng nhau (TA4-04).
+            height: 160 * scale,
             child: LineChart(
               duration: Duration.zero,
               LineChartData(
@@ -143,15 +149,13 @@ class _WeightChartState extends State<WeightChart> {
                 lineTouchData: LineTouchData(
                   enabled: false,
                   touchTooltipData: LineTouchTooltipData(
-                    getTooltipColor: (_) => colors.inverseSurface,
+                    getTooltipColor: (_) => t.surfaceRaised,
                     getTooltipItems: (touched) => [
-                      for (final t in touched)
+                      for (final tt in touched)
                         LineTooltipItem(
-                          '${Fmt.kg((t.y * 10).round())}\n'
-                          '${S.weekLabel(Fmt.dayMonth(widget.weeks[t.x.round()]))}',
-                          context.text.bodyMedium!.copyWith(
-                            color: colors.onInverseSurface,
-                          ),
+                          '${Fmt.kg((tt.y * 10).round())}\n'
+                          '${S.weekLabel(Fmt.dayMonth(widget.weeks[tt.x.round()]))}',
+                          IronlyText.caption2,
                         ),
                     ],
                   ),
@@ -159,11 +163,8 @@ class _WeightChartState extends State<WeightChart> {
                 gridData: FlGridData(
                   drawVerticalLine: false,
                   horizontalInterval: interval,
-                  getDrawingHorizontalLine: (_) => FlLine(
-                    color: palette.border,
-                    strokeWidth: 1,
-                    dashArray: const [4, 4],
-                  ),
+                  getDrawingHorizontalLine: (_) =>
+                      FlLine(color: t.chartGrid, strokeWidth: 1),
                 ),
                 borderData: FlBorderData(show: false),
                 titlesData: FlTitlesData(
@@ -172,14 +173,14 @@ class _WeightChartState extends State<WeightChart> {
                   rightTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      reservedSize: _rightReserved,
+                      reservedSize: rightReserved,
                       interval: interval,
                       getTitlesWidget: (value, meta) => SideTitleWidget(
                         meta: meta,
                         child: Text(
                           Fmt.integer(value.round()),
-                          style: context.text.bodySmall?.copyWith(
-                            color: palette.textSecondary,
+                          style: IronlyText.columnLabel.copyWith(
+                            color: t.textPrefill,
                           ),
                         ),
                       ),
@@ -188,23 +189,23 @@ class _WeightChartState extends State<WeightChart> {
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      reservedSize: 28,
+                      reservedSize: 22 * scale,
                       interval: 1,
                       getTitlesWidget: (value, meta) {
                         final i = value.round();
-                        // Nhãn mỗi 2 tuần, tính từ tuần hiện tại.
+                        // Chỉ nhãn đầu – cuối của khung đang xem.
                         if (value != i ||
                             i < 0 ||
                             i >= _count ||
-                            (_count - 1 - i).isOdd) {
+                            (i != firstVisible && i != lastVisible)) {
                           return const SizedBox.shrink();
                         }
                         return SideTitleWidget(
                           meta: meta,
                           child: Text(
                             Fmt.dayMonth(widget.weeks[i]),
-                            style: context.text.bodySmall?.copyWith(
-                              color: palette.textSecondary,
+                            style: IronlyText.columnLabel.copyWith(
+                              color: t.textPrefill,
                             ),
                           ),
                         );

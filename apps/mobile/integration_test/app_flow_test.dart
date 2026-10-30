@@ -308,18 +308,10 @@ void main() {
       final proposed = kcalFor(760, ActivityLevel.moderate);
       await tester.tap(tabLabel(S.tabWeight));
       await tester.pumpAndSettle();
-      await tapVisible(
-        tester,
-        find.widgetWithText(FilledButton, S.logThisWeek),
-      );
-      await tester.enterText(
-        find.descendant(
-          of: find.byKey(const ValueKey('weight-input')),
-          matching: find.byType(TextField),
-        ),
-        '76',
-      );
-      await tester.tap(find.widgetWithText(FilledButton, S.save).last);
+      // Bản 4 S-40 / S-41: nút "Ghi cân" → một ô số lớn → "Lưu".
+      await tapVisible(tester, find.byKey(const ValueKey('log-weight')));
+      await tester.enterText(find.byKey(const ValueKey('field-weight')), '76');
+      await tester.tap(find.byKey(const ValueKey('weight-save')));
       await tester.pumpAndSettle();
       await tester.tap(find.text(S.replace).last);
       await pumpUntil(tester, find.text(S.updateCalorieTitle));
@@ -384,18 +376,19 @@ void main() {
       await pumpUntil(tester, tabLabel(S.tabMenu));
       await tester.tap(tabLabel(S.tabMenu));
       await tester.pumpAndSettle();
-      expect(find.text(S.menuEmptyTitle), findsOneWidget);
-      expect(find.text(S.remainingToday(3)), findsOneWidget);
+      // Bản 4 S-30 trống: chỉ nút "Gợi ý thực đơn" + "Còn 3 lượt".
+      expect(find.text(S.generateMenuShort), findsOneWidget);
+      expect(find.text(S.remainingShort(3)), findsOneWidget);
 
       await tester.tap(find.byKey(const ValueKey('generate-menu')));
-      await pumpUntil(tester, find.text(S.mealBreakfast));
-      expect(find.text(S.mealLunch), findsOneWidget);
+      await pumpUntil(tester, find.text(S.mealBreakfast.toUpperCase()));
+      expect(find.text(S.mealLunch.toUpperCase()), findsOneWidget);
       final regenerate = find.byKey(const ValueKey('regenerate'));
       await reveal(tester, regenerate);
       // Nút ở cuối trang: kéo lên khỏi thanh tab rồi mới chạm.
       await tester.ensureVisible(regenerate);
       await tester.pumpAndSettle();
-      expect(find.text(S.regenerateWithRemaining(2)), findsOneWidget);
+      expect(find.text(S.regenerateShort(2)), findsOneWidget);
 
       await tester.tap(regenerate);
       await tester.pumpAndSettle();
@@ -406,11 +399,11 @@ void main() {
         tester,
         find.byKey(const ValueKey('menu-generating')),
       );
-      await pumpUntil(tester, find.text(S.mealBreakfast));
+      await pumpUntil(tester, find.text(S.mealBreakfast.toUpperCase()));
       // Danh sách dựng lười: cuộn tới nút ở cuối trang.
       await reveal(tester, regenerate);
       await tester.pumpAndSettle();
-      expect(find.text(S.regenerateWithRemaining(1)), findsOneWidget);
+      expect(find.text(S.regenerateShort(1)), findsOneWidget);
 
       await tester.tap(find.byKey(const ValueKey('tab-today-button')));
       await tester.pumpAndSettle();

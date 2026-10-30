@@ -97,9 +97,13 @@ class IronlyRow extends StatelessWidget {
     this.semanticsLabel,
     this.minHeight = 52,
     this.dot = false,
+    this.titleWidget,
   });
 
   final String title;
+
+  /// Thay chữ tiêu đề bằng widget (tên món + khẩu phần cùng dòng, S-30).
+  final Widget? titleWidget;
   final String? subtitle;
   final Widget? leading;
   final Widget? trailing;
@@ -121,7 +125,8 @@ class IronlyRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.tokens;
     final stacked = MediaQuery.textScalerOf(context).scale(1) >= stackedScale;
-    final titleText = Text(title, style: titleStyle ?? IronlyText.body);
+    final titleText =
+        titleWidget ?? Text(title, style: titleStyle ?? IronlyText.body);
     final sub = subtitle == null
         ? null
         : Text(subtitle!, style: IronlyText.caption);

@@ -14,6 +14,7 @@ import 'package:mobile/core/widgets/reference_tag.dart';
 import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/features/me/data/profile_repository.dart';
 import 'package:mobile/features/menu/data/menu_repository.dart';
+import 'package:mobile/ui/components/ironly_button.dart';
 import 'package:mobile/ui/components/ironly_tab_bar.dart';
 
 import '../../support/app_harness.dart';
@@ -37,6 +38,14 @@ void main() {
     connectivity = FakeConnectivity();
     scheduler = FakeScheduler();
   });
+
+  /// Kcal ngày ở góc phải tiêu đề S-30 (Bản 4: không còn "Theo mức").
+  Finder dateLine(String kcal) => find.byWidgetPredicate(
+    (w) =>
+        w is Text &&
+        w.key == const ValueKey('menu-date-line') &&
+        w.data == kcal,
+  );
 
   Future<void> pump(WidgetTester tester, {bool openMenu = true}) async {
     tester.view
@@ -94,23 +103,26 @@ void main() {
     await repo.putUsage(AiDailyUsageCodec.key(today), used);
   }
 
-  testWidgets('F08-AC1, 04 S-30 Trống: chưa bấm thì không tạo; "Hôm nay ăn '
-      'gì?", "Còn 3 lượt hôm nay", "Thứ 4, 07/10 · Theo mức 2.210 kcal" kèm '
-      'nhãn tham khảo', (tester) async {
+  testWidgets('F08-AC1, 04 Bản 4 S-30 Trống: chưa bấm thì không tạo; chỉ icon '
+      'bát + nút "Gợi ý thực đơn" + "Còn 3 lượt"; trên: "THỨ 4, 07/10" · '
+      '"Thực đơn" · "2.210 kcal"; không câu, không nhãn (FR4-04, FR4-05)', (
+    tester,
+  ) async {
     await seedSetUp(db);
     await pump(tester);
-    expect(find.text(S.menuEmptyTitle), findsOneWidget);
-    expect(find.text(S.menuEmptyBody), findsOneWidget);
-    expect(find.text(S.generateMenu), findsOneWidget);
-    expect(find.text('Còn 3 lượt hôm nay'), findsOneWidget);
-    expect(find.text('Thứ 4, 07/10 · Theo mức 2.210 kcal'), findsOneWidget);
-    expect(find.byType(ReferenceTag), findsOneWidget);
+    expect(find.text(S.menuEmptyTitle), findsNothing);
+    expect(find.text(S.menuEmptyBody), findsNothing);
+    expect(find.text(S.generateMenuShort), findsOneWidget);
+    expect(find.text(S.remainingShort(3)), findsOneWidget);
+    expect(find.text('THỨ 4, 07/10'), findsOneWidget);
+    expect(dateLine('2.210 kcal'), findsOneWidget);
+    expect(find.byType(ReferenceTag), findsNothing);
     expect(menus.calls, isEmpty);
   });
 
-  testWidgets('F08-AC4, F08-AC7: bấm "Gợi ý thực đơn hôm nay" → đang tạo → '
-      'các bữa theo thứ tự, mỗi món tên, khẩu phần, kcal; "Tổng" + nhãn tham '
-      'khảo; "Gợi ý lại (còn 2 lượt)"; "Calo món ăn là ước lượng."', (
+  testWidgets('F08-AC4, F08-AC7: bấm "Gợi ý thực đơn" → đang tạo → các bữa '
+      'theo thứ tự, mỗi món tên, khẩu phần, số kcal; tổng chỉ đọc bằng '
+      'VoiceOver; "Gợi ý lại · 2"; Bản 4: không nhãn, không câu ước lượng', (
     tester,
   ) async {
     await seedSetUp(db);
@@ -136,23 +148,26 @@ void main() {
       S.mealAfternoonSnack,
       S.mealDinner,
     ];
-    final ys = [for (final l in labels) tester.getTopLeft(find.text(l)).dy];
+    // Bản 4: tiêu đề bữa in hoa.
+    final ys = [
+      for (final l in labels) tester.getTopLeft(find.text(l.toUpperCase())).dy,
+    ];
     expect(ys, [...ys]..sort(), reason: 'thứ tự bữa trong ngày (mock S-30-3)');
     expect(find.text('Phở gà'), findsOneWidget);
     expect(find.text('1 tô'), findsWidgets);
-    expect(find.text('480 kcal'), findsOneWidget);
-    expect(find.text('560 kcal'), findsOneWidget, reason: 'calo bữa sáng');
-    await reveal(tester, find.byKey(const ValueKey('regenerate')));
-    expect(find.bySemanticsLabel(RegExp('^Tổng: 2.020 kcal')), findsOneWidget);
     expect(
       find.descendant(
-        of: find.byKey(const ValueKey('menu-total')),
-        matching: find.byType(ReferenceTag),
+        of: find.byKey(const ValueKey('dish-Phở gà')),
+        matching: find.text('480'),
       ),
       findsOneWidget,
     );
-    expect(find.text(S.menuEstimateNote), findsOneWidget);
-    expect(find.text('Gợi ý lại (còn 2 lượt)'), findsOneWidget);
+    expect(find.text('560 kcal'), findsOneWidget, reason: 'calo bữa sáng');
+    await reveal(tester, find.byKey(const ValueKey('regenerate')));
+    expect(find.bySemanticsLabel(RegExp('^Tổng: 2.020 kcal')), findsOneWidget);
+    expect(find.byType(ReferenceTag), findsNothing);
+    expect(find.text(S.menuEstimateNote), findsNothing);
+    expect(find.text(S.regenerateShort(2)), findsOneWidget);
     expect(
       (await MenuRepository(db).get(today))!.payload,
       mockMenu,
@@ -181,7 +196,7 @@ void main() {
     await tapKey(tester, 'regenerate');
     await tapKey(tester, 'confirm-regenerate');
     expect(menus.calls, hasLength(1));
-    await reveal(tester, find.text('Gợi ý lại (còn 1 lượt)'));
+    await reveal(tester, find.text(S.regenerateShort(1)));
   });
 
   testWidgets('F08-AC2, F08-E3: hết 3 lượt → nút gợi ý lại thay bằng "Bạn đã '
@@ -214,7 +229,7 @@ void main() {
     await tapKey(tester, 'generate-menu');
     expect(find.text(S.offlineMenu), findsOneWidget);
     expect(find.text(S.retry), findsOneWidget);
-    expect(find.text('Còn 3 lượt hôm nay'), findsOneWidget);
+    expect(find.text(S.remainingShort(3)), findsOneWidget);
     expect(menus.calls, isEmpty);
 
     // Mạng chập chờn: kết nối báo có nhưng không tới được server.
@@ -243,11 +258,19 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.byKey(const ValueKey('generate-menu')), findsNothing);
-    final button = tester.widget<FilledButton>(
-      find.widgetWithText(FilledButton, S.generateMenu),
+    // Nút mờ, không bấm được (F4-R6).
+    expect(find.text(S.generateMenuShort), findsOneWidget);
+    expect(
+      tester
+          .widget<IronlyButton>(
+            find.ancestor(
+              of: find.text(S.generateMenuShort),
+              matching: find.byType(IronlyButton),
+            ),
+          )
+          .enabled,
+      isFalse,
     );
-    expect(button.onPressed, isNull);
   });
 
   testWidgets('ED-04: pull báo tháng đã bị chặn → banner F08-E2 ngay khi mở '
@@ -288,11 +311,11 @@ void main() {
     await tapKey(tester, 'confirm-regenerate');
     await reveal(tester, find.text(S.menuInvalidOutput));
     expect(find.text('Phở gà'), findsOneWidget);
-    await reveal(tester, find.text('Gợi ý lại (còn 2 lượt)'));
+    await reveal(tester, find.text(S.regenerateShort(2)));
     await tapKey(tester, 'banner-retry');
     expect(menus.calls, hasLength(2));
     expect(find.text(S.menuInvalidOutput), findsNothing);
-    await reveal(tester, find.text('Gợi ý lại (còn 1 lượt)'));
+    await reveal(tester, find.text(S.regenerateShort(1)));
   });
 
   testWidgets('04 S-30 lỗi khác: "Chưa tạo được thực đơn. Thử lại." và nút '
@@ -320,7 +343,7 @@ void main() {
         profile: completedProfile(mode: CalorieMode.manual, kcal: 1300),
       );
       await pump(tester);
-      expect(find.text('Thứ 4, 07/10 · Theo mức 1.500 kcal'), findsOneWidget);
+      expect(dateLine('1.500 kcal'), findsOneWidget);
       expect(
         find.text('Thực đơn dùng mức an toàn tối thiểu 1.500 kcal.'),
         findsOneWidget,
@@ -347,7 +370,7 @@ void main() {
     ).put(completedProfile(mode: CalorieMode.manual, kcal: 2000));
     await tester.pumpAndSettle();
     expect(find.text(S.calorieChangedRegenerate), findsOneWidget);
-    expect(find.text('Thứ 4, 07/10 · Theo mức 2.210 kcal'), findsOneWidget);
+    expect(dateLine('2.210 kcal'), findsOneWidget);
     expect(find.text('Phở gà'), findsOneWidget);
   });
 

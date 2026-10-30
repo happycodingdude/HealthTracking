@@ -2,6 +2,7 @@
 // tool/capture_screens.sh <M17…M21> qua `flutter drive` trên simulator; ảnh
 // vào build/review/<id>.png. Dữ liệu là fixture trong bộ nhớ (như golden),
 // không cần server.
+import 'package:api_contract/api_contract.dart';
 import 'package:domain/domain.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -14,6 +15,7 @@ import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/dev/review_matrix.dart';
 import 'package:mobile/features/me/data/account_repository.dart';
 import 'package:mobile/features/me/data/profile_repository.dart';
+import 'package:mobile/features/menu/data/menu_repository.dart';
 import 'package:mobile/ui/gallery.dart';
 import 'package:mobile/ui/theme.dart';
 
@@ -232,6 +234,58 @@ void main() {
         await ProfileRepository(db).put(completedProfile());
         await pump(tester, db, DateTime(2026, 10, 26, 9));
         await shot(tester, 'm18_s10_no_schedule');
+      });
+
+      // VS-45: Thực đơn (S-30) và Cân nặng (S-40, S-41).
+      testWidgets('M18: S-30 có thực đơn', (tester) async {
+        final db = AppDatabase(NativeDatabase.memory());
+        addTearDown(db.close);
+        await seedCapture(db);
+        await MenuRepository(
+          db,
+        ).putUsage(AiDailyUsageCodec.key(captureMonday), 1);
+        await pump(tester, db, DateTime(2026, 10, 26, 9));
+        await tapKey(tester, 'tab-menu');
+        await shot(tester, 'm18_s30');
+      });
+
+      testWidgets('M18: S-30 trống và đang tạo', (tester) async {
+        final db = AppDatabase(NativeDatabase.memory());
+        addTearDown(db.close);
+        await seedCapture(db, withMenu: false);
+        await pump(tester, db, DateTime(2026, 10, 26, 9));
+        await tapKey(tester, 'tab-menu');
+        await shot(tester, 'm18_s30_empty');
+        await MenuRepository(db).put(
+          captureMonday,
+          const MenuData(
+            payload: null,
+            targetKcal: 1850,
+            usedSafetyFloor: false,
+            totalKcal: null,
+            lastAttemptStatus: MenuAttemptStatus.generating,
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 500));
+        await shot(tester, 'm18_s30_generating');
+      });
+
+      testWidgets('M18: S-40, S-41 sửa, hộp chênh 5 kg', (tester) async {
+        final db = AppDatabase(NativeDatabase.memory());
+        addTearDown(db.close);
+        await seedCapture(db);
+        await seedWeights(db);
+        await pump(tester, db, DateTime(2026, 10, 26, 9));
+        await tapKey(tester, 'tab-weight');
+        await shot(tester, 'm18_s40');
+        await tapKey(tester, 'weight-week-2026-10-19');
+        await shot(tester, 'm18_s41');
+        await tester.enterText(
+          find.byKey(const ValueKey('field-weight')),
+          '66,8',
+        );
+        await tapKey(tester, 'weight-save');
+        await shot(tester, 'm18_s41_big');
       });
     }
   });

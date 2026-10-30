@@ -765,6 +765,19 @@ abstract final class S {
   /// "Còn 3 lượt" (04 Bản 4 S-30).
   static String remainingShort(int n) => 'Còn $n lượt';
 
+  /// "Gợi ý lại · 2" (04 Bản 4 S-30: nút phụ viền cam, số lượt còn).
+  static String regenerateShort(int n) => '$regenerate · $n';
+
+  /// 04 Bản 4 S-40: nút cam "Ghi cân" → S-41.
+  static const logWeight = 'Ghi cân';
+
+  /// "↓ 0,4 lần trước" (04 Bản 4 S-40; [change] đã có mũi tên, không đơn vị;
+  /// VoiceOver đọc câu đầy đủ [vsPrevious]).
+  static String vsPreviousShort(String change) => '$change lần trước';
+
+  /// "↓ 2,5 ban đầu" (04 Bản 4 S-40).
+  static String vsInitialShort(String change) => '$change ban đầu';
+
   // S-70 Widget (04 Bản 3 §6.7, UA3-14; 03 Bản 3 F-24).
   static const widgetNotDone = 'Chưa tập';
   static const widgetDone = 'Đã tập';
@@ -1198,5 +1211,6 @@ abstract final class S {
     'thisWeek': thisWeek,
     'extraSessionButton': extraSessionButton,
     'generateMenuShort': generateMenuShort,
+    'logWeight': logWeight,
   };
 }

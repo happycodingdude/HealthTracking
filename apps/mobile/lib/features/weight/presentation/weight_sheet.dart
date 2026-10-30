@@ -1,19 +1,14 @@
 import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
 import '../../../app/strings_vi.dart';
-import '../../../app/theme.dart';
 import '../../../core/formatters.dart';
-import '../../../core/widgets/app_sheet.dart';
-import '../../../core/widgets/heading.dart';
-import '../../../core/widgets/labeled_field.dart';
-import '../../../core/widgets/primary_button.dart';
-import '../../../core/widgets/toast.dart';
 import '../../../core/widgets/unsaved_changes.dart';
 import '../../../data/sync/sync_providers.dart';
+import '../../../ui/components/components.dart';
+import '../../../ui/theme.dart';
 import '../../me/presentation/calorie_proposal_sheet.dart';
 import '../application/weight_edits.dart';
 
@@ -23,15 +18,16 @@ Future<void> showWeightSheet(
   BuildContext context,
   LocalDate week, {
   bool edit = false,
-}) => showAppSheet<void>(
+}) => showIronlySheet<void>(
   context,
   enableDrag: false,
   builder: (_) => WeightSheet(week: week, edit: edit, host: context),
 );
 
-/// S-41 — Ghi / sửa số cân (04 S-41): F07-V1 lỗi dưới ô; tuần đã có số thì
-/// hỏi thay thế (F07-R1); chênh hơn 5 kg thì hỏi xác nhận (F07-V2); xóa qua
-/// hộp xác nhận, không xóa số cân duy nhất (F07-R3).
+/// S-41 — Ghi / sửa số cân (04 Bản 4 S-41): tiêu đề = khoảng tuần; một ô số
+/// lớn 30 viền cam, "kg" nhỏ; nút cam "Lưu"; khi sửa "Xóa số cân này" đỏ.
+/// Hộp chênh 5 kg ("Sửa lại" / "Lưu"), hộp ghi đè, hộp xóa giữ câu Bản 1.
+/// Quy tắc F07 như Bản 1: lỗi đỏ dưới ô; không xóa số cân duy nhất.
 class WeightSheet extends ConsumerStatefulWidget {
   const WeightSheet({
     super.key,
@@ -52,6 +48,7 @@ class WeightSheet extends ConsumerStatefulWidget {
 
 class _WeightSheetState extends ConsumerState<WeightSheet> {
   final _input = TextEditingController();
+  final _focus = FocusNode();
   String _initial = '';
   bool _loaded = false;
   String? _error;
@@ -80,6 +77,7 @@ class _WeightSheetState extends ConsumerState<WeightSheet> {
   @override
   void dispose() {
     _input.dispose();
+    _focus.dispose();
     super.dispose();
   }
 
@@ -160,103 +158,71 @@ class _WeightSheetState extends ConsumerState<WeightSheet> {
     required String key,
     bool destructive = false,
   }) async =>
-      await showAppDialog<bool>(
+      await showIronlyDialog<bool>(
         context,
-        builder: (dialogContext) => AlertDialog(
-          title: Text(title),
-          actions: [
-            OutlinedButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(cancel),
-            ),
-            if (destructive)
-              TextButton(
-                key: ValueKey(key),
-                style: TextButton.styleFrom(
-                  foregroundColor: Theme.of(dialogContext).colorScheme.error,
-                ),
-                onPressed: () => Navigator.of(dialogContext).pop(true),
-                child: Text(action),
-              )
-            else
-              FilledButton(
-                key: ValueKey(key),
-                onPressed: () => Navigator.of(dialogContext).pop(true),
-                child: Text(action),
-              ),
-          ],
+        builder: (dialogContext) => IronlyDialog(
+          title: title,
+          secondaryLabel: cancel,
+          onSecondary: () => Navigator.of(dialogContext).pop(false),
+          primaryLabel: action,
+          primaryKey: ValueKey(key),
+          destructive: destructive,
+          onPrimary: () => Navigator.of(dialogContext).pop(true),
         ),
       ) ??
       false;
 
   @override
   Widget build(BuildContext context) {
-    final existing = _log.at(widget.week);
     return UnsavedChangesGuard(
       dirty: _loaded && _input.text != _initial,
-      child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(
-          16,
-          24,
-          16,
-          16 + MediaQuery.viewInsetsOf(context).bottom,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: IronlySheet(
+        title: _range,
+        footer: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Heading(
-              S.weightSheetTitle(_range),
-              style: context.text.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            if (!widget.edit && existing != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                S.weekAlreadyLogged(Fmt.kg(existing.kgX10)),
-                style: context.text.bodyLarge?.copyWith(
-                  color: context.palette.textSecondary,
-                ),
-              ),
-            ],
-            const SizedBox(height: 20),
-            LabeledField(
-              key: const ValueKey('weight-input'),
-              label: S.fieldWeight,
-              controller: _input,
-              error: _error,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp('[0-9.,]')),
-              ],
-              suffix: Padding(
-                padding: const EdgeInsets.only(right: 16),
-                child: Text(S.unitKg, style: context.text.bodyLarge),
-              ),
-              onChanged: (_) => setState(() => _error = null),
-            ),
-            const SizedBox(height: 24),
-            PrimaryButton(
+            IronlyButton.primary(
+              key: const ValueKey('weight-save'),
               label: S.save,
               onPressed: () => _loaded ? _save() : null,
             ),
             if (widget.edit) ...[
-              const SizedBox(height: 8),
-              TextButton(
+              const SizedBox(height: TokenSpace.s1),
+              IronlyButton.danger(
                 key: const ValueKey('weight-delete'),
-                style: TextButton.styleFrom(
-                  foregroundColor: context.colors.error,
-                  textStyle: context.text.titleMedium,
-                ),
+                label: S.deleteWeight,
                 onPressed: _delete,
-                child: const Text(S.deleteWeight),
               ),
             ],
           ],
         ),
+        children: [
+          BigNumberField(
+            name: 'weight',
+            controller: _input,
+            focusNode: _focus,
+            unit: S.unitKg,
+            active: true,
+            style: IronlyText.numberField,
+            height: 72,
+            semanticsLabel: S.fieldWeight,
+            background: context.tokens.surfaceRaised,
+            onChanged: (_) => setState(() => _error = null),
+          ),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 6, left: 2),
+              child: Semantics(
+                liveRegion: true,
+                child: Text(
+                  _error!,
+                  key: const ValueKey('weight-error'),
+                  style: IronlyText.error,
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

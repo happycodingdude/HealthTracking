@@ -49,10 +49,7 @@ void main() {
     AppDatabase db,
   ) async {
     setPhoneSurface(tester);
-    tester.platformDispatcher
-      ..platformBrightnessTestValue = variant.brightness
-      ..textScaleFactorTestValue = variant.textScale;
-    addTearDown(tester.platformDispatcher.clearAllTestValues);
+    applyVariant(tester, variant);
     final container = ProviderContainer(
       retry: (_, _) => null,
       overrides: appOverrides(
@@ -93,20 +90,10 @@ void main() {
       tester,
     ) async {
       await pump(tester, v, await seed());
-      final button = find.widgetWithText(FilledButton, S.logThisWeek);
-      await tester.scrollUntilVisible(
-        button,
-        300,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(button);
+      await tester.tap(find.byKey(const ValueKey('log-weight')));
       await tester.pumpAndSettle();
       await tester.enterText(
-        find.descendant(
-          of: find.byKey(const ValueKey('weight-input')),
-          matching: find.byType(TextField),
-        ),
+        find.byKey(const ValueKey('field-weight')),
         '72,3',
       );
       await tester.pumpAndSettle();
