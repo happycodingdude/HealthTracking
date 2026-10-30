@@ -135,13 +135,14 @@ void main() {
       await tester.tap(find.text(S.turnOnReminders));
       await tester.pumpAndSettle();
       expect(notifications.requests, 1);
+      // Bản 4 (04 S-10 H1): chỉ nút "Xếp lịch tuần", không câu.
       expect(find.byKey(const ValueKey('no-schedule-card')), findsOneWidget);
-      expect(find.text(S.noScheduleTitle), findsOneWidget);
-      expect(find.text(S.noScheduleToday), findsOneWidget);
-      expect(find.byKey(const ValueKey('progress-card')), findsNothing);
+      expect(find.text(S.noScheduleTitle), findsNothing);
+      expect(find.text(S.noScheduleToday), findsNothing);
+      expect(find.byKey(const ValueKey('week-card')), findsNothing);
       expect(find.textContaining('0/0'), findsNothing);
       expect(find.text(S.logExtraSession), findsNothing);
-      expect(find.byKey(const ValueKey('session-card')), findsNothing);
+      expect(find.byKey(const ValueKey('session-stats')), findsNothing);
       expect(notifications.scheduled, isEmpty);
       expect((await ProfileRepository(db).get())!.remindersEnabled, isTrue);
     },
@@ -212,10 +213,12 @@ void main() {
 
       await tab(tester, S.tabToday);
       expect(find.byKey(const ValueKey('no-schedule-card')), findsNothing);
+      // 12:00 thứ 4: buổi Lưng chưa đến giờ (H3) → hàng số liệu.
       expect(find.text('Lưng · 18:00'), findsOneWidget);
-      expect(find.byKey(const ValueKey('progress-card')), findsOneWidget);
-      expect(find.text(S.progressLine(0, 2)), findsOneWidget);
-      await tapKey(tester, 'progress-card');
+      expect(find.text('0 / 2', findRichText: true), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('tab-schedule')));
+      await tester.pumpAndSettle();
+      await tapKey(tester, 'week-header-2026-10-12');
       expect(
         find.byKey(const ValueKey('week-previous')),
         findsNothing,

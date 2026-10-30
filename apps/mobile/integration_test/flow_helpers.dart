@@ -2,6 +2,7 @@
 import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/app/strings_vi.dart';
 import 'package:mobile/core/widgets/labeled_field.dart';
 import 'package:mobile/ui/components/ironly_tab_bar.dart';
 
@@ -67,4 +68,24 @@ final class ShiftedClock implements Clock {
 
   /// Đặt giờ của app thành [at] (phải ở quá khứ so với giờ thật).
   void setNow(DateTime at) => offset = DateTime.now().difference(at);
+}
+
+/// Bản 4 (04 S-10): thẻ thực đơn đầy đủ (ngày không có buổi) hoặc một dòng
+/// (ngày có buổi) ở Hôm nay — giờ thật nên không biết trước hôm nay thế nào.
+Future<void> expectMenuOnToday(WidgetTester tester) async {
+  final any = find.byWidgetPredicate(
+    (w) =>
+        w.key == const ValueKey('menu-card') ||
+        w.key == const ValueKey('menu-line'),
+  );
+  await reveal(tester, any);
+  await tester.pumpAndSettle();
+  expect(any, findsOneWidget);
+  final card = find.byKey(const ValueKey('menu-card'));
+  if (card.evaluate().isNotEmpty) {
+    expect(
+      find.descendant(of: card, matching: find.text(S.mealBreakfast)),
+      findsOneWidget,
+    );
+  }
 }

@@ -86,10 +86,7 @@ void main() {
     DateTime now,
   ) async {
     setPhoneSurface(tester);
-    tester.platformDispatcher
-      ..platformBrightnessTestValue = variant.brightness
-      ..textScaleFactorTestValue = variant.textScale;
-    addTearDown(tester.platformDispatcher.clearAllTestValues);
+    applyVariant(tester, variant);
     clock = FixedClock(now);
     final container = ProviderContainer(
       retry: (_, _) => null,
@@ -124,16 +121,14 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  /// Chạm nút trên dòng bài của S-63: danh sách chỉ dựng phần đang thấy.
+  /// Chạm hàng số của một bài (danh sách ở Hôm nay / S-63 chỉ dựng phần đang
+  /// thấy).
   Future<void> tapRow(WidgetTester tester, String key) async {
     final f = find.byKey(ValueKey(key));
     await tester.scrollUntilVisible(
       f,
       200,
-      scrollable: find.descendant(
-        of: find.byKey(const ValueKey('session-list')),
-        matching: find.byType(Scrollable),
-      ),
+      scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
     await tester.tap(f);
@@ -151,8 +146,8 @@ void main() {
   );
 
   for (final v in GoldenVariant.all) {
-    testWidgets('S-63-1 trong cửa sổ: buổi trước mờ, bài đã ghi, biểu tượng '
-        'ghi chú, "Ghi" ${v.name}', (tester) async {
+    testWidgets('S-10 H4 (buổi hôm nay ở Hôm nay): buổi trước mờ, bài đã ghi, '
+        'biểu tượng ghi chú ${v.name}', (tester) async {
       final db = await seeded();
       final chest = group(MuscleGroup.chest);
       await log(db, mon, chest[0], 400, 475);
@@ -162,8 +157,8 @@ void main() {
       await snap('s63_window_${v.name}');
     });
 
-    testWidgets('S-63-2 buổi Chân và Bụng: danh sách phẳng theo nhóm, bài bụng '
-        'có "Ghi chú" ${v.name}', (tester) async {
+    testWidgets('S-10 buổi Chân và Bụng: chia tiêu đề nhóm, bài bụng chỉ ghi '
+        'chú ${v.name}', (tester) async {
       final db = await seeded();
       final legs = group(MuscleGroup.legs);
       await unit(db, legs[0], LiftUnit.kg);
@@ -186,7 +181,7 @@ void main() {
       await snap('s63_legs_abs_${v.name}');
     });
 
-    testWidgets('S-63-3 buổi ngày mai: chỉ xem, "GẦN NHẤT" ${v.name}', (
+    testWidgets('S-63 buổi ngày mai: ổ khóa, "GẦN NHẤT" ${v.name}', (
       tester,
     ) async {
       final db = await seeded();
@@ -210,7 +205,7 @@ void main() {
       final chest = group(MuscleGroup.chest);
       final c = await pump(tester, v, db, DateTime(2026, 10, 12, 18, 30));
       await go(tester, c, sessionPath(AppTab.today, mon));
-      await tapRow(tester, 'lift-prev-tap-${chest[1].id}');
+      await tapRow(tester, 'lift-row-${chest[1].id}');
       await tapKey(tester, 'lift-end-plus');
       await unfocus(tester);
       await snap('s64_prefill_${v.name}');
@@ -221,7 +216,7 @@ void main() {
       final chest = group(MuscleGroup.chest);
       final c = await pump(tester, v, db, DateTime(2026, 10, 12, 18, 30));
       await go(tester, c, sessionPath(AppTab.today, mon));
-      await tapRow(tester, 'lift-log-${chest[3].id}');
+      await tapRow(tester, 'lift-row-${chest[3].id}');
       await tapKey(tester, 'lift-unit-kg');
       await snap('s64_first_${v.name}');
     });
@@ -233,7 +228,7 @@ void main() {
       await log(db, mon, chest[2], 80, 140);
       final c = await pump(tester, v, db, DateTime(2026, 10, 12, 18, 30));
       await go(tester, c, sessionPath(AppTab.today, mon));
-      await tapRow(tester, 'lift-value-${chest[2].id}');
+      await tapRow(tester, 'lift-row-${chest[2].id}');
       await tapKey(tester, 'lift-end-plus');
       await unfocus(tester);
       await snap('s64_steps_warning_${v.name}');
@@ -246,7 +241,7 @@ void main() {
       await seedExtra(db, tue, const [MuscleGroup.abs]);
       final c = await pump(tester, v, db, DateTime(2026, 10, 13, 20, 30));
       await go(tester, c, sessionPath(AppTab.today, tue));
-      await tapRow(tester, 'note-log-${plank.id}');
+      await tapRow(tester, 'note-mark-${plank.id}-previous');
       await tester.enterText(
         find.byKey(const ValueKey('note-input')),
         'giữ được 60 giây, lần 3 hơi run',
@@ -285,7 +280,8 @@ void main() {
       await log(db, mon, pecDeck, 400, 475);
       await note(db, mon, pecDeck, 'máy 2 hỏng, tập máy 5');
       final c = await pump(tester, v, db, DateTime(2026, 10, 12, 18, 30));
-      await go(tester, c, sessionExercisePath(AppTab.today, mon, pecDeck.id));
+      // Bản 4: buổi hôm nay ở tab Hôm nay → "…" mở S-67 qua /today/exercise.
+      await go(tester, c, todayExercisePath(pecDeck.id, mon));
       await showLiftArea(tester);
       await snap('s67_session_${v.name}');
     });
@@ -297,7 +293,7 @@ void main() {
       await note(db, LocalDate(2026, 10, 6), plank, 'giữ được 45 giây');
       await seedExtra(db, tue, const [MuscleGroup.abs]);
       final c = await pump(tester, v, db, DateTime(2026, 10, 13, 20, 30));
-      await go(tester, c, sessionExercisePath(AppTab.today, tue, plank.id));
+      await go(tester, c, todayExercisePath(plank.id, tue));
       await showLiftArea(tester);
       await snap('s67_abs_${v.name}');
     });
@@ -316,7 +312,7 @@ void main() {
       await snap('s72_change_unit_${v.name}');
     });
 
-    testWidgets('S-10-2 thẻ buổi tập có phần bài tập ${v.name}', (
+    testWidgets('S-63 buổi đã qua (đã tập): số trắng, "—" ${v.name}', (
       tester,
     ) async {
       final db = await seeded();

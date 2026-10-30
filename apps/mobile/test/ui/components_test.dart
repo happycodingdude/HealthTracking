@@ -196,7 +196,7 @@ void main() {
       ),
     );
     expect(find.byType(StatusGlyph), findsNWidgets(6));
-    expect(find.bySemanticsLabel('T2: rest 0'), findsOneWidget);
+    expect(find.bySemanticsLabel('rest 0'), findsOneWidget);
   });
 
   testWidgets('IronlyDialog: hai nút ngang, nút phải là hành động chính', (

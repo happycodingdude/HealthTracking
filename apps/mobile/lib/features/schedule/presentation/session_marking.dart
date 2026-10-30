@@ -7,8 +7,7 @@ import '../../../app/strings_vi.dart';
 import '../../../app/theme.dart';
 import '../../../app/time_ticker.dart';
 import '../../../core/formatters.dart';
-import '../../../core/widgets/app_sheet.dart';
-import '../../../core/widgets/toast.dart';
+import '../../../ui/components/components.dart';
 import '../../today/application/mark_session.dart';
 
 /// Từ mức phóng chữ này trở lên, hai nút xếp dọc (UX-AC18).
@@ -23,40 +22,34 @@ Future<bool> confirmLock(
   required String title,
   required bool today,
 }) async =>
-    await showAppDialog<bool>(
+    await showIronlyDialog<bool>(
       context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => IronlyDialog(
         key: const ValueKey('lock-confirm'),
-        // Cỡ chữ lớn: nội dung cuộn được, không tràn.
-        scrollable: true,
-        title: Text(title, textAlign: TextAlign.center),
-        content: Column(
+        title: title,
+        secondaryLabel: S.cancel,
+        secondaryKey: const ValueKey('lock-confirm-cancel'),
+        onSecondary: () => Navigator.of(dialogContext).pop(false),
+        // Không tô đỏ: đây không phải thao tác xóa.
+        primaryLabel: S.save,
+        primaryKey: const ValueKey('lock-confirm-save'),
+        onPrimary: () => Navigator.of(dialogContext).pop(true),
+        // Câu chữ nguyên văn Bản 2 (FR4-03); dòng 2 chỉ khi buổi là hôm nay.
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(S.lockConfirmLine1, textAlign: TextAlign.center),
+            Text(S.lockConfirmLine1, style: IronlyText.dialogBody),
             if (today) ...[
-              const SizedBox(height: 12),
-              const Text(
+              const SizedBox(height: TokenSpace.s2),
+              Text(
                 S.lockConfirmLine2,
-                key: ValueKey('lock-confirm-line2'),
-                textAlign: TextAlign.center,
+                key: const ValueKey('lock-confirm-line2'),
+                style: IronlyText.dialogBody,
               ),
             ],
           ],
         ),
-        actions: [
-          OutlinedButton(
-            key: const ValueKey('lock-confirm-cancel'),
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text(S.cancel),
-          ),
-          // Không tô đỏ: đây không phải thao tác xóa.
-          FilledButton(
-            key: const ValueKey('lock-confirm-save'),
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text(S.save),
-          ),
-        ],
       ),
     ) ??
     false;
@@ -150,24 +143,17 @@ abstract final class SessionMarking {
 /// F05-R28: "Buổi này đã có mức tạ của {N} bài." · "Tiếp tục" · "Hủy". true =
 /// tiếp tục lưu "Không tập".
 Future<bool> _confirmLiftsKept(BuildContext context, int n) async =>
-    await showAppDialog<bool>(
+    await showIronlyDialog<bool>(
       context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => IronlyDialog(
         key: const ValueKey('lifts-kept-confirm'),
-        scrollable: true,
-        title: Text(S.liftLogsExist(n), textAlign: TextAlign.center),
-        actions: [
-          OutlinedButton(
-            key: const ValueKey('lifts-kept-cancel'),
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text(S.cancel),
-          ),
-          FilledButton(
-            key: const ValueKey('lifts-kept-continue'),
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text(S.continueLabel),
-          ),
-        ],
+        title: S.liftLogsExist(n),
+        secondaryLabel: S.cancel,
+        secondaryKey: const ValueKey('lifts-kept-cancel'),
+        onSecondary: () => Navigator.of(dialogContext).pop(false),
+        primaryLabel: S.continueLabel,
+        primaryKey: const ValueKey('lifts-kept-continue'),
+        onPrimary: () => Navigator.of(dialogContext).pop(true),
       ),
     ) ??
     false;

@@ -744,6 +744,27 @@ abstract final class S {
       'Đồng bộ xong app mới đăng xuất. Đừng tắt mạng.';
   static const logoutFinishing = 'Đang hoàn tất đăng xuất…';
 
+  // Bản 4 — nhãn còn giữ của 04 Bản 4 S-10, S-63, S-30 (7 loại chữ phụ
+  // theo 01 Bản 4 BR4-09; nhãn cột, nhãn nút).
+  static const statSession = 'Buổi';
+  static const statLogged = 'Đã ghi';
+  static const statWeek = 'Tuần';
+  static const statDate = 'Ngày';
+  static const statTime = 'Giờ';
+  static const thisWeek = 'Tuần này';
+  static const extraSessionButton = '+ Buổi thêm';
+  static const generateMenuShort = 'Gợi ý thực đơn';
+
+  /// "2 / 4" (04 Bản 4: n / m, cách bằng khoảng trắng).
+  static String ratio(int n, int m) => '$n / $m';
+
+  /// "Thứ 4 · Lưng và Bụng · 18:00" (thẻ Nghỉ, 04 Bản 4 S-10).
+  static String nextSessionShort(String weekday, String muscles, String time) =>
+      '$weekday · $muscles · $time';
+
+  /// "Còn 3 lượt" (04 Bản 4 S-30).
+  static String remainingShort(int n) => 'Còn $n lượt';
+
   // S-70 Widget (04 Bản 3 §6.7, UA3-14; 03 Bản 3 F-24).
   static const widgetNotDone = 'Chưa tập';
   static const widgetDone = 'Đã tập';
@@ -1169,5 +1190,13 @@ abstract final class S {
     'activityNextNone': activityNextNone,
     'beforeUnitChange': beforeUnitChange,
     'bodyMapLicense': bodyMapLicense,
+    'statSession': statSession,
+    'statLogged': statLogged,
+    'statWeek': statWeek,
+    'statDate': statDate,
+    'statTime': statTime,
+    'thisWeek': thisWeek,
+    'extraSessionButton': extraSessionButton,
+    'generateMenuShort': generateMenuShort,
   };
 }

@@ -60,7 +60,7 @@ class _Cell extends StatelessWidget {
       child: Semantics(
         container: true,
         button: onTap != null,
-        label: '${day.label}: ${day.semantics}',
+        label: day.semantics,
         child: ExcludeSemantics(
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,

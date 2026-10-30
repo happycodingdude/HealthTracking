@@ -172,10 +172,10 @@ void main() {
       await log(lats, LocalDate(2026, 10, 7), 400, 450);
       await pump(tester);
       await go(tester, sessionPath(AppTab.schedule, LocalDate(2026, 10, 12)));
-      await tapKey(tester, 'lift-log-${press.id}');
+      await tapKey(tester, 'lift-row-${press.id}');
       await tapKey(tester, 'lift-unit-kg');
-      await tester.enterText(key('lift-start-input'), '10');
-      await tester.enterText(key('lift-end-input'), '12');
+      await tester.enterText(key('field-lift-start'), '10');
+      await tester.enterText(key('field-lift-end'), '12');
       await tester.pumpAndSettle();
       await tapKey(tester, 'lift-save');
       await openProgress(tester);

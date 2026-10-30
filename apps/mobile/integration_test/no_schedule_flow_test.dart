@@ -68,7 +68,7 @@ void main() {
     await tester.tap(find.widgetWithText(OutlinedButton, S.later));
     await pumpUntil(tester, tabLabel(S.tabToday));
     expect(find.byKey(const ValueKey('no-schedule-card')), findsOneWidget);
-    expect(find.byKey(const ValueKey('progress-card')), findsNothing);
+    expect(find.byKey(const ValueKey('week-card')), findsNothing);
 
     await tester.tap(tabLabel(S.tabTraining));
     await tester.pumpAndSettle();
@@ -90,8 +90,11 @@ void main() {
     // Đồng bộ: server nhận lịch tuần rồi lịch tháng, không bị từ chối.
     await tester.tap(tabLabel(S.tabToday));
     await tester.pumpAndSettle();
-    await pumpUntilGone(tester, find.byKey(const ValueKey('sync-indicator')));
     expect(find.byKey(const ValueKey('no-schedule-card')), findsNothing);
-    expect(find.byKey(const ValueKey('session-card')), findsOneWidget);
+    // Bản 4: buổi hôm nay = hàng số liệu + danh sách bài ngay ở Hôm nay.
+    await pumpUntil(tester, find.byKey(const ValueKey('session-stats')));
+    await tester.tap(tabLabel(S.tabMe));
+    await tester.pumpAndSettle();
+    await pumpUntilGone(tester, find.text(S.syncPending));
   });
 }

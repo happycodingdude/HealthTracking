@@ -60,7 +60,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  Finder card() => find.byKey(const ValueKey('progress-card'));
+  Finder card() => find.byKey(const ValueKey('week-card'));
 
   Finder inCard(Finder f) => find.descendant(of: card(), matching: f);
 
@@ -73,12 +73,13 @@ void main() {
     (tester) async {
       await seedSetUp(db);
       await pump(tester);
-      expect(inCard(find.text(S.progressLine(0, 2))), findsOneWidget);
-      expect(find.byKey(const ValueKey('extra-count')), findsNothing);
+      // Bản 4: Hôm nay có buổi → hàng số liệu "Tuần 0 / 2" (thẻ Tuần này chỉ
+      // ở ngày nghỉ).
+      expect(find.text('0 / 2', findRichText: true), findsOneWidget);
 
-      await tapKey(tester, 'mark-done-${wed.toKey()}');
+      await tapKey(tester, 'today-mark-done');
       await tapKey(tester, 'lock-confirm-save');
-      expect(inCard(find.text(S.progressLine(1, 2))), findsOneWidget);
+      expect(find.text('1 / 2', findRichText: true), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       clock.set(DateTime(2026, 10, 10, 20));
@@ -87,8 +88,9 @@ void main() {
       await tapKey(tester, 'muscle-abs');
       await tapKey(tester, 'extra-save');
       await tapKey(tester, 'lock-confirm-save');
-      expect(inCard(find.text(S.progressLine(1, 2))), findsOneWidget);
-      expect(inCard(find.text(S.extraCount(1))), findsOneWidget);
+      // Ngày nghỉ đã có buổi tập thêm: hàng số liệu "+ Bụng", Tuần 1 / 2.
+      expect(find.text('+ Bụng'), findsOneWidget);
+      expect(find.text('1 / 2', findRichText: true), findsOneWidget);
     },
   );
 
@@ -100,7 +102,8 @@ void main() {
       await seedSetUp(db);
       await seedMark(db, wed, DayMark.done);
       await seedExtra(db, sat, const [MuscleGroup.abs]);
-      clock.set(DateTime(2026, 10, 14, 19));
+      // Bản 4: thẻ Tuần này chỉ ở ngày nghỉ (thứ 5 15/10).
+      clock.set(DateTime(2026, 10, 15, 19));
       await pump(tester);
 
       await tester.tap(card());
@@ -186,7 +189,8 @@ void main() {
       }
       clock.set(DateTime(2026, 10, 13, 9));
       await pump(tester);
-      expect(inCard(find.text(S.noPlannedSessions)), findsOneWidget);
+      // Bản 4: không câu trạng thái, chỉ "0 / 0" (F4-R7).
+      expect(inCard(find.text('0 / 0', findRichText: true)), findsOneWidget);
     },
   );
 

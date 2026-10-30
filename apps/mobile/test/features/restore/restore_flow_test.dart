@@ -205,7 +205,17 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(IronlyTabBar), findsOneWidget);
     expect(find.text(S.restored), findsOneWidget);
-    expect(find.textContaining('Minh Anh'), findsOneWidget);
+    // Bản 4: Hôm nay không còn câu chào; tên hiển thị xem ở S-56.
+    await tester.tap(
+      find.descendant(
+        of: find.byType(IronlyTabBar),
+        matching: find.text(S.tabMe),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('row-account-data')));
+    await tester.pumpAndSettle();
+    expect(find.text('Minh Anh'), findsOneWidget);
     expect(
       await WeightRepository(db).all(),
       hasLength(2),
@@ -251,7 +261,7 @@ void main() {
     await pump(tester, session: session, restoreAtStart: true);
     expect(notifications.requests, 1);
     expect(find.byKey(const ValueKey('no-schedule-card')), findsOneWidget);
-    expect(find.byKey(const ValueKey('progress-card')), findsNothing);
+    expect(find.byKey(const ValueKey('week-card')), findsNothing);
     expect(notifications.scheduled, isEmpty);
     expect((await ProfileRepository(db).get())!.remindersEnabled, isTrue);
   });

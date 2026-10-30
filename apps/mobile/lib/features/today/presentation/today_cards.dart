@@ -7,554 +7,191 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/shell/app_tab.dart';
 import '../../../app/strings_vi.dart';
-import '../../../app/theme.dart';
-import '../../../app/time_ticker.dart';
 import '../../../core/formatters.dart';
-import '../../../core/widgets/heading.dart';
-import '../../../core/widgets/reference_tag.dart';
-import '../../../core/widgets/session_tag.dart';
+import '../../../ui/components/components.dart';
+import '../../../ui/theme.dart';
 import '../../menu/application/menu_generator.dart';
 import '../../menu/application/menu_view.dart';
 import '../../menu/presentation/menu_screen.dart';
-import '../../schedule/application/schedule_providers.dart';
-import '../../schedule/presentation/day_sheet.dart';
 import '../../schedule/presentation/extra_session_sheet.dart';
-import '../../schedule/presentation/session_marking.dart';
-import '../../workout/application/session_providers.dart';
-import '../../workout/presentation/session_screen.dart';
-import '../application/progress_view.dart';
-import '../application/today_view.dart';
+import '../../schedule/presentation/weekly_schedule_screen.dart';
+import '../application/today_screen_state.dart';
 import 'week_progress_screen.dart';
 
-/// Từ mức phóng chữ này trở lên, các nút và cột xếp dọc (UX-AC18).
-const _stackedScale = 1.6;
-
-bool _stacked(BuildContext context) =>
-    MediaQuery.textScalerOf(context).scale(1) >= _stackedScale;
-
-/// Thẻ ở Hôm nay (04 §6.13.1): bo góc, viền mảnh, tiêu đề nhỏ, tối đa 1 nút
-/// chính.
-class TodayCard extends StatelessWidget {
-  const TodayCard({
-    super.key,
-    required this.title,
-    this.trailing,
-    this.onTap,
-    required this.children,
-  });
-
-  final String title;
-  final Widget? trailing;
-
-  /// Chạm cả thẻ (ví dụ thẻ tiến độ → S-25).
-  final VoidCallback? onTap;
-  final List<Widget> children;
+/// H1 — chưa có lịch (04 Bản 4 S-10): thẻ chỉ có icon lịch + nút cam "Xếp
+/// lịch tuần" → S-22. Không câu nào.
+class NoScheduleCard extends StatelessWidget {
+  const NoScheduleCard({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final content = Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 12,
-            runSpacing: 8,
-            children: [
-              Text(
-                title,
-                style: context.text.titleMedium?.copyWith(
-                  color: context.palette.textSecondary,
-                ),
-              ),
-              ?trailing,
-            ],
-          ),
-          const SizedBox(height: 12),
-          ...children,
-        ],
-      ),
-    );
-    if (onTap == null) return Card(child: content);
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(onTap: onTap, child: content),
-    );
-  }
-}
-
-/// Liên kết chữ (nút phụ dạng chữ, căn trái).
-class _Link extends StatelessWidget {
-  const _Link({
-    required this.id,
-    required this.label,
-    required this.onTap,
-    this.chevron = false,
-  });
-
-  final Key id;
-  final String label;
-  final VoidCallback onTap;
-
-  /// Mũi tên "›" sau chữ (mock S-10-2 Bản 2).
-  final bool chevron;
-
-  @override
-  Widget build(BuildContext context) => Align(
-    alignment: Alignment.centerLeft,
-    child: TextButton(
-      key: id,
-      style: TextButton.styleFrom(
-        padding: EdgeInsets.zero,
-        alignment: Alignment.centerLeft,
-        textStyle: context.text.titleMedium,
-      ),
-      onPressed: onTap,
-      child: chevron
-          ? Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Flexible(child: Text(label)),
-                const Icon(Icons.chevron_right, size: 22),
-              ],
-            )
-          : Text(label),
+  Widget build(BuildContext context) => EmptyAction(
+    key: const ValueKey('no-schedule-card'),
+    icon: Icons.calendar_month_outlined,
+    action: IronlyButton.primary(
+      key: const ValueKey('arrange-weekly'),
+      label: S.arrangeWeekly,
+      onPressed: () => context.push(weeklySchedulePath),
     ),
   );
 }
 
-/// Phần bài tập của thẻ buổi tập hôm nay (04 Bản 2 §6.6.1, UA2-08): dòng
-/// vùng cơ ([regions]), liên kết → S-63 ("Xem bài tập · Ghi mức tạ" khi buổi
-/// đang chờ đánh dấu hoặc là buổi tập thêm), "Đã ghi mức tạ {n} bài" khi đã
-/// ghi.
-class _ExercisesPart extends ConsumerWidget {
-  const _ExercisesPart({
-    required this.day,
-    required this.regions,
-    required this.withLog,
-  });
+/// H2 — thẻ Nghỉ (04 Bản 4 S-10): icon lịch tròn, "Nghỉ" chữ phụ 600, dòng
+/// "Thứ · Nhóm cơ · giờ" của buổi tới; nút nhỏ phụ "+ Buổi thêm" → S-24
+/// (ẩn ở chủ nhật và khi không thêm được).
+class RestCard extends StatelessWidget {
+  const RestCard({super.key, required this.state});
 
-  final PlanDay day;
-  final bool regions;
-  final bool withLog;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final n = ref.watch(dayLiftLogsProvider(day.date)).value?.length ?? 0;
-    final secondary = context.text.bodyLarge?.copyWith(
-      color: context.palette.textSecondary,
-    );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (regions)
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Text(
-              Fmt.regions(day.sessionMuscles),
-              key: const ValueKey('session-regions'),
-              style: secondary,
-            ),
-          ),
-        _Link(
-          id: const ValueKey('session-view-exercises'),
-          label: withLog ? S.viewExercisesAndLog : S.viewExercises,
-          chevron: true,
-          onTap: () => openSession(context, day.date),
-        ),
-        if (n > 0)
-          Text(
-            S.liftLoggedCount(n),
-            key: const ValueKey('session-lift-count'),
-            style: secondary,
-          ),
-      ],
-    );
-  }
-}
-
-/// Thẻ buổi tập hôm nay (04 Bản 2 §6.6.1). Buổi đã chốt (Đã tập, buổi tập
-/// thêm) không có nút sửa ở đâu cả (UR2-06).
-class SessionCard extends ConsumerWidget {
-  const SessionCard({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final now = ref.watch(nowProvider);
-    final today = LocalDate.fromDateTime(now);
-    final async = ref.watch(dayProvider(today));
-    if (!async.hasValue) return const SizedBox.shrink();
-    final day = async.value;
-    // Chưa có lịch (04 Bản 2 §6.6.1, UA2-03): thẻ nhạt, không nút.
-    final schedule = ref.watch(scheduleStateProvider);
-    if (schedule == null) return const SizedBox.shrink();
-    if (!schedule.hasSchedule) return const _NoScheduleCard();
-    final next = ref.watch(nextSessionProvider);
-    final status = day == null ? null : SessionStatus.derive(day, now);
-    final title = context.text.headlineSmall?.copyWith(
-      fontWeight: FontWeight.w700,
-    );
-    final secondary = context.text.bodyLarge?.copyWith(
-      color: context.palette.textSecondary,
-    );
-
-    Widget nextLine() => next == null
-        ? const SizedBox.shrink()
-        : Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(
-              S.nextSession(
-                Fmt.weekday(next.date),
-                Fmt.muscles(next.muscles),
-                Fmt.time(next.time!),
-              ),
-              style: secondary,
-            ),
-          );
-
-    if (day == null || status == null) {
-      // Ngày nghỉ thứ 2 → thứ 7, hoặc chủ nhật (FR-21). Buổi tập thêm đã lưu
-      // thì chỉ xem (F05-R34); chưa có thì ghi được (F05-R32, F05-E29).
-      final extra = day?.extraMuscles;
-      final canAdd = day != null && ExtraSessionRules.canAdd(day, now);
-      return TodayCard(
-        key: const ValueKey('session-card'),
-        title: S.todaySessionTitle,
-        children: [
-          if (extra != null) ...[
-            Heading(S.extraSessionLine(Fmt.muscles(extra)), style: title),
-            const SizedBox(height: 8),
-            const LockedOnSaveLine(),
-            _ExercisesPart(day: day!, regions: false, withLog: true),
-          ] else ...[
-            Heading(today.isSunday ? S.sundayRest : S.todayRest, style: title),
-            nextLine(),
-            if (canAdd) ...[
-              const SizedBox(height: 4),
-              _Link(
-                id: const ValueKey('extra-log'),
-                label: S.logExtraSession,
-                onTap: () => showExtraSessionSheet(context, today),
-              ),
-            ],
-          ],
-        ],
-      );
-    }
-
-    final planned = '${Fmt.muscles(day.muscles)} · ${Fmt.time(day.time!)}';
-    return TodayCard(
-      key: const ValueKey('session-card'),
-      title: S.todaySessionTitle,
-      trailing: SessionTag(status),
-      children: switch (status.state) {
-        SessionState.upcoming => [
-          Heading(planned, style: title),
-          _ExercisesPart(day: day, regions: true, withLog: false),
-          const SizedBox(height: 8),
-          Text(S.markableFrom(Fmt.time(day.time!)), style: secondary),
-          // 04 §6.7.1: "Sửa buổi hôm nay" → S-21.
-          const SizedBox(height: 4),
-          _Link(
-            id: const ValueKey('session-edit-today'),
-            label: S.editTodaySession,
-            onTap: () => showDaySheet(context, day.date),
-          ),
-        ],
-        SessionState.awaitingMark => [
-          Heading(planned, style: title),
-          _ExercisesPart(day: day, regions: true, withLog: true),
-          const SizedBox(height: 16),
-          MarkButtons(
-            day: day,
-            onDone: () => SessionMarking.done(context, day),
-            onSkipped: () => SessionMarking.skipped(context, day),
-          ),
-        ],
-        SessionState.done => [
-          Heading(
-            S.doneLine(Fmt.muscles(SessionRules.musclesOf(day))),
-            style: title,
-          ),
-          const SizedBox(height: 8),
-          const LockedOnSaveLine(),
-          _ExercisesPart(day: day, regions: false, withLog: false),
-        ],
-        SessionState.skipped || SessionState.autoSkipped => [
-          Heading(planned, style: title),
-          const SizedBox(height: 8),
-          Text(
-            S.changeToDoneUntil(
-              Fmt.dayMonth(SessionRules.lastChangeDate(day.date)),
-            ),
-            style: secondary,
-          ),
-          _ExercisesPart(day: day, regions: false, withLog: false),
-          const SizedBox(height: 16),
-          ChangeToDoneButton(
-            day: day,
-            onTap: () => SessionMarking.done(context, day),
-          ),
-        ],
-      },
-    );
-  }
-}
-
-/// "Chưa có lịch tập" ở vị trí thẻ buổi tập (mock S-10-1 Bản 2): nền nhạt,
-/// không có nút — nút "Xếp lịch tuần" chỉ ở mục Lịch (UA2-03, BR2-30).
-class _NoScheduleCard extends StatelessWidget {
-  const _NoScheduleCard();
+  final TodayScreenState state;
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
-    return Container(
-      key: const ValueKey('no-schedule-card'),
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
-      decoration: BoxDecoration(
-        color: palette.neutralContainer,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: palette.border),
+    final t = context.tokens;
+    final next = state.next;
+    final stacked = MediaQuery.textScalerOf(context).scale(1) >= 1.6;
+    final info = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          S.rest,
+          key: const ValueKey('rest-title'),
+          style: IronlyText.body.copyWith(
+            fontWeight: FontWeight.w600,
+            color: t.textSecondary,
+          ),
+        ),
+        if (next != null)
+          Text(
+            S.nextSessionShort(
+              Fmt.weekday(next.date),
+              Fmt.musclesTitle(next.muscles),
+              Fmt.time(next.time!),
+            ),
+            key: const ValueKey('next-session'),
+            style: IronlyText.body,
+          ),
+      ],
+    );
+    final add = state.canAddExtra
+        ? IronlyButton.secondary(
+            key: const ValueKey('extra-log'),
+            label: S.extraSessionButton,
+            small: true,
+            expand: false,
+            onPressed: () => showExtraSessionSheet(context, state.today),
+          )
+        : null;
+    return IronlyCard(
+      key: const ValueKey('rest-card'),
+      child: Row(
+        children: [
+          const CircleIcon(Icons.calendar_today_outlined),
+          const SizedBox(width: TokenSpace.s3),
+          Expanded(
+            child: stacked && add != null
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      info,
+                      const SizedBox(height: TokenSpace.s2),
+                      add,
+                    ],
+                  )
+                : info,
+          ),
+          if (!stacked && add != null) ...[
+            const SizedBox(width: TokenSpace.s2),
+            add,
+          ],
+        ],
       ),
+    );
+  }
+}
+
+/// H2 — thẻ "Tuần này" (04 Bản 4 S-10): n / m (n cam) + dải 6 vòng T2 → T7
+/// với dấu hiệu từng ngày (03 Bản 4 §6.4). Chạm → S-25.
+class WeekCard extends StatelessWidget {
+  const WeekCard({super.key, required this.progress, required this.today});
+
+  final WeeklyProgress? progress;
+  final LocalDate today;
+
+  /// Dấu hiệu và nhãn VoiceOver của một ngày trên dải tuần.
+  static (GlyphStatus, String) glyphOf(ProgressDay d) {
+    final status = d.status;
+    if (status != null) {
+      return switch (status.state) {
+        SessionState.done => (GlyphStatus.done, S.sessionDone),
+        SessionState.awaitingMark => (GlyphStatus.pending, S.statusAwaiting),
+        SessionState.upcoming => (GlyphStatus.upcoming, S.statusUpcoming),
+        SessionState.skipped => (GlyphStatus.skipped, S.sessionSkipped),
+        SessionState.autoSkipped => (GlyphStatus.skipped, S.statusAutoSkipped),
+      };
+    }
+    if (d.extra != null) return (GlyphStatus.extra, S.extraSession);
+    return (GlyphStatus.rest, S.rest);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    final p = progress;
+    if (p == null) return const SizedBox.shrink();
+    return IronlyCard(
+      key: const ValueKey('week-card'),
+      onTap: () => context.push(weekProgressPath(AppTab.today, p.week)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Heading(
-            S.noScheduleTitle,
-            style: context.text.titleLarge?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            S.noScheduleToday,
-            style: context.text.bodyLarge?.copyWith(
-              color: palette.textSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Buổi chưa đánh dấu khác trong tuần (04 §6.7.2, UA-11). Chỉ hiện khi có.
-class UnmarkedCard extends ConsumerWidget {
-  const UnmarkedCard({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final days = ref.watch(unmarkedSessionsProvider);
-    if (days.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(top: 16),
-      child: TodayCard(
-        key: const ValueKey('unmarked-card'),
-        title: S.unmarkedTitle,
-        children: [
-          for (final (i, d) in days.indexed) ...[
-            if (i > 0) const Divider(height: 24),
-            _UnmarkedRow(day: d),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _UnmarkedRow extends StatelessWidget {
-  const _UnmarkedRow({required this.day});
-
-  final PlanDay day;
-
-  @override
-  Widget build(BuildContext context) {
-    final info = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          Fmt.weekdayDate(day.date),
-          style: context.text.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        Text(
-          '${Fmt.muscles(day.muscles)} · ${Fmt.time(day.time!)}',
-          style: context.text.bodyLarge?.copyWith(
-            color: context.palette.textSecondary,
-          ),
-        ),
-      ],
-    );
-    final buttons = MarkButtons(
-      day: day,
-      compact: true,
-      onDone: () => SessionMarking.done(context, day),
-      onSkipped: () => SessionMarking.skipped(context, day),
-    );
-    if (MediaQuery.textScalerOf(context).scale(1) >= 1.3) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [info, const SizedBox(height: 12), buttons],
-      );
-    }
-    return Row(
-      children: [
-        Expanded(child: info),
-        const SizedBox(width: 8),
-        buttons,
-      ],
-    );
-  }
-}
-
-/// Thẻ tiến độ tuần (04 §6.7.3): "Đã tập X/Y buổi theo lịch", "+Z buổi
-/// thêm" (chỉ khi Z > 0), Y = 0 → "Tuần này không có buổi tập theo lịch"
-/// (F06-E1); dải 6 ô thứ 2 → thứ 7 tô theo trạng thái (04 §6.13.3). Chạm →
-/// S-25. Ở cỡ chữ lớn nhất dải chuyển thành 2 hàng (04 §6.17).
-class ProgressCard extends ConsumerWidget {
-  const ProgressCard({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final now = ref.watch(nowProvider);
-    final week = ProgressWeek.containing(LocalDate.fromDateTime(now));
-    final progress = ref.watch(weekProgressProvider(week));
-    // Chưa có lịch: thẻ ẩn hẳn, không "0/0" (F06-R21, 04 Bản 2 §6.6.3).
-    if (progress == null ||
-        ref.watch(scheduleStateProvider)?.hasSchedule != true) {
-      return const SizedBox.shrink();
-    }
-    final cells = [for (final d in progress.days) _DayCell(day: d)];
-    final main = progress.planned == 0
-        ? S.noPlannedSessions
-        : S.progressLine(progress.done, progress.planned);
-    return Padding(
-      padding: const EdgeInsets.only(top: 16),
-      child: TodayCard(
-        key: const ValueKey('progress-card'),
-        title: S.progressCardTitle,
-        trailing: ExcludeSemantics(
-          child: Icon(
-            Icons.chevron_right,
-            color: context.palette.textSecondary,
-          ),
-        ),
-        onTap: () => context.push(weekProgressPath(AppTab.today, week)),
-        children: [
-          // Con số đổi có hiệu ứng chuyển nhẹ khi đánh dấu (04 §6.7.1).
-          AnimatedSwitcher(
-            // Tôn trọng "Giảm chuyển động" của iPhone (04 §6.16).
-            duration: MediaQuery.disableAnimationsOf(context)
-                ? Duration.zero
-                : const Duration(milliseconds: 250),
-            layoutBuilder: (current, previous) => Stack(
-              alignment: Alignment.centerLeft,
-              children: [...previous, ?current],
-            ),
-            child: Text(
-              main,
-              key: ValueKey(main),
-              style: context.text.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          if (progress.extra > 0) ...[
-            const SizedBox(height: 4),
-            Text(
-              S.extraCount(progress.extra),
-              key: const ValueKey('extra-count'),
-              style: context.text.bodyLarge?.copyWith(
-                color: context.colors.primary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-          const SizedBox(height: 12),
-          if (_stacked(context))
-            Column(
-              children: [
-                Row(children: cells.sublist(0, 3)),
-                const SizedBox(height: 12),
-                Row(children: cells.sublist(3)),
-              ],
-            )
-          else
-            Row(children: cells),
-        ],
-      ),
-    );
-  }
-}
-
-class _DayCell extends StatelessWidget {
-  const _DayCell({required this.day});
-
-  final ProgressDay day;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-    final date = day.date;
-    final d = day.day;
-    final status = day.status;
-    final (Color? fill, Color? border) = switch (status?.state) {
-      SessionState.done => (palette.success, null),
-      SessionState.awaitingMark => (palette.attention, null),
-      SessionState.upcoming => (null, context.colors.outline),
-      SessionState.skipped || SessionState.autoSkipped => (
-        palette.neutral.withValues(alpha: 0.45),
-        null,
-      ),
-      // Ngày nghỉ: có buổi tập thêm thì xanh ngọc (04 §6.13.3).
-      null when d?.extraMuscles != null => (context.colors.primary, null),
-      null => (palette.neutralContainer, null),
-    };
-    final label = status != null
-        ? SessionTag.label(status.state)
-        : d?.extraMuscles != null
-        ? S.extraSession
-        : S.rest;
-    return Expanded(
-      child: Semantics(
-        container: true,
-        label: '${Fmt.weekday(date)}: $label',
-        child: ExcludeSemantics(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Column(
-              children: [
-                Container(
-                  key: ValueKey('week-cell-${date.toKey()}'),
-                  height: 14,
-                  decoration: BoxDecoration(
-                    color: fill,
-                    borderRadius: BorderRadius.circular(7),
-                    border: border == null ? null : Border.all(color: border),
-                  ),
+          Row(
+            children: [
+              Expanded(child: Text(S.thisWeek, style: IronlyText.cardTitle)),
+              Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: '${p.done}',
+                      style: TextStyle(color: t.accent),
+                    ),
+                    TextSpan(text: ' / ${p.planned}'),
+                  ],
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  S.weekdaysShort[date.weekday - 1],
-                  style: context.text.bodyMedium?.copyWith(
-                    color: palette.textSecondary,
-                  ),
+                key: const ValueKey('week-ratio'),
+                style: IronlyText.body.copyWith(
+                  fontWeight: FontWeight.w600,
+                  fontFeatures: const [FontFeature.tabularFigures()],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ),
+          const SizedBox(height: TokenSpace.s4),
+          WeekStrip(
+            days: [
+              for (final d in p.days)
+                () {
+                  final (g, label) = glyphOf(d);
+                  return (
+                    dateKey: d.date.toKey(),
+                    label: S.weekdaysShort[d.date.weekday - 1],
+                    status: g,
+                    semantics: '${Fmt.weekday(d.date)}: $label',
+                    highlighted: d.date == today,
+                  );
+                }(),
+            ],
+          ),
+        ],
       ),
     );
   }
 }
 
-/// Thẻ thực đơn hôm nay (04 §6.7.4): mức calo dùng cho thực đơn kèm nhãn
-/// "tham khảo" (F02-R6). Nút tạo thực đơn và các trạng thái thêm ở VS-12.
+/// H1, H2 — thẻ Thực đơn đầy đủ (04 Bản 4 S-10): "Thực đơn" + kcal, ba dòng
+/// Sáng / Trưa / Tối (tên bữa chữ phụ, món trắng, cắt "…"); chạm → tab Thực
+/// đơn. Trống: nút "Gợi ý thực đơn" + "Còn n lượt"; đang tạo: khung chờ +
+/// "Đang lên thực đơn…"; không mạng / chạm trần / hết lượt: banner câu nguyên
+/// văn (F08-E1 → E3).
 class MenuCard extends ConsumerWidget {
   const MenuCard({super.key});
 
@@ -562,7 +199,7 @@ class MenuCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final view = ref.watch(menuViewProvider);
     if (view == null) return const SizedBox.shrink();
-    final palette = context.palette;
+    final t = context.tokens;
     void openMenu() => context.go(AppTab.menu.path);
     final menu = view.menu;
     final reason = view.generating || menu != null
@@ -574,110 +211,120 @@ class MenuCard extends ConsumerWidget {
         : view.issue == MenuIssue.offline
         ? S.offlineMenu
         : null;
-    final List<Widget> children;
+    final List<Widget> body;
     if (view.generating) {
-      children = [
+      body = [
+        const SkeletonLines(lines: 3),
+        const SizedBox(height: TokenSpace.s3),
         Text(
           S.menuGenerating,
           key: const ValueKey('menu-card-generating'),
-          style: context.text.bodyLarge,
+          style: IronlyText.caption,
         ),
       ];
     } else if (menu != null) {
-      // UR-15: mỗi bữa một dòng, tên bữa bên trái, các món bên phải.
-      children = [
-        Table(
-          columnWidths: const {0: IntrinsicColumnWidth(), 1: FlexColumnWidth()},
-          children: [
-            for (final (meal, snack) in menu.ordered)
-              TableRow(
+      body = [
+        // Ba dòng Sáng / Trưa / Tối (04 Bản 4 S-10); bữa phụ xem ở S-30.
+        for (final (meal, snack) in menu.ordered)
+          if (meal.type != MealType.snack)
+            Padding(
+              padding: const EdgeInsets.only(top: TokenSpace.s2),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.only(right: 16, bottom: 8),
+                  SizedBox(
+                    width: 52,
                     child: Text(
                       mealLabel(meal, snack),
-                      style: context.text.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: IronlyText.caption,
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
+                  Expanded(
                     child: Text(
                       [for (final d in meal.dishes) d.name].join(', '),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: context.text.bodyLarge,
+                      style: IronlyText.body,
                     ),
                   ),
                 ],
               ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Wrap(
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 8,
-          children: [
-            Text(
-              Fmt.kcal(view.totalKcal ?? menu.totalKcal),
-              key: const ValueKey('menu-card-total'),
-              style: context.text.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
             ),
-            const ReferenceTag(),
-          ],
-        ),
       ];
     } else if (reason != null) {
-      children = [
-        Text(
-          reason,
-          key: const ValueKey('menu-card-reason'),
-          style: context.text.bodyLarge?.copyWith(color: palette.textSecondary),
-        ),
+      body = [
+        const SizedBox(height: TokenSpace.s2),
+        IronlyBanner(key: const ValueKey('menu-card-reason'), text: reason),
       ];
     } else {
-      children = [
-        Wrap(
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 8,
-          children: [
-            Text.rich(
-              TextSpan(
-                children: [
-                  const TextSpan(text: '${S.menuTargetPrefix} '),
-                  TextSpan(
-                    text: Fmt.kcal(view.targetKcal),
-                    style: const TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                ],
-              ),
-              style: context.text.titleMedium,
-            ),
-            const ReferenceTag(),
-          ],
-        ),
-        const SizedBox(height: 12),
-        // Bắt đầu tạo và chuyển sang tab Thực đơn (04 §6.7.4).
-        FilledButton(
-          key: const ValueKey('menu-card-generate'),
-          onPressed: () {
-            unawaited(ref.read(menuGeneratorProvider.notifier).generate());
-            openMenu();
-          },
-          child: const Text(S.generateMenu, textAlign: TextAlign.center),
+      body = [
+        const SizedBox(height: TokenSpace.s2),
+        EmptyAction(
+          inCard: false,
+          icon: Icons.soup_kitchen_outlined,
+          action: IronlyButton.primary(
+            key: const ValueKey('menu-card-generate'),
+            label: S.generateMenuShort,
+            onPressed: () {
+              unawaited(ref.read(menuGeneratorProvider.notifier).generate());
+              openMenu();
+            },
+          ),
+          caption: S.remainingShort(view.remaining),
         ),
       ];
     }
-    return Padding(
-      padding: const EdgeInsets.only(top: 16),
-      child: TodayCard(
-        key: const ValueKey('menu-card'),
-        title: S.menuCardTitle,
-        onTap: openMenu,
-        children: children,
+    return IronlyCard(
+      key: const ValueKey('menu-card'),
+      onTap: openMenu,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(child: Text(S.tabMenu, style: IronlyText.cardTitle)),
+              Text(
+                Fmt.kcal(view.totalKcal ?? menu?.totalKcal ?? view.targetKcal),
+                key: const ValueKey('menu-card-total'),
+                style: IronlyText.caption.copyWith(color: t.textSecondary),
+              ),
+            ],
+          ),
+          ...body,
+        ],
+      ),
+    );
+  }
+}
+
+/// H3 → H6 — thực đơn thu một dòng: "Thực đơn · 1.850 kcal ›" → tab Thực đơn.
+class MenuLine extends ConsumerWidget {
+  const MenuLine({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final view = ref.watch(menuViewProvider);
+    if (view == null) return const SizedBox.shrink();
+    final t = context.tokens;
+    final menu = view.menu;
+    return IronlyCard(
+      key: const ValueKey('menu-line'),
+      onTap: () => context.go(AppTab.menu.path),
+      padding: const EdgeInsets.symmetric(
+        horizontal: TokenSize.cardPadding,
+        vertical: TokenSpace.s3,
+      ),
+      child: Row(
+        children: [
+          Expanded(child: Text(S.tabMenu, style: IronlyText.body)),
+          Text(
+            Fmt.kcal(view.totalKcal ?? menu?.totalKcal ?? view.targetKcal),
+            key: const ValueKey('menu-card-total'),
+            style: IronlyText.caption.copyWith(color: t.textSecondary),
+          ),
+          const SizedBox(width: TokenSpace.s1),
+          Icon(Icons.chevron_right, size: 18, color: t.textSecondary),
+        ],
       ),
     );
   }

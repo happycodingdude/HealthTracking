@@ -97,8 +97,8 @@ const onboardingSteps = {
 };
 
 /// URL của widget và thẻ màn hình khóa (05 Bản 3 TD3-16, 04 Bản 3 NAV-15,
-/// NAV-16): `ironly://today` → Hôm nay, `ironly://session/today` → buổi tập
-/// hôm nay (S-63), `ironly://login` → màn Đăng nhập. Không phải URL của app →
+/// NAV-16): `ironly://today` và `ironly://session/today` → Hôm nay (buổi hôm
+/// nay nằm ở đó, 05 Bản 4 TD4-05), `ironly://login` → màn Đăng nhập. Không phải URL của app →
 /// null. [appRedirect] áp dụng lên đích này như mọi lần điều hướng (chưa đăng
 /// nhập → màn Chào mừng).
 @visibleForTesting
@@ -110,8 +110,9 @@ String? deepLinkLocation(Uri uri, LocalDate today) {
     uri.host,
     ...uri.pathSegments,
   ].where((s) => s.isNotEmpty).join('/');
+  // Bản 4 (05 Bản 4 TD4-05, ED4-07): buổi hôm nay nằm ở Hôm nay nên
+  // `ironly://session/today` cũng về tab Hôm nay; URL không đổi.
   return switch (target) {
-    'session/today' => sessionPath(AppTab.today, today),
     'login' => loginPath,
     _ => AppTab.today.path,
   };
@@ -221,9 +222,38 @@ final routerProvider = Provider<GoRouter>((ref) {
                     // S-63 mở từ thẻ buổi tập ở Hôm nay, từ S-21 (Lịch, S-25)
                     // và thông báo nhanh của S-24, trong tab đang mở (NAV-9).
                     // S-67 mở từ dòng bài nằm ngay dưới, cùng tab.
+                    // S-67 mở từ danh sách bài của buổi hôm nay ở Hôm nay
+                    // (05 Bản 4 TD4-05).
+                    if (tab == AppTab.today)
+                      GoRoute(
+                        path: 'exercise/:id',
+                        builder: (_, state) => ExerciseScreen(
+                          id: state.pathParameters['id']!,
+                          from: ExerciseFrom.session,
+                          session: LocalDate.parse(
+                            state.uri.queryParameters['date']!,
+                          ),
+                        ),
+                        routes: [_chartFromExercise],
+                      ),
                     if (tab == AppTab.today || tab == AppTab.schedule)
                       GoRoute(
                         path: 'session/:date',
+                        // Buổi hôm nay nằm ở Hôm nay (TD4-05): đường dẫn S-63
+                        // của hôm nay chuyển về tab Hôm nay.
+                        redirect: (context, state) {
+                          final date = LocalDate.parse(
+                            state.pathParameters['date']!,
+                          );
+                          final today = LocalDate.fromDateTime(
+                            ref.read(clockProvider).now(),
+                          );
+                          return date == today &&
+                                  state.matchedLocation ==
+                                      sessionPath(tab, date)
+                              ? AppTab.today.path
+                              : null;
+                        },
                         builder: (_, state) => SessionScreen(
                           date: LocalDate.parse(state.pathParameters['date']!),
                           tab: tab,

@@ -185,16 +185,21 @@ void main() {
 
       await tester.tap(find.byIcon(Icons.chevron_left));
       await tester.pumpAndSettle();
+      // Bản 4: Hôm nay không còn câu chào; "Chưa đồng bộ" chỉ ở tab Tôi và
+      // S-56, đã biến mất sau khi server nhận tên mới.
+      expect(find.text(S.syncPending), findsNothing);
       await tester.tap(find.byKey(const ValueKey('tab-today-button')));
       await tester.pumpAndSettle();
-      expect(find.textContaining(S.greeting('Minh Anh')), findsOneWidget);
-      expect(find.byKey(const ValueKey('sync-indicator')), findsNothing);
+      expect(find.text(S.tabToday), findsWidgets);
+      expect(find.textContaining('Chào'), findsNothing);
 
       // VS-06: 16:5x chưa đến giờ → "Đánh dấu được từ 18:00" (UX-AC6). Bạn
       // rời app, 18:05 mở lại → "Chờ đánh dấu"; 1 chạm "Đã tập" → thẻ đổi
       // ngay, đồng bộ với server thật (server kiểm tra giờ tập theo múi giờ
       // của iPhone), chỉ báo "Chưa đồng bộ" biến mất (UX-AC5, TAC-01).
-      expect(find.text(S.markableFrom('18:00')), findsOneWidget);
+      // Bản 4 (04 S-10 H3): chưa đến giờ → góc phải là ngày, chưa có ô chốt.
+      expect(find.byKey(const ValueKey('today-date')), findsOneWidget);
+      expect(find.byKey(const ValueKey('today-mark-done')), findsNothing);
       clock.setNow(testDay.atTime(LocalTime(18, 5)));
       // Không `pump` khi đang `paused`: Flutter tắt vẽ khung hình nên `pump`
       // chờ mãi.
@@ -205,19 +210,19 @@ void main() {
       binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
       binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
       binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
-      final done = find.byKey(ValueKey('mark-done-${testDay.toKey()}'));
+      final done = find.byKey(const ValueKey('today-mark-done'));
       await pumpUntil(tester, done);
-      expect(find.text(S.statusAwaiting), findsOneWidget);
+      expect(find.bySemanticsLabel(S.statusAwaiting), findsOneWidget);
       await tester.tap(done);
       // VS-24: "Đã tập" qua hộp chốt buổi S-65; mutation `day` kèm
       // `liveActivityEnded` (VS-41, F25-AC3) được server nhận.
       await pumpUntil(tester, find.text(S.doneConfirmTitle('Ngực')));
       await tester.tap(find.byKey(const ValueKey('lock-confirm-save')));
       await pumpUntil(tester, find.text(S.markedDone('Ngực')));
-      await pumpUntilGone(tester, find.byKey(const ValueKey('sync-indicator')));
+      await pumpUntilGone(tester, find.text(S.markedDone('Ngực')));
       // Server nhận (không trả về bản cũ chưa đánh dấu).
       await tester.pumpAndSettle(const Duration(seconds: 2));
-      expect(find.text(S.sessionDone), findsWidgets);
+      expect(find.bySemanticsLabel(S.sessionDone), findsWidgets);
       expect(done, findsNothing, reason: 'server không trả bản chưa đánh dấu');
 
       // VS-27, VS-36: "Xem bài tập" → S-63; buổi đã chốt vẫn ghi tạ đến hết
@@ -225,33 +230,47 @@ void main() {
       // Lưu → dòng bài đổi ngay, không chờ mạng; về Hôm nay, "Chưa đồng bộ"
       // biến mất khi server nhận cả đơn vị lẫn mức tạ, server không hoàn về
       // (F21-AC11, F21-AC44, 05 Bản 3 TD3-05).
+      // Bản 4 (FR4-07): danh sách bài của buổi hôm nay nằm ngay ở Hôm nay;
+      // chạm hàng số → S-64.
       const pressId = 'chest-upper-machine-incline-machine-chest-press';
-      await tester.tap(find.byKey(const ValueKey('session-view-exercises')));
-      await pumpUntil(tester, find.byKey(const ValueKey('lift-log-$pressId')));
-      await tester.tap(find.byKey(const ValueKey('lift-log-$pressId')));
+      final row = find.byKey(const ValueKey('lift-row-$pressId'));
+      await reveal(tester, row);
+      await tester.tap(row);
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('lift-unit-steps')));
       await tester.pumpAndSettle();
       await tester.enterText(
-        find.byKey(const ValueKey('lift-start-input')),
+        find.byKey(const ValueKey('field-lift-start')),
         '7',
       );
-      await tester.enterText(find.byKey(const ValueKey('lift-end-input')), '8');
+      await tester.enterText(find.byKey(const ValueKey('field-lift-end')), '8');
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('lift-save')));
       await pumpUntil(
         tester,
-        find.byKey(const ValueKey('lift-value-$pressId')),
+        find.byWidgetPredicate(
+          (w) =>
+              w is Text &&
+              w.key == const ValueKey('lift-end-$pressId') &&
+              w.data == '8',
+        ),
       );
-      expect(find.text('7 → 8 nấc'), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('session-back')));
-      await tester.pumpAndSettle();
-      await pumpUntilGone(tester, find.byKey(const ValueKey('sync-indicator')));
-      await tester.pumpAndSettle(const Duration(seconds: 2));
       expect(
-        find.text(S.liftLoggedCount(1)),
+        tester
+            .widget<Text>(find.byKey(const ValueKey('lift-start-$pressId')))
+            .data,
+        '7',
+      );
+      await tester.pumpAndSettle(const Duration(seconds: 2));
+      // Server nhận, không hoàn về: "Đã ghi 1 / n" giữ nguyên.
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is Text &&
+              w.key == const ValueKey('stat-logged') &&
+              w.data!.startsWith('1 / '),
+        ),
         findsOneWidget,
-        reason: 'server nhận, không hoàn về',
       );
     },
   );
@@ -395,14 +414,12 @@ void main() {
 
       await tester.tap(find.byKey(const ValueKey('tab-today-button')));
       await tester.pumpAndSettle();
-      final card = find.byKey(const ValueKey('menu-card'));
-      await reveal(tester, card);
+      // Bản 4 (04 S-10): ngày có buổi → thực đơn một dòng; ngày nghỉ → thẻ
+      // ba dòng (giờ thật nên không biết trước).
+      await expectMenuOnToday(tester);
+      await tester.tap(tabLabel(S.tabMe));
       await tester.pumpAndSettle();
-      expect(
-        find.descendant(of: card, matching: find.text(S.mealBreakfast)),
-        findsOneWidget,
-      );
-      await pumpUntilGone(tester, find.byKey(const ValueKey('sync-indicator')));
+      await pumpUntilGone(tester, find.text(S.syncPending));
 
       // VS-13: chi phí của 2 lần tạo hiện ở dòng "Ngân sách AI" và S-54.
       await tester.tap(tabLabel(S.tabMe));
@@ -437,14 +454,8 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, S.login));
       await pumpUntil(tester, find.text(S.restored));
       expect(find.byType(IronlyTabBar), findsOneWidget);
-      expect(find.textContaining(S.greeting('Minh Anh')), findsOneWidget);
-      final card = find.byKey(const ValueKey('menu-card'));
-      await reveal(tester, card);
-      expect(
-        find.descendant(of: card, matching: find.text(S.mealBreakfast)),
-        findsOneWidget,
-        reason: 'thực đơn hôm nay khôi phục được',
-      );
+      expect(find.text(S.tabToday), findsWidgets);
+      await expectMenuOnToday(tester);
       await tester.tap(tabLabel(S.tabMe));
       await tester.pumpAndSettle();
       expect(find.textContaining(S.calorieAuto), findsOneWidget);
@@ -472,7 +483,7 @@ void main() {
       await reveal(tester, find.widgetWithText(FilledButton, S.login));
       await tester.tap(find.widgetWithText(FilledButton, S.login));
       await pumpUntil(tester, find.text(S.restored));
-      expect(find.textContaining(S.greeting('Minh Anh')), findsOneWidget);
+      expect(find.text(S.tabToday), findsWidgets);
 
       // VS-41 (TA3-15): simulator không bật được thẻ bằng push; app không bao
       // giờ tự bật (ED3-09) → không thẻ nào; cập nhật / tắt thẻ không có

@@ -25,6 +25,7 @@ class ProgressDots extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.tokens;
     return Semantics(
+      container: true,
       label: label,
       child: ExcludeSemantics(
         child: Row(

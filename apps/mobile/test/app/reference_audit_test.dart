@@ -81,9 +81,10 @@ void main() {
     ).putUsage(AiDailyUsageCodec.key(LocalDate(2026, 10, 7)), 1);
     await pump(tester);
 
-    final card = find.byKey(const ValueKey('menu-card'));
+    // Bản 4 (BR4-15): thẻ thực đơn ở Hôm nay không còn nhãn "tham khảo".
+    final card = find.byKey(const ValueKey('menu-line'));
     await reveal(tester, card);
-    expect(tagIn(card), findsOneWidget, reason: 'thẻ thực đơn ở Hôm nay');
+    expect(tagIn(card), findsNothing);
 
     await tab(tester, S.tabMenu);
     expect(

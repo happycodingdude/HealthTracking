@@ -22,9 +22,10 @@ void main() {
 
   test('deepLinkLocation', () {
     expect(deepLinkLocation(Uri.parse('ironly://today'), monday), '/today');
+    // Bản 4 (05 Bản 4 TD4-05): buổi hôm nay nằm ở Hôm nay.
     expect(
       deepLinkLocation(Uri.parse('ironly://session/today'), monday),
-      sessionPath(AppTab.today, monday),
+      AppTab.today.path,
     );
     expect(deepLinkLocation(Uri.parse('ironly://login'), monday), loginPath);
     expect(deepLinkLocation(Uri.parse('ironly://login/'), monday), loginPath);
@@ -69,18 +70,28 @@ void main() {
     return container;
   }
 
-  testWidgets('NAV-15: có buổi hôm nay → S-63; đang ở màn khác thì chuyển '
-      'thẳng', (tester) async {
+  testWidgets('NAV-15, TD4-05: có buổi hôm nay → tab Hôm nay (danh sách bài '
+      'nằm ở đó); đang ở màn khác thì chuyển thẳng', (tester) async {
     final c = await pump(tester);
     c.read(routerProvider).go('/me/account');
     await tester.pumpAndSettle();
     expect(find.byType(AccountDataScreen), findsOneWidget);
     await open(tester, 'ironly://session/today');
+    expect(find.byType(TodayScreen), findsOneWidget);
+    expect(find.byType(SessionScreen), findsNothing);
+    expect(c.read(routerProvider).state.matchedLocation, AppTab.today.path);
+  });
+
+  testWidgets('TD4-05: đường dẫn S-63 của hôm nay chuyển về tab Hôm nay; ngày '
+      'khác vẫn mở S-63', (tester) async {
+    final c = await pump(tester);
+    c.read(routerProvider).go(sessionPath(AppTab.today, monday));
+    await tester.pumpAndSettle();
+    expect(find.byType(TodayScreen), findsOneWidget);
+    expect(find.byType(SessionScreen), findsNothing);
+    c.read(routerProvider).go(sessionPath(AppTab.today, monday.addDays(2)));
+    await tester.pumpAndSettle();
     expect(find.byType(SessionScreen), findsOneWidget);
-    expect(
-      c.read(routerProvider).state.matchedLocation,
-      sessionPath(AppTab.today, monday),
-    );
   });
 
   testWidgets('NAV-15: ngày nghỉ / chưa có lịch → Hôm nay', (tester) async {
@@ -103,6 +114,6 @@ void main() {
       'Chào mừng, không vào app', (tester) async {
     await pump(tester, signedIn: false);
     await open(tester, 'ironly://session/today');
-    expect(find.byType(SessionScreen), findsNothing);
+    expect(find.byType(TodayScreen), findsNothing);
   });
 }

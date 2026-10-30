@@ -405,6 +405,8 @@ void main() {
     },
   );
 
+  // Bản 4 (04 S-10 H2): thẻ thực đơn đầy đủ chỉ ở ngày không có buổi → thứ 4
+  // 07/10 là ngày nghỉ.
   group('04 §6.7.4: thẻ thực đơn ở Hôm nay', () {
     Finder card() => find.byKey(const ValueKey('menu-card'));
 
@@ -419,11 +421,16 @@ void main() {
 
     testWidgets('chưa có thực đơn: "Theo mức 2.210 kcal" + nhãn + "Gợi ý thực '
         'đơn hôm nay" → tạo và chuyển sang tab Thực đơn', (tester) async {
-      await seedSetUp(db);
+      await seedSetUp(db, template: templateRestWed);
       await pump(tester, openMenu: false);
       await scrollToCard(tester);
+      // FR4-05: không nhãn "tham khảo"; thẻ chỉ còn nút "Gợi ý thực đơn".
       expect(
         find.descendant(of: card(), matching: find.byType(ReferenceTag)),
+        findsNothing,
+      );
+      expect(
+        find.descendant(of: card(), matching: find.text(S.generateMenuShort)),
         findsOneWidget,
       );
       await tapKey(tester, 'menu-card-generate');
@@ -435,7 +442,7 @@ void main() {
 
     testWidgets('UR-15: có thực đơn → mỗi bữa một dòng (tên bữa · các món), '
         'tổng kcal + nhãn; chạm → tab Thực đơn', (tester) async {
-      await seedSetUp(db);
+      await seedSetUp(db, template: templateRestWed);
       await putMenu(readyMenu());
       await pump(tester, openMenu: false);
       await scrollToCard(tester);
@@ -446,9 +453,10 @@ void main() {
         ),
         findsOneWidget,
       );
+      // Bản 4: chỉ ba dòng Sáng / Trưa / Tối, bữa phụ xem ở S-30.
       expect(
         find.descendant(of: card(), matching: find.text(S.mealMorningSnack)),
-        findsOneWidget,
+        findsNothing,
       );
       expect(find.byKey(const ValueKey('menu-card-total')), findsOneWidget);
       await tapFinder(tester, card());
@@ -457,7 +465,7 @@ void main() {
 
     testWidgets('không có mạng sau lần bấm, hết lượt, chạm trần → một dòng lý '
         'do', (tester) async {
-      await seedSetUp(db);
+      await seedSetUp(db, template: templateRestWed);
       connectivity.online = false;
       await pump(tester, openMenu: false);
       await scrollToCard(tester);

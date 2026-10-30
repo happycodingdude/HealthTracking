@@ -15,12 +15,14 @@ import 'package:mobile/features/library/data/video_player_gateway.dart';
 import 'package:mobile/features/schedule/application/schedule_edits.dart';
 import 'package:mobile/features/schedule/data/schedule_repository.dart';
 import 'package:mobile/features/schedule/presentation/day_sheet.dart';
+import 'package:mobile/features/today/presentation/today_screen.dart';
 import 'package:mobile/features/training/application/training_section.dart';
 import 'package:mobile/features/workout/application/lift_log_edits.dart';
 import 'package:mobile/features/workout/data/exercise_note_repository.dart';
 import 'package:mobile/features/workout/data/exercise_unit_repository.dart';
 import 'package:mobile/features/workout/data/lift_log_repository.dart';
 import 'package:mobile/features/workout/presentation/session_screen.dart';
+import 'package:mobile/ui/tokens.g.dart';
 
 import '../../support/app_harness.dart';
 import '../../support/fake_native.dart';
@@ -29,9 +31,10 @@ import '../../support/fake_sync.dart';
 import '../../support/library_fixture.dart';
 import '../../support/schedule_fixture.dart';
 
-/// 06 Bản 3 VS36-T06 (widget): S-63 danh sách phẳng 8 tình huống, biểu tượng
-/// ghi chú; S-64 điền sẵn, ±bước, chọn đơn vị, cảnh báo, ghi chú, dạng chỉ
-/// ghi chú, hộp "Bỏ thay đổi chưa lưu?"; khu mức tạ của S-67; hộp F05-R28.
+/// 06 Bản 3 VS36-T06 chạy lại trên Bản 4 (06 Bản 4 VS44-T07, IR4-08): danh
+/// sách bài của buổi hôm nay nằm ở Hôm nay với hàng số ngay trong danh sách
+/// (chạm hàng số → S-64); S-63 chỉ cho ngày khác; selector theo `Key` và dấu
+/// hiệu. Cùng bước, cùng kết quả với Bản 3.
 /// templateAc2: thứ 2 12/10 Ngực + Tay sau 18:00. Dữ liệu `sessionChestV3`
 /// (06 Bản 3 §6.11.2): "Máy ép ngực" buổi trước 40 → 45 kg; bài 2 có ghi chú
 /// buổi trước; bài 3 chưa từng ghi; bài 4 nấc 8 → 10.
@@ -157,12 +160,25 @@ void main() {
 
   Finder key(String k) => find.byKey(ValueKey(k), skipOffstage: false);
 
-  /// Chỉ trong S-63 (thẻ Hôm nay vẫn dựng phía sau).
+  /// Trong danh sách bài (Hôm nay hoặc S-63).
   Finder inSession(Finder f) =>
-      find.descendant(of: find.byType(SessionScreen), matching: f);
+      find.descendant(of: key('session-log-list'), matching: f);
 
+  /// Trong khối của một bài: tên, hàng số, ghi chú.
   Finder inRow(Exercise e, Finder f) =>
-      find.descendant(of: key('exercise-${e.id}'), matching: f);
+      find.descendant(of: key('lift-block-${e.id}'), matching: f);
+
+  /// Ô Bắt đầu / Kết thúc của bài trên hàng số.
+  String cell(WidgetTester tester, Exercise e, String field) =>
+      tester.widget<Text>(key('lift-$field-${e.id}')).data!;
+
+  /// "Đã ghi n / m" ở hàng số liệu.
+  Finder logged(int n, int total) => find.byWidgetPredicate(
+    (w) =>
+        w is Text &&
+        w.key == const ValueKey('stat-logged') &&
+        w.data == '$n / $total',
+  );
 
   /// Gõ hai ô của S-64 rồi (tùy) bấm Lưu.
   Future<void> enter(
@@ -172,15 +188,15 @@ void main() {
     bool save = true,
   }) async {
     if (start != null) {
-      await tester.enterText(key('lift-start-input'), start);
+      await tester.enterText(key('field-lift-start'), start);
     }
-    if (end != null) await tester.enterText(key('lift-end-input'), end);
+    if (end != null) await tester.enterText(key('field-lift-end'), end);
     await tester.pumpAndSettle();
     if (save) await tapKey(tester, 'lift-save');
   }
 
   String fieldText(WidgetTester tester, String field) =>
-      tester.widget<TextField>(key('lift-$field-input')).controller!.text;
+      tester.widget<TextField>(key('field-lift-$field')).controller!.text;
 
   Color? valueColor(WidgetTester tester, String field) =>
       tester.widget<Text>(key('lift-$field-value')).style?.color;
@@ -198,6 +214,9 @@ void main() {
         '"nấc"; F20-AC44: biểu tượng ghi chú mờ; dòng chú thích cuối; UA3-01: '
         'tổng không tính bài bụng', (tester) async {
       await openMonday(tester);
+      // Buổi hôm nay nằm ở Hôm nay (TD4-05).
+      expect(find.byType(TodayScreen), findsOneWidget);
+      expect(find.byType(SessionScreen), findsNothing);
       expect(key('session-group-chest'), findsOneWidget);
       expect(key('session-group-triceps'), findsOneWidget);
       expect(key('session-region-chest_mid'), findsNothing);
@@ -213,24 +232,21 @@ void main() {
         greaterThan(tester.getTopLeft(key('exercise-${decline.id}')).dy),
       );
 
-      expect(
-        find.descendant(
-          of: key('lift-prev-${pecDeck.id}'),
-          matching: find.text(S.liftPreviousLabel),
-        ),
-        findsOneWidget,
-      );
-      expect(inRow(pecDeck, find.text('40 → 45 kg')), findsOneWidget);
+      expect(inRow(pecDeck, find.text(S.liftPreviousLabel)), findsOneWidget);
+      expect(inRow(pecDeck, find.text('40 → 45')), findsOneWidget);
+      expect(cell(tester, pecDeck, 'start'), '40');
       expect(inRow(decline, find.text('8 → 10 nấc')), findsOneWidget);
-      expect(key('lift-log-${incline.id}'), findsOneWidget);
+      // Bài chưa từng ghi: "—" cả ba ô, chạm hàng số → S-64.
+      expect(cell(tester, incline, 'start'), '—');
+      expect(key('lift-row-${incline.id}'), findsOneWidget);
       expect(key('note-mark-${bench.id}-previous'), findsOneWidget);
       expect(key('note-mark-${pecDeck.id}-previous'), findsNothing);
       for (final word in ['Máy', 'Tạ']) {
         expect(inSession(find.text(word)), findsNothing);
       }
-      expect(key('session-footnote'), findsOneWidget);
-      expect(find.text(S.sessionFootnote), findsOneWidget);
-      expect(find.text(S.liftLoggedOf(0, 7)), findsOneWidget);
+      // Không dòng chú thích, không chữ trạng thái (BR4-08).
+      expect(find.text(S.sessionFootnote), findsNothing);
+      expect(logged(0, 7), findsOneWidget);
     });
 
     testWidgets('UA3-05: 17:59 → "GẦN NHẤT" + số xám, "Chưa ghi", không nút; '
@@ -239,23 +255,21 @@ void main() {
     ) async {
       clock.set(DateTime(2026, 10, 12, 17, 59));
       await openMonday(tester);
-      expect(find.text(S.liftOpensAt('18:00')), findsOneWidget);
-      expect(
-        find.descendant(
-          of: key('lift-latest-${pecDeck.id}'),
-          matching: find.text(S.liftLatestLabel),
-        ),
-        findsOneWidget,
-      );
-      expect(key('lift-none-${incline.id}'), findsOneWidget);
+      expect(find.text(S.liftOpensAt('18:00')), findsNothing);
+      expect(inRow(pecDeck, find.text(S.liftLatestLabel)), findsOneWidget);
+      expect(inRow(pecDeck, find.text('05/10')), findsOneWidget);
+      expect(cell(tester, incline, 'start'), '—');
+      expect(key('lift-tick-${pecDeck.id}'), findsNothing);
       expect(find.text(S.logLiftShort, skipOffstage: false), findsNothing);
-      expect(key('session-footnote'), findsNothing);
-      expect(key('session-done'), findsNothing);
+      expect(key('today-mark-done'), findsNothing);
+      // Chưa đến giờ: chạm hàng số không mở ghi.
+      await tapKey(tester, 'lift-row-${pecDeck.id}');
+      expect(key('lift-save'), findsNothing);
 
       await advanceTo(tester, DateTime(2026, 10, 12, 18));
-      expect(key('lift-prev-${pecDeck.id}'), findsOneWidget);
-      expect(key('lift-log-${incline.id}'), findsOneWidget);
-      expect(key('session-done'), findsOneWidget);
+      expect(inRow(pecDeck, find.text(S.liftPreviousLabel)), findsOneWidget);
+      expect(key('lift-tick-${pecDeck.id}'), findsOneWidget);
+      expect(key('today-mark-done'), findsOneWidget);
     });
 
     testWidgets('F20-AC4, FA3-09: buổi thứ 6 tuần sau từ S-21 → "Chỉ xem · '
@@ -267,11 +281,16 @@ void main() {
       unawaited(showDaySheet(host, LocalDate(2026, 10, 16)));
       await tester.pumpAndSettle();
       await tapKey(tester, 'day-view-exercises');
-      expect(find.text(S.sessionTitle('Vai')), findsOneWidget);
-      expect(find.text(S.readOnlyFuture), findsOneWidget);
-      expect(key('lift-latest-${shoulderSide.id}'), findsOneWidget);
+      expect(find.byType(SessionScreen), findsOneWidget);
+      expect(find.text('Vai'), findsOneWidget);
+      // Ổ khóa góc trên thay câu "Chỉ xem · Buổi chưa đến".
+      expect(find.bySemanticsLabel(S.readOnlyFuture), findsOneWidget);
+      expect(find.text(S.readOnlyFuture), findsNothing);
+      expect(inRow(shoulderSide, find.text(S.liftLatestLabel)), findsOneWidget);
       expect(find.text(S.logLiftShort, skipOffstage: false), findsNothing);
-      expect(find.text(S.liftNotLogged, skipOffstage: false), findsWidgets);
+      expect(key('lift-tick-${shoulderSide.id}'), findsNothing);
+      await tapKey(tester, 'lift-row-${shoulderSide.id}');
+      expect(key('lift-save'), findsNothing);
     });
 
     testWidgets('F20-AC46: buổi tuần trước có mức tạ → con số của buổi đó, '
@@ -284,10 +303,13 @@ void main() {
       await logLift(wed, lats, 70, 80);
       await pump(tester);
       await go(tester, sessionPath(AppTab.schedule, wed));
-      expect(find.text(S.readOnlyLocked), findsOneWidget);
-      expect(key('lift-readonly-${lats.id}'), findsOneWidget);
-      expect(find.text('7 → 8 nấc'), findsOneWidget);
-      expect(find.text(S.liftPreviousLabel), findsNothing);
+      expect(find.text(S.readOnlyLocked), findsNothing);
+      // Dấu gạch góc trên (buổi đã qua chưa đánh dấu, còn trong 7 ngày).
+      expect(find.bySemanticsLabel(S.statusAutoSkipped), findsOneWidget);
+      // Số trắng của buổi đó; "—" ở bài không ghi; không ô tick.
+      expect(cell(tester, lats, 'start'), '7');
+      expect(cell(tester, lats, 'end'), '8');
+      expect(key('lift-tick-${lats.id}'), findsNothing);
       expect(find.text(S.logLiftShort, skipOffstage: false), findsNothing);
       await tapKey(tester, 'exercise-${lats.id}');
       expect(find.text(S.backSession), findsOneWidget);
@@ -310,7 +332,8 @@ void main() {
       );
       await pump(tester);
       await go(tester, sessionPath(AppTab.schedule, sat));
-      expect(find.text(S.readOnlyPastExtra), findsOneWidget);
+      expect(find.bySemanticsLabel(S.readOnlyPastExtra), findsOneWidget);
+      expect(find.text(S.readOnlyPastExtra), findsNothing);
       expect(find.text(S.logLiftShort, skipOffstage: false), findsNothing);
     });
 
@@ -322,12 +345,13 @@ void main() {
       await repo.put(pecDeck.copyWith(active: false));
       await repo.put(incline.copyWith(active: false));
       await openMonday(tester);
-      expect(key('session-not-in-library-${pecDeck.id}'), findsOneWidget);
+      expect(key('lift-block-${pecDeck.id}'), findsOneWidget);
+      expect(find.text(S.notInLibrary), findsNothing);
       expect(key('exercise-${incline.id}'), findsNothing);
-      expect(find.text(S.liftLoggedOf(1, 6)), findsOneWidget);
-      await tapKey(tester, 'lift-value-${pecDeck.id}');
+      expect(logged(1, 6), findsOneWidget);
+      await tapKey(tester, 'lift-row-${pecDeck.id}');
       await enter(tester, end: '50');
-      expect(inRow(pecDeck, find.text('40 → 50 kg')), findsOneWidget);
+      expect(cell(tester, pecDeck, 'end'), '50');
     });
 
     testWidgets('F20-E2: sửa riêng nhóm cơ hôm nay trước giờ tập → danh sách '
@@ -343,8 +367,9 @@ void main() {
             muscles: const [MuscleGroup.legs],
           );
       await tester.pumpAndSettle();
-      expect(find.text(S.sessionTitle('Chân')), findsOneWidget);
-      expect(key('session-group-legs'), findsOneWidget);
+      expect(find.text('Chân · 18:00'), findsOneWidget);
+      // Buổi một nhóm: không tiêu đề nhóm.
+      expect(key('session-group-legs'), findsNothing);
       expect(key('session-group-chest'), findsNothing);
       for (final e in library.where((e) => e.group == MuscleGroup.legs)) {
         expect(key('exercise-${e.id}'), findsOneWidget);
@@ -355,12 +380,18 @@ void main() {
         'F20-E43: đổi đơn vị → con số cũ với đơn vị mới', (tester) async {
       await logLift(mon, pecDeck, 400, 475);
       await openMonday(tester);
-      expect(inRow(pecDeck, find.text('40 → 47,5 kg')), findsOneWidget);
-      await tapKey(tester, 'lift-value-${pecDeck.id}');
+      expect(cell(tester, pecDeck, 'end'), '47,5');
+      expect(key('lift-tick-${pecDeck.id}'), findsOneWidget);
+      await tapKey(tester, 'lift-row-${pecDeck.id}');
       await tapKey(tester, 'lift-delete');
       await tapKey(tester, 'lift-delete-confirm-ok');
       expect(find.text(S.liftDeleted), findsOneWidget);
-      expect(key('lift-prev-${pecDeck.id}'), findsOneWidget);
+      // Về số điền sẵn mờ của buổi trước.
+      expect(cell(tester, pecDeck, 'end'), '45');
+      expect(
+        tester.widget<Text>(key('lift-end-${pecDeck.id}')).style?.color,
+        TokenColor.textPrefill,
+      );
 
       await container
           .read(changeExerciseUnitProvider)
@@ -374,23 +405,30 @@ void main() {
       await logLift(mon, pecDeck, 300, 350);
       await logLift(mon, tricepsLong, 100, 125);
       await pump(tester, tall: false);
-      expect(find.text(S.viewExercisesAndLog), findsOneWidget);
-      expect(find.text(S.liftLoggedCount(2)), findsOneWidget);
+      // Bản 4: Hôm nay chính là danh sách bài; "Đã ghi 2 / 7" ở hàng số liệu.
+      expect(find.text(S.viewExercisesAndLog), findsNothing);
+      expect(logged(2, 7), findsOneWidget);
       await seedMark(db, mon, DayMark.done);
       await tester.pumpAndSettle();
-      expect(find.text(S.viewExercises), findsOneWidget);
+      expect(key('today-status'), findsOneWidget);
+      expect(logged(2, 7), findsOneWidget);
     });
 
     testWidgets('NAV-9: Hôm nay → S-25 → dòng ngày → S-21 → "Xem bài tập" → '
         'S-63, quay lại về Hôm nay', (tester) async {
+      // Buổi thứ 4 07/10 (ngày khác) → S-63; buổi hôm nay → tab Hôm nay.
       await pump(tester, tall: false);
-      await go(tester, '/today/progress/2026-10-12');
-      await tester.tap(find.text('T2 12/10'));
+      await go(tester, '/today/progress/2026-10-05');
+      await tester.tap(find.text('T4 07/10'));
       await tester.pumpAndSettle();
       await tapKey(tester, 'day-view-exercises');
-      expect(find.text(S.sessionTitle('Ngực và Tay sau')), findsOneWidget);
-      await tapKey(tester, 'session-back');
-      expect(find.text(S.sessionTitle('Ngực và Tay sau')), findsNothing);
+      expect(find.byType(SessionScreen), findsOneWidget);
+      expect(find.text('Lưng'), findsOneWidget);
+      await tapKey(tester, 'page-back');
+      expect(find.byType(SessionScreen), findsNothing);
+      await go(tester, sessionPath(AppTab.today, mon));
+      expect(find.byType(SessionScreen), findsNothing);
+      expect(find.byType(TodayScreen), findsOneWidget);
     });
 
     testWidgets('UX-AC35, F21-AC9: "Đã tập" lúc 19:00 → vẫn ghi được; 00:00 → '
@@ -398,19 +436,26 @@ void main() {
         'chú thích (F26-AC6)', (tester) async {
       clock.set(DateTime(2026, 10, 12, 19));
       await openMonday(tester);
-      await tapKey(tester, 'session-done');
+      await tapKey(tester, 'today-mark-done');
       await tapKey(tester, 'lock-confirm-save');
-      expect(inSession(key('session-tag-done')), findsOneWidget);
-      await tapKey(tester, 'lift-prev-tap-${pecDeck.id}');
+      expect(key('today-status'), findsOneWidget);
+      await tapKey(tester, 'lift-row-${pecDeck.id}');
       await tapKey(tester, 'lift-save');
-      expect(find.text(S.liftLoggedOf(1, 7)), findsOneWidget);
+      expect(logged(1, 7), findsOneWidget);
 
+      // Sang ngày mới: buổi thứ 2 chỉ xem ở S-63.
       await advanceTo(tester, DateTime(2026, 10, 13));
-      expect(find.text(S.readOnlyLocked), findsOneWidget);
-      expect(key('lift-readonly-${pecDeck.id}'), findsOneWidget);
-      expect(key('lift-prev-${bench.id}'), findsNothing);
-      expect(key('lift-log-${incline.id}'), findsNothing);
-      expect(key('session-footnote'), findsNothing);
+      await go(tester, sessionPath(AppTab.today, mon));
+      expect(find.byType(SessionScreen), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(RegExp('^${S.sessionDone}')),
+        findsOneWidget,
+      );
+      expect(cell(tester, pecDeck, 'end'), '45');
+      expect(key('lift-tick-${pecDeck.id}'), findsNothing);
+      expect(cell(tester, bench, 'start'), '—');
+      await tapKey(tester, 'lift-row-${incline.id}');
+      expect(key('lift-save'), findsNothing);
     });
   });
 
@@ -421,10 +466,11 @@ void main() {
       tester,
     ) async {
       await openMonday(tester);
-      await tapKey(tester, 'lift-prev-tap-${pecDeck.id}');
+      await tapKey(tester, 'lift-row-${pecDeck.id}');
+      // Không dòng "Buổi trước … → …" (04 Bản 4 S-64): số đã điền sẵn.
       expect(
         find.text(S.liftPrevious('05/10', '40', '45', S.unitKg)),
-        findsOneWidget,
+        findsNothing,
       );
       expect(
         (fieldText(tester, 'start'), fieldText(tester, 'end')),
@@ -436,7 +482,7 @@ void main() {
         find.descendant(of: key('lift-end-plus'), matching: find.text('+2,5')),
         findsOneWidget,
       );
-      expect(find.text(S.liftStepGuide('2,5 kg')), findsOneWidget);
+      expect(find.text(S.liftStepGuide('2,5 kg')), findsNothing);
       expect(key('lift-unit-bar'), findsNothing, reason: 'UA3-09');
 
       await tapKey(tester, 'lift-end-plus');
@@ -445,9 +491,13 @@ void main() {
       expect(valueColor(tester, 'start'), gray);
       await tapKey(tester, 'lift-save');
       expect(find.text('Đã lưu 40 → 47,5 kg'), findsOneWidget);
-      expect(key('lift-value-${pecDeck.id}'), findsOneWidget);
-      expect(inRow(pecDeck, find.text('40 → 47,5 kg')), findsOneWidget);
-      expect(find.text(S.liftLoggedOf(1, 7)), findsOneWidget);
+      expect(cell(tester, pecDeck, 'end'), '47,5');
+      expect(
+        tester.widget<Text>(key('lift-end-${pecDeck.id}')).style?.color,
+        TokenColor.textPrimary,
+      );
+      expect(key('lift-tick-${pecDeck.id}'), findsOneWidget);
+      expect(logged(1, 7), findsOneWidget);
       expect(
         await logs.get(mon, pecDeck.id),
         LiftLog(
@@ -464,12 +514,12 @@ void main() {
       tester,
     ) async {
       await openMonday(tester);
-      await tapKey(tester, 'lift-prev-tap-${bench.id}');
+      await tapKey(tester, 'lift-row-${bench.id}');
       await dismissSheet(tester);
       expect(key('discard-changes'), findsNothing);
       expect(key('lift-save'), findsNothing);
 
-      await tapKey(tester, 'lift-prev-tap-${bench.id}');
+      await tapKey(tester, 'lift-row-${bench.id}');
       expect(key('lift-warning-lower'), findsNothing);
       await tapKey(tester, 'lift-save');
       expect((await logs.get(mon, bench.id))!.endKgX10, 550);
@@ -481,11 +531,12 @@ void main() {
         'nấc máy cho bài này"; chọn nấc máy → −1 / +1, "nấc"; 8 và 10 → "8 → '
         '10 nấc"; mở lại → 8 và 10, ±1', (tester) async {
       await openMonday(tester);
-      await tapKey(tester, 'lift-log-${incline.id}');
-      expect(find.text(S.liftFirstTime), findsOneWidget);
-      expect(find.text(S.liftUnitPrompt), findsOneWidget);
+      await tapKey(tester, 'lift-row-${incline.id}');
+      expect(find.text(S.liftFirstTime), findsNothing);
+      expect(find.text(S.liftUnitPrompt), findsNothing);
       expect(key('lift-unit-bar'), findsOneWidget);
-      expect(find.text('—'), findsNWidgets(2));
+      expect(find.text('—'), findsWidgets);
+      expect((fieldText(tester, 'start'), fieldText(tester, 'end')), ('', ''));
       expect(key('lift-guide'), findsNothing);
       await tapKey(tester, 'lift-save');
       expect(find.text(S.liftUnitRequired), findsOneWidget);
@@ -497,13 +548,12 @@ void main() {
         find.descendant(of: key('lift-start-minus'), matching: find.text('−1')),
         findsOneWidget,
       );
-      expect(find.text(S.liftStepGuideFirst('1 nấc')), findsOneWidget);
       await enter(tester, start: '8', end: '10');
       expect(find.text('Đã lưu 8 → 10 nấc'), findsOneWidget);
-      expect(inRow(incline, find.text('8 → 10 nấc')), findsOneWidget);
+      expect(cell(tester, incline, 'end'), '10');
       expect((await units.get(incline.id))!.unit, LiftUnit.steps);
 
-      await tapKey(tester, 'lift-value-${incline.id}');
+      await tapKey(tester, 'lift-row-${incline.id}');
       expect(key('lift-unit-bar'), findsNothing);
       expect(
         (fieldText(tester, 'start'), fieldText(tester, 'end')),
@@ -519,7 +569,7 @@ void main() {
         'cảnh báo vàng "cao hơn buổi trước 5 nấc", vẫn lưu được; 14 → không; 9 '
         '→ "thấp hơn … 1 nấc"', (tester) async {
       await openMonday(tester);
-      await tapKey(tester, 'lift-prev-tap-${decline.id}');
+      await tapKey(tester, 'lift-row-${decline.id}');
       await enter(tester, end: '15', save: false);
       expect(find.text(S.liftEndMuchHigher('5', S.unitSteps)), findsOneWidget);
       await enter(tester, end: '14', save: false);
@@ -527,13 +577,13 @@ void main() {
       await enter(tester, end: '9', save: false);
       expect(find.text(S.liftEndLower('1', S.unitSteps)), findsOneWidget);
       await enter(tester, end: '15');
-      expect(inRow(decline, find.text('8 → 15 nấc')), findsOneWidget);
+      expect(cell(tester, decline, 'end'), '15');
     });
 
     testWidgets('F21-V42 → V45: lỗi đỏ dưới hai ô, không lưu; "." hiện thành '
         '","', (tester) async {
       await openMonday(tester);
-      await tapKey(tester, 'lift-prev-tap-${bench.id}');
+      await tapKey(tester, 'lift-row-${bench.id}');
       for (final (start, end, message) in [
         ('35', '', S.liftMissing),
         ('35', '72,3', S.liftKgInvalid),
@@ -550,7 +600,7 @@ void main() {
       await tapKey(tester, 'lift-save');
       expect((await logs.get(mon, bench.id))!.startKgX10, 725);
 
-      await tapKey(tester, 'lift-prev-tap-${decline.id}');
+      await tapKey(tester, 'lift-row-${decline.id}');
       await enter(tester, start: '8', end: '51');
       expect(find.text(S.liftStepsInvalid), findsOneWidget);
     });
@@ -560,7 +610,7 @@ void main() {
       '+2,5 → 15,5; chặn ở 0,5 và 300; UA3-03: đã bấm ±bước → đóng phải hỏi',
       (tester) async {
         await openMonday(tester);
-        await tapKey(tester, 'lift-log-${incline.id}');
+        await tapKey(tester, 'lift-row-${incline.id}');
         await tapKey(tester, 'lift-unit-kg');
         await tapKey(tester, 'lift-start-plus');
         expect(fieldText(tester, 'start'), '');
@@ -580,7 +630,7 @@ void main() {
         expect(await logs.get(mon, incline.id), isNull);
 
         // Chỉ bấm ±bước khi ô trống (số không đổi) vẫn là có thay đổi.
-        await tapKey(tester, 'lift-log-${incline.id}');
+        await tapKey(tester, 'lift-row-${incline.id}');
         await tapKey(tester, 'lift-unit-kg');
         await tapKey(tester, 'lift-end-plus');
         await dismissSheet(tester);
@@ -593,10 +643,9 @@ void main() {
         'ghi chú", biểu tượng rõ, vẫn "Ghi", thanh đáy không đổi; F26-AC3: bộ '
         'đếm 200/200', (tester) async {
       await openMonday(tester);
-      await tapKey(tester, 'lift-log-${incline.id}');
+      await tapKey(tester, 'lift-row-${incline.id}');
       await tester.enterText(key('note-input'), 'máy 2 hỏng, tập máy 5');
       await tester.pumpAndSettle();
-      expect(find.text(S.noteCounter(21)), findsOneWidget);
       await dismissSheet(tester);
       expect(find.text(S.discardChanges), findsOneWidget);
       await tapKey(tester, 'discard-keep');
@@ -607,14 +656,17 @@ void main() {
       await tapKey(tester, 'lift-save');
       expect(find.text(S.noteSaved), findsOneWidget);
       expect(key('note-mark-${incline.id}-today'), findsOneWidget);
-      expect(key('lift-log-${incline.id}'), findsOneWidget);
-      expect(find.text(S.liftLoggedOf(0, 7)), findsOneWidget);
+      expect(
+        inRow(incline, find.text('máy 2 hỏng, tập máy 5')),
+        findsOneWidget,
+      );
+      expect(cell(tester, incline, 'start'), '—');
+      expect(logged(0, 7), findsOneWidget);
       expect((await notes.get(mon, incline.id))!.text, 'máy 2 hỏng, tập máy 5');
 
-      await tapKey(tester, 'lift-log-${incline.id}');
+      await tapKey(tester, 'lift-row-${incline.id}');
       await tester.enterText(key('note-input'), 'a' * 201);
       await tester.pumpAndSettle();
-      expect(find.text(S.noteCounter(200)), findsOneWidget);
       expect(
         tester.widget<TextField>(key('note-input')).controller!.text,
         'a' * 200,
@@ -630,8 +682,8 @@ void main() {
       );
       await openMonday(tester);
       expect(key('note-mark-${bench.id}-today'), findsOneWidget);
-      await tapKey(tester, 'lift-prev-tap-${bench.id}');
-      expect(find.text(S.notePrevious('05/10', 'máy 2 hỏng')), findsOneWidget);
+      await tapKey(tester, 'lift-row-${bench.id}');
+      expect(find.text(S.notePrevious('05/10', 'máy 2 hỏng')), findsWidgets);
       expect(
         tester.widget<TextField>(key('note-input')).controller!.text,
         'ghế số 3',
@@ -650,7 +702,7 @@ void main() {
         'không lưu gì', (tester) async {
       clock.set(DateTime(2026, 10, 12, 23, 58));
       await openMonday(tester);
-      await tapKey(tester, 'lift-prev-tap-${pecDeck.id}');
+      await tapKey(tester, 'lift-row-${pecDeck.id}');
       await tester.enterText(key('note-input'), 'muộn');
       await tester.pumpAndSettle();
       clock.set(DateTime(2026, 10, 13, 0, 1));
@@ -660,7 +712,8 @@ void main() {
       expect(key('lift-save'), findsNothing);
       scheduler.fireSync();
       await tester.pumpAndSettle();
-      expect(find.text(S.readOnlyLocked), findsOneWidget);
+      // Sang ngày mới: Hôm nay là thứ 3 (nghỉ), buổi thứ 2 chỉ xem ở S-63.
+      expect(key('rest-card'), findsOneWidget);
       expect(await logs.get(mon, pecDeck.id), isNull);
       expect(await notes.get(mon, pecDeck.id), isNull);
     });
@@ -671,29 +724,29 @@ void main() {
       await seedExtra(db, tue, const [MuscleGroup.shoulders, MuscleGroup.abs]);
       clock.set(DateTime(2026, 10, 13, 20, 30));
       await pump(tester);
-      await tapKey(tester, 'session-view-exercises');
-      expect(find.text(S.extraSessionTitle('Vai và Bụng')), findsOneWidget);
+      // Buổi tập thêm hôm nay nằm ngay ở Hôm nay: dấu "+" góc trên.
+      expect(key('today-status'), findsOneWidget);
+      expect(find.text('+ Vai và Bụng'), findsOneWidget);
       expect(key('session-group-abs'), findsOneWidget);
       for (final e in library.where((e) => e.group == MuscleGroup.abs)) {
-        expect(key('note-log-${e.id}'), findsOneWidget);
-        expect(key('lift-log-${e.id}'), findsNothing);
+        expect(key('note-mark-${e.id}-none'), findsOneWidget);
+        expect(key('lift-row-${e.id}'), findsNothing);
       }
-      // Buổi tập thêm chưa có mức tạ: thanh đáy ẩn (UA2-09).
-      expect(key('session-logged'), findsNothing);
-      await tapKey(tester, 'note-log-${plank.id}');
-      expect(find.text(S.liftNoWeight), findsOneWidget);
-      expect(key('lift-start-input'), findsNothing);
+      expect(logged(0, 6), findsOneWidget);
+      await tapKey(tester, 'note-mark-${plank.id}-none');
+      expect(find.text(S.liftNoWeight), findsNothing);
+      expect(key('field-lift-start'), findsNothing);
       expect(key('lift-unit-bar'), findsNothing);
       await tester.enterText(key('note-input'), 'giữ được 60 giây');
       await tester.pumpAndSettle();
       await tapKey(tester, 'lift-save');
       expect(find.text(S.noteSaved), findsOneWidget);
       expect(key('note-mark-${plank.id}-today'), findsOneWidget);
-      expect(key('session-logged'), findsNothing, reason: 'UA3-01');
-      await tapKey(tester, 'lift-log-${shoulderSide.id}');
+      expect(logged(0, 6), findsOneWidget, reason: 'UA3-01');
+      await tapKey(tester, 'lift-row-${shoulderSide.id}');
       await tapKey(tester, 'lift-unit-kg');
       await enter(tester, start: '10', end: '12');
-      expect(find.text(S.liftLoggedOf(1, 6)), findsOneWidget);
+      expect(logged(1, 6), findsOneWidget);
     });
   });
 
@@ -704,7 +757,7 @@ void main() {
       tester,
     ) async {
       await pump(tester);
-      await go(tester, sessionExercisePath(AppTab.today, mon, bench.id));
+      await go(tester, todayExercisePath(bench.id, mon));
       expect(key('exercise-log-lift'), findsOneWidget);
       expect(find.text('Đơn vị: kg'), findsOneWidget);
       expect(find.text(S.changeUnitTo(S.unitStepsFull)), findsOneWidget);
@@ -756,7 +809,7 @@ void main() {
       await seedExtra(db, tue, const [MuscleGroup.abs]);
       clock.set(DateTime(2026, 10, 13, 20, 30));
       await pump(tester);
-      await go(tester, sessionExercisePath(AppTab.today, tue, plank.id));
+      await go(tester, todayExercisePath(plank.id, tue));
       expect(
         find.text(S.notePreviousSession('05/10', 'giữ 45 giây')),
         findsOneWidget,
@@ -764,7 +817,7 @@ void main() {
       expect(find.text(S.liftNoWeight), findsOneWidget);
       expect(key('exercise-unit'), findsNothing);
       await tapKey(tester, 'exercise-note');
-      expect(key('lift-start-input'), findsNothing);
+      expect(key('field-lift-start'), findsNothing);
       expect(key('note-input'), findsOneWidget);
     });
 
@@ -774,7 +827,7 @@ void main() {
       (tester) async {
         await ExerciseRepository(db).put(pecDeck.copyWith(active: false));
         await pump(tester);
-        await go(tester, sessionExercisePath(AppTab.today, mon, pecDeck.id));
+        await go(tester, todayExercisePath(pecDeck.id, mon));
         expect(key('exercise-log-lift'), findsNothing);
         expect(find.text('Đơn vị: kg'), findsOneWidget);
         expect(find.text('Gần nhất (05/10): 40 → 45 kg'), findsOneWidget);
@@ -789,7 +842,7 @@ void main() {
       tester,
     ) async {
       await pump(tester);
-      await go(tester, sessionExercisePath(AppTab.today, mon, pecDeck.id));
+      await go(tester, todayExercisePath(pecDeck.id, mon));
       await tapKey(tester, 'exercise-change-unit');
       expect(find.text(S.changeUnitTitle(S.unitStepsFull)), findsOneWidget);
       expect(
@@ -813,7 +866,7 @@ void main() {
 
       await tapKey(tester, 'exercise-back');
       expect(inRow(pecDeck, find.text('40 → 45 nấc')), findsOneWidget);
-      await tapKey(tester, 'lift-prev-tap-${pecDeck.id}');
+      await tapKey(tester, 'lift-row-${pecDeck.id}');
       expect(
         find.descendant(of: key('lift-end-plus'), matching: find.text('+1')),
         findsOneWidget,
@@ -833,6 +886,10 @@ void main() {
         ExerciseNote(date: mon, exerciseId: bench.id, text: 'chỉ ghi chú'),
       );
       await pump(tester, tall: false);
+      // Bản 4: "Không tập" qua S-21 (Chi tiết ngày).
+      final host = tester.element(find.byType(Scaffold).first);
+      unawaited(showDaySheet(host, mon));
+      await tester.pumpAndSettle();
       await tapKey(tester, 'mark-skipped-${mon.toKey()}');
       expect(find.text(S.liftLogsExist(2)), findsOneWidget);
       await tapKey(tester, 'lifts-kept-cancel');
@@ -867,6 +924,9 @@ void main() {
       tester,
     ) async {
       await pump(tester, tall: false);
+      final host = tester.element(find.byType(Scaffold).first);
+      unawaited(showDaySheet(host, mon));
+      await tester.pumpAndSettle();
       await tapKey(tester, 'mark-skipped-${mon.toKey()}');
       expect(key('lifts-kept-confirm'), findsNothing);
       expect((await ScheduleRepository(db).day(mon))!.mark, DayMark.skipped);
@@ -886,8 +946,9 @@ void main() {
       expect(find.text(S.extraLogged('Vai')), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('toast-action')));
       await tester.pumpAndSettle();
-      expect(find.text(S.extraSessionTitle('Vai')), findsOneWidget);
-      expect(key('lift-log-${shoulderSide.id}'), findsOneWidget);
+      expect(find.byType(TodayScreen), findsOneWidget);
+      expect(find.text('+ Vai'), findsOneWidget);
+      expect(key('lift-row-${shoulderSide.id}'), findsOneWidget);
     },
   );
   group('UX-AC61 không mạng', () {
@@ -906,16 +967,16 @@ void main() {
 
       // S-63 → S-64: ghi mức tạ 2 chạm, ghi chú.
       await go(tester, sessionPath(AppTab.today, mon));
-      expect(inRow(pecDeck, find.text('40 → 45 kg')), findsOneWidget);
+      expect(inRow(pecDeck, find.text('40 → 45')), findsOneWidget);
       expect(spinner(), findsNothing);
-      await tapKey(tester, 'lift-prev-tap-${pecDeck.id}');
+      await tapKey(tester, 'lift-row-${pecDeck.id}');
       await tapKey(tester, 'lift-end-plus');
       await tapKey(tester, 'lift-save');
       expect(find.text(S.liftSaved('40', '47,5', S.unitKg)), findsOneWidget);
-      expect(inRow(pecDeck, find.text('40 → 47,5 kg')), findsOneWidget);
+      expect(cell(tester, pecDeck, 'end'), '47,5');
       final saved = (await logs.get(mon, pecDeck.id))!;
       expect((saved.startKgX10, saved.endKgX10), (400, 475));
-      await tapKey(tester, 'lift-log-${incline.id}');
+      await tapKey(tester, 'lift-row-${incline.id}');
       await tester.enterText(key('note-input'), 'máy 2 hỏng, tập máy 5');
       await tapKey(tester, 'lift-save');
       expect(find.text(S.noteSaved), findsOneWidget);
@@ -925,14 +986,14 @@ void main() {
       final before = native.written.length;
       await tester.pump(const Duration(seconds: 5)); // thông báo nhanh tắt
       await tester.pumpAndSettle();
-      await tapKey(tester, 'session-done');
+      await tapKey(tester, 'today-mark-done');
       await tapKey(tester, 'lock-confirm-save');
       expect(native.written.length, greaterThan(before));
       final today = (native.written.last['days']! as List).first as Map;
       expect((today['date'], today['mark']), ('2026-10-12', 'done'));
 
       // S-67 → S-72: đổi đơn vị.
-      await go(tester, sessionExercisePath(AppTab.today, mon, bench.id));
+      await go(tester, todayExercisePath(bench.id, mon));
       expect(spinner(), findsNothing);
       await tapKey(tester, 'exercise-change-unit');
       await tapKey(tester, 'change-unit-confirm');

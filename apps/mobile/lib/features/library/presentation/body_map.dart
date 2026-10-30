@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import '../../../app/theme.dart';
+import '../../../ui/theme.dart';
 import '../../me/application/calorie_view.dart';
 
 /// Nội dung một file sơ đồ cơ trong `assets/body_map/` (`male_front`,
@@ -69,10 +69,17 @@ class BodyMap extends ConsumerWidget {
     required this.region,
     this.size = thumbnail,
     this.semanticLabel,
+    this.bare = false,
   });
 
   static const thumbnail = Size(40, 48);
   static const large = Size(104, 124);
+
+  /// Hình trong icon tròn 36 (04 Bản 4 §6.1).
+  static const avatar = Size(24, 28);
+
+  /// Chỉ hình, không khung (đặt trong `ExerciseAvatar`).
+  final bool bare;
 
   final MuscleRegion region;
   final Size size;
@@ -88,36 +95,39 @@ class BodyMap extends ConsumerWidget {
     final sex = ref.watch(profileProvider).value?.sex ?? Sex.male;
     final file = fileOf(sex, region.view);
     final raw = ref.watch(bodyMapSvgProvider(file)).value;
-    final palette = context.palette;
-    final small = size == thumbnail;
+    final t = context.tokens;
+    final small = size == thumbnail || bare;
     // Khung ngoài đúng [size]; hình nằm trong, chừa viền.
-    final inner = size.shrink(small ? 4 : 16);
+    final inner = bare ? size : size.shrink(small ? 4 : 16);
     final image = raw == null
         ? SizedBox.fromSize(size: inner)
         : SvgPicture.string(
             BodyMapPainter.colorize(
               raw,
               regionId: region.id,
-              highlight: context.colors.primary,
-              body: palette.neutralContainer,
-              muscle: palette.border,
+              highlight: t.muscleActive,
+              body: t.muscleBody,
+              muscle: t.muscleIdle,
             ),
             key: ValueKey('body-map-$file-${region.id}'),
             width: inner.width,
             height: inner.height,
             excludeFromSemantics: true,
           );
-    final box = Container(
-      width: size.width,
-      height: size.height,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: palette.card,
-        borderRadius: BorderRadius.circular(small ? 8 : 14),
-        border: Border.all(color: palette.border),
-      ),
-      child: image,
-    );
+    final box = bare
+        ? image
+        : Container(
+            width: size.width,
+            height: size.height,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: t.surfaceRaised,
+              borderRadius: BorderRadius.circular(
+                small ? TokenRadius.row : TokenRadius.card,
+              ),
+            ),
+            child: image,
+          );
     return semanticLabel == null
         ? ExcludeSemantics(child: box)
         : Semantics(image: true, label: semanticLabel, child: box);

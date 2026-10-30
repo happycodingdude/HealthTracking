@@ -127,6 +127,7 @@ class BigNumberField extends StatelessWidget {
     this.height = 64,
     this.semanticsLabel,
     this.enabled = true,
+    this.background,
   });
 
   final String name;
@@ -146,6 +147,9 @@ class BigNumberField extends StatelessWidget {
   final String? semanticsLabel;
   final bool enabled;
 
+  /// Nền ô; mặc định màu thẻ (trong bảng trượt nền thẻ dùng `surfaceRaised`).
+  final Color? background;
+
   @override
   Widget build(BuildContext context) {
     final t = context.tokens;
@@ -159,7 +163,7 @@ class BigNumberField extends StatelessWidget {
     return Container(
       height: boxHeight,
       decoration: BoxDecoration(
-        color: t.surface,
+        color: background ?? t.surface,
         borderRadius: BorderRadius.circular(TokenRadius.field),
         border: Border.all(
           color: active ? t.accent : TokenColor.transparent,

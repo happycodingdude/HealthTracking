@@ -24,10 +24,18 @@ void main() {
   final today = LocalDate(2026, 10, 7);
 
   /// Mock S-30: thứ 4 07/10, Tự động 2.090 kcal (72,5 kg).
-  Future<AppDatabase> seed({MenuData? menu, int used = 0}) async {
+  Future<AppDatabase> seed({
+    MenuData? menu,
+    int used = 0,
+    WeeklyTemplate? template,
+  }) async {
     final db = AppDatabase(NativeDatabase.memory());
     addTearDown(db.close);
-    await seedSetUp(db, profile: completedProfile(kcal: 2090));
+    await seedSetUp(
+      db,
+      profile: completedProfile(kcal: 2090),
+      template: template,
+    );
     await db.customStatement(
       "UPDATE weights SET weight_kg_x10 = 725 WHERE week_start = '2026-10-05'",
     );
@@ -45,10 +53,7 @@ void main() {
     FakeConnectivity? connectivity,
   }) async {
     setPhoneSurface(tester);
-    tester.platformDispatcher
-      ..platformBrightnessTestValue = variant.brightness
-      ..textScaleFactorTestValue = variant.textScale;
-    addTearDown(tester.platformDispatcher.clearAllTestValues);
+    applyVariant(tester, variant);
     final container = ProviderContainer(
       retry: (_, _) => null,
       overrides: appOverrides(
@@ -145,7 +150,13 @@ void main() {
     testWidgets('S-10 thẻ thực đơn có thực đơn (04 §6.7.4, UR-15) ${v.name}', (
       tester,
     ) async {
-      await pump(tester, v, await seed(menu: menu, used: 1), tab: S.tabToday);
+      // Bản 4 (04 S-10 H2): thẻ đầy đủ chỉ ở ngày không có buổi.
+      await pump(
+        tester,
+        v,
+        await seed(menu: menu, used: 1, template: templateRestWed),
+        tab: S.tabToday,
+      );
       final card = find.byKey(const ValueKey('menu-card'));
       await tester.scrollUntilVisible(
         card,

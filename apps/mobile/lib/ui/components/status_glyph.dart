@@ -94,11 +94,13 @@ class StatusGlyph extends StatelessWidget {
     final body = KeyedSubtree(key: K.glyph(status.name), child: shape);
     if (onTap == null) {
       return Semantics(
+        container: true,
         label: label,
         child: ExcludeSemantics(child: body),
       );
     }
     return Semantics(
+      container: true,
       button: true,
       label: label,
       child: ExcludeSemantics(
@@ -142,6 +144,7 @@ class OverrideDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Semantics(
+    container: true,
     label: label,
     child: Container(
       key: K.glyph('overridden'),

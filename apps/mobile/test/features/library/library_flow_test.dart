@@ -84,8 +84,14 @@ void main() {
   }
 
   /// Chạm [key]; phần tử có thể đang nằm ngoài khung nhìn (đã dựng sẵn).
+  /// Ưu tiên phần tử đang hiện: tab Hôm nay (giữ sống, offstage) cũng có
+  /// `exercise-<id>` ở danh sách bài của buổi hôm nay (Bản 4).
   Future<void> tapKey(WidgetTester tester, String key) async {
-    await tester.ensureVisible(find.byKey(ValueKey(key), skipOffstage: false));
+    var f = find.byKey(ValueKey(key));
+    if (f.evaluate().isEmpty) {
+      f = find.byKey(ValueKey(key), skipOffstage: false).first;
+    }
+    await tester.ensureVisible(f);
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(ValueKey(key)));
     await tester.pumpAndSettle();

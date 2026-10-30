@@ -26,6 +26,13 @@ final templateAc2 = WeeklyTemplate({
   ),
 });
 
+/// Như [templateAc2] nhưng không có thứ 4: thứ 4 07/10 là ngày nghỉ (Bản 4:
+/// thẻ thực đơn đầy đủ chỉ hiện ở Hôm nay khi không có buổi — 04 S-10 H2).
+final templateRestWed = WeeklyTemplate({
+  1: templateAc2.days[1]!,
+  5: templateAc2.days[5]!,
+});
+
 /// `setupAt20261007Noon`: thiết lập lúc 12:00 thứ 4, 07/10/2026.
 final setupAt = DateTime(2026, 10, 7, 12);
 

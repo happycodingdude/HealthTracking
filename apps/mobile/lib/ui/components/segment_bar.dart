@@ -191,12 +191,14 @@ class IronlyChip extends StatelessWidget {
                   horizontal: 14,
                   vertical: 6,
                 ),
-                alignment: Alignment.center,
-                child: Text(
-                  label,
-                  style: IronlyText.body.copyWith(
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                    color: t.textPrimary,
+                child: Center(
+                  widthFactor: 1,
+                  child: Text(
+                    label,
+                    style: IronlyText.body.copyWith(
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                      color: t.textPrimary,
+                    ),
                   ),
                 ),
               ),

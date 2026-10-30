@@ -145,7 +145,7 @@ void main() {
         expect(find.text(S.scheduleToday), findsOneWidget);
         expect(find.text(S.logExtraSession), findsOneWidget);
         await tapKey(tester, 'day-log-extra');
-        expect(find.text(S.extraNotCounted), findsOneWidget, reason: 'S-24');
+        expect(find.byKey(const ValueKey('extra-sheet')), findsOneWidget);
 
         await tester.pumpWidget(const SizedBox());
         await seedExtra(db, LocalDate(2026, 10, 15), const [MuscleGroup.abs]);
@@ -181,7 +181,7 @@ void main() {
 
         await open(tester, LocalDate(2026, 10, 13));
         await tapKey(tester, 'day-log-extra');
-        expect(find.text(S.extraNotCounted), findsOneWidget, reason: 'S-24');
+        expect(find.byKey(const ValueKey('extra-sheet')), findsOneWidget);
         await tester.tapAt(const Offset(195, 60));
         await tester.pumpAndSettle();
 

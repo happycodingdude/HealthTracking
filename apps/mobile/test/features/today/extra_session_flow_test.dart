@@ -67,9 +67,7 @@ void main() {
       '${o.entity}:${o.entityKey}',
   ];
 
-  Finder sessionCard() => find.byKey(const ValueKey('session-card'));
-
-  Finder inCard(Finder f) => find.descendant(of: sessionCard(), matching: f);
+  Finder restCard() => find.byKey(const ValueKey('rest-card'));
 
   testWidgets(
     'Demo VS-24, F05-R32, F05-V21, UX-AC28: thứ 7 nghỉ → "Đã tập ngoài lịch? '
@@ -80,11 +78,19 @@ void main() {
     (tester) async {
       await seedSetUp(db);
       await pump(tester);
-      expect(inCard(find.text(S.todayRest)), findsOneWidget);
+      expect(restCard(), findsOneWidget);
       await tapKey(tester, 'extra-log');
 
-      expect(find.text('Buổi tập thêm · Thứ 7 10/10'), findsOneWidget);
-      expect(find.text(S.extraNotCounted), findsOneWidget);
+      // Bản 4 (04 S-24): tiêu đề ngày, không câu giải thích.
+      expect(find.byKey(const ValueKey('extra-sheet')), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('extra-sheet')),
+          matching: find.text('Thứ 7, 10/10'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text(S.extraNotCounted), findsNothing);
       expect(find.text(S.delete), findsNothing);
 
       await tapKey(tester, 'extra-save');
@@ -100,21 +106,23 @@ void main() {
       expect(find.text(S.lockConfirmLine2), findsOneWidget);
       await tapKey(tester, 'lock-confirm-cancel');
       expect((await day(sat)).extraMuscles, isNull);
-      expect(find.text(S.extraNotCounted), findsOneWidget, reason: 'S-24 mở');
+      expect(find.byKey(const ValueKey('extra-sheet')), findsOneWidget);
 
       await tapKey(tester, 'extra-save');
       await tapKey(tester, 'lock-confirm-save');
       expect(find.text(S.extraLogged('Bụng')), findsOneWidget);
-      expect(find.text(S.extraNotCounted), findsNothing, reason: 'đã đóng');
-      expect(inCard(find.text(S.extraSessionLine('Bụng'))), findsOneWidget);
-      expect(
-        inCard(find.byKey(const ValueKey('locked-on-save'))),
-        findsOneWidget,
-      );
-      expect(inCard(find.text(S.edit)), findsNothing);
+      expect(find.byKey(const ValueKey('extra-sheet')), findsNothing);
+      // Hôm nay chuyển sang buổi tập thêm: dấu "+" góc trên, hàng số liệu
+      // "+ Bụng", danh sách bài; không nút sửa / xóa (UR2-06).
+      expect(find.byKey(const ValueKey('today-status')), findsOneWidget);
+      expect(find.bySemanticsLabel(S.extraSession), findsWidgets);
+      expect(find.text('+ Bụng'), findsOneWidget);
+      expect(find.text(S.edit), findsNothing);
       expect(find.byKey(const ValueKey('extra-log')), findsNothing);
-      expect(inCard(find.text(S.todayRest)), findsNothing);
-      expect(find.bySemanticsLabel('Thứ 7: ${S.extraSession}'), findsOneWidget);
+      expect(restCard(), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('tab-today-button')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('today-status')), findsOneWidget);
       final d = await day(sat);
       expect(d.extraMuscles, [MuscleGroup.abs]);
       expect(d.extraLoggedAt, DateTime(2026, 10, 10, 20));
@@ -145,7 +153,13 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Buổi tập thêm · Thứ 5 08/10'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('extra-sheet')),
+          matching: find.text('Thứ 5, 08/10'),
+        ),
+        findsOneWidget,
+      );
       await tapKey(tester, 'muscle-back');
       await tapKey(tester, 'extra-save');
       expect(find.text(S.lockConfirmLine1), findsOneWidget);
@@ -187,14 +201,15 @@ void main() {
       clock.set(DateTime(2026, 10, 9, 20));
       await seedSetUp(db);
       await pump(tester);
-      expect(inCard(find.text('Vai · 18:00')), findsOneWidget);
+      expect(find.text('Vai · 18:00'), findsOneWidget);
       expect(find.byKey(const ValueKey('extra-log')), findsNothing);
       expect(find.text(S.logExtraSession), findsNothing);
 
       await tester.pumpWidget(const SizedBox());
       clock.set(DateTime(2026, 10, 11, 9));
       await pump(tester);
-      expect(inCard(find.text(S.sundayRest)), findsOneWidget);
+      expect(restCard(), findsOneWidget);
+      expect(find.byKey(const ValueKey('extra-log')), findsNothing);
       expect(find.text(S.logExtraSession), findsNothing);
     },
   );

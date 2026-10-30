@@ -67,11 +67,21 @@ void main() {
   }
 
   testWidgets(
-    'UX-AC22: Hôm nay hiện "Chào {tên hiển thị} · Thứ 4, 07/10"; đã đồng bộ thì không có chỉ báo',
+    'UX-AC22 (Bản 4, 04 S-10): Hôm nay chỉ tiêu đề "Hôm nay", không câu chào; '
+    'đã đồng bộ thì tab Tôi không có dòng "Chưa đồng bộ"',
     (tester) async {
       await pump(tester);
-      expect(find.text('Chào Minh · Thứ 4, 07/10'), findsOneWidget);
+      expect(find.text(S.tabToday), findsWidgets);
+      expect(find.textContaining('Chào'), findsNothing);
       expect(find.byKey(const ValueKey('sync-indicator')), findsNothing);
+      await tester.tap(
+        find.descendant(
+          of: find.byType(IronlyTabBar),
+          matching: find.text(S.tabMe),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text(S.syncPending), findsNothing);
     },
   );
 
@@ -166,16 +176,11 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text(S.syncPending), findsOneWidget, reason: 'dòng S-50');
 
-      await tester.tap(find.byKey(const ValueKey('tab-today-button')));
-      await tester.pumpAndSettle();
-      expect(find.text('Chào Minh Anh · Thứ 4, 07/10'), findsOneWidget);
-      expect(find.byKey(const ValueKey('sync-indicator')), findsOneWidget);
-
-      // Có mạng trở lại.
+      // Có mạng trở lại: dòng "Chưa đồng bộ" ở tab Tôi biến mất.
       server.offline = false;
       net.setOnline(true);
       await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('sync-indicator')), findsNothing);
+      expect(find.text(S.syncPending), findsNothing);
       final pushed = server.calls('POST', '/v1/sync/push').last.body! as Map;
       expect(((pushed['mutations']! as List).single as Map)['data'], {
         'displayName': 'Minh Anh',

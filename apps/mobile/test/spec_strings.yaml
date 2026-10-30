@@ -420,4 +420,15 @@ activityNextNone: "Kế tiếp: chưa ghi" # 04 Bản 3 UA3-15 Dynamic Island th
 # BR4-14, BR4-15), giữ trong file làm nhãn VoiceOver của dấu hiệu
 # (05 Bản 4 TD4-07). Test: test/app/semantics_only_test.dart. Danh sách bổ
 # sung dần theo từng slice khi màn được viết lại.
+# 04 Bản 4 S-10, S-63, S-30: nhãn cột hàng số liệu, nhãn nút (7 loại chữ phụ
+# còn giữ theo 01 Bản 4 BR4-09).
+statSession: "Buổi"
+statLogged: "Đã ghi"
+statWeek: "Tuần"
+statDate: "Ngày"
+statTime: "Giờ"
+thisWeek: "Tuần này"
+extraSessionButton: "+ Buổi thêm"
+generateMenuShort: "Gợi ý thực đơn"
+
 semanticsOnly: []

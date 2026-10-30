@@ -7,22 +7,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
 import '../../../app/strings_vi.dart';
-import '../../../app/theme.dart';
 import '../../../core/formatters.dart';
-import '../../../core/widgets/app_sheet.dart';
-import '../../../core/widgets/heading.dart';
-import '../../../core/widgets/primary_button.dart';
-import '../../../core/widgets/section_bar.dart';
-import '../../../core/widgets/toast.dart';
 import '../../../core/widgets/unsaved_changes.dart';
+import '../../../ui/components/components.dart';
+import '../../../ui/theme.dart';
 import '../application/lift_log_draft.dart';
 import '../application/lift_log_edits.dart';
 import '../application/lift_unit.dart';
 import '../application/session_providers.dart';
 
-/// Mở S-64 cho bài [exercise] trong buổi ngày [date], từ dòng bài ở S-63 hoặc
-/// khu cuối trang S-67 (NAV-12, NAV-17): cùng một bảng. Bài bụng mở dạng chỉ
-/// có ô ghi chú (S-64-4). Đóng bảng thì về đúng màn vừa mở nó.
+/// Mở S-64 cho bài [exercise] trong buổi ngày [date], từ hàng số ở Hôm nay /
+/// Buổi tập hoặc khu cuối trang S-67. Bài bụng mở dạng chỉ có ô ghi chú.
 Future<void> showLiftLogSheet(
   BuildContext context, {
   required LocalDate date,
@@ -56,19 +51,21 @@ Future<void> showLiftLogSheet(
   );
   // Thông báo nhanh và hộp thoại sau khi bảng đóng dùng Navigator gốc.
   final host = Navigator.of(context, rootNavigator: true).context;
-  return showAppSheet<void>(
+  return showIronlySheet<void>(
     context,
     enableDrag: false,
     builder: (_) => LiftLogSheet(args: args, host: host),
   );
 }
 
-/// S-64 — Ghi mức tạ (04 Bản 3 §6.6): tên bài, buổi trước; lần ghi đầu thanh
-/// chọn kg | nấc máy; hai ô số xếp dọc, mỗi ô −bước · số · +bước; cảnh báo;
-/// ghi chú buổi trước; ô ghi chú; Lưu (một lần cho cả mức tạ và ghi chú,
-/// F21-R49); chế độ sửa có "Xóa mức tạ". Nút Lưu luôn bấm được, lỗi đỏ dưới
-/// chỗ sai. Lưu sau 00:00 → hộp "Mức tạ và ghi chú của buổi này đã khóa lúc
-/// 00:00." (F26-E4). Đóng khi có thay đổi chưa lưu → hỏi (UA3-03).
+/// S-64 — Ghi mức tạ (04 Bản 4 S-64): tên bài 15 / 600; lần ghi đầu thanh
+/// chọn kg | nấc máy; hai khối Bắt đầu / Kết thúc, mỗi khối nút −bước · ô số
+/// 26 / 600 với đơn vị nhỏ · nút +bước (số điền sẵn mờ, đã sửa trắng, ô đang
+/// nhập viền cam); ô ghi chú (dòng trên: ghi chú buổi trước mờ; dưới: ghi
+/// chú hôm nay); nút cam Lưu; khi sửa: "Xóa mức tạ" đỏ. Không dòng hướng
+/// dẫn, không dòng "Buổi trước … → …". Câu lỗi giữ nguyên, đỏ dưới ô. Quy tắc
+/// như Bản 3 (F21, F26): Lưu một lần cho mức tạ và ghi chú; sau 00:00 → hộp
+/// "đã khóa"; đóng khi có thay đổi chưa lưu → hỏi.
 class LiftLogSheet extends ConsumerStatefulWidget {
   const LiftLogSheet({super.key, required this.args, required this.host});
 
@@ -84,7 +81,7 @@ class _LiftLogSheetState extends ConsumerState<LiftLogSheet> {
   late final TextEditingController _note;
   final _focus = {for (final f in LiftField.values) f: FocusNode()};
 
-  /// Ô đang nhập (viền màu chủ đạo).
+  /// Ô đang nhập (viền cam).
   LiftField? _active;
   bool _busy = false;
 
@@ -134,7 +131,7 @@ class _LiftLogSheetState extends ConsumerState<LiftLogSheet> {
     final draft = ref.read(liftLogDraftProvider(widget.args));
     final args = widget.args;
     final id = args.exercise.id;
-    // Hai ô trống, ghi chú không đổi: đóng, không lưu gì (04 Bản 3 S-64).
+    // Hai ô trống, ghi chú không đổi: đóng, không lưu gì.
     if ((draft.noteOnly || draft.bothEmpty) && !draft.noteChanged) {
       Navigator.of(context).pop();
       return;
@@ -169,25 +166,17 @@ class _LiftLogSheetState extends ConsumerState<LiftLogSheet> {
   Future<void> _delete() async {
     if (_busy) return;
     final confirmed =
-        await showAppDialog<bool>(
+        await showIronlyDialog<bool>(
           context,
-          builder: (dialogContext) => AlertDialog(
+          builder: (dialogContext) => IronlyDialog(
             key: const ValueKey('lift-delete-confirm'),
-            title: const Text(S.deleteLiftConfirm),
-            actions: [
-              OutlinedButton(
-                onPressed: () => Navigator.of(dialogContext).pop(false),
-                child: const Text(S.cancel),
-              ),
-              TextButton(
-                key: const ValueKey('lift-delete-confirm-ok'),
-                style: TextButton.styleFrom(
-                  foregroundColor: Theme.of(dialogContext).colorScheme.error,
-                ),
-                onPressed: () => Navigator.of(dialogContext).pop(true),
-                child: const Text(S.delete),
-              ),
-            ],
+            title: S.deleteLiftConfirm,
+            secondaryLabel: S.cancel,
+            onSecondary: () => Navigator.of(dialogContext).pop(false),
+            primaryLabel: S.delete,
+            primaryKey: const ValueKey('lift-delete-confirm-ok'),
+            destructive: true,
+            onPrimary: () => Navigator.of(dialogContext).pop(true),
           ),
         ) ??
         false;
@@ -200,9 +189,8 @@ class _LiftLogSheetState extends ConsumerState<LiftLogSheet> {
     });
   }
 
-  /// Ghi; xong thì đóng bảng và báo [action]'s câu. Ngoài cửa sổ (đã qua
-  /// 00:00, FA2-17): hộp "đã khóa" → "Đã hiểu" → đóng bảng; S-63 tự chuyển
-  /// chỉ đọc vì cửa sổ tính lại theo giờ.
+  /// Ghi; xong thì đóng bảng và báo câu của [action]. Ngoài cửa sổ (đã qua
+  /// 00:00): hộp "đã khóa" → "Đã hiểu" → đóng bảng.
   Future<void> _run(Future<String> Function() action) async {
     setState(() => _busy = true);
     final host = widget.host;
@@ -214,7 +202,6 @@ class _LiftLogSheetState extends ConsumerState<LiftLogSheet> {
       if (e.error == LiftError.windowClosed) {
         if (mounted) await _showLocked();
       } else {
-        // Bảng chỉ mở khi ghi được; lỗi khác ở đây là dữ liệu vừa đổi.
         await reporter.report(e, st, reason: 'lift_log');
       }
     }
@@ -222,18 +209,14 @@ class _LiftLogSheetState extends ConsumerState<LiftLogSheet> {
     if (toast != null && host.mounted) showToast(host, toast);
   }
 
-  Future<void> _showLocked() => showAppDialog<void>(
+  Future<void> _showLocked() => showIronlyDialog<void>(
     context,
-    builder: (dialogContext) => AlertDialog(
+    builder: (dialogContext) => IronlyDialog(
       key: const ValueKey('lift-locked'),
-      title: const Text(S.liftAndNoteLocked, textAlign: TextAlign.center),
-      actions: [
-        FilledButton(
-          key: const ValueKey('lift-locked-ok'),
-          onPressed: () => Navigator.of(dialogContext).pop(),
-          child: const Text(S.understood),
-        ),
-      ],
+      title: S.liftAndNoteLocked,
+      primaryLabel: S.understood,
+      primaryKey: const ValueKey('lift-locked-ok'),
+      onPrimary: () => Navigator.of(dialogContext).pop(),
     ),
   );
 
@@ -252,16 +235,10 @@ class _LiftLogSheetState extends ConsumerState<LiftLogSheet> {
   Widget build(BuildContext context) {
     final draft = ref.watch(liftLogDraftProvider(widget.args));
     final args = widget.args;
-    final palette = context.palette;
-    final previous = args.previous;
     final error = draft.error;
     final warning = draft.warning;
     final unit = draft.unit;
-    final secondary = context.text.bodyLarge?.copyWith(
-      color: palette.textSecondary,
-    );
     final unitError = error == LiftInputError.unitMissing;
-    final previousNote = args.previousNote;
 
     Widget field(LiftField f) => _StepperField(
       key: ValueKey('lift-box-${f.name}'),
@@ -279,150 +256,68 @@ class _LiftLogSheetState extends ConsumerState<LiftLogSheet> {
       dirty: draft.isDirty,
       title: S.discardChanges,
       keepLabel: S.keepLogging,
-      // Nút Lưu ghim ở đáy bảng: bàn phím mở thì ô đang nhập (tự cuộn tới),
-      // ô ghi chú và nút Lưu luôn ở trên bàn phím (04 Bản 3 S-64).
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Flexible(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Heading(
-                    args.exercise.nameVi,
-                    style: context.text.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    draft.noteOnly
-                        ? S.liftNoWeight
-                        : previous == null
-                        ? S.liftFirstTime
-                        : S.liftPrevious(
-                            Fmt.dayMonth(previous.date),
-                            Fmt.kgNumber(previous.startKgX10),
-                            Fmt.kgNumber(previous.endKgX10),
-                            Fmt.liftUnit(unit ?? LiftUnit.kg),
-                          ),
-                    key: const ValueKey('lift-previous'),
-                    style: secondary,
-                  ),
-                  if (!draft.noteOnly) ...[
-                    if (draft.choosingUnit) ...[
-                      const SizedBox(height: 16),
-                      Text(S.liftUnitPrompt, style: secondary),
-                      const SizedBox(height: 8),
-                      SectionBar<LiftUnit>(
-                        key: const ValueKey('lift-unit-bar'),
-                        items: LiftUnit.values,
-                        selected: unit,
-                        label: Fmt.liftUnitFull,
-                        keyOf: (u) => ValueKey('lift-unit-${u.wire}'),
-                        onSelected: _draft.chooseUnit,
-                      ),
-                      if (unitError) ...[
-                        const SizedBox(height: 6),
-                        _ErrorText(
-                          Fmt.liftError(LiftInputError.unitMissing, null),
-                        ),
-                      ],
-                    ],
-                    const SizedBox(height: 16),
-                    field(LiftField.start),
-                    const SizedBox(height: 12),
-                    field(LiftField.end),
-                    const SizedBox(height: 8),
-                    if (error != null && !unitError)
-                      _ErrorText(Fmt.liftError(error, unit))
-                    else if (unit != null)
-                      Text(
-                        draft.prefilled
-                            ? S.liftStepGuide(_stepText(unit))
-                            : S.liftStepGuideFirst(_stepText(unit)),
-                        key: const ValueKey('lift-guide'),
-                        textAlign: TextAlign.center,
-                        style: context.text.bodyMedium?.copyWith(
-                          color: palette.textSecondary,
-                        ),
-                      ),
-                    if ((warning, unit) case (final w?, final u?)) ...[
-                      const SizedBox(height: 16),
-                      _WarningBox(w, u),
-                    ],
-                  ],
-                  if (previousNote != null) ...[
-                    const SizedBox(height: 16),
-                    Row(
-                      key: const ValueKey('note-previous'),
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(top: 3, right: 6),
-                          child: Icon(
-                            Icons.sticky_note_2_outlined,
-                            size: 16,
-                            color: palette.textSecondary,
-                          ),
-                        ),
-                        Expanded(
-                          child: Text(
-                            S.notePrevious(
-                              Fmt.dayMonth(previousNote.date),
-                              previousNote.text,
-                            ),
-                            style: secondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                  const SizedBox(height: 12),
-                  _NoteField(controller: _note, onChanged: _editNote),
-                ],
+      child: IronlySheet(
+        title: args.exercise.nameVi,
+        footer: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            IronlyButton.primary(
+              key: const ValueKey('lift-save'),
+              label: S.save,
+              onPressed: _save,
+            ),
+            if (args.existing != null && !draft.noteOnly) ...[
+              const SizedBox(height: TokenSpace.s1),
+              IronlyButton.danger(
+                key: const ValueKey('lift-delete'),
+                label: S.deleteLift,
+                onPressed: _delete,
               ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                PrimaryButton(
-                  key: const ValueKey('lift-save'),
-                  label: S.save,
-                  onPressed: _save,
-                ),
-                if (args.existing != null && !draft.noteOnly) ...[
-                  const SizedBox(height: 8),
-                  TextButton(
-                    key: const ValueKey('lift-delete'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: context.colors.error,
-                      textStyle: context.text.titleMedium,
-                      minimumSize: const Size(44, 44),
-                    ),
-                    onPressed: _delete,
-                    child: const Text(S.deleteLift),
-                  ),
-                ],
+            ],
+          ],
+        ),
+        children: [
+          if (!draft.noteOnly) ...[
+            if (draft.choosingUnit) ...[
+              SegmentBar<LiftUnit>(
+                key: const ValueKey('lift-unit-bar'),
+                items: LiftUnit.values,
+                selected: unit,
+                style: SegmentStyle.accent,
+                background: context.tokens.surfaceRaised,
+                label: Fmt.liftUnitFull,
+                keyOf: (u) => ValueKey('lift-unit-${u.wire}'),
+                onSelected: _draft.chooseUnit,
+              ),
+              if (unitError) ...[
+                const SizedBox(height: 6),
+                _ErrorText(Fmt.liftError(LiftInputError.unitMissing, null)),
               ],
-            ),
+              const SizedBox(height: TokenSpace.s4),
+            ],
+            field(LiftField.start),
+            const SizedBox(height: TokenSpace.s3),
+            field(LiftField.end),
+            if (error != null && !unitError) ...[
+              const SizedBox(height: TokenSpace.s2),
+              _ErrorText(Fmt.liftError(error, unit)),
+            ],
+            if ((warning, unit) case (final w?, final u?)) ...[
+              const SizedBox(height: TokenSpace.s3),
+              _WarningBox(w, u),
+            ],
+            const SizedBox(height: TokenSpace.s3),
+          ],
+          _NoteBox(
+            controller: _note,
+            onChanged: _editNote,
+            previous: args.previousNote,
           ),
         ],
       ),
     );
   }
-
-  /// "2,5 kg" / "1 nấc" (UA3-06).
-  static String _stepText(LiftUnit unit) =>
-      LiftFormat.value(LiftStep.of(unit), unit);
 }
 
 class _ErrorText extends StatelessWidget {
@@ -436,16 +331,15 @@ class _ErrorText extends StatelessWidget {
     child: Text(
       text,
       key: const ValueKey('lift-error'),
-      style: context.text.bodyLarge?.copyWith(color: context.colors.error),
+      style: IronlyText.error,
     ),
   );
 }
 
-/// Ô số có ±bước (04 Bản 3 §6.10): nhãn ô ở trên; một hàng trọn bề ngang
-/// gồm nút −bước 56 điểm nền xanh nhạt · khung số 60 điểm cao (con số lớn
-/// kèm đơn vị nhỏ) · nút +bước. Số điền sẵn màu xám, đã sửa màu thường
-/// (UA3-06). Chạm vào số để gõ: kg bàn phím số có dấu phẩy (nhận "," và
-/// ".", hiện ","); nấc máy chỉ chữ số. Chưa chọn đơn vị: nút không tác dụng.
+/// Một khối số (04 Bản 4 S-64): nhãn 11 chữ phụ; hàng nút vuông "−2,5" (52,
+/// thẻ nổi) · ô số 26 / 600 với đơn vị nhỏ · nút "+2,5" (nấc: ±1). Chạm vào
+/// số để gõ: kg bàn phím số có dấu phẩy; nấc chỉ chữ số. Chưa chọn đơn vị:
+/// nút mờ, không tác dụng.
 class _StepperField extends StatelessWidget {
   const _StepperField({
     super.key,
@@ -470,146 +364,45 @@ class _StepperField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
-    final palette = context.palette;
     final label = field == LiftField.start ? S.liftStart : S.liftEnd;
     final u = unit;
-    final steps = u == LiftUnit.steps;
     final step = u == null ? null : LiftKg.format(LiftStep.of(u));
     final stepText = u == null ? null : LiftFormat.value(LiftStep.of(u), u);
-    final numberStyle = context.text.headlineLarge?.copyWith(
-      fontSize: TokenType.numberField,
-      fontWeight: FontWeight.w700,
-      color: gray ? palette.textSecondary : colors.onSurface,
-    );
-    // Cao theo cỡ chữ để con số không bị thu nhỏ ở cỡ chữ lớn.
-    final height = MediaQuery.textScalerOf(
-      context,
-    ).scale(40).clamp(60, 120).toDouble();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: context.text.bodyLarge?.copyWith(
-            color: palette.textSecondary,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        Text(label, style: IronlyText.caption),
         const SizedBox(height: 6),
         Row(
           children: [
             _StepButton(
               key: ValueKey('lift-${field.name}-minus'),
               text: step == null ? '−' : '−$step',
-              height: height,
               label: stepText == null
                   ? label
                   : '$label, ${S.liftDecreaseBy(stepText)}',
               onStep: u == null ? null : () => onStep(-1),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: TokenSpace.s2),
             Expanded(
-              child: Container(
-                height: height,
-                decoration: BoxDecoration(
-                  color: palette.card,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: active ? colors.primary : palette.border,
-                    width: active ? 2 : 1,
-                  ),
-                ),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    ExcludeSemantics(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6),
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: ListenableBuilder(
-                            listenable: controller,
-                            builder: (context, _) => Row(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.baseline,
-                              textBaseline: TextBaseline.alphabetic,
-                              children: [
-                                Text(
-                                  controller.text.isEmpty
-                                      ? '—'
-                                      : controller.text,
-                                  key: ValueKey('lift-${field.name}-value'),
-                                  style: controller.text.isEmpty
-                                      ? numberStyle?.copyWith(
-                                          color: palette.textSecondary,
-                                          fontWeight: FontWeight.w400,
-                                        )
-                                      : numberStyle,
-                                ),
-                                if (u != null) ...[
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    Fmt.liftUnit(u),
-                                    style: context.text.bodyMedium?.copyWith(
-                                      fontSize: TokenType.body,
-                                      color: palette.textSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Ô nhập trong suốt phủ lên: chạm con số để gõ.
-                    Positioned.fill(
-                      child: Semantics(
-                        label: label,
-                        child: TextField(
-                          key: ValueKey('lift-${field.name}-input'),
-                          controller: controller,
-                          focusNode: focusNode,
-                          onChanged: onChanged,
-                          textAlign: TextAlign.center,
-                          showCursor: false,
-                          enableInteractiveSelection: false,
-                          style: numberStyle?.copyWith(
-                            color: TokenColor.transparent,
-                          ),
-                          keyboardType: TextInputType.numberWithOptions(
-                            decimal: !steps,
-                          ),
-                          inputFormatters: [
-                            if (steps)
-                              FilteringTextInputFormatter.digitsOnly
-                            else ...[
-                              FilteringTextInputFormatter.allow(
-                                RegExp('[0-9.,]'),
-                              ),
-                              _CommaFormatter(),
-                            ],
-                          ],
-                          decoration: const InputDecoration(
-                            border: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                            filled: false,
-                            contentPadding: EdgeInsets.zero,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              child: BigNumberField(
+                name: 'lift-${field.name}',
+                controller: controller,
+                focusNode: focusNode,
+                unit: u == null ? null : Fmt.liftUnit(u),
+                active: active,
+                gray: gray,
+                decimal: u != LiftUnit.steps,
+                onChanged: onChanged,
+                height: TokenSize.stepButton,
+                semanticsLabel: label,
+                background: context.tokens.surfaceRaised,
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: TokenSpace.s2),
             _StepButton(
               key: ValueKey('lift-${field.name}-plus'),
               text: step == null ? '+' : '+$step',
-              height: height,
               label: stepText == null
                   ? label
                   : '$label, ${S.liftIncreaseBy(stepText)}',
@@ -622,29 +415,17 @@ class _StepperField extends StatelessWidget {
   }
 }
 
-/// "." → "," ngay khi gõ (F21-E9: hiểu như nhau, hiển thị bằng dấu phẩy).
-class _CommaFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) => newValue.copyWith(text: newValue.text.replaceAll('.', ','));
-}
-
-/// Nút −bước / +bước: ô vuông bo góc 56 điểm, nền xanh nhạt, chữ "−2,5" /
-/// "+1" (04 Bản 3 §6.10); giữ để chạy nhanh, mỗi bước rung nhẹ. null = chưa
-/// chọn đơn vị: mờ, không tác dụng.
+/// Nút −bước / +bước: ô vuông 52 thẻ nổi, chữ "−2,5" / "+1"; giữ để chạy
+/// nhanh, mỗi bước rung nhẹ. null = chưa chọn đơn vị: mờ, không tác dụng.
 class _StepButton extends StatefulWidget {
   const _StepButton({
     super.key,
     required this.text,
-    required this.height,
     required this.label,
     required this.onStep,
   });
 
   final String text;
-  final double height;
   final String label;
   final VoidCallback? onStep;
 
@@ -679,8 +460,9 @@ class _StepButtonState extends State<_StepButton> {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.tokens;
     final onStep = widget.onStep;
-    final colors = context.colors;
+    final radius = BorderRadius.circular(TokenRadius.field);
     return Semantics(
       button: true,
       enabled: onStep != null,
@@ -695,29 +477,32 @@ class _StepButtonState extends State<_StepButton> {
                 ),
           onLongPressEnd: (_) => _stop(),
           onLongPressCancel: _stop,
-          child: SizedBox(
-            width: 56,
-            height: widget.height,
-            child: TextButton(
-              style: TextButton.styleFrom(
-                padding: EdgeInsets.zero,
-                backgroundColor: colors.primaryContainer,
-                foregroundColor: colors.primary,
-                disabledBackgroundColor: colors.primaryContainer.withAlpha(90),
-                disabledForegroundColor: colors.primary.withAlpha(90),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                textStyle: context.text.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              onPressed: onStep == null ? null : _fire,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Text(widget.text),
+          child: Opacity(
+            opacity: onStep == null ? IronlyButton.disabledOpacity : 1,
+            child: Material(
+              color: t.surfaceRaised,
+              borderRadius: radius,
+              child: InkWell(
+                borderRadius: radius,
+                onTap: onStep == null ? null : _fire,
+                child: SizedBox(
+                  width: TokenSize.stepButton,
+                  height: TokenSize.stepButton,
+                  child: Center(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Text(
+                          widget.text,
+                          style: IronlyText.body.copyWith(
+                            fontWeight: FontWeight.w600,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -728,52 +513,90 @@ class _StepButtonState extends State<_StepButton> {
   }
 }
 
-/// Ô ghi chú (04 Bản 3 §6.10): gợi ý "Ghi chú cho hôm nay", bộ đếm "{n}/200"
-/// góc phải; cao dần theo nội dung tới 4 dòng rồi cuộn trong ô. Không gõ
-/// thêm khi đủ 200 ký tự; dán dài cắt còn 200 (F26-V1, E1).
-class _NoteField extends StatelessWidget {
-  const _NoteField({required this.controller, required this.onChanged});
+/// Ô ghi chú (04 Bản 4 S-64): thẻ nổi bo 8, icon ghi chú trái; dòng trên là
+/// ghi chú buổi trước "20/10: …" mờ 11 (nếu có), dưới là ghi chú hôm nay
+/// trắng 12. Không gõ thêm khi đủ 200 ký tự; dán dài cắt còn 200 (F26-V1).
+class _NoteBox extends StatelessWidget {
+  const _NoteBox({
+    required this.controller,
+    required this.onChanged,
+    required this.previous,
+  });
 
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
+  final ExerciseNote? previous;
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
-    return Stack(
-      children: [
-        TextField(
-          key: const ValueKey('note-input'),
-          controller: controller,
-          onChanged: onChanged,
-          minLines: 1,
-          maxLines: 4,
-          keyboardType: TextInputType.multiline,
-          textCapitalization: TextCapitalization.sentences,
-          inputFormatters: [_NoteLengthFormatter()],
-          decoration: InputDecoration(
-            hintText: S.noteHint,
-            hintStyle: context.text.bodyLarge?.copyWith(
-              color: palette.textSecondary,
-            ),
-            contentPadding: const EdgeInsets.fromLTRB(16, 16, 72, 16),
-          ),
-        ),
-        Positioned(
-          top: 12,
-          right: 14,
-          child: ListenableBuilder(
-            listenable: controller,
-            builder: (context, _) => Text(
-              S.noteCounter(ExerciseNoteRules.length(controller.text)),
-              key: const ValueKey('note-counter'),
-              style: context.text.bodySmall?.copyWith(
-                color: palette.textSecondary,
-              ),
+    final t = context.tokens;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(
+        TokenSpace.s3,
+        TokenSpace.s2,
+        TokenSpace.s3,
+        TokenSpace.s2,
+      ),
+      decoration: BoxDecoration(
+        color: t.surfaceRaised,
+        borderRadius: BorderRadius.circular(TokenRadius.row),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 10, right: TokenSpace.s2),
+            child: Icon(
+              Icons.sticky_note_2_outlined,
+              size: 16,
+              color: t.textSecondary,
             ),
           ),
-        ),
-      ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (previous != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(
+                      S.notePrevious(
+                        Fmt.dayMonth(previous!.date),
+                        previous!.text,
+                      ),
+                      key: const ValueKey('note-previous'),
+                      style: IronlyText.caption.copyWith(color: t.textPrefill),
+                    ),
+                  ),
+                TextField(
+                  key: const ValueKey('note-input'),
+                  controller: controller,
+                  onChanged: onChanged,
+                  minLines: 1,
+                  maxLines: 4,
+                  keyboardType: TextInputType.multiline,
+                  textCapitalization: TextCapitalization.sentences,
+                  inputFormatters: [_NoteLengthFormatter()],
+                  style: IronlyText.caption2,
+                  cursorColor: t.accent,
+                  decoration: InputDecoration(
+                    hintText: S.noteHint,
+                    hintStyle: IronlyText.caption2.copyWith(
+                      color: t.textPrefill,
+                    ),
+                    filled: false,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -794,8 +617,8 @@ class _NoteLengthFormatter extends TextInputFormatter {
   }
 }
 
-/// Khu cảnh báo (04 Bản 3 §6.6): nền vàng nhạt, viền vàng, chữ tối, không có
-/// nút, câu nguyên văn F21-R45 theo đơn vị. Không dùng đỏ (UA-15).
+/// Khu cảnh báo (04 Bản 4 §6.9): banner thẻ viền cam, câu nguyên văn F21-R45
+/// theo đơn vị, không nút.
 class _WarningBox extends StatelessWidget {
   const _WarningBox(this.warning, this.unit);
 
@@ -806,25 +629,11 @@ class _WarningBox extends StatelessWidget {
   Widget build(BuildContext context) {
     final n = Fmt.kgNumber(warning.diffX10);
     final u = Fmt.liftUnit(unit);
-    return Semantics(
-      liveRegion: true,
-      child: Container(
-        key: ValueKey('lift-warning-${warning.kind.name}'),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: context.palette.referenceContainer,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: context.palette.reference.withAlpha(90)),
-        ),
-        child: Text(
-          warning.kind == EndWarningKind.lower
-              ? S.liftEndLower(n, u)
-              : S.liftEndMuchHigher(n, u),
-          style: context.text.bodyLarge?.copyWith(
-            color: context.colors.onSurface,
-          ),
-        ),
-      ),
+    return IronlyBanner(
+      key: ValueKey('lift-warning-${warning.kind.name}'),
+      text: warning.kind == EndWarningKind.lower
+          ? S.liftEndLower(n, u)
+          : S.liftEndMuchHigher(n, u),
     );
   }
 }

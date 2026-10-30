@@ -77,15 +77,27 @@ class IronlyDialog extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Semantics(
-              header: true,
-              child: Text(title, style: IronlyText.dialogTitle),
+            // Cỡ chữ lớn (TA4-04) hoặc bàn phím đang mở: phần chữ cuộn, nút
+            // luôn thấy.
+            Flexible(
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Semantics(
+                      header: true,
+                      child: Text(title, style: IronlyText.dialogTitle),
+                    ),
+                    if (body != null) ...[
+                      const SizedBox(height: TokenSpace.s2),
+                      Text(body!, style: IronlyText.dialogBody),
+                    ],
+                    if (child != null) ...[const SizedBox(height: 14), child!],
+                  ],
+                ),
+              ),
             ),
-            if (body != null) ...[
-              const SizedBox(height: TokenSpace.s2),
-              Text(body!, style: IronlyText.dialogBody),
-            ],
-            if (child != null) ...[const SizedBox(height: 14), child!],
             if (buttons.isNotEmpty) ...[
               const SizedBox(height: 18),
               if (stacked || buttons.length == 1)

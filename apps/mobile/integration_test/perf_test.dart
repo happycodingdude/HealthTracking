@@ -151,7 +151,7 @@ void main() {
     await _seedOneYear();
 
     // Mở app: từ lúc gọi tới khi Hôm nay hiện buổi tập có nút "Đã tập".
-    final done = find.byKey(ValueKey('mark-done-${_today.toKey()}'));
+    final done = find.byKey(const ValueKey('today-mark-done'));
     final startWatch = Stopwatch()..start();
     await app.runIronlyApp(overrides: [clockProvider.overrideWithValue(clock)]);
     await _msUntil(tester, () => done.evaluate().isNotEmpty);
@@ -162,37 +162,42 @@ void main() {
     // chạm "Lưu" tới khi dòng bài hiện con số. Đo trước khi đánh dấu: server
     // thử chưa có lịch nên lần gửi sau đó bị từ chối và ngày bị hoàn về.
     // Bài đầu tiên ghi được của buổi (buổi thay đổi theo ngày chạy test).
+    // Bản 4 (FR4-07): danh sách bài nằm ngay ở Hôm nay; chạm hàng số → S-64.
     final logButton = find.byWidgetPredicate(
       (w) =>
           w.key is ValueKey<String> &&
-          (w.key! as ValueKey<String>).value.startsWith('lift-log-'),
+          (w.key! as ValueKey<String>).value.startsWith('lift-row-'),
     );
-    await tester.tap(find.byKey(const ValueKey('session-view-exercises')));
     await pumpUntil(tester, logButton);
     final exerciseId = (tester.widget(logButton.first).key! as ValueKey<String>)
         .value
-        .substring('lift-log-'.length);
+        .substring('lift-row-'.length);
     final sheet = find.byKey(const ValueKey('lift-save'));
     await tester.tap(logButton.first);
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('lift-unit-kg')));
     await tester.pumpAndSettle();
     // Số hợp lệ cho cả kg lẫn nấc máy (1–50).
-    await tester.enterText(find.byKey(const ValueKey('lift-start-input')), '7');
-    await tester.enterText(find.byKey(const ValueKey('lift-end-input')), '8');
+    await tester.enterText(find.byKey(const ValueKey('field-lift-start')), '7');
+    await tester.enterText(find.byKey(const ValueKey('field-lift-end')), '8');
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('lift-save')));
-    final value = find.byKey(ValueKey('lift-value-$exerciseId'));
+    final value = find.byWidgetPredicate(
+      (w) =>
+          w is Text &&
+          w.key == ValueKey('lift-end-$exerciseId') &&
+          w.data == '8',
+    );
     final liftMs = await _msUntil(tester, () => value.evaluate().isNotEmpty);
     await tester.pumpAndSettle();
     // Mở S-64 có sẵn số (06 Bản 3 IA3-09): từ lúc chạm con số vừa ghi tới
     // khi bảng có nút Lưu; đóng ngay (chưa sửa gì nên không hỏi).
-    await tester.tap(value);
+    await tester.tap(find.byKey(ValueKey('lift-row-$exerciseId')));
     final sheetMs = await _msUntil(tester, () => sheet.evaluate().isNotEmpty);
     await tester.pumpAndSettle();
     await tester.tapAt(const Offset(20, 80));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('session-back')));
+    await reveal(tester, done);
     await tester.pumpAndSettle();
 
     // Đánh dấu: chạm "Đã tập" → hộp S-65; đo từ lúc chạm "Lưu" tới khi thẻ
