@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mobile/app/theme.dart';
-import 'package:mobile/core/widgets/app_sheet.dart';
+import 'package:mobile/ui/components/components.dart';
+import 'package:mobile/ui/theme.dart';
 
+/// UR-16 / UX-AC23: bảng trượt và hộp thoại Bản 4 (`ironly_sheet.dart`) giữ
+/// trang phía sau, chỉ phủ lớp mờ `TokenColor.scrim`.
 void main() {
   Future<void> pumpHost(
     WidgetTester tester,
@@ -42,7 +44,10 @@ void main() {
   ) async {
     await pumpHost(
       tester,
-      (c) => showAppSheet<void>(c, builder: (_) => const Text('Trong bảng')),
+      (c) => showIronlySheet<void>(
+        c,
+        builder: (_) => const IronlySheet(children: [Text('Trong bảng')]),
+      ),
     );
     expect(find.text('Trong bảng'), findsOneWidget);
     expect(find.text('Nội dung phía sau'), findsOneWidget);
@@ -59,9 +64,9 @@ void main() {
   ) async {
     await pumpHost(
       tester,
-      (c) => showAppDialog<void>(
+      (c) => showIronlyDialog<void>(
         c,
-        builder: (_) => const AlertDialog(content: Text('Hộp')),
+        builder: (_) => const IronlyDialog(title: 'Hộp', primaryLabel: 'OK'),
       ),
     );
     expect(find.text('Hộp'), findsOneWidget);

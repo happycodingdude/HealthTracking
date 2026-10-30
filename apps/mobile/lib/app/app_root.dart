@@ -5,9 +5,9 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 
 import '../data/db/app_database.dart';
 import '../features/account/application/logout.dart';
+import '../ui/theme.dart';
 import 'app.dart';
 import 'strings_vi.dart';
-import 'theme.dart';
 
 /// Một lần khởi động: database đang mở và các override của ProviderScope.
 typedef AppStart = ({AppDatabase db, List<Override> overrides});

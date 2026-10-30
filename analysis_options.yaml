@@ -15,6 +15,8 @@ analyzer:
     - "**/build/**"
     # Chạy trong bản code app 2.x (tool/compat_e2e.sh), không phải cây này.
     - "tool/compat/**"
+    # Chạy trong bản code app 3.0.0 (tool/upgrade_test.sh), không phải cây này.
+    - "tool/upgrade/**"
 
 linter:
   rules:

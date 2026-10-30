@@ -7,7 +7,6 @@ import 'package:mobile/app/app.dart';
 import 'package:mobile/app/shell/app_tab.dart';
 import 'package:mobile/app/shell/tab_scroll.dart';
 import 'package:mobile/app/strings_vi.dart';
-import 'package:mobile/core/widgets/labeled_field.dart';
 import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/data/local_marks.dart';
 import 'package:mobile/features/me/data/profile_repository.dart';
@@ -58,11 +57,6 @@ void main() {
   Finder tab(String label) => find.descendant(
     of: find.byType(IronlyTabBar),
     matching: find.text(label),
-  );
-
-  Finder input(String label) => find.descendant(
-    of: find.byWidgetPredicate((w) => w is LabeledField && w.label == label),
-    matching: find.byType(TextField),
   );
 
   Future<void> tapFinder(WidgetTester tester, Finder f) async {
@@ -328,7 +322,7 @@ void main() {
       await openMe(tester);
       await tapKey(tester, 'row-profile');
       // F01-R4: không có ô cân nặng; cân nặng hiện tại chỉ xem.
-      expect(input(S.fieldWeight), findsNothing);
+      expect(find.byKey(const ValueKey('field-weight')), findsNothing);
       expect(find.text(S.logInWeightTab), findsNothing);
       await reveal(
         tester,

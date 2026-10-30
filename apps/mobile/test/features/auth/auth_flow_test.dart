@@ -6,12 +6,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/app.dart';
 import 'package:mobile/app/providers.dart';
 import 'package:mobile/app/strings_vi.dart';
-import 'package:mobile/app/theme.dart';
 import 'package:mobile/data/auth/session_store.dart';
 import 'package:mobile/features/auth/presentation/login_screen.dart';
 import 'package:mobile/features/auth/presentation/register_screen.dart';
 import 'package:mobile/features/auth/presentation/welcome_screen.dart';
 import 'package:mobile/ui/components/components.dart';
+import 'package:mobile/ui/theme.dart';
 
 import '../../support/app_harness.dart';
 import '../../support/fake_server.dart';

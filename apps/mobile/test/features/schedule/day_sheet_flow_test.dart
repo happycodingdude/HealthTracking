@@ -8,7 +8,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/app.dart';
 import 'package:mobile/app/router.dart';
 import 'package:mobile/app/strings_vi.dart';
-import 'package:mobile/app/theme.dart';
 import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/features/schedule/application/month_materializer.dart';
 import 'package:mobile/features/schedule/data/schedule_repository.dart';
@@ -18,6 +17,7 @@ import 'package:mobile/features/schedule/presentation/schedule_screen.dart';
 import 'package:mobile/features/workout/presentation/session_screen.dart';
 import 'package:mobile/ui/components/ironly_button.dart';
 import 'package:mobile/ui/components/ironly_tab_bar.dart';
+import 'package:mobile/ui/theme.dart';
 
 import '../../support/app_harness.dart';
 import '../../support/fake_notifications.dart';

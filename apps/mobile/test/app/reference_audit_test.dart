@@ -70,7 +70,7 @@ void main() {
   }
 
   Finder tagIn(Finder parent) =>
-      find.descendant(of: parent, matching: find.byType(ReferenceTag));
+      find.descendant(of: parent, matching: find.text(S.referenceTag));
 
   testWidgets('F10-R2, F10-AC2: nhãn "tham khảo" ở mức calo (S-52), thực đơn '
       '(S-30 đầu trang, tổng; thẻ ở Hôm nay), calo từng món có ghi chú "Calo '
@@ -89,7 +89,7 @@ void main() {
 
     // Bản 4 (FR4-05): S-30 không còn nhãn "tham khảo" và câu ước lượng.
     await tab(tester, S.tabMenu);
-    expect(find.byType(ReferenceTag), findsNothing, reason: 'S-30');
+    expect(find.text(S.referenceTag), findsNothing, reason: 'S-30');
     await reveal(tester, find.byKey(const ValueKey('menu-total')));
     expect(find.text(S.menuEstimateNote), findsNothing);
 
@@ -97,7 +97,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('row-calorie')));
     await tester.pumpAndSettle();
     // Bản 4 (FR4-05): S-52 không còn nhãn.
-    expect(find.byType(ReferenceTag), findsNothing, reason: 'S-52');
+    expect(find.text(S.referenceTag), findsNothing, reason: 'S-52');
   });
 
   testWidgets('UX-AC15 (Bản 4, FR4-05): không còn nhãn "tham khảo" ở S-52; '

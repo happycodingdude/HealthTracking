@@ -10,8 +10,7 @@ import 'package:mobile/app/shell/app_tab.dart';
 import 'package:mobile/app/shell/tab_scroll.dart';
 import 'package:mobile/app/shell/tab_stacks.dart';
 import 'package:mobile/app/strings_vi.dart';
-import 'package:mobile/core/widgets/tab_page.dart';
-import 'package:mobile/ui/components/ironly_tab_bar.dart';
+import 'package:mobile/ui/components/components.dart';
 
 import '../support/app_harness.dart';
 
@@ -90,7 +89,7 @@ void main() {
               routes: [
                 GoRoute(
                   path: tab.path,
-                  builder: (_, _) => TabPage(
+                  builder: (_, _) => IronlyTabPage(
                     tab: tab,
                     title: tab.label,
                     children: [

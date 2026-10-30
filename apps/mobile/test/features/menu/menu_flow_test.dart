@@ -10,7 +10,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/app.dart';
 import 'package:mobile/app/strings_vi.dart';
-import 'package:mobile/core/widgets/reference_tag.dart';
 import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/features/me/data/profile_repository.dart';
 import 'package:mobile/features/menu/data/menu_repository.dart';
@@ -116,7 +115,7 @@ void main() {
     expect(find.text(S.remainingShort(3)), findsOneWidget);
     expect(find.text('THỨ 4, 07/10'), findsOneWidget);
     expect(dateLine('2.210 kcal'), findsOneWidget);
-    expect(find.byType(ReferenceTag), findsNothing);
+    expect(find.text(S.referenceTag), findsNothing);
     expect(menus.calls, isEmpty);
   });
 
@@ -165,7 +164,7 @@ void main() {
     expect(find.text('560 kcal'), findsOneWidget, reason: 'calo bữa sáng');
     await reveal(tester, find.byKey(const ValueKey('regenerate')));
     expect(find.bySemanticsLabel(RegExp('^Tổng: 2.020 kcal')), findsOneWidget);
-    expect(find.byType(ReferenceTag), findsNothing);
+    expect(find.text(S.referenceTag), findsNothing);
     expect(find.text(S.menuEstimateNote), findsNothing);
     expect(find.text(S.regenerateShort(2)), findsOneWidget);
     expect(
@@ -449,7 +448,7 @@ void main() {
       await scrollToCard(tester);
       // FR4-05: không nhãn "tham khảo"; thẻ chỉ còn nút "Gợi ý thực đơn".
       expect(
-        find.descendant(of: card(), matching: find.byType(ReferenceTag)),
+        find.descendant(of: card(), matching: find.text(S.referenceTag)),
         findsNothing,
       );
       expect(

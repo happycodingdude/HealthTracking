@@ -17,28 +17,25 @@ void main() {
       if (pattern.hasMatch(e.value)) e.key,
   };
 
-  test('UX-AC23: mọi bảng trượt và hộp thoại mở qua ironly_sheet.dart / '
-      'app_sheet.dart (có lớp mờ, trang phía sau giữ nguyên)', () {
-    expect(
-      filesUsing(
-        RegExp(
-          r'showModalBottomSheet|showDialog\b|showCupertinoModalPopup|'
-          r'showGeneralDialog|showBottomSheet\(',
+  test(
+    'UX-AC23: mọi bảng trượt và hộp thoại mở qua ironly_sheet.dart (có lớp mờ, trang phía sau giữ nguyên)',
+    () {
+      expect(
+        filesUsing(
+          RegExp(
+            r'showModalBottomSheet|showDialog\b|showCupertinoModalPopup|'
+            r'showGeneralDialog|showBottomSheet\(',
+          ),
         ),
-      ),
-      {
-        'lib/core/widgets/app_sheet.dart',
-        'lib/ui/components/ironly_sheet.dart',
-      },
-    );
-  });
+        {'lib/ui/components/ironly_sheet.dart'},
+      );
+    },
+  );
 
   test('UX-AC17, UX-AC62: màu đỏ chỉ ở lỗi nhập liệu, nút xóa và nút "Đăng '
       'xuất" trong hộp xác nhận', () {
     // Mỗi file được duyệt tay: câu lỗi dưới ô/dưới dòng, hoặc nút xóa.
     const reviewed = {
-      'lib/app/theme.dart', // định nghĩa colorScheme.error
-      'lib/core/widgets/labeled_field.dart', // câu lỗi dưới ô
       'lib/features/onboarding/presentation/profile_fields.dart', // lỗi dưới ô
       'lib/features/onboarding/presentation/schedule_step_screen.dart', // F03-V1
       'lib/features/schedule/presentation/weekly_template_editor.dart', // F03-V2, V3

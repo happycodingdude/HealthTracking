@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
-import '../../../app/theme.dart';
+import '../../../ui/theme.dart';
 
 /// Kết quả gọi `/healthz` của server dev (demo VS-00).
 final serverHealthProvider = FutureProvider.autoDispose<bool>(
@@ -30,7 +30,7 @@ class DevServerStatus extends ConsumerWidget {
         'Dev server: $status (${env.apiBaseUrl})',
         key: const ValueKey('dev-server-status'),
         style: context.text.bodySmall?.copyWith(
-          color: context.palette.textSecondary,
+          color: context.tokens.textSecondary,
         ),
       ),
     );

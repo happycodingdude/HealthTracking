@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../app/strings_vi.dart';
-import '../../app/theme.dart';
 import '../../ui/components/components.dart';
-import 'app_sheet.dart';
-import 'heading.dart';
+import '../../ui/theme.dart';
 
 /// Đường dẫn S-55 "Về gợi ý tham khảo" (F10-R4).
 const aboutReferencePath = '/reference';
 
-/// 4 ý chính của thông báo tham khảo (F10-R1): S-02, S-55, bảng trượt của
-/// nhãn "tham khảo".
+/// 4 ý chính của thông báo tham khảo (F10-R1): S-02, S-55 (Bản 4 bỏ nhãn
+/// "tham khảo" và bảng trượt của nhãn, FR4-05).
 class DisclaimerPoints extends StatelessWidget {
   const DisclaimerPoints({super.key});
 
@@ -55,94 +52,6 @@ class DisclaimerPoints extends StatelessWidget {
             ),
           ),
       ],
-    );
-  }
-}
-
-/// Nhãn nhỏ màu vàng nhạt "tham khảo" (04 §6.13.2, F10-R2). Chạm → bảng trượt
-/// nhắc lại ý chính của F10-R1, kèm "Xem đầy đủ" → S-55.
-class ReferenceTag extends StatelessWidget {
-  const ReferenceTag({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-    return Semantics(
-      button: true,
-      label: S.referenceTag,
-      child: ExcludeSemantics(
-        child: InkWell(
-          key: const ValueKey('reference-tag'),
-          borderRadius: BorderRadius.circular(8),
-          onTap: () => showReferenceSheet(context),
-          child: ConstrainedBox(
-            // Vùng chạm 44 điểm (04 §6.17), nhãn vẫn nhỏ.
-            constraints: const BoxConstraints(minHeight: 44),
-            child: Center(
-              widthFactor: 1,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: palette.referenceContainer,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  S.referenceTag,
-                  style: context.text.labelLarge?.copyWith(
-                    color: palette.reference,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Bảng trượt nhắc lại ý chính của thông báo tham khảo (F10-R1), kèm "Xem
-/// đầy đủ" → S-55. Dùng cho nhãn "tham khảo" và nhãn hướng dẫn bài tập
-/// (F10-R21, 04 Bản 2 S-67).
-Future<void> showReferenceSheet(BuildContext context) =>
-    showAppSheet<void>(context, builder: (_) => const _ReferenceSheet());
-
-class _ReferenceSheet extends StatelessWidget {
-  const _ReferenceSheet();
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Heading(
-            S.aboutReferenceTitle,
-            style: context.text.titleLarge?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 16),
-          const DisclaimerPoints(),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton(
-              onPressed: () {
-                final router = GoRouter.of(context);
-                Navigator.of(context).pop();
-                router.push(aboutReferencePath);
-              },
-              child: const Text(S.seeFull),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

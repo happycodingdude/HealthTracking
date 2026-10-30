@@ -4,10 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
 import '../../../app/strings_vi.dart';
-import '../../../app/theme.dart';
 import '../../../app/time_ticker.dart';
 import '../../../core/formatters.dart';
 import '../../../ui/components/components.dart';
+import '../../../ui/theme.dart';
 import '../../today/application/mark_session.dart';
 
 /// Từ mức phóng chữ này trở lên, hai nút xếp dọc (UX-AC18).
@@ -235,7 +235,7 @@ class LockedOnSaveLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = context.palette.textSecondary;
+    final color = context.tokens.textSecondary;
     return Row(
       key: const ValueKey('locked-on-save'),
       children: [
