@@ -1,50 +1,31 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/strings_vi.dart';
-import '../../../app/theme.dart';
-import '../../../core/widgets/app_sheet.dart';
+import '../../../ui/components/components.dart';
+import '../../../ui/theme.dart';
 
-/// S-01c — Quên mật khẩu (bảng trượt, Bản 1, UA-22).
+/// S-01c — Quên mật khẩu (bảng trượt, 04 Bản 4 S-01c): câu nguyên văn Bản 1 +
+/// nút cam "Đã hiểu".
 Future<void> showForgotPasswordSheet(BuildContext context) =>
-    showAppSheet<void>(context, builder: (_) => const ForgotPasswordSheet());
+    showIronlySheet<void>(context, builder: (_) => const ForgotPasswordSheet());
 
 class ForgotPasswordSheet extends StatelessWidget {
   const ForgotPasswordSheet({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Cuộn được khi cỡ chữ lớn (UX-AC18).
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Semantics(
-            header: true,
-            child: Text(
-              S.forgotPassword,
-              style: context.text.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(S.forgotPasswordBody, style: context.text.bodyLarge),
-          const SizedBox(height: 16),
-          Text(
-            S.forgotPasswordNote,
-            style: context.text.bodyMedium?.copyWith(
-              color: context.palette.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 24),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text(S.understood),
-          ),
-        ],
+    return IronlySheet(
+      title: S.forgotPassword,
+      footer: IronlyButton.primary(
+        key: const ValueKey('forgot-password-ok'),
+        label: S.understood,
+        onPressed: () => Navigator.of(context).pop(),
       ),
+      children: [
+        Text(S.forgotPasswordBody, style: IronlyText.body),
+        const SizedBox(height: TokenSpace.s3),
+        Text(S.forgotPasswordNote, style: IronlyText.caption),
+      ],
     );
   }
 }

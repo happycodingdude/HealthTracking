@@ -100,7 +100,7 @@ void main() {
     (tester) async {
       await ProfileRepository(db).put(atStep4);
       await pump(tester);
-      expect(find.text(S.stepOf(4)), findsOneWidget);
+      expect(find.bySemanticsLabel(S.stepOf(4)), findsOneWidget);
       expect(find.text(S.scheduleStepTitle), findsOneWidget);
       // Bản 4 (04 S-22): chủ nhật chữ mờ + ổ khóa thay câu "Luôn nghỉ".
       expect(find.text(S.alwaysRest), findsNothing);
@@ -117,7 +117,7 @@ void main() {
       await tapText(tester, S.saveSchedule);
       expect(find.text(S.missingTimeFor('Thứ 6')), findsOneWidget);
       expect(find.text(S.missingMusclesFor('Thứ 6')), findsOneWidget);
-      expect(find.text(S.stepOf(4)), findsOneWidget);
+      expect(find.bySemanticsLabel(S.stepOf(4)), findsOneWidget);
 
       await tapKey(tester, 'muscle-shoulders');
       expect(find.text(S.missingMusclesFor('Thứ 6')), findsNothing);
@@ -140,7 +140,7 @@ void main() {
       expect(find.text('Ngực và Tay sau · 18:00'), findsOneWidget);
 
       await tapText(tester, S.saveSchedule);
-      expect(find.text(S.stepOf(5)), findsOneWidget);
+      expect(find.bySemanticsLabel(S.stepOf(5)), findsOneWidget);
 
       final schedule = ScheduleRepository(db);
       final template = (await schedule.template())!;
@@ -164,14 +164,14 @@ void main() {
       expect(ops.where((o) => o == 'day:ensure'), hasLength(22));
 
       // OB-2: quay lại bước 4 thấy lịch đã lưu; lưu lại thì chia lại bằng upsert.
-      await tapText(tester, S.back);
-      expect(find.text(S.stepOf(4)), findsOneWidget);
+      await tapKey(tester, 'page-back');
+      expect(find.bySemanticsLabel(S.stepOf(4)), findsOneWidget);
       await tapKey(tester, 'day-switch-6');
       await tapKey(tester, 'day-time-6');
       await tapText(tester, S.done);
       await tapKey(tester, 'muscle-abs');
       await tapText(tester, S.saveSchedule);
-      expect(find.text(S.stepOf(5)), findsOneWidget);
+      expect(find.bySemanticsLabel(S.stepOf(5)), findsOneWidget);
       final saturday = await schedule.day(LocalDate(2026, 10, 10));
       expect(saturday!.muscles, [MuscleGroup.abs]);
       expect(await outboxOps(), contains('day:upsert'));
@@ -198,7 +198,7 @@ void main() {
     await setDay(tester, 1, [MuscleGroup.chest]);
     await tester.pumpWidget(const SizedBox());
     await pump(tester);
-    expect(find.text(S.stepOf(4)), findsOneWidget);
+    expect(find.bySemanticsLabel(S.stepOf(4)), findsOneWidget);
     final on = tester.widget<IronlySwitch>(
       find.byKey(const ValueKey('day-switch-1')),
     );

@@ -9,12 +9,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/providers.dart';
 import '../../../app/strings_vi.dart';
-import '../../../app/theme.dart';
 import '../../../core/formatters.dart';
-import '../../../core/widgets/app_sheet.dart';
-import '../../../core/widgets/labeled_field.dart';
-import '../../../core/widgets/primary_button.dart';
 import '../../../data/sync/sync_providers.dart';
+import '../../../ui/components/components.dart';
+import '../../../ui/theme.dart';
 import '../application/onboarding_steps.dart';
 import '../data/onboarding_draft_repository.dart';
 import 'onboarding_scaffold.dart';
@@ -114,7 +112,7 @@ class _ProfileStepScreenState extends ConsumerState<ProfileStepScreen> {
 
   Future<void> _pickBirthYear() async {
     final year = ref.read(clockProvider).now().year;
-    final picked = await showAppSheet<int>(
+    final picked = await showIronlySheet<int>(
       context,
       builder: (_) => BirthYearPicker(
         first: ProfileRules.firstBirthYear(year),
@@ -140,26 +138,33 @@ class _ProfileStepScreenState extends ConsumerState<ProfileStepScreen> {
   @override
   Widget build(BuildContext context) {
     final year = ref.watch(clockProvider).now().year;
+    // 04 Bản 4 S-03: ô dạng thẻ; không dòng "Dùng để ước tính mức calo tham
+    // khảo" (FR4-04, FR4-05).
     return OnboardingScaffold(
       step: 2,
       title: S.profileTitle,
-      subtitle: S.profileSubtitle,
-      bottom: [PrimaryButton(label: S.continueLabel, onPressed: _continue)],
+      bottom: [
+        IronlyButton.primary(
+          key: const ValueKey('profile-continue'),
+          label: S.continueLabel,
+          onPressed: _continue,
+        ),
+      ],
       children: [
-        LabeledField(
+        ProfileInputRow(
           key: _keys[ProfileField.height],
+          name: 'height',
           label: S.fieldHeight,
           controller: _height,
+          unit: S.unitCm,
           error: _error(ProfileField.height),
-          keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          suffix: const FieldUnit(S.unitCm),
           onChanged: (_) => _changed(ProfileField.height),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: TokenSpace.s3),
         FieldBlock(
           key: _keys[ProfileField.birthYear],
-          label: S.fieldBirthYear,
+          label: '',
           error: _error(ProfileField.birthYear),
           child: BirthYearField(
             year: _birthYear,
@@ -170,7 +175,7 @@ class _ProfileStepScreenState extends ConsumerState<ProfileStepScreen> {
             onTap: _pickBirthYear,
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: TokenSpace.s4),
         FieldBlock(
           key: _keys[ProfileField.sex],
           label: S.fieldSex,
@@ -180,7 +185,7 @@ class _ProfileStepScreenState extends ConsumerState<ProfileStepScreen> {
             onChanged: (v) => _changed(ProfileField.sex, () => _sex = v),
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: TokenSpace.s4),
         FieldBlock(
           key: _keys[ProfileField.activityLevel],
           label: S.fieldActivityLevel,
@@ -191,58 +196,35 @@ class _ProfileStepScreenState extends ConsumerState<ProfileStepScreen> {
                 _changed(ProfileField.activityLevel, () => _activity = v),
           ),
         ),
-        const SizedBox(height: 20),
-        LabeledField(
+        const SizedBox(height: TokenSpace.s4),
+        ProfileInputRow(
           key: _keys[ProfileField.weight],
-          label: S.fieldInitialWeight,
+          name: 'weight',
+          label: S.fieldWeight,
           controller: _weight,
+          unit: S.unitKg,
           error: _error(ProfileField.weight),
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decimal: true,
           inputFormatters: [
             FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
           ],
-          suffix: const FieldUnit(S.unitKg),
           onChanged: (_) => _changed(ProfileField.weight),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: TokenSpace.s3),
         const _GoalRow(),
       ],
     );
   }
 }
 
-/// "Mục tiêu: Giảm mỡ" — chỉ hiển thị (FR-07).
+/// "Mục tiêu · Giảm mỡ" — chỉ hiển thị (FR-07), ô dạng thẻ.
 class _GoalRow extends StatelessWidget {
   const _GoalRow();
 
   @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      label: '${S.goalLabel}: ${S.goalFatLoss}',
-      child: ExcludeSemantics(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          decoration: fieldBoxDecoration(context),
-          child: Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            spacing: 12,
-            children: [
-              Text(
-                S.goalLabel,
-                style: context.text.bodyLarge?.copyWith(
-                  color: context.palette.textSecondary,
-                ),
-              ),
-              Text(
-                S.goalFatLoss,
-                style: context.text.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => const IronlyValueRow(
+    key: ValueKey('goal-row'),
+    label: S.goalLabel,
+    value: S.goalFatLoss,
+  );
 }

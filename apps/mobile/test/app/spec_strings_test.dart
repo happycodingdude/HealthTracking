@@ -61,7 +61,7 @@ void main() {
     expect(S.reminderTomorrow('bụng', '00:30'), 'Ngày mai tập bụng lúc 00:30');
     expect(
       S.reminderExample('17:00', 'thứ 2'),
-      'Ví dụ từ lịch của Bạn: nhắc lúc 17:00 thứ 2. App nhắc 1 giờ trước mỗi buổi theo lịch. Bạn bật hoặc tắt được bất cứ lúc nào ở mục Tôi.',
+      'Lúc 17:00 thứ 2, app sẽ nhắc:',
     );
   });
 

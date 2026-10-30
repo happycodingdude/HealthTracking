@@ -9,7 +9,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/app.dart';
 import 'package:mobile/app/strings_vi.dart';
-import 'package:mobile/core/widgets/labeled_field.dart';
 import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/features/me/data/profile_repository.dart';
 import 'package:mobile/features/onboarding/application/setup_state.dart';
@@ -57,11 +56,6 @@ void main() {
     return container;
   }
 
-  Finder input(String label) => find.descendant(
-    of: find.byWidgetPredicate((w) => w is LabeledField && w.label == label),
-    matching: find.byType(TextField),
-  );
-
   Future<void> tapText(WidgetTester tester, String text) async {
     final f = find.text(text).last;
     await tester.ensureVisible(f);
@@ -84,12 +78,12 @@ void main() {
     String height = '175',
     String weight = '80',
   }) async {
-    await tester.enterText(input(S.fieldHeight), height);
+    await tester.enterText(find.byKey(const ValueKey('field-height')), height);
     await tapKey(tester, 'birth-year-field');
     await tapText(tester, S.done); // bánh xe mặc định 30 tuổi → 1996
     await tapKey(tester, 'sex-male');
     await tapKey(tester, 'activity-moderate');
-    await tester.enterText(input(S.fieldInitialWeight), weight);
+    await tester.enterText(find.byKey(const ValueKey('field-weight')), weight);
     await tester.pumpAndSettle();
   }
 
@@ -111,7 +105,7 @@ void main() {
     (tester) async {
       await pump(tester);
       expect(find.text(S.disclaimerTitle), findsOneWidget);
-      expect(find.text(S.stepOf(1)), findsOneWidget);
+      expect(find.bySemanticsLabel(S.stepOf(1)), findsOneWidget);
       expect(find.text(S.back), findsNothing);
       expect(find.byType(IronlyTabBar), findsNothing);
       for (final p in [
@@ -122,13 +116,13 @@ void main() {
       ]) {
         expect(find.text(p), findsOneWidget);
       }
-      expect(find.byType(FilledButton), findsOneWidget);
+      expect(find.byKey(const ValueKey('disclaimer-accept')), findsOneWidget);
       expect(find.byType(OutlinedButton), findsNothing);
       expect(await profile(), isNull);
 
       await tapText(tester, S.iUnderstand);
       expect(find.text(S.profileTitle), findsOneWidget);
-      expect(find.text(S.stepOf(2)), findsOneWidget);
+      expect(find.bySemanticsLabel(S.stepOf(2)), findsOneWidget);
       final p = (await profile())!;
       expect(p.onboardingStep, 2);
       expect(p.disclaimerAcceptedAt, DateTime(2026, 10, 7, 18, 42));
@@ -158,10 +152,13 @@ void main() {
       expect((await profile())!.onboardingStep, 2);
       expect(await WeightRepository(db).all(), isEmpty);
       // Cuộn tới ô lỗi đầu tiên: ô chiều cao đang hiện trên màn hình.
-      expect(tester.getTopLeft(input(S.fieldHeight)).dy, lessThan(844));
+      expect(
+        tester.getTopLeft(find.byKey(const ValueKey('field-height'))).dy,
+        lessThan(844),
+      );
 
       // Lỗi biến mất khi Bạn sửa ô đó (04 §6.13.5).
-      await tester.enterText(input(S.fieldHeight), '17');
+      await tester.enterText(find.byKey(const ValueKey('field-height')), '17');
       await tester.pumpAndSettle();
       expect(find.text(S.invalidHeight), findsNothing);
     },
@@ -212,16 +209,17 @@ void main() {
       expect(find.text(S.ageYears(30)), findsOneWidget);
       await tapText(tester, S.continueLabel);
 
-      expect(find.text(S.stepOf(3)), findsOneWidget);
+      expect(find.bySemanticsLabel(S.stepOf(3)), findsOneWidget);
       // Bản 4 (FR4-04, FR4-05): thẻ chỉ số lớn, không chữ chế độ, không nhãn.
       expect(find.text(S.calorieAuto), findsNothing);
       expect(find.text(S.referenceTag), findsNothing);
       expect(find.text('2.210 kcal', findRichText: true), findsOneWidget);
-      expect(find.text(S.belowMaintenance('500')), findsOneWidget);
+      // FR4-04: không còn dòng giải thích "Thấp hơn mức duy trì…".
+      expect(find.text(S.belowMaintenance('500')), findsNothing);
       expect(find.byKey(const ValueKey('calorie-note')), findsNothing);
 
       await tapText(tester, S.keepThisLevel);
-      expect(find.text(S.stepOf(4)), findsOneWidget);
+      expect(find.bySemanticsLabel(S.stepOf(4)), findsOneWidget);
       final p = (await profile())!;
       expect(
         (p.onboardingStep, p.calorieMode, p.calorieKcal, p.heightCm, p.sex),
@@ -263,13 +261,13 @@ void main() {
 
       await tapText(tester, S.save);
       await tapText(tester, S.saveAnyway);
-      expect(find.text(S.stepOf(4)), findsOneWidget);
+      expect(find.bySemanticsLabel(S.stepOf(4)), findsOneWidget);
       final p = (await profile())!;
       expect((p.calorieMode, p.calorieKcal), (CalorieMode.manual, 1300));
       expect(CalorieRules.menuKcal(p.calorieKcal!, p.sex!), 1500);
 
       // OB-2: quay lại bước 3 thấy đúng mức đã đặt.
-      await tapText(tester, S.back);
+      await tapKey(tester, 'page-back');
       expect(find.text(S.calorieManual), findsNothing);
       expect(find.text(S.belowSafetyFloor), findsNothing);
       expect(find.text('1.300 kcal', findRichText: true), findsOneWidget);
@@ -307,22 +305,22 @@ void main() {
     (tester) async {
       await pump(tester);
       await tapText(tester, S.iUnderstand);
-      await tester.enterText(input(S.fieldHeight), '168');
+      await tester.enterText(find.byKey(const ValueKey('field-height')), '168');
       await tester.pumpAndSettle();
 
       // Mở lại app (container mới, cùng database).
       await tester.pumpWidget(const SizedBox());
       await pump(tester);
-      expect(find.text(S.stepOf(2)), findsOneWidget);
+      expect(find.bySemanticsLabel(S.stepOf(2)), findsOneWidget);
       expect(find.text('168'), findsOneWidget);
 
       await fillProfile(tester);
       await tapText(tester, S.continueLabel);
-      expect(find.text(S.stepOf(3)), findsOneWidget);
+      expect(find.bySemanticsLabel(S.stepOf(3)), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await pump(tester);
-      expect(find.text(S.stepOf(3)), findsOneWidget);
+      expect(find.bySemanticsLabel(S.stepOf(3)), findsOneWidget);
       expect(find.text('2.210 kcal', findRichText: true), findsOneWidget);
     },
   );
@@ -335,15 +333,18 @@ void main() {
       await tapText(tester, S.iUnderstand);
       await fillProfile(tester);
       await tapText(tester, S.continueLabel);
-      await tapText(tester, S.back);
-      expect(find.text(S.stepOf(2)), findsOneWidget);
+      await tapKey(tester, 'page-back');
+      expect(find.bySemanticsLabel(S.stepOf(2)), findsOneWidget);
       expect(find.text('175'), findsOneWidget);
       expect(find.text('1996'), findsOneWidget);
       expect(find.text('80'), findsOneWidget);
 
       // Thiết lập kéo sang tuần sau (ED-06): cân ban đầu chuyển sang tuần mới.
       clock.set(DateTime(2026, 10, 12, 8));
-      await tester.enterText(input(S.fieldInitialWeight), '79,5');
+      await tester.enterText(
+        find.byKey(const ValueKey('field-weight')),
+        '79,5',
+      );
       await tapText(tester, S.continueLabel);
       expect(await WeightRepository(db).all(), [
         (week: LocalDate(2026, 10, 12), kgX10: 795),
@@ -494,12 +495,18 @@ void main() {
       );
       await tester.pumpAndSettle();
       await tapText(tester, S.login);
-      await tester.enterText(input(S.fieldPhone), '0912345678');
-      await tester.enterText(input(S.fieldPassword), randomTestPassword());
-      await tester.tap(find.widgetWithText(FilledButton, S.login));
+      await tester.enterText(
+        find.byKey(const ValueKey('field-phone')),
+        '0912345678',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('field-password')),
+        randomTestPassword(),
+      );
+      await tester.tap(find.byKey(const ValueKey('login-submit')));
       await tester.pumpAndSettle();
 
-      expect(find.text(S.stepOf(3)), findsOneWidget);
+      expect(find.bySemanticsLabel(S.stepOf(3)), findsOneWidget);
       expect(find.text('2.210 kcal', findRichText: true), findsOneWidget);
     },
   );

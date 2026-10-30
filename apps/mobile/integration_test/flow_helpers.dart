@@ -3,16 +3,24 @@ import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/strings_vi.dart';
-import 'package:mobile/core/widgets/labeled_field.dart';
 import 'package:mobile/ui/components/ironly_tab_bar.dart';
 
 Finder tabLabel(String label) =>
     find.descendant(of: find.byType(IronlyTabBar), matching: find.text(label));
 
-Finder input(String label) => find.descendant(
-  of: find.byWidgetPredicate((w) => w is LabeledField && w.label == label),
-  matching: find.byType(TextField),
-);
+/// Ô nhập theo nhãn: Bản 4 đặt `Key` `field-<name>` (IA4-08).
+Finder input(String label) {
+  final name = switch (label) {
+    _ when label == S.fieldDisplayName => 'display-name',
+    _ when label == S.fieldPhone => 'phone',
+    _ when label == S.fieldPassword => 'password',
+    _ when label == S.fieldPasswordConfirm => 'password-confirm',
+    _ when label == S.fieldHeight => 'height',
+    _ when label == S.fieldWeight => 'weight',
+    _ => throw ArgumentError.value(label, 'label'),
+  };
+  return find.byKey(ValueKey('field-$name'));
+}
 
 /// Cuộn tới [finder] như người dùng (danh sách chỉ dựng phần đang thấy, bàn
 /// phím che bớt màn hình).

@@ -26,16 +26,16 @@ void main() {
     // Gỡ app không xóa Keychain: phiên của file test trước còn đó.
     await const FlutterSecureStorage().deleteAll();
     await launch();
-    await pumpUntil(tester, find.widgetWithText(OutlinedButton, S.login));
-    await tester.tap(find.widgetWithText(FilledButton, S.register));
+    await pumpUntil(tester, find.byKey(const ValueKey('welcome-login')));
+    await tester.tap(find.byKey(const ValueKey('welcome-register')));
     await tester.pumpAndSettle();
     await enter(tester, S.fieldDisplayName, 'Lan');
     await enter(tester, S.fieldPhone, '0955555555');
     final password = randomTestPassword();
     await enter(tester, S.fieldPassword, password);
     await enter(tester, S.fieldPasswordConfirm, password);
-    await reveal(tester, find.widgetWithText(FilledButton, S.register));
-    await tester.tap(find.widgetWithText(FilledButton, S.register));
+    await reveal(tester, find.byKey(const ValueKey('register-submit')));
+    await tester.tap(find.byKey(const ValueKey('register-submit')));
     await pumpUntil(tester, find.text(S.disclaimerTitle));
     await tester.tap(find.text(S.iUnderstand));
     await pumpUntil(tester, find.text(S.profileTitle));
@@ -45,16 +45,16 @@ void main() {
     await tester.pumpAndSettle();
     await tapVisible(tester, find.byKey(const ValueKey('sex-female')));
     await tapVisible(tester, find.byKey(const ValueKey('activity-moderate')));
-    await enter(tester, S.fieldInitialWeight, '55');
-    await tester.tap(find.widgetWithText(FilledButton, S.continueLabel));
+    await enter(tester, S.fieldWeight, '55');
+    await tester.tap(find.byKey(const ValueKey('profile-continue')));
     await pumpUntil(tester, find.text(S.calorieTitle));
-    await tester.tap(find.widgetWithText(FilledButton, S.keepThisLevel));
-    await pumpUntil(tester, find.text(S.stepOf(4)));
+    await tester.tap(find.byKey(const ValueKey('keep-this-level')));
+    await pumpUntil(tester, find.bySemanticsLabel(S.stepOf(4)));
 
     await tapVisible(tester, find.byKey(const ValueKey('day-switch-1')));
     await tapVisible(tester, find.byKey(const ValueKey('schedule-later')));
-    await pumpUntil(tester, find.text(S.stepOf(5)));
-    expect(find.text(S.remindersStartWhenScheduled), findsOneWidget);
+    await pumpUntil(tester, find.bySemanticsLabel(S.stepOf(5)));
+    expect(find.text(S.remindersStartWhenScheduled), findsNothing);
     // Thoát app ở bước 5; test sau mở lại.
   });
 
@@ -63,9 +63,9 @@ void main() {
       'với server', (tester) async {
     await tester.pumpWidget(const SizedBox());
     await launch();
-    await pumpUntil(tester, find.text(S.stepOf(5)));
-    expect(find.text(S.remindersStartWhenScheduled), findsOneWidget);
-    await tester.tap(find.widgetWithText(OutlinedButton, S.later));
+    await pumpUntil(tester, find.bySemanticsLabel(S.stepOf(5)));
+    expect(find.text(S.remindersStartWhenScheduled), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('reminders-later')));
     await pumpUntil(tester, tabLabel(S.tabToday));
     expect(find.byKey(const ValueKey('no-schedule-card')), findsOneWidget);
     expect(find.byKey(const ValueKey('week-card')), findsNothing);

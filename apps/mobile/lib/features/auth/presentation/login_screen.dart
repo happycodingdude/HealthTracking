@@ -6,11 +6,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/strings_vi.dart';
 import '../../../core/error_mapping.dart';
-import '../../../core/widgets/labeled_field.dart';
 import '../../../core/widgets/link_text.dart';
 import '../../../core/widgets/phone_input_formatter.dart';
-import '../../../core/widgets/primary_button.dart';
 import '../../../data/api/api_client.dart';
+import '../../../ui/components/components.dart';
+import '../../../ui/theme.dart';
 import '../application/auth_controller.dart';
 import 'auth_scaffold.dart';
 import 'forgot_password_sheet.dart';
@@ -94,8 +94,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       child: AuthScaffold(
         title: S.login,
         fields: [
-          LabeledField(
-            label: S.fieldPhone,
+          IronlyTextField(
+            name: 'phone',
+            hint: S.fieldPhone,
             controller: _phone,
             keyboardType: TextInputType.phone,
             textInputAction: TextInputAction.next,
@@ -103,8 +104,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             autofillHints: const [AutofillHints.telephoneNumber],
             onChanged: (_) => _clear(),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: TokenSpace.s3),
           PasswordField(
+            name: 'password',
             label: S.fieldPassword,
             controller: _password,
             error: _error,
@@ -115,24 +117,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
           Align(
             alignment: Alignment.centerRight,
-            child: TextButton(
+            child: IronlyButton.link(
+              key: const ValueKey('forgot-password'),
+              label: S.forgotPassword,
+              small: true,
+              expand: false,
               onPressed: () => showForgotPasswordSheet(context),
-              child: const Text(S.forgotPassword),
             ),
           ),
         ],
         bottom: [
           if (_notice != null) FormNotice(_notice!),
+          IronlyButton.primary(
+            key: const ValueKey('login-submit'),
+            label: S.login,
+            loading: _submitting,
+            onPressed: _submit,
+          ),
+          const SizedBox(height: TokenSpace.s1),
+          // Như S-01a: chữ cam dưới nút.
           LinkText(
             prefix: S.noAccount,
             link: S.register,
             onTap: () => context.go('/welcome/register'),
-          ),
-          const SizedBox(height: 8),
-          PrimaryButton(
-            label: S.login,
-            loading: _submitting,
-            onPressed: _submit,
           ),
         ],
       ),

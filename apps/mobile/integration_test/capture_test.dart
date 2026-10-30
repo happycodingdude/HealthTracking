@@ -6,25 +6,33 @@ import 'dart:async';
 // không cần server.
 import 'package:api_contract/api_contract.dart';
 import 'package:domain/domain.dart';
+import 'package:domain/testing.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:mobile/app/app.dart';
 import 'package:mobile/app/router.dart';
 import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/dev/review_matrix.dart';
+import 'package:mobile/features/auth/application/auth_controller.dart';
 import 'package:mobile/features/me/data/account_repository.dart';
 import 'package:mobile/features/me/data/profile_repository.dart';
 import 'package:mobile/features/me/presentation/calorie_proposal_sheet.dart';
 import 'package:mobile/features/me/presentation/me_screen.dart';
 import 'package:mobile/features/menu/data/menu_repository.dart';
+import 'package:mobile/features/onboarding/application/setup_state.dart';
+import 'package:mobile/features/onboarding/data/onboarding_draft_repository.dart';
+import 'package:mobile/features/weight/data/weight_repository.dart';
 import 'package:mobile/features/workout/presentation/session_screen.dart';
 import 'package:mobile/ui/gallery.dart';
 import 'package:mobile/ui/theme.dart';
 
 import '../test/support/app_harness.dart';
+import '../test/support/fake_server.dart';
+import '../test/support/fake_sync.dart';
 import '../test/support/schedule_fixture.dart';
 import 'capture_fixtures.dart';
 
@@ -499,6 +507,219 @@ void main() {
         await tapKey(tester, 'row-logout');
         await shot(tester, 'm20_s73');
         await tapKey(tester, 'logout-cancel');
+      });
+
+      // VS-49: đăng nhập và thiết lập lần đầu. Mỗi trạng thái là một app
+      // mới (phiên / hồ sơ khác nhau), như golden của từng màn.
+      Future<ProviderContainer> pumpFresh(
+        WidgetTester tester, {
+        required List<Override> overrides,
+      }) async {
+        final container = ProviderContainer(
+          retry: (_, _) => null,
+          overrides: overrides,
+        );
+        addTearDown(container.dispose);
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const IronlyApp(),
+          ),
+        );
+        await tester.pumpAndSettle();
+        return container;
+      }
+
+      Future<ProviderContainer> pumpSetup(
+        WidgetTester tester,
+        DateTime now,
+        Future<void> Function(AppDatabase db) seed,
+      ) async {
+        final db = AppDatabase(NativeDatabase.memory());
+        addTearDown(db.close);
+        await seed(db);
+        return pumpFresh(
+          tester,
+          overrides: appOverrides(
+            db: db,
+            clock: FixedClock(now),
+            onboarded: false,
+            scheduler: FakeScheduler(),
+            initialSetup: SetupState.of(await ProfileRepository(db).get()),
+          ),
+        );
+      }
+
+      testWidgets('M20: S-01, S-01a, S-01b, S-01c, S-02 → S-07', (
+        tester,
+      ) async {
+        final accepted = DateTime(2026, 10, 26, 11, 50);
+        final noon = DateTime(2026, 10, 26, 12);
+        // S-01 → S-01c: chưa có phiên.
+        final c = await pumpFresh(
+          tester,
+          overrides: appOverrides(session: null),
+        );
+        await shot(tester, 'm20_s01');
+        c.read(routerProvider).go('/welcome/register');
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byKey(const ValueKey('field-display-name')),
+          'Anton',
+        );
+        await tester.enterText(
+          find.byKey(const ValueKey('field-phone')),
+          '0912345',
+        );
+        final pw = randomTestPassword();
+        await tester.enterText(
+          find.byKey(const ValueKey('field-password')),
+          pw,
+        );
+        await tester.enterText(
+          find.byKey(const ValueKey('field-password-confirm')),
+          pw,
+        );
+        await tester.tap(find.byKey(const ValueKey('register-submit')));
+        await tester.pumpAndSettle();
+        await shot(tester, 'm20_s01a');
+        c.read(routerProvider).go('/welcome/login');
+        await tester.pumpAndSettle();
+        await shot(tester, 'm20_s01b');
+        await tapKey(tester, 'forgot-password');
+        await shot(tester, 'm20_s01c');
+        await dismiss(tester);
+
+        // S-02: chưa bấm "Tôi đã hiểu".
+        await pumpSetup(tester, noon, (_) async {});
+        await shot(tester, 'm20_s02');
+
+        // S-03: bản nháp hồ sơ như mock (bước 2/5).
+        await pumpSetup(tester, noon, (db) async {
+          await ProfileRepository(
+            db,
+          ).put(Profile(onboardingStep: 2, disclaimerAcceptedAt: accepted));
+          await OnboardingDraftRepository(db).save(
+            const ProfileDraft(
+              height: '175',
+              birthYear: 1996,
+              sex: Sex.male,
+              activityLevel: ActivityLevel.light,
+              weight: '74,9',
+            ),
+          );
+        });
+        await shot(tester, 'm20_s03');
+
+        // S-04: hồ sơ đã lưu, mức ước tính (bước 3/5).
+        final body = Profile(
+          onboardingStep: 3,
+          disclaimerAcceptedAt: accepted,
+          heightCm: 175,
+          birthYear: 1996,
+          sex: Sex.male,
+          activityLevel: ActivityLevel.light,
+        );
+        await pumpSetup(tester, noon, (db) async {
+          await ProfileRepository(db).put(body);
+          await WeightRepository(db).put(LocalDate(2026, 10, 26), 749);
+        });
+        await shot(tester, 'm20_s04');
+
+        // S-05: lịch tuần trống (bước 4/5).
+        await pumpSetup(tester, noon, (db) async {
+          await ProfileRepository(db).put(
+            body.copyWith(
+              onboardingStep: 4,
+              calorieMode: CalorieMode.auto,
+              calorieKcal: 2210,
+              setupDate: LocalDate(2026, 10, 26),
+            ),
+          );
+          await WeightRepository(db).put(LocalDate(2026, 10, 26), 749);
+        });
+        await shot(tester, 'm20_s05');
+
+        // S-06: lịch đã xếp (thứ 2 18:00 ngực) → ví dụ thật (bước 5/5).
+        await pumpSetup(tester, noon, (db) async {
+          await seedSetUp(
+            db,
+            profile: Profile(
+              onboardingStep: 5,
+              disclaimerAcceptedAt: accepted,
+              heightCm: 175,
+              birthYear: 1996,
+              sex: Sex.male,
+              activityLevel: ActivityLevel.light,
+              calorieMode: CalorieMode.auto,
+              calorieKcal: 2210,
+              setupDate: LocalDate(2026, 10, 26),
+              timezone: 'Asia/Ho_Chi_Minh',
+            ),
+          );
+        });
+        await shot(tester, 'm20_s06');
+
+        // S-07: có phiên, máy chưa có dữ liệu; trang 2 không về → 50 %.
+        final server = FakeServer()
+          ..on(
+            'GET',
+            '/v1/me',
+            (_) => (
+              200,
+              {
+                'userId': 'u1',
+                'phone': '0912345678',
+                'displayName': 'Anton',
+                'onboardingState': 'completed',
+              },
+            ),
+          )
+          ..on('GET', '/v1/sync/pull', (req) async {
+            final cursor = req.query['cursor'] as String? ?? '0';
+            if (cursor != '0') await Completer<void>().future;
+            return (
+              200,
+              {
+                'changes': [
+                  {
+                    'entity': 'profile',
+                    'key': 'me',
+                    'deleted': false,
+                    'serverVersion': 1,
+                    'data': const ProfileCodec().encode(completedProfile()),
+                  },
+                  {
+                    'entity': 'weight',
+                    'key': '2026-10-26',
+                    'deleted': false,
+                    'serverVersion': 2,
+                    'data': {'weightKgX10': 749},
+                  },
+                ],
+                'nextCursor': 2,
+                'hasMore': true,
+                'remaining': 2,
+                'meta': {'serverTime': '2026-10-26T05:00:00.000Z'},
+              },
+            );
+          });
+        final db = AppDatabase(NativeDatabase.memory());
+        addTearDown(db.close);
+        await pumpFresh(
+          tester,
+          overrides: [
+            ...appOverrides(
+              db: db,
+              server: server,
+              onboarded: false,
+              scheduler: FakeScheduler(),
+              initialSetup: SetupState.notStarted,
+            ),
+            initialRestoreProvider.overrideWithValue(true),
+          ],
+        );
+        await shot(tester, 'm20_s07');
       });
     }
   });

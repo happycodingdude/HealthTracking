@@ -107,7 +107,7 @@ void main() {
     (tester) async {
       await seedAtStep4();
       await pump(tester);
-      expect(find.text(S.stepOf(4)), findsOneWidget);
+      expect(find.bySemanticsLabel(S.stepOf(4)), findsOneWidget);
       final save = tester.getTopLeft(find.text(S.saveSchedule)).dy;
       final later = tester.getTopLeft(
         find.byKey(const ValueKey('schedule-later')),
@@ -118,7 +118,7 @@ void main() {
       await tapKey(tester, 'day-switch-3');
       await tapKey(tester, 'schedule-later');
       expect(find.text(S.discardChangesTitle), findsNothing);
-      expect(find.text(S.stepOf(5)), findsOneWidget);
+      expect(find.bySemanticsLabel(S.stepOf(5)), findsOneWidget);
       expect(
         find.byKey(const ValueKey('reminder-generic-example')),
         findsOneWidget,
@@ -127,7 +127,7 @@ void main() {
         find.text(S.reminderGenericExample, findRichText: true),
         findsOneWidget,
       );
-      expect(find.text(S.remindersStartWhenScheduled), findsOneWidget);
+      expect(find.text(S.remindersStartWhenScheduled), findsNothing);
       expect(find.byKey(const ValueKey('reminder-preview')), findsNothing);
       expect(await ScheduleRepository(db).template(), isNull);
       expect(await OnboardingDraftRepository(db).template(), isNull);

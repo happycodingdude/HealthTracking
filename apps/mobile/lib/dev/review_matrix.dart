@@ -300,7 +300,7 @@ final reviewMatrix = <ReviewCell>[
     state: 'biểu đồ mức tạ',
     mock: col(3, 3, 805, 300),
   ),
-  // M20 — tab Tôi (trang 4): S-50, S-51, S-52, S-53, S-54, S-56, S-73.
+  // M20 — tab Tôi (trang 4): S-50, S-51, S-52, S-53, S-54, S-56, S-73 (VS-48).
   ReviewCell(
     id: 'm20_s50',
     milestone: Milestone.m20,
@@ -349,6 +349,79 @@ final reviewMatrix = <ReviewCell>[
     screen: 'S-73',
     state: 'hộp đăng xuất',
     mock: col(4, 3, 345, 130),
+  ),
+  // M20 — đăng nhập và thiết lập lần đầu (trang 4, hàng dưới): S-01, S-01a,
+  // S-01b, S-02 → S-07 (VS-49). S-02, S-04, S-05 không có khung mock riêng:
+  // đối chiếu phần chú thích dưới S-03 (mô tả S-02, S-04) và style chung.
+  ReviewCell(
+    id: 'm20_s01',
+    milestone: Milestone.m20,
+    screen: 'S-01',
+    state: 'chào mừng: icon, tên app, hai nút',
+    mock: col(4, 0, 870, 435),
+  ),
+  ReviewCell(
+    id: 'm20_s01a',
+    milestone: Milestone.m20,
+    screen: 'S-01a',
+    state: 'đăng ký, ô số điện thoại lỗi',
+    mock: col(4, 1, 870, 425),
+  ),
+  ReviewCell(
+    id: 'm20_s01b',
+    milestone: Milestone.m20,
+    screen: 'S-01b',
+    state: 'đăng nhập, Quên mật khẩu?',
+    mock: col(4, 1, 1142, 152),
+  ),
+  ReviewCell(
+    id: 'm20_s01c',
+    milestone: Milestone.m20,
+    screen: 'S-01c',
+    state: 'bảng trượt quên mật khẩu',
+    mock: col(4, 1, 1142, 152),
+  ),
+  ReviewCell(
+    id: 'm20_s02',
+    milestone: Milestone.m20,
+    screen: 'S-02',
+    state: 'bước 1/5: 4 ý tham khảo, Tôi đã hiểu',
+    mock: col(4, 2, 1234, 100),
+  ),
+  ReviewCell(
+    id: 'm20_s03',
+    milestone: Milestone.m20,
+    screen: 'S-03',
+    state: 'bước 2/5: ô dạng thẻ, mức vận động, mục tiêu',
+    mock: col(4, 2, 870, 424),
+  ),
+  ReviewCell(
+    id: 'm20_s04',
+    milestone: Milestone.m20,
+    screen: 'S-04',
+    state: 'bước 3/5: số lớn, Giữ mức này / Đặt mức khác',
+    mock: col(4, 2, 1234, 100),
+  ),
+  ReviewCell(
+    id: 'm20_s05',
+    milestone: Milestone.m20,
+    screen: 'S-05',
+    state: 'bước 4/5: lịch tuần trống, Để sau',
+    mock: col(4, 2, 1234, 100),
+  ),
+  ReviewCell(
+    id: 'm20_s06',
+    milestone: Milestone.m20,
+    screen: 'S-06',
+    state: 'bước 5/5: ví dụ thật từ lịch, Bật nhắc / Để sau',
+    mock: col(4, 3, 870, 315),
+  ),
+  ReviewCell(
+    id: 'm20_s07',
+    milestone: Milestone.m20,
+    screen: 'S-07',
+    state: 'đang khôi phục, thanh tiến trình',
+    mock: col(4, 3, 1193, 105),
   ),
 ];
 

@@ -6,9 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/strings_vi.dart';
-import '../../../app/theme.dart';
-import '../../../core/widgets/primary_button.dart';
 import '../../../data/sync/sync_providers.dart';
+import '../../../ui/components/components.dart';
+import '../../../ui/theme.dart';
 import '../../schedule/presentation/weekly_template_editor.dart';
 import '../application/onboarding_steps.dart';
 import 'onboarding_scaffold.dart';
@@ -93,18 +93,22 @@ class _ScheduleStepScreenState extends ConsumerState<ScheduleStepScreen> {
   @override
   Widget build(BuildContext context) {
     final noDay = _errors.any((e) => e.issue == TemplateIssue.noWorkoutDay);
+    // 04 Bản 4 S-05: nút cam "Lưu lịch tập", chữ "Để sau" (UA2-05: không hộp
+    // xác nhận); không câu "Chủ nhật luôn là ngày nghỉ" (FR4-04).
     return OnboardingScaffold(
       step: 4,
       title: S.scheduleStepTitle,
-      subtitle: S.scheduleStepSubtitle,
       bottom: [
-        PrimaryButton(label: S.saveSchedule, onPressed: _save),
-        const SizedBox(height: 12),
-        // 04 Bản 2 S-05, UA2-05: nút phụ "Để sau", không hộp xác nhận.
-        OutlinedButton(
+        IronlyButton.primary(
+          key: const ValueKey('save-schedule'),
+          label: S.saveSchedule,
+          onPressed: _save,
+        ),
+        const SizedBox(height: TokenSpace.s1),
+        IronlyButton.link(
           key: const ValueKey('schedule-later'),
+          label: S.later,
           onPressed: _later,
-          child: const Text(S.later),
         ),
       ],
       children: [
@@ -118,16 +122,11 @@ class _ScheduleStepScreenState extends ConsumerState<ScheduleStepScreen> {
         ),
         Padding(
           key: _noDayKey,
-          padding: const EdgeInsets.only(top: 12),
+          padding: const EdgeInsets.only(top: TokenSpace.s3),
           child: noDay
               ? Semantics(
                   liveRegion: true,
-                  child: Text(
-                    S.noWorkoutDay,
-                    style: context.text.bodyMedium?.copyWith(
-                      color: context.colors.error,
-                    ),
-                  ),
+                  child: Text(S.noWorkoutDay, style: IronlyText.error),
                 )
               : const SizedBox.shrink(),
         ),

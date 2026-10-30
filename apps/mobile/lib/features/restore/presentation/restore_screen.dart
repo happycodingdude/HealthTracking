@@ -2,15 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/strings_vi.dart';
-import '../../../app/theme.dart';
-import '../../../core/widgets/heading.dart';
-import '../../../core/widgets/primary_button.dart';
-import '../../../core/widgets/toast.dart';
+import '../../../ui/components/components.dart';
+import '../../../ui/theme.dart';
 import '../../auth/application/auth_controller.dart';
 import '../application/restore_controller.dart';
 
-/// S-07 — Khôi phục dữ liệu (04 S-07): toàn màn hình, thanh tiến trình; mất
-/// kết nối → câu lỗi và "Thử lại"; xong → Hôm nay kèm "Đã khôi phục dữ liệu".
+/// S-07 — Khôi phục dữ liệu (04 Bản 4 S-07): thanh tiến trình cam + "Đang
+/// khôi phục dữ liệu của Bạn…"; lỗi: câu giữ nguyên + "Thử lại"; xong → Hôm
+/// nay kèm "Đã khôi phục dữ liệu".
 class RestoreScreen extends ConsumerStatefulWidget {
   const RestoreScreen({super.key});
 
@@ -35,64 +34,60 @@ class _RestoreScreenState extends ConsumerState<RestoreScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(restoreControllerProvider);
-    final palette = context.palette;
+    final t = context.tokens;
     return Scaffold(
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Heading(
-                  S.restoreTitle,
-                  textAlign: TextAlign.center,
-                  style: context.text.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Semantics(
-                  label: S.restoreTitle,
-                  value: '${(state.progress * 100).round()}%',
-                  child: ExcludeSemantics(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: LinearProgressIndicator(
-                        key: const ValueKey('restore-progress'),
-                        value: state.progress,
-                        minHeight: 12,
-                        backgroundColor: palette.neutralContainer,
+            padding: const EdgeInsets.symmetric(
+              horizontal: TokenSpace.s6,
+              vertical: TokenSpace.s4,
+            ),
+            child: IronlyCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Semantics(
+                    label: S.restoreTitle,
+                    value: '${(state.progress * 100).round()}%',
+                    child: ExcludeSemantics(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(3),
+                        child: LinearProgressIndicator(
+                          key: const ValueKey('restore-progress'),
+                          value: state.progress,
+                          minHeight: 6,
+                          color: t.accent,
+                          backgroundColor: t.surfaceRaised,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                if (state.failed) ...[
-                  Semantics(
-                    liveRegion: true,
-                    child: Text(
-                      S.restoreFailed,
-                      key: const ValueKey('restore-failed'),
+                  const SizedBox(height: TokenSpace.s3),
+                  if (state.failed) ...[
+                    Semantics(
+                      liveRegion: true,
+                      child: Text(
+                        S.restoreFailed,
+                        key: const ValueKey('restore-failed'),
+                        textAlign: TextAlign.center,
+                        style: IronlyText.body,
+                      ),
+                    ),
+                    const SizedBox(height: TokenSpace.s4),
+                    IronlyButton.primary(
+                      key: const ValueKey('restore-retry'),
+                      label: S.retry,
+                      onPressed: _run,
+                    ),
+                  ] else
+                    Text(
+                      S.restoreTitle,
                       textAlign: TextAlign.center,
-                      style: context.text.bodyLarge,
+                      style: IronlyText.caption,
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  PrimaryButton(
-                    key: const ValueKey('restore-retry'),
-                    label: S.retry,
-                    onPressed: _run,
-                  ),
-                ] else
-                  Text(
-                    S.restoreSubtitle,
-                    textAlign: TextAlign.center,
-                    style: context.text.bodyLarge?.copyWith(
-                      color: palette.textSecondary,
-                    ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

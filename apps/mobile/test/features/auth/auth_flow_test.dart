@@ -7,11 +7,11 @@ import 'package:mobile/app/app.dart';
 import 'package:mobile/app/providers.dart';
 import 'package:mobile/app/strings_vi.dart';
 import 'package:mobile/app/theme.dart';
-import 'package:mobile/core/widgets/labeled_field.dart';
 import 'package:mobile/data/auth/session_store.dart';
 import 'package:mobile/features/auth/presentation/login_screen.dart';
 import 'package:mobile/features/auth/presentation/register_screen.dart';
 import 'package:mobile/features/auth/presentation/welcome_screen.dart';
+import 'package:mobile/ui/components/components.dart';
 
 import '../../support/app_harness.dart';
 import '../../support/fake_server.dart';
@@ -67,14 +67,9 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  Finder field(String label) =>
-      find.byWidgetPredicate((w) => w is LabeledField && w.label == label);
-  Finder input(String label) =>
-      find.descendant(of: field(label), matching: find.byType(TextField));
-
   Future<void> openRegister(WidgetTester tester) async {
     await pumpSignedOut(tester);
-    await tester.tap(find.widgetWithText(FilledButton, S.register));
+    await tester.tap(find.byKey(const ValueKey('welcome-register')));
     await tester.pumpAndSettle();
     expect(find.byType(RegisterScreen), findsOneWidget);
   }
@@ -87,14 +82,20 @@ void main() {
     String? confirm,
   }) async {
     final pw = password ?? randomTestPassword();
-    await tester.enterText(input(S.fieldDisplayName), name);
-    await tester.enterText(input(S.fieldPhone), phone);
-    await tester.enterText(input(S.fieldPassword), pw);
-    await tester.enterText(input(S.fieldPasswordConfirm), confirm ?? pw);
+    await tester.enterText(
+      find.byKey(const ValueKey('field-display-name')),
+      name,
+    );
+    await tester.enterText(find.byKey(const ValueKey('field-phone')), phone);
+    await tester.enterText(find.byKey(const ValueKey('field-password')), pw);
+    await tester.enterText(
+      find.byKey(const ValueKey('field-password-confirm')),
+      confirm ?? pw,
+    );
   }
 
   Future<void> tapRegisterButton(WidgetTester tester) async {
-    await tester.tap(find.widgetWithText(FilledButton, S.register));
+    await tester.tap(find.byKey(const ValueKey('register-submit')));
     await tester.pumpAndSettle();
   }
 
@@ -104,10 +105,10 @@ void main() {
       (tester) async {
         await pumpSignedOut(tester);
         expect(find.byType(WelcomeScreen), findsOneWidget);
-        expect(find.text(S.welcomeTagline), findsOneWidget);
-        expect(find.text(S.welcomeFootnote), findsOneWidget);
-        expect(find.widgetWithText(FilledButton, S.register), findsOneWidget);
-        expect(find.widgetWithText(OutlinedButton, S.login), findsOneWidget);
+        expect(find.text(S.welcomeTagline), findsNothing);
+        expect(find.text(S.welcomeFootnote), findsNothing);
+        expect(find.byKey(const ValueKey('welcome-register')), findsOneWidget);
+        expect(find.byKey(const ValueKey('welcome-login')), findsOneWidget);
       },
     );
   });
@@ -117,16 +118,20 @@ void main() {
       'UX-AC3: đăng ký gồm tên hiển thị, số điện thoại, mật khẩu, nhập lại mật khẩu; gợi ý luôn hiện',
       (tester) async {
         await openRegister(tester);
-        for (final label in [
-          S.fieldDisplayName,
-          S.fieldPhone,
-          S.fieldPassword,
-          S.fieldPasswordConfirm,
+        for (final name in [
+          'display-name',
+          'phone',
+          'password',
+          'password-confirm',
         ]) {
-          expect(input(label), findsOneWidget, reason: label);
+          expect(
+            find.byKey(ValueKey('field-$name')),
+            findsOneWidget,
+            reason: name,
+          );
         }
-        expect(find.text(S.passwordHint), findsOneWidget);
-        expect(find.text(S.registerSubtitle), findsOneWidget);
+        expect(find.text(S.passwordHint), findsNothing);
+        expect(find.text(S.registerSubtitle), findsNothing);
       },
     );
 
@@ -160,7 +165,10 @@ void main() {
       await fillRegister(tester, name: '');
       await tapRegisterButton(tester);
       expect(find.text(S.invalidDisplayName), findsOneWidget);
-      await tester.enterText(input(S.fieldDisplayName), 'M');
+      await tester.enterText(
+        find.byKey(const ValueKey('field-display-name')),
+        'M',
+      );
       await tester.pump();
       expect(find.text(S.invalidDisplayName), findsNothing);
     });
@@ -206,7 +214,7 @@ void main() {
         expect(find.textContaining(S.errorPhoneTaken), findsOneWidget);
         await tester.tap(
           find.descendant(
-            of: field(S.fieldPhone),
+            of: find.byType(IronlyTextField),
             matching: find.text(S.login),
           ),
         );
@@ -242,17 +250,17 @@ void main() {
       tester,
     ) async {
       await openRegister(tester);
-      expect(find.byTooltip(S.showPassword), findsNWidgets(2));
-      await tester.tap(find.byTooltip(S.showPassword).first);
+      expect(find.bySemanticsLabel(S.showPassword), findsNWidgets(2));
+      await tester.tap(find.byKey(const ValueKey('password-toggle')));
       await tester.pump();
-      expect(find.byTooltip(S.hidePassword), findsOneWidget);
+      expect(find.bySemanticsLabel(S.hidePassword), findsOneWidget);
     });
   });
 
   group('S-01b', () {
     Future<void> openLogin(WidgetTester tester) async {
       await pumpSignedOut(tester);
-      await tester.tap(find.widgetWithText(OutlinedButton, S.login));
+      await tester.tap(find.byKey(const ValueKey('welcome-login')));
       await tester.pumpAndSettle();
       expect(find.byType(LoginScreen), findsOneWidget);
     }
@@ -262,12 +270,12 @@ void main() {
       String phone = '0912345678',
       String? password,
     }) async {
-      await tester.enterText(input(S.fieldPhone), phone);
+      await tester.enterText(find.byKey(const ValueKey('field-phone')), phone);
       await tester.enterText(
-        input(S.fieldPassword),
+        find.byKey(const ValueKey('field-password')),
         password ?? randomTestPassword(),
       );
-      await tester.tap(find.widgetWithText(FilledButton, S.login));
+      await tester.tap(find.byKey(const ValueKey('login-submit')));
     }
 
     testWidgets('đúng → vào S-02 (tài khoản chưa thiết lập, OB-6)', (
@@ -335,7 +343,7 @@ void main() {
         '/v1/auth/login',
         (_) => (429, _error('too_many_attempts')),
       );
-      await tester.tap(find.widgetWithText(FilledButton, S.login));
+      await tester.tap(find.byKey(const ValueKey('login-submit')));
       await tester.pumpAndSettle();
       expect(find.text(S.errorInvalidCredentials), findsOneWidget);
     });
@@ -372,7 +380,7 @@ void main() {
         await login(tester);
         await tester.pump(const Duration(milliseconds: 50));
         expect(find.byKey(const ValueKey('button-spinner')), findsOneWidget);
-        await tester.tap(find.byType(FilledButton));
+        await tester.tap(find.byKey(const ValueKey('login-submit')));
         await tester.pumpAndSettle();
         expect(server.calls('POST', '/v1/auth/login'), hasLength(1));
       },
@@ -395,7 +403,7 @@ void main() {
             .widgetList<ModalBarrier>(find.byType(ModalBarrier))
             .last;
         expect(barrier.color, TokenColor.scrim);
-        await tester.tap(find.widgetWithText(FilledButton, S.understood));
+        await tester.tap(find.byKey(const ValueKey('forgot-password-ok')));
         await tester.pumpAndSettle();
         expect(find.text(S.forgotPasswordBody), findsNothing);
       },

@@ -154,7 +154,7 @@ void main() {
       await seedSchedule();
       await WeightRepository(db).put(LocalDate(2026, 10, 5), 725);
       await pump(tester);
-      expect(find.text(S.stepOf(5)), findsOneWidget);
+      expect(find.bySemanticsLabel(S.stepOf(5)), findsOneWidget);
       expect(find.text(S.reminderStepTitle), findsOneWidget);
       expect(
         find.text('Hôm nay tập ngực và tay sau lúc 18:00'),

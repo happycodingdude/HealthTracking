@@ -6,11 +6,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/strings_vi.dart';
 import '../../../core/error_mapping.dart';
-import '../../../core/widgets/labeled_field.dart';
 import '../../../core/widgets/link_text.dart';
 import '../../../core/widgets/phone_input_formatter.dart';
-import '../../../core/widgets/primary_button.dart';
 import '../../../data/api/api_client.dart';
+import '../../../ui/components/components.dart';
+import '../../../ui/theme.dart';
 import '../application/auth_controller.dart';
 import 'auth_scaffold.dart';
 import 'password_field.dart';
@@ -141,13 +141,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return AutofillGroup(
+      // 04 Bản 4 S-01a: ô nhập dạng thẻ, gợi ý trong ô là tên trường; không
+      // câu phụ dưới tiêu đề (FR4-04).
       child: AuthScaffold(
         title: S.register,
-        subtitle: S.registerSubtitle,
         fields: [
-          LabeledField(
+          IronlyTextField(
             key: _keys[AccountField.displayName],
-            label: S.fieldDisplayName,
+            name: 'display-name',
+            hint: S.fieldDisplayName,
             controller: _name,
             focusNode: _focus[AccountField.displayName],
             error: _errors[AccountField.displayName],
@@ -156,10 +158,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             autofillHints: const [AutofillHints.name],
             onChanged: (_) => _clear(AccountField.displayName),
           ),
-          const SizedBox(height: 20),
-          LabeledField(
+          const SizedBox(height: TokenSpace.s3),
+          IronlyTextField(
             key: _keys[AccountField.phone],
-            label: S.fieldPhone,
+            name: 'phone',
+            hint: S.fieldPhone,
             controller: _phone,
             focusNode: _focus[AccountField.phone],
             error: _phoneTaken
@@ -174,21 +177,22 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             autofillHints: const [AutofillHints.telephoneNumber],
             onChanged: (_) => _clear(AccountField.phone),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: TokenSpace.s3),
           PasswordField(
             key: _keys[AccountField.password],
+            name: 'password',
             label: S.fieldPassword,
             controller: _password,
             focusNode: _focus[AccountField.password],
             error: _errors[AccountField.password],
-            hint: S.passwordHint,
             textInputAction: TextInputAction.next,
             autofillHints: const [AutofillHints.newPassword],
             onChanged: (_) => _clear(AccountField.password),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: TokenSpace.s3),
           PasswordField(
             key: _keys[AccountField.passwordConfirm],
+            name: 'password-confirm',
             label: S.fieldPasswordConfirm,
             controller: _confirm,
             focusNode: _focus[AccountField.passwordConfirm],
@@ -201,16 +205,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         ],
         bottom: [
           if (_notice != null) FormNotice(_notice!),
+          IronlyButton.primary(
+            key: const ValueKey('register-submit'),
+            label: S.register,
+            loading: _submitting,
+            onPressed: _submit,
+          ),
+          const SizedBox(height: TokenSpace.s1),
+          // 04 Bản 4 S-01a (mock): chữ cam dưới nút.
           LinkText(
             prefix: S.haveAccount,
             link: S.login,
             onTap: () => context.go('/welcome/login'),
-          ),
-          const SizedBox(height: 8),
-          PrimaryButton(
-            label: S.register,
-            loading: _submitting,
-            onPressed: _submit,
           ),
         ],
       ),

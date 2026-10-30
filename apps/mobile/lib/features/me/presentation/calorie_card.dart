@@ -31,7 +31,6 @@ class CalorieCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.tokens;
-    final below = view.belowMaintenance;
     final note = view.note;
     final manual = view.mode == CalorieMode.manual;
     return IronlyCard(
@@ -75,13 +74,6 @@ class CalorieCard extends StatelessWidget {
               onSelected: (m) => m == CalorieMode.auto
                   ? (manual ? onAuto?.call() : null)
                   : onManual?.call(),
-            ),
-          ],
-          if (below != null) ...[
-            const SizedBox(height: TokenSpace.s3),
-            Text(
-              S.belowMaintenance(Fmt.integer(below)),
-              style: IronlyText.caption,
             ),
           ],
           if (note != null) ...[

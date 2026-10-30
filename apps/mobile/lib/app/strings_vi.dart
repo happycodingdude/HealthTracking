@@ -200,9 +200,10 @@ abstract final class S {
   static String reminderTomorrow(String muscles, String time) =>
       'Ngày mai tập $muscles lúc $time';
 
-  /// Mock S-06: ví dụ lấy từ lịch Bạn vừa xếp.
+  /// 04 Bản 4 S-06: "Lúc 17:00 thứ 2, app sẽ nhắc:" + lời nhắc thật (không
+  /// còn câu giải thích, FR4-04).
   static String reminderExample(String time, String weekday) =>
-      'Ví dụ từ lịch của Bạn: nhắc lúc $time $weekday. App nhắc 1 giờ trước mỗi buổi theo lịch. Bạn bật hoặc tắt được bất cứ lúc nào ở mục Tôi.';
+      'Lúc $time $weekday, app sẽ nhắc:';
 
   static const turnOnReminders = 'Bật nhắc';
   static const later = 'Để sau';

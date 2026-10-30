@@ -50,19 +50,19 @@ void main() {
   testWidgets('VS01-T10: đăng ký → S-02. '
       'VS-03: S-02 → S-03 → S-04, thoát app ở bước 3', (tester) async {
     await launch();
-    await pumpUntil(tester, find.widgetWithText(OutlinedButton, S.login));
+    await pumpUntil(tester, find.byKey(const ValueKey('welcome-login')));
 
     // VS01-T10: đăng ký thành công → S-02 (Bước 1/5), không có thanh tab.
-    await tester.tap(find.widgetWithText(FilledButton, S.register));
+    await tester.tap(find.byKey(const ValueKey('welcome-register')));
     await tester.pumpAndSettle();
     await enter(tester, S.fieldDisplayName, 'Minh');
     await enter(tester, S.fieldPhone, '0912345678');
     await enter(tester, S.fieldPassword, password);
     await enter(tester, S.fieldPasswordConfirm, password);
-    await reveal(tester, find.widgetWithText(FilledButton, S.register));
-    await tester.tap(find.widgetWithText(FilledButton, S.register));
+    await reveal(tester, find.byKey(const ValueKey('register-submit')));
+    await tester.tap(find.byKey(const ValueKey('register-submit')));
     await pumpUntil(tester, find.text(S.disclaimerTitle));
-    expect(find.text(S.stepOf(1)), findsOneWidget);
+    expect(find.bySemanticsLabel(S.stepOf(1)), findsOneWidget);
     expect(find.byType(IronlyTabBar), findsNothing);
 
     // VS-03: S-02 → S-03 (hồ sơ F02-AC1) → S-04.
@@ -74,10 +74,10 @@ void main() {
     await tester.pumpAndSettle();
     await tapVisible(tester, find.byKey(const ValueKey('sex-male')));
     await tapVisible(tester, find.byKey(const ValueKey('activity-moderate')));
-    await enter(tester, S.fieldInitialWeight, '80');
-    await tester.tap(find.widgetWithText(FilledButton, S.continueLabel));
+    await enter(tester, S.fieldWeight, '80');
+    await tester.tap(find.byKey(const ValueKey('profile-continue')));
     await pumpUntil(tester, find.text(S.calorieTitle));
-    expect(find.text(S.stepOf(3)), findsOneWidget);
+    expect(find.bySemanticsLabel(S.stepOf(3)), findsOneWidget);
     // Bản 4 (04 S-04): thẻ chỉ số lớn, không chữ chế độ.
     expect(find.text('2.210 kcal', findRichText: true), findsOneWidget);
     // Thoát app ở bước 3; test sau mở lại.
@@ -93,7 +93,7 @@ void main() {
       await tester.pumpWidget(const SizedBox());
       await launch();
       await pumpUntil(tester, find.text(S.calorieTitle));
-      expect(find.text(S.stepOf(3)), findsOneWidget);
+      expect(find.bySemanticsLabel(S.stepOf(3)), findsOneWidget);
       final kcal = CalorieRules.estimate(
         heightCm: 175,
         weightKgX10: 800,
@@ -103,8 +103,8 @@ void main() {
       ).kcal;
       expect(find.text(Fmt.kcal(kcal), findRichText: true), findsOneWidget);
 
-      await tester.tap(find.widgetWithText(FilledButton, S.keepThisLevel));
-      await pumpUntil(tester, find.text(S.stepOf(4)));
+      await tester.tap(find.byKey(const ValueKey('keep-this-level')));
+      await pumpUntil(tester, find.bySemanticsLabel(S.stepOf(4)));
 
       // VS-04: S-05 xếp lịch thứ 2 → thứ 7 đều tập Ngực (giờ mặc định 18:00),
       // lưu → app chia lịch tháng → bước 5.
@@ -116,13 +116,13 @@ void main() {
         await tester.pumpAndSettle();
         await tapVisible(tester, find.byKey(const ValueKey('muscle-chest')));
       }
-      await tester.tap(find.widgetWithText(FilledButton, S.saveSchedule));
-      await pumpUntil(tester, find.text(S.stepOf(5)));
+      await tester.tap(find.byKey(const ValueKey('save-schedule')));
+      await pumpUntil(tester, find.bySemanticsLabel(S.stepOf(5)));
 
       // VS-05: S-06 có ví dụ thật từ lịch; "Để sau" (simulator không bấm được
       // hộp xin quyền của iOS) → hoàn tất thiết lập → Hôm nay (OB-4, NAV-1).
       expect(find.byKey(const ValueKey('reminder-preview')), findsOneWidget);
-      await tester.tap(find.widgetWithText(OutlinedButton, S.later));
+      await tester.tap(find.byKey(const ValueKey('reminders-later')));
       await pumpUntil(tester, tabLabel(S.tabToday));
       for (final label in [
         S.tabTraining,
@@ -451,13 +451,13 @@ void main() {
       await tester.pumpWidget(const SizedBox());
       await const FlutterSecureStorage().deleteAll();
       await launch(database: AppDatabase(NativeDatabase.memory()));
-      await pumpUntil(tester, find.widgetWithText(OutlinedButton, S.login));
-      await tester.tap(find.widgetWithText(OutlinedButton, S.login));
+      await pumpUntil(tester, find.byKey(const ValueKey('welcome-login')));
+      await tester.tap(find.byKey(const ValueKey('welcome-login')));
       await tester.pumpAndSettle();
       await enter(tester, S.fieldPhone, '0912345678');
       await enter(tester, S.fieldPassword, password);
-      await reveal(tester, find.widgetWithText(FilledButton, S.login));
-      await tester.tap(find.widgetWithText(FilledButton, S.login));
+      await reveal(tester, find.byKey(const ValueKey('login-submit')));
+      await tester.tap(find.byKey(const ValueKey('login-submit')));
       await pumpUntil(tester, find.text(S.restored));
       expect(find.byType(IronlyTabBar), findsOneWidget);
       expect(find.text(S.tabToday), findsWidgets);
@@ -486,8 +486,8 @@ void main() {
 
       await enter(tester, S.fieldPhone, '0912345678');
       await enter(tester, S.fieldPassword, password);
-      await reveal(tester, find.widgetWithText(FilledButton, S.login));
-      await tester.tap(find.widgetWithText(FilledButton, S.login));
+      await reveal(tester, find.byKey(const ValueKey('login-submit')));
+      await tester.tap(find.byKey(const ValueKey('login-submit')));
       await pumpUntil(tester, find.text(S.restored));
       expect(find.text(S.tabToday), findsWidgets);
 
@@ -522,7 +522,7 @@ void main() {
 
       await tester.pumpWidget(const SizedBox());
       await launch();
-      await pumpUntil(tester, find.widgetWithText(OutlinedButton, S.login));
+      await pumpUntil(tester, find.byKey(const ValueKey('welcome-login')));
       expect(find.byType(IronlyTabBar), findsNothing);
     },
   );
@@ -534,14 +534,14 @@ void main() {
       await tester.pumpWidget(const SizedBox());
       await const FlutterSecureStorage().deleteAll();
       await launch(database: AppDatabase(NativeDatabase.memory()));
-      await pumpUntil(tester, find.widgetWithText(OutlinedButton, S.login));
-      await tester.tap(find.widgetWithText(OutlinedButton, S.login));
+      await pumpUntil(tester, find.byKey(const ValueKey('welcome-login')));
+      await tester.tap(find.byKey(const ValueKey('welcome-login')));
       await tester.pumpAndSettle();
       await enter(tester, S.fieldPhone, '0987654321');
       await enter(tester, S.fieldPassword, randomTestPassword());
       for (var attempt = 1; attempt <= 6; attempt++) {
-        await reveal(tester, find.widgetWithText(FilledButton, S.login));
-        await tester.tap(find.widgetWithText(FilledButton, S.login));
+        await reveal(tester, find.byKey(const ValueKey('login-submit')));
+        await tester.tap(find.byKey(const ValueKey('login-submit')));
         await pumpUntil(tester, find.text(S.errorInvalidCredentials));
         expect(
           find.text(S.errorInvalidCredentials),

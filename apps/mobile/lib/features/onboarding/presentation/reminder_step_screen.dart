@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/strings_vi.dart';
-import '../../../app/theme.dart';
 import '../../../core/formatters.dart';
-import '../../../core/widgets/primary_button.dart';
+import '../../../ui/components/components.dart';
+import '../../../ui/theme.dart';
 import '../../me/application/reminders.dart';
 import '../../schedule/application/schedule_providers.dart';
 import '../application/onboarding_steps.dart';
@@ -20,9 +20,11 @@ final firstReminderProvider = FutureProvider.autoDispose<Reminder?>((
   return upcoming.firstOrNull;
 });
 
-/// S-06 — Nhắc đi tập (Bước 5/5, F-04). Ví dụ thật từ lịch vừa xếp. "Bật nhắc"
-/// → iPhone hỏi quyền → vào Hôm nay dù Bạn đồng ý hay từ chối (công tắc vẫn
-/// bật, F04-E2). "Để sau" → công tắc tắt, vào Hôm nay (OB-4).
+/// S-06 — Nhắc đi tập (Bước 5/5, F-04, 04 Bản 4 S-06): icon chuông tròn,
+/// "Nhắc Bạn trước giờ tập?"; thẻ ví dụ thật từ lịch ("Lúc 17:00 thứ 2, app
+/// sẽ nhắc: Hôm nay tập ngực lúc 18:00" — dữ liệu của Bạn, giữ); nút cam "Bật
+/// nhắc", nút xám "Để sau". "Bật nhắc" → iPhone hỏi quyền → vào Hôm nay dù
+/// đồng ý hay từ chối (F04-E2). "Để sau" → công tắc tắt, vào Hôm nay (OB-4).
 class ReminderStepScreen extends ConsumerStatefulWidget {
   const ReminderStepScreen({super.key});
 
@@ -61,87 +63,63 @@ class _ReminderStepScreenState extends ConsumerState<ReminderStepScreen> {
       step: 5,
       title: S.reminderStepTitle,
       bottom: [
-        PrimaryButton(
+        IronlyButton.primary(
+          key: const ValueKey('turn-on-reminders'),
           label: S.turnOnReminders,
           loading: _busy,
           onPressed: () => _finish(reminders: true),
         ),
-        const SizedBox(height: 12),
-        OutlinedButton(
-          onPressed: _busy ? null : () => _finish(reminders: false),
-          child: const Text(S.later),
+        const SizedBox(height: TokenSpace.s2),
+        IronlyButton.gray(
+          key: const ValueKey('reminders-later'),
+          label: S.later,
+          enabled: !_busy,
+          onPressed: () => _finish(reminders: false),
         ),
       ],
       children: [
+        const Center(child: CircleIcon(Icons.notifications_none, size: 72)),
+        const SizedBox(height: TokenSpace.s5),
         // 04 Bản 2 S-06, UA2-04, F04-E21: đã "Để sau" lịch tuần → câu ví dụ
-        // chung.
+        // chung (giữ, là ví dụ); không dòng "Nhắc bắt đầu hoạt động khi…"
+        // (FR4-04).
         if (noSchedule) const _GenericExample(),
-        if (first != null) ...[
-          _Preview(reminder: first),
-          const SizedBox(height: 20),
-          Text(
-            S.reminderExample(
-              Fmt.clock(first.at),
-              Fmt.weekday(LocalDate.fromDateTime(first.at)).toLowerCase(),
-            ),
-            style: context.text.bodyLarge?.copyWith(
-              color: context.palette.textSecondary,
-            ),
-          ),
-        ],
+        if (first != null) _Preview(reminder: first),
       ],
     );
   }
 }
 
 /// Câu ví dụ chung khi chưa có lịch (mock S-06-1 Bản 2): phần lời nhắc in
-/// đậm, kèm dòng "Nhắc bắt đầu hoạt động khi Bạn xếp lịch tuần."
+/// đậm.
 class _GenericExample extends StatelessWidget {
   const _GenericExample();
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
     const example = S.reminderGenericExample;
     // Phần sau "…sẽ nhắc: " là lời nhắc, in đậm.
     final split = example.lastIndexOf(': ') + 2;
-    return Container(
+    return IronlyCard(
       key: const ValueKey('reminder-generic-example'),
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-      decoration: BoxDecoration(
-        color: palette.card,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: palette.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text.rich(
+      child: Text.rich(
+        TextSpan(
+          text: example.substring(0, split),
+          children: [
             TextSpan(
-              text: example.substring(0, split),
-              children: [
-                TextSpan(
-                  text: example.substring(split),
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ],
+              text: example.substring(split),
+              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
-            style: context.text.bodyLarge,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            S.remindersStartWhenScheduled,
-            style: context.text.bodyMedium?.copyWith(
-              color: palette.textSecondary,
-            ),
-          ),
-        ],
+          ],
+        ),
+        style: IronlyText.body,
       ),
     );
   }
 }
 
-/// Thẻ giống một thông báo trên iPhone (mock S-06).
+/// Thẻ ví dụ thật từ lịch vừa xếp: "Lúc 17:00 thứ 2, app sẽ nhắc:" + lời nhắc
+/// in đậm (04 Bản 4 S-06).
 class _Preview extends StatelessWidget {
   const _Preview({required this.reminder});
 
@@ -149,43 +127,22 @@ class _Preview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
-    return Container(
+    return IronlyCard(
       key: const ValueKey('reminder-preview'),
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-      decoration: BoxDecoration(
-        color: palette.card,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: palette.border),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            spacing: 12,
-            children: [
-              Text(
-                S.appName,
-                style: context.text.bodyMedium?.copyWith(
-                  color: palette.textSecondary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              Text(
-                Fmt.clock(reminder.at),
-                style: context.text.bodyMedium?.copyWith(
-                  color: palette.textSecondary,
-                ),
-              ),
-            ],
+          Text(
+            S.reminderExample(
+              Fmt.clock(reminder.at),
+              Fmt.weekday(LocalDate.fromDateTime(reminder.at)).toLowerCase(),
+            ),
+            style: IronlyText.caption,
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: TokenSpace.s2),
           Text(
             reminderBody(reminder),
-            style: context.text.bodyLarge?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
+            style: IronlyText.body.copyWith(fontWeight: FontWeight.w600),
           ),
         ],
       ),

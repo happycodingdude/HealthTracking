@@ -3,18 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/strings_vi.dart';
-import '../../../app/theme.dart';
-import '../../../core/widgets/heading.dart';
+import '../../../ui/components/components.dart';
+import '../../../ui/keys.dart';
+import '../../../ui/theme.dart';
 
-/// Khung chung của các bước thiết lập lần đầu (OB-1): "‹ Quay lại" (trừ bước
-/// 1), "Bước n/5", thanh tiến độ, tiêu đề, nội dung cuộn và phần nút luôn nằm
-/// trên bàn phím (04 §6.17). Thanh tab bị ẩn (NAV-7).
+/// Khung chung của các bước thiết lập lần đầu (OB-1, 04 Bản 4 S-02 → S-06):
+/// đầu màn dải 5 vạch (bước đã qua và hiện tại cam, còn lại thẻ nổi) thay
+/// "Bước n/5", nút quay lại từ bước 2; tiêu đề; nội dung cuộn; phần nút luôn
+/// nằm trên bàn phím (04 §6.17). Thanh tab bị ẩn (NAV-7).
 class OnboardingScaffold extends StatelessWidget {
   const OnboardingScaffold({
     super.key,
     required this.step,
     required this.title,
-    this.subtitle,
     required this.children,
     required this.bottom,
     this.scrollController,
@@ -22,63 +23,75 @@ class OnboardingScaffold extends StatelessWidget {
 
   final int step;
   final String title;
-  final String? subtitle;
   final List<Widget> children;
   final List<Widget> bottom;
   final ScrollController? scrollController;
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
+    final t = context.tokens;
+    const total = ProfileRules.onboardingSteps;
     return Scaffold(
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: 48),
-                // Cỡ chữ lớn: "Bước n/5" xuống dòng, không tràn (UX-AC18).
-                child: Wrap(
-                  alignment: step > 1
-                      ? WrapAlignment.spaceBetween
-                      : WrapAlignment.end,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 12,
-                  children: [
-                    if (step > 1)
-                      TextButton.icon(
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.only(right: 12),
-                        ),
-                        // OB-2: quay lại không mất thông tin đã nhập.
-                        onPressed: () => context.go('/onboarding/${step - 1}'),
-                        icon: const Icon(Icons.chevron_left),
-                        label: const Text(S.back),
-                      ),
-                    Text(
-                      S.stepOf(step),
-                      style: context.text.bodyLarge?.copyWith(
-                        color: context.palette.textSecondary,
+            SizedBox(
+              height: 44,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Dải 5 vạch, VoiceOver đọc "Bước n/5".
+                  Semantics(
+                    container: true,
+                    label: S.stepOf(step),
+                    child: ExcludeSemantics(
+                      child: Row(
+                        key: const ValueKey('onboarding-steps'),
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (var i = 1; i <= total; i++) ...[
+                            if (i > 1) const SizedBox(width: TokenSpace.s1),
+                            Container(
+                              key: ValueKey('onboarding-step-$i'),
+                              width: 28,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: i <= step ? t.accent : t.surfaceRaised,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: ExcludeSemantics(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: step / ProfileRules.onboardingSteps,
-                    minHeight: 6,
-                    color: colors.primary,
-                    backgroundColor: context.palette.neutralContainer,
                   ),
-                ),
+                  if (step > 1)
+                    Positioned(
+                      left: TokenSpace.s1,
+                      child: Semantics(
+                        button: true,
+                        label: S.back,
+                        child: ExcludeSemantics(
+                          child: GestureDetector(
+                            key: K.pageBack,
+                            behavior: HitTestBehavior.opaque,
+                            // OB-2: quay lại không mất thông tin đã nhập.
+                            onTap: () => context.go('/onboarding/${step - 1}'),
+                            child: SizedBox(
+                              width: 44,
+                              height: 44,
+                              child: Icon(
+                                Icons.chevron_left,
+                                color: t.accent,
+                                size: 26,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
             Expanded(
@@ -86,33 +99,34 @@ class OnboardingScaffold extends StatelessWidget {
               // đầu tiên (OB-5).
               child: SingleChildScrollView(
                 controller: scrollController,
-                padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+                padding: const EdgeInsets.fromLTRB(
+                  pageInset,
+                  TokenSpace.s3,
+                  pageInset,
+                  TokenSpace.s4,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Heading(
-                      title,
-                      style: context.text.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                    Semantics(
+                      header: true,
+                      child: Text(title, style: IronlyText.title),
                     ),
-                    if (subtitle != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle!,
-                        style: context.text.bodyLarge?.copyWith(
-                          color: context.palette.textSecondary,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 24),
+                    const SizedBox(height: TokenSpace.s4),
                     ...children,
                   ],
                 ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              padding: EdgeInsets.fromLTRB(
+                pageInset,
+                TokenSpace.s2,
+                pageInset,
+                MediaQuery.paddingOf(context).bottom > 0
+                    ? TokenSpace.s2
+                    : TokenSpace.s4,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: bottom,

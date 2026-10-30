@@ -9,7 +9,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/app.dart';
 import 'package:mobile/app/strings_vi.dart';
-import 'package:mobile/core/widgets/labeled_field.dart';
 import 'package:mobile/data/auth/session_store.dart';
 import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/data/sync/outbox_writer.dart';
@@ -170,13 +169,15 @@ void main() {
   );
 
   Future<void> login(WidgetTester tester) async {
-    Finder input(String label) => find.descendant(
-      of: find.byWidgetPredicate((w) => w is LabeledField && w.label == label),
-      matching: find.byType(TextField),
+    await tester.enterText(
+      find.byKey(const ValueKey('field-phone')),
+      '0912345678',
     );
-    await tester.enterText(input(S.fieldPhone), '0912345678');
-    await tester.enterText(input(S.fieldPassword), randomTestPassword());
-    await tester.tap(find.widgetWithText(FilledButton, S.login));
+    await tester.enterText(
+      find.byKey(const ValueKey('field-password')),
+      randomTestPassword(),
+    );
+    await tester.tap(find.byKey(const ValueKey('login-submit')));
     await tester.pumpAndSettle();
   }
 
@@ -195,7 +196,7 @@ void main() {
     await pump(tester, session: session, restoreAtStart: true);
     expect(find.byType(RestoreScreen), findsOneWidget);
     expect(find.text(S.restoreTitle), findsOneWidget);
-    expect(find.text(S.restoreSubtitle), findsOneWidget);
+    expect(find.text(S.restoreSubtitle), findsNothing);
     expect(find.byType(IronlyTabBar), findsNothing, reason: 'chưa vào app');
     final bar = tester.widget<LinearProgressIndicator>(
       find.byKey(const ValueKey('restore-progress')),
@@ -273,12 +274,12 @@ void main() {
       serverData();
       me('u1');
       await pump(tester);
-      await tester.tap(find.widgetWithText(OutlinedButton, S.login));
+      await tester.tap(find.byKey(const ValueKey('welcome-login')));
       await tester.pumpAndSettle();
       await login(tester);
       expect(find.byType(IronlyTabBar), findsOneWidget);
       expect(find.text(S.restored), findsOneWidget);
-      expect(find.text(S.stepOf(1)), findsNothing);
+      expect(find.bySemanticsLabel(S.stepOf(1)), findsNothing);
     },
   );
 

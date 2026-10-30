@@ -8,7 +8,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/app.dart';
 import 'package:mobile/app/router.dart';
 import 'package:mobile/app/strings_vi.dart';
-import 'package:mobile/core/widgets/labeled_field.dart';
 
 import '../../support/app_harness.dart';
 import '../../support/fake_server.dart';
@@ -49,11 +48,6 @@ void main() {
     return container;
   }
 
-  Finder input(String label) => find.descendant(
-    of: find.byWidgetPredicate((w) => w is LabeledField && w.label == label),
-    matching: find.byType(TextField),
-  );
-
   Future<void> snap(String name) => expectLater(
     find.byType(MaterialApp),
     matchesGoldenFile('goldens/$name.png'),
@@ -72,7 +66,7 @@ void main() {
 
     testWidgets('S-01a lỗi dưới từng ô (P4) ${v.name}', (tester) async {
       await pump(tester, v, '/welcome/register');
-      await tester.tap(find.widgetWithText(FilledButton, S.register));
+      await tester.tap(find.byKey(const ValueKey('register-submit')));
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
         find.text(S.fieldDisplayName),
@@ -88,12 +82,24 @@ void main() {
         tester,
       ) async {
         await pump(tester, v, '/welcome/register');
-        await tester.enterText(input(S.fieldDisplayName), 'Minh');
-        await tester.enterText(input(S.fieldPhone), '0912345678');
+        await tester.enterText(
+          find.byKey(const ValueKey('field-display-name')),
+          'Minh',
+        );
+        await tester.enterText(
+          find.byKey(const ValueKey('field-phone')),
+          '0912345678',
+        );
         final password = randomTestPassword();
-        await tester.enterText(input(S.fieldPassword), password);
-        await tester.enterText(input(S.fieldPasswordConfirm), password);
-        await tester.tap(find.widgetWithText(FilledButton, S.register));
+        await tester.enterText(
+          find.byKey(const ValueKey('field-password')),
+          password,
+        );
+        await tester.enterText(
+          find.byKey(const ValueKey('field-password-confirm')),
+          password,
+        );
+        await tester.tap(find.byKey(const ValueKey('register-submit')));
         await tester.pumpAndSettle();
         await snap('s01a_phone_taken_${v.name}');
       });
@@ -101,7 +107,10 @@ void main() {
 
     testWidgets('S-01b ${v.name}', (tester) async {
       await pump(tester, v, '/welcome/login');
-      await tester.enterText(input(S.fieldPhone), '0912345678');
+      await tester.enterText(
+        find.byKey(const ValueKey('field-phone')),
+        '0912345678',
+      );
       await tester.pumpAndSettle();
       await snap('s01b_${v.name}');
     });

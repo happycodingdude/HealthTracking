@@ -1,28 +1,30 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/strings_vi.dart';
-import '../../../core/widgets/labeled_field.dart';
+import '../../../ui/components/components.dart';
+import '../../../ui/theme.dart';
 
-/// Ô mật khẩu có nút hiện/ẩn (S-01a).
+/// Ô mật khẩu dạng thẻ, gợi ý trong ô là tên trường, icon mắt bên phải (04
+/// Bản 4 S-01a / S-01b).
 class PasswordField extends StatefulWidget {
   const PasswordField({
     super.key,
+    required this.name,
     required this.label,
     required this.controller,
     this.focusNode,
     this.error,
-    this.hint,
     this.onChanged,
     this.onSubmitted,
     this.textInputAction,
     this.autofillHints,
   });
 
+  final String name;
   final String label;
   final TextEditingController controller;
   final FocusNode? focusNode;
   final String? error;
-  final String? hint;
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
   final TextInputAction? textInputAction;
@@ -37,22 +39,39 @@ class _PasswordFieldState extends State<PasswordField> {
 
   @override
   Widget build(BuildContext context) {
-    return LabeledField(
-      label: widget.label,
+    final t = context.tokens;
+    return IronlyTextField(
+      name: widget.name,
+      hint: widget.label,
       controller: widget.controller,
       focusNode: widget.focusNode,
       error: widget.error,
-      hint: widget.hint,
       obscureText: !_visible,
       onChanged: widget.onChanged,
       onSubmitted: widget.onSubmitted,
       textInputAction: widget.textInputAction,
       autofillHints: widget.autofillHints,
-      suffix: IconButton(
-        tooltip: _visible ? S.hidePassword : S.showPassword,
-        onPressed: () => setState(() => _visible = !_visible),
-        icon: Icon(
-          _visible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+      suffix: Semantics(
+        container: true,
+        button: true,
+        label: _visible ? S.hidePassword : S.showPassword,
+        child: ExcludeSemantics(
+          child: GestureDetector(
+            key: ValueKey('${widget.name}-toggle'),
+            behavior: HitTestBehavior.opaque,
+            onTap: () => setState(() => _visible = !_visible),
+            child: SizedBox(
+              width: 44,
+              height: 44,
+              child: Icon(
+                _visible
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+                size: 20,
+                color: t.textSecondary,
+              ),
+            ),
+          ),
         ),
       ),
     );
