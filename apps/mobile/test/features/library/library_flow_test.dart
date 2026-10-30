@@ -212,8 +212,9 @@ void main() {
         find.byKey(const ValueKey('progress-empty')).hitTestable(),
         findsOneWidget,
       );
-      expect(find.text(S.progressEmptyTitle), findsOneWidget);
-      expect(find.text(S.progressEmptyBody), findsOneWidget);
+      // Bản 4 (F4-R7): trống chỉ icon, không câu.
+      expect(find.text(S.progressEmptyTitle), findsNothing);
+      expect(find.text(S.progressEmptyBody), findsNothing);
       expect(find.byKey(const ValueKey('open-weekly')), findsNothing);
 
       await openLibrary(tester);
@@ -320,12 +321,13 @@ void main() {
               find.descendant(of: row, matching: find.text(e.nameVi)),
               findsOneWidget,
             );
+            // Bản 4 (04 S-66): không nhãn vùng cơ dưới tên.
             expect(
               find.descendant(
                 of: row,
                 matching: find.text(Fmt.region(e.region)),
               ),
-              findsOneWidget,
+              findsNothing,
             );
           }
           for (final word in ['Máy', 'Tạ', 'Không dụng cụ']) {
@@ -341,10 +343,8 @@ void main() {
           MuscleGroup.abs: 3,
           MuscleGroup.legs: 5,
         });
-        expect(
-          find.text(S.libraryFootnote, skipOffstage: false),
-          findsOneWidget,
-        );
+        // Bản 4 (FR4-04): không câu cuối danh sách.
+        expect(find.text(S.libraryFootnote, skipOffstage: false), findsNothing);
         expect(find.byType(CircularProgressIndicator), findsNothing);
         expectReadOnly();
         semantics.dispose();
@@ -363,8 +363,14 @@ void main() {
         'chest-upper-machine-incline-machine-chest-press',
         'chest-chest-lower-decline-plate-loaded-press',
       ]);
+      // Bản 4 (04 S-66): không nhãn vùng cơ; VoiceOver vẫn đọc vùng.
       for (final label in ['Ngực giữa', 'Ngực trên', 'Ngực dưới']) {
-        expect(find.text(label), findsWidgets, reason: label);
+        expect(find.text(label), findsNothing, reason: label);
+        expect(
+          find.bySemanticsLabel(RegExp(label)),
+          findsWidgets,
+          reason: label,
+        );
       }
     });
 
@@ -377,12 +383,12 @@ void main() {
       await openLibrary(tester);
       await tapKey(tester, 'group-legs');
       expect(rows(tester), hasLength(5));
-      expect(find.text('Đùi trước'), findsNWidgets(2));
-      expect(find.text('Đùi sau'), findsNWidgets(2));
-      expect(find.text('Bắp chân'), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('Đùi trước')), findsNWidgets(2));
+      expect(find.bySemanticsLabel(RegExp('Đùi sau')), findsNWidgets(2));
+      expect(find.bySemanticsLabel(RegExp('Bắp chân')), findsOneWidget);
       await tapKey(tester, 'group-biceps');
       expect(rows(tester), hasLength(3));
-      expect(find.text('Bắp tay'), findsNWidgets(3));
+      expect(find.bySemanticsLabel(RegExp('Bắp tay')), findsNWidgets(3));
       expect(regionHeadings(), findsNothing);
     });
 
@@ -437,13 +443,9 @@ void main() {
       await pump(tester, tall: true);
       final e = exerciseOf(library, MuscleRegion.chestUpper, 'machine');
       await openExercise(tester, e);
-      expect(
-        find.descendant(
-          of: find.byKey(const ValueKey('exercise-back')),
-          matching: find.text(S.backLibrary),
-        ),
-        findsOneWidget,
-      );
+      // Bản 4: nút quay lại chỉ có mũi tên.
+      expect(find.byKey(const ValueKey('exercise-back')), findsOneWidget);
+      expect(find.text(S.backLibrary), findsNothing);
       expect(find.byKey(const ValueKey('video-play')), findsOneWidget);
       expect(find.text('0:48'), findsOneWidget);
       expect(video.opened, isEmpty, reason: 'UA2-12: không tự tải');
@@ -453,8 +455,10 @@ void main() {
         find.byKey(const ValueKey('body-map-male_front-chest_upper')),
         findsOneWidget,
       );
-      expect(find.text(S.mainRegion), findsOneWidget);
-      expect(find.text(S.howTo.toUpperCase()), findsOneWidget);
+      // Bản 4 (FR4-04, FR4-05): không "Vùng cơ chịu tác động chính"; tiêu đề
+      // thẻ "Cách tập".
+      expect(find.text(S.mainRegion), findsNothing);
+      expect(find.text(S.howTo), findsOneWidget);
       for (final (i, step) in e.guideSteps.indexed) {
         expect(find.text(step, skipOffstage: false), findsOneWidget);
         expect(find.text('${i + 1}', skipOffstage: false), findsWidgets);
@@ -466,10 +470,7 @@ void main() {
       for (final note in e.guideSafety) {
         expect(find.text(note, skipOffstage: false), findsOneWidget);
       }
-      expect(
-        find.text(S.exerciseGuideNote, skipOffstage: false),
-        findsOneWidget,
-      );
+      expect(find.text(S.exerciseGuideNote, skipOffstage: false), findsNothing);
       expect(find.byKey(const ValueKey('not-in-library')), findsNothing);
       expect(find.textContaining('Ghi mức tạ'), findsNothing);
       expect(find.textContaining('Xem biểu đồ'), findsNothing);
@@ -511,7 +512,7 @@ void main() {
         }
         expect(
           find.text(S.exerciseGuideNote, skipOffstage: false),
-          findsOneWidget,
+          findsNothing,
         );
         for (final word in ['Máy', 'Tạ', 'Không dụng cụ']) {
           expect(
@@ -681,15 +682,16 @@ void main() {
       await seedLibrary(db, library);
       await pump(tester, tall: true);
       await openExercise(tester, exerciseOf(library, MuscleRegion.biceps));
+      // Bản 4 (FR4-05): nhãn hướng dẫn chỉ còn ở S-02 và S-55.
       expect(
         find.text(
           'Hướng dẫn tham khảo cho người khỏe mạnh, không thay huấn luyện '
           'viên.',
         ),
-        findsOneWidget,
+        findsNothing,
       );
-      await tapKey(tester, 'exercise-guide-note');
-      expect(find.byType(DisclaimerPoints), findsOneWidget);
+      expect(find.byKey(const ValueKey('exercise-guide-note')), findsNothing);
+      expect(find.byType(DisclaimerPoints), findsNothing);
     });
 
     testWidgets('F19-E2: bài đã rời thư viện mở bằng đường dẫn (buổi cũ, '
@@ -722,7 +724,7 @@ void main() {
         ),
       );
       expect(find.text(e.guideSteps.first), findsOneWidget);
-      expect(find.text(S.backProgress), findsOneWidget);
+      expect(find.text(S.backProgress), findsNothing);
     });
   });
 

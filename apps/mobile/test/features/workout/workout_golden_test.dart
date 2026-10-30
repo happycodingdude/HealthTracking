@@ -306,7 +306,7 @@ void main() {
         c,
         exercisePath(group(MuscleGroup.chest)[2].id, ExerciseFrom.library),
       );
-      await showLiftArea(tester);
+      // Bản 4: thanh chọn đơn vị ở thẻ thông tin đầu trang.
       await tester.tap(find.byKey(const ValueKey('exercise-change-unit')));
       await tester.pumpAndSettle();
       await snap('s72_change_unit_${v.name}');

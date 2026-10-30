@@ -114,8 +114,9 @@ void main() {
         'không có nút', (tester) async {
       await pump(tester);
       await openProgress(tester);
+      // Bản 4 (F4-R7): trống chỉ icon, không câu.
       expect(key('progress-empty'), findsOneWidget);
-      expect(find.text(S.progressEmptyBody), findsOneWidget);
+      expect(find.text(S.progressEmptyBody), findsNothing);
       expect(
         find.descendant(
           of: key('progress-empty'),
@@ -142,7 +143,7 @@ void main() {
       await ExerciseRepository(db).put(row.copyWith(active: false));
       await pump(tester);
       await openProgress(tester);
-      expect(find.text(S.progressHint), findsOneWidget);
+      expect(find.text(S.progressHint), findsNothing);
       final order = [machine, press, shoulder, row, lats];
       final tops = [for (final e in order) top(tester, 'progress-${e.id}')];
       expect(tops, orderedEquals([...tops]..sort()));
@@ -150,21 +151,21 @@ void main() {
       expect(
         find.descendant(
           of: key('progress-${press.id}'),
-          matching: find.text('10 → 12 kg'),
+          matching: find.text('10 → 12'),
         ),
         findsOneWidget,
       );
       expect(
         find.descendant(
           of: key('progress-${press.id}'),
-          matching: find.text('12/10'),
+          matching: find.textContaining('12/10'),
         ),
         findsOneWidget,
       );
       expect(key('progress-not-in-library-${row.id}'), findsOneWidget);
       await tapKey(tester, 'progress-${lats.id}');
       expect(find.text(lats.nameVi), findsOneWidget);
-      expect(find.text(S.backProgress), findsOneWidget);
+      expect(key('chart-back'), findsOneWidget);
     });
 
     testWidgets('F23-E1, F23-E2: ghi tạ hôm nay → bài lên đầu ngay; xóa bản '
@@ -217,7 +218,7 @@ void main() {
       await tapKey(tester, 'chart-month-previous');
       expect(find.text(S.chartMonth(9, 2026)), findsOneWidget);
       expect(key('chart-month-empty'), findsOneWidget);
-      expect(find.text(S.chartMonthEmpty), findsOneWidget);
+      expect(find.text(S.chartMonthEmpty), findsNothing);
       await tapKey(tester, 'chart-month-previous');
       expect(find.text(S.chartMonth(8, 2026)), findsOneWidget);
       final previous = tester.widget<IconButton>(key('chart-month-previous'));
@@ -256,7 +257,7 @@ void main() {
       await pump(tester);
       await go(tester, liftChartPath(press.id));
       await tapKey(tester, 'chart-view-exercise');
-      expect(find.text(S.backProgress), findsOneWidget);
+      expect(key('exercise-back'), findsOneWidget);
       await tapKey(tester, 'exercise-view-chart');
       expect(key('lift-chart'), findsOneWidget);
     });
@@ -273,7 +274,7 @@ void main() {
       await pump(tester);
       await go(tester, '/schedule/exercise/${press.id}?from=library');
       await tapKey(tester, 'exercise-view-chart');
-      expect(find.text(S.backExerciseDetail), findsOneWidget);
+      expect(key('chart-back'), findsOneWidget);
       expect(key('lift-chart'), findsOneWidget);
       await tapKey(tester, 'chart-view-exercise');
       expect(key('exercise-view-chart'), findsOneWidget);
@@ -318,7 +319,7 @@ void main() {
       expect(
         find.descendant(
           of: key('progress-${pecDeck.id}'),
-          matching: find.text('40 → 47,5 kg'),
+          matching: find.text('40 → 47,5'),
         ),
         findsOneWidget,
       );
@@ -347,11 +348,15 @@ void main() {
       await pump(tester);
       await go(tester, liftChartPath(legExtension.id));
       expect(tester.widget<Text>(key('chart-axis-unit')).data, S.unitSteps);
-      expect(find.text(S.chartLegendUnit(S.unitStepsFull)), findsOneWidget);
+      // Bản 4 (04 S-69): chú giải "○ Bắt đầu  ● Kết thúc" + đơn vị phải;
+      // mốc đổi đơn vị là vạch đứt, không chữ.
+      expect(tester.widget<Text>(key('chart-legend-unit')).data, S.unitSteps);
+      expect(find.text(S.chartStart), findsOneWidget);
+      expect(find.text(S.chartEnd), findsOneWidget);
       final chart = tester.widget<LineChart>(find.byType(LineChart));
       final lines = chart.data.extraLinesData.verticalLines;
       expect([for (final l in lines) l.x], [10]);
-      expect(lines.single.label.labelResolver(lines.single), 'Đổi sang nấc');
+      expect(lines.single.label.show, isFalse);
       expect(
         find.bySemanticsLabel(
           '${S.chartSemantics(10, 4)}. '

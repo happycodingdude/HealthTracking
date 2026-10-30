@@ -316,10 +316,10 @@ void main() {
       expect(key('lift-tick-${lats.id}'), findsNothing);
       expect(find.text(S.logLiftShort, skipOffstage: false), findsNothing);
       await tapKey(tester, 'exercise-${lats.id}');
-      expect(find.text(S.backSession), findsOneWidget);
+      expect(key('exercise-back'), findsOneWidget);
       expect(
-        find.text(S.liftThisSession('7', '8', S.unitSteps)),
-        findsOneWidget,
+        tester.widget<Text>(key('exercise-lift-this-session')).data,
+        '7 → 8 ${S.unitSteps}',
       );
       expect(key('exercise-edit-lift'), findsNothing);
     });
@@ -762,17 +762,16 @@ void main() {
     ) async {
       await pump(tester);
       await go(tester, todayExercisePath(bench.id, mon));
+      // Bản 4 (04 S-67): "Đơn vị" + thanh chọn kg | nấc máy; mức gần nhất
+      // "05/10 · 50 → 55" chữ phụ; chữ cam "Biểu đồ ›".
       expect(key('exercise-log-lift'), findsOneWidget);
-      expect(find.text('Đơn vị: kg'), findsOneWidget);
-      expect(find.text(S.changeUnitTo(S.unitStepsFull)), findsOneWidget);
-      expect(find.text('Gần nhất (05/10): 50 → 55 kg'), findsOneWidget);
+      expect(key('exercise-unit'), findsOneWidget);
+      expect(key('exercise-unit-current'), findsOneWidget);
+      expect(find.text(S.unitStepsFull), findsOneWidget);
+      expect(find.text('05/10'), findsOneWidget);
+      expect(tester.widget<Text>(key('exercise-lift-latest')).data, '50 → 55');
       expect(key('exercise-view-chart'), findsOneWidget);
-      final border =
-          (tester.widget<Container>(key('exercise-lift-area')).decoration!
-                  as BoxDecoration)
-              .border!
-              .top;
-      expect(border.width, 2);
+      expect(key('exercise-lift-area'), findsOneWidget);
 
       await tapKey(tester, 'exercise-log-lift');
       expect(
@@ -781,8 +780,11 @@ void main() {
       );
       await tester.enterText(key('note-input'), 'ghế số 3');
       await enter(tester, end: '57,5');
-      expect(find.text('Buổi này: 50 → 57,5 kg'), findsOneWidget);
-      expect(find.text(S.noteToday('ghế số 3')), findsOneWidget);
+      expect(
+        tester.widget<Text>(key('exercise-lift-this-session')).data,
+        '50 → 57,5',
+      );
+      expect(find.text('${S.todayLabel} · ghế số 3'), findsOneWidget);
       expect(key('exercise-log-lift'), findsNothing);
       await tapKey(tester, 'exercise-edit-lift');
       expect(key('lift-delete'), findsOneWidget);
@@ -793,9 +795,12 @@ void main() {
         'đơn vị; bài bụng từ thư viện → không khu', (tester) async {
       await pump(tester);
       await go(tester, '/schedule/exercise/${decline.id}?from=library');
-      expect(find.text('Đơn vị: nấc máy'), findsOneWidget);
-      expect(find.text(S.changeUnitTo(S.unitKg)), findsOneWidget);
-      expect(find.text('Gần nhất (05/10): 8 → 10 nấc'), findsOneWidget);
+      expect(key('exercise-unit'), findsOneWidget);
+      expect(find.text(S.unitKg), findsOneWidget);
+      expect(
+        tester.widget<Text>(key('exercise-lift-latest')).data,
+        '8 → 10 nấc',
+      );
       expect(key('exercise-log-lift'), findsNothing);
       await go(tester, '/schedule/exercise/${incline.id}?from=library');
       expect(key('exercise-lift-area'), findsNothing);
@@ -814,11 +819,9 @@ void main() {
       clock.set(DateTime(2026, 10, 13, 20, 30));
       await pump(tester);
       await go(tester, todayExercisePath(plank.id, tue));
-      expect(
-        find.text(S.notePreviousSession('05/10', 'giữ 45 giây')),
-        findsOneWidget,
-      );
-      expect(find.text(S.liftNoWeight), findsOneWidget);
+      expect(find.text('05/10 · giữ 45 giây'), findsOneWidget);
+      // Bản 4 (FR4-04): không câu "Bài này không ghi mức tạ".
+      expect(find.text(S.liftNoWeight), findsNothing);
       expect(key('exercise-unit'), findsNothing);
       await tapKey(tester, 'exercise-note');
       expect(key('field-lift-start'), findsNothing);
@@ -833,8 +836,11 @@ void main() {
         await pump(tester);
         await go(tester, todayExercisePath(pecDeck.id, mon));
         expect(key('exercise-log-lift'), findsNothing);
-        expect(find.text('Đơn vị: kg'), findsOneWidget);
-        expect(find.text('Gần nhất (05/10): 40 → 45 kg'), findsOneWidget);
+        expect(key('exercise-unit'), findsOneWidget);
+        expect(
+          tester.widget<Text>(key('exercise-lift-latest')).data,
+          '40 → 45',
+        );
       },
     );
   });
@@ -862,8 +868,10 @@ void main() {
       await tapKey(tester, 'exercise-change-unit');
       await tapKey(tester, 'change-unit-confirm');
       expect(find.text(S.unitChanged(S.unitStepsFull)), findsOneWidget);
-      expect(find.text('Đơn vị: nấc máy'), findsOneWidget);
-      expect(find.text('Gần nhất (05/10): 40 → 45 nấc'), findsOneWidget);
+      expect(
+        tester.widget<Text>(key('exercise-lift-latest')).data,
+        '40 → 45 nấc',
+      );
       final changed = (await units.get(pecDeck.id))!;
       expect((changed.unit, changed.changedOn), (LiftUnit.steps, mon));
       expect(await logs.get(prevMon, pecDeck.id), isNotNull);
@@ -1024,7 +1032,7 @@ void main() {
       expect(
         find.descendant(
           of: key('progress-${pecDeck.id}'),
-          matching: find.text('40 → 47,5 kg'),
+          matching: find.text('40 → 47,5'),
         ),
         findsOneWidget,
       );

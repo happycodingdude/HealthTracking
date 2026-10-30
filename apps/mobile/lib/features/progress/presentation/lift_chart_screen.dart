@@ -7,10 +7,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/strings_vi.dart';
-import '../../../app/theme.dart';
 import '../../../app/time_ticker.dart';
 import '../../../core/formatters.dart';
-import '../../../core/widgets/heading.dart';
+import '../../../ui/components/components.dart';
+import '../../../ui/theme.dart';
 import '../../library/application/library_providers.dart';
 import '../../workout/application/lift_unit.dart';
 import '../application/progress_providers.dart';
@@ -67,7 +67,7 @@ class _LiftChartScreenState extends ConsumerState<LiftChartScreen> {
     final view = ref.watch(
       liftChartProvider((exerciseId: widget.exerciseId, month: month)),
     );
-    final palette = context.palette;
+    final t = context.tokens;
     final earliest = view?.earliest;
     final chart = view?.chart;
     final change = view?.unitChange;
@@ -75,198 +75,174 @@ class _LiftChartScreenState extends ConsumerState<LiftChartScreen> {
     final units = ref.watch(exerciseUnitsProvider).value;
     final unit = exercise == null ? null : displayUnit(units, exercise.id);
 
-    return Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: ListView(
-          padding: EdgeInsets.fromLTRB(
-            16,
-            8,
-            16,
-            MediaQuery.paddingOf(context).bottom + 24,
+    return IronlySubPage(
+      title: exercise?.nameVi ?? '',
+      leading: Semantics(
+        button: true,
+        label: S.back,
+        child: ExcludeSemantics(
+          child: GestureDetector(
+            key: const ValueKey('chart-back'),
+            behavior: HitTestBehavior.opaque,
+            onTap: () => context.pop(),
+            child: SizedBox(
+              width: 44,
+              height: 44,
+              child: Icon(Icons.chevron_left, color: t.accent, size: 26),
+            ),
           ),
-          children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                key: const ValueKey('chart-back'),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.only(right: 12),
-                ),
-                onPressed: () => context.pop(),
-                icon: const Icon(Icons.chevron_left),
-                label: Text(
-                  widget.from == ChartFrom.progress
-                      ? S.backProgress
-                      : S.backExerciseDetail,
-                ),
-              ),
+        ),
+      ),
+      // "Xem bài" (NAV-11): chữ cam nhỏ góc phải.
+      trailing: IronlyButton.link(
+        key: const ValueKey('chart-view-exercise'),
+        label: S.viewExercise,
+        small: true,
+        expand: false,
+        onPressed: _viewExercise,
+      ),
+      children: [
+        _MonthBar(
+          month: month,
+          // "‹" mờ ở tháng có bản ghi đầu tiên; "›" ẩn ở tháng hiện tại.
+          onPrevious: earliest != null && month.compareTo(earliest) > 0
+              ? () => setState(() => _shown = month.previous)
+              : null,
+          onNext: month.compareTo(current) < 0
+              ? () => setState(
+                  () => _shown = month.next == current ? null : month.next,
+                )
+              : null,
+        ),
+        const SizedBox(height: TokenSpace.s3),
+        if (chart != null && unit != null) ...[
+          IronlyCard(
+            key: const ValueKey('chart-card'),
+            padding: const EdgeInsets.fromLTRB(
+              TokenSpace.s2,
+              TokenSpace.s4,
+              TokenSpace.s4,
+              TokenSpace.s3,
             ),
-            if (exercise != null) ...[
-              const SizedBox(height: 8),
-              Heading(
-                exercise.nameVi,
-                style: context.text.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Wrap(
-                alignment: WrapAlignment.spaceBetween,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 12,
-                children: [
-                  Text(
-                    '${Fmt.muscle(exercise.group)} · '
-                    '${Fmt.region(exercise.region)}',
-                    style: context.text.bodyLarge?.copyWith(
-                      color: palette.textSecondary,
-                    ),
-                  ),
-                  TextButton(
-                    key: const ValueKey('chart-view-exercise'),
-                    style: TextButton.styleFrom(
-                      textStyle: context.text.titleMedium,
-                    ),
-                    onPressed: _viewExercise,
-                    child: const Text(S.viewExercise),
-                  ),
-                ],
-              ),
-            ],
-            const SizedBox(height: 8),
-            _MonthBar(
-              month: month,
-              // "‹" mờ ở tháng có bản ghi đầu tiên; "›" ẩn ở tháng hiện tại.
-              onPrevious: earliest != null && month.compareTo(earliest) > 0
-                  ? () => setState(() => _shown = month.previous)
-                  : null,
-              onNext: month.compareTo(current) < 0
-                  ? () => setState(
-                      () => _shown = month.next == current ? null : month.next,
-                    )
-                  : null,
-            ),
-            const SizedBox(height: 12),
-            if (chart != null && unit != null) ...[
-              Container(
-                key: const ValueKey('chart-card'),
-                padding: const EdgeInsets.fromLTRB(8, 16, 16, 12),
-                decoration: BoxDecoration(
-                  color: palette.card,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: palette.border),
-                ),
-                child: chart.isEmpty
-                    ? SizedBox(
-                        height: 200,
-                        child: Center(
-                          child: Text(
-                            S.chartMonthEmpty,
-                            key: const ValueKey('chart-month-empty'),
-                            textAlign: TextAlign.center,
-                            style: context.text.bodyLarge?.copyWith(
-                              color: palette.textSecondary,
-                            ),
-                          ),
-                        ),
-                      )
-                    : Column(
-                        children: [
-                          // VoiceOver đọc cả mốc đổi đơn vị (04 Bản 3 S-69).
-                          Semantics(
-                            label: [
-                              S.chartSemantics(month.month, chart.logs.length),
-                              if (change != null &&
-                                  change.on.yearMonth == chart.month)
-                                S.unitChangeSemantics(
-                                  Fmt.liftUnit(change.to),
-                                  Fmt.dayMonth(change.on),
-                                ),
-                            ].join('. '),
-                            child: ExcludeSemantics(
-                              child: _LiftChart(
-                                key: ValueKey('chart-${month.toKey()}'),
-                                chart: chart,
-                                unit: unit,
-                                change: change,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          ExcludeSemantics(
-                            child: Text(
-                              S.chartLegendUnit(Fmt.liftUnitFull(unit)),
-                              key: const ValueKey('chart-legend'),
-                              textAlign: TextAlign.center,
-                              style: context.text.bodyMedium?.copyWith(
-                                color: palette.textSecondary,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-              ),
-              if (!chart.isEmpty) ...[
-                const SizedBox(height: 24),
-                Semantics(
-                  header: true,
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 4, bottom: 8),
-                    child: Text(
-                      S.chartSessions.toUpperCase(),
-                      style: context.text.labelLarge?.copyWith(
-                        color: palette.textSecondary,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.4,
-                      ),
-                    ),
-                  ),
-                ),
-                Card(
-                  key: const ValueKey('chart-list'),
-                  clipBehavior: Clip.antiAlias,
-                  child: Column(
+            child: chart.isEmpty
+                // Tháng không có bản ghi: chỉ icon, không câu (F4-R7).
+                ? const EmptyAction(
+                    key: ValueKey('chart-month-empty'),
+                    inCard: false,
+                    icon: Icons.show_chart,
+                  )
+                : Column(
                     children: [
-                      for (final (i, l) in chart.logs.reversed.indexed) ...[
-                        if (i > 0) const Divider(height: 1),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
-                          ),
-                          // Chữ lớn không đủ một dòng thì mức tạ xuống dưới.
-                          child: OverflowBar(
-                            alignment: MainAxisAlignment.spaceBetween,
-                            overflowAlignment: OverflowBarAlignment.start,
-                            spacing: 8,
-                            children: [
-                              Text(
-                                change != null && l.date.isBefore(change.on)
-                                    ? '${Fmt.shortWeekdayDate(l.date)} '
-                                          '${S.beforeUnitChange}'
-                                    : Fmt.shortWeekdayDate(l.date),
-                                key: ValueKey('chart-date-${l.date.toKey()}'),
-                                style: context.text.bodyLarge,
-                              ),
-                              Text(
-                                Fmt.lift(l, unit),
-                                key: ValueKey('chart-row-${l.date.toKey()}'),
-                                style: context.text.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
+                      // VoiceOver đọc cả mốc đổi đơn vị (04 Bản 3 S-69).
+                      Semantics(
+                        label: [
+                          S.chartSemantics(month.month, chart.logs.length),
+                          if (change != null &&
+                              change.on.yearMonth == chart.month)
+                            S.unitChangeSemantics(
+                              Fmt.liftUnit(change.to),
+                              Fmt.dayMonth(change.on),
+                            ),
+                        ].join('. '),
+                        child: ExcludeSemantics(
+                          child: _LiftChart(
+                            key: ValueKey('chart-${month.toKey()}'),
+                            chart: chart,
+                            unit: unit,
+                            change: change,
                           ),
                         ),
-                      ],
+                      ),
+                      const SizedBox(height: TokenSpace.s2),
+                      // Chú giải "○ Bắt đầu  ● Kết thúc" + đơn vị phải.
+                      ExcludeSemantics(
+                        child: Row(
+                          key: const ValueKey('chart-legend'),
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Cỡ chữ lớn: hai mục chú giải xuống dòng.
+                            Expanded(
+                              child: Wrap(
+                                spacing: TokenSpace.s3,
+                                runSpacing: TokenSpace.s1,
+                                children: [
+                                  for (final (filled, label) in [
+                                    (false, S.chartStart),
+                                    (true, S.chartEnd),
+                                  ])
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        _LegendDot(filled: filled),
+                                        const SizedBox(width: TokenSpace.s1),
+                                        Text(label, style: IronlyText.caption),
+                                      ],
+                                    ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: TokenSpace.s2),
+                            Text(
+                              Fmt.liftUnit(unit),
+                              key: const ValueKey('chart-legend-unit'),
+                              style: IronlyText.caption,
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
-                ),
+          ),
+          if (!chart.isEmpty) ...[
+            const CardGap(),
+            IronlyListCard(
+              key: const ValueKey('chart-list'),
+              children: [
+                for (final l in chart.logs.reversed)
+                  IronlyRow(
+                    title: Fmt.shortWeekdayDate(l.date),
+                    titleWidget: Text(
+                      change != null && l.date.isBefore(change.on)
+                          ? '${Fmt.shortWeekdayDate(l.date)} '
+                                '${S.beforeUnitChange}'
+                          : Fmt.shortWeekdayDate(l.date),
+                      key: ValueKey('chart-date-${l.date.toKey()}'),
+                      style: IronlyText.body.copyWith(color: t.textSecondary),
+                    ),
+                    minHeight: 44,
+                    semanticsLabel:
+                        '${Fmt.shortWeekdayDate(l.date)}, ${Fmt.lift(l, unit)}',
+                    trailing: Text(
+                      Fmt.lift(l, unit),
+                      key: ValueKey('chart-row-${l.date.toKey()}'),
+                      style: IronlyText.liftNumber,
+                    ),
+                  ),
               ],
-            ],
+            ),
           ],
-        ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Chấm chú giải: rỗng (Bắt đầu) hoặc đặc (Kết thúc), màu cam.
+class _LegendDot extends StatelessWidget {
+  const _LegendDot({required this.filled});
+
+  final bool filled;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    return Container(
+      width: 10,
+      height: 10,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: filled ? t.chartLine : null,
+        border: Border.all(color: t.chartLine, width: 2),
       ),
     );
   }
@@ -283,7 +259,7 @@ class _MonthBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = context.colors.primary;
+    final color = context.tokens.accent;
     return Row(
       children: [
         IconButton(
@@ -299,8 +275,9 @@ class _MonthBar extends StatelessWidget {
             S.chartMonth(month.month, month.year),
             key: const ValueKey('chart-month'),
             textAlign: TextAlign.center,
-            style: context.text.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
+            style: IronlyText.body.copyWith(
+              color: color,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -360,8 +337,7 @@ class _LiftChartState extends State<_LiftChart> {
   @override
   Widget build(BuildContext context) {
     final chart = widget.chart;
-    final colors = context.colors;
-    final palette = context.palette;
+    final t = context.tokens;
     final days = chart.month.lengthInDays;
     final (low, high) = chart.range!;
     final pad = math.max(10, (high - low) * 0.25) / 10;
@@ -382,14 +358,14 @@ class _LiftChartState extends State<_LiftChart> {
       for (final seg in segments)
         LineChartBarData(
           spots: [for (final l in seg) spot(l, l.startKgX10)],
-          color: colors.primary,
+          color: t.chartLine,
           barWidth: 2,
           dashArray: const [4, 4],
           dotData: FlDotData(
             getDotPainter: (_, _, _, _) => FlDotCirclePainter(
               radius: 5,
-              color: palette.card,
-              strokeColor: colors.primary,
+              color: t.surface,
+              strokeColor: t.chartLine,
               strokeWidth: 2.5,
             ),
           ),
@@ -399,7 +375,7 @@ class _LiftChartState extends State<_LiftChart> {
       for (final seg in segments)
         LineChartBarData(
           spots: [for (final l in seg) spot(l, l.endKgX10)],
-          color: colors.primary,
+          color: t.chartLine,
           barWidth: 2.5,
           dotData: FlDotData(
             getDotPainter: (s, _, _, _) {
@@ -407,8 +383,8 @@ class _LiftChartState extends State<_LiftChart> {
               final same = l != null && l.startKgX10 == l.endKgX10;
               return FlDotCirclePainter(
                 radius: same ? 7.5 : 5,
-                color: colors.primary,
-                strokeColor: same ? colors.onPrimaryContainer : colors.primary,
+                color: t.chartLine,
+                strokeColor: same ? t.textPrimary : t.chartLine,
                 strokeWidth: same ? 3 : 1,
               );
             },
@@ -463,12 +439,12 @@ class _LiftChartState extends State<_LiftChart> {
                         lineTouchData: LineTouchData(
                           enabled: false,
                           touchTooltipData: LineTouchTooltipData(
-                            getTooltipColor: (_) => colors.inverseSurface,
+                            getTooltipColor: (_) => t.surfaceRaised,
                             fitInsideHorizontally: true,
                             fitInsideVertically: true,
                             getTooltipItems: (touched) => [
-                              for (final t in touched)
-                                if (byDay[t.x.round()] case final l?)
+                              for (final spot in touched)
+                                if (byDay[spot.x.round()] case final l?)
                                   LineTooltipItem(
                                     S.chartTooltip(
                                       Fmt.dayMonth(l.date),
@@ -476,8 +452,8 @@ class _LiftChartState extends State<_LiftChart> {
                                       Fmt.kgNumber(l.endKgX10),
                                       Fmt.liftUnit(unit),
                                     ),
-                                    context.text.bodyMedium!.copyWith(
-                                      color: colors.onInverseSurface,
+                                    IronlyText.caption2.copyWith(
+                                      color: t.textPrimary,
                                     ),
                                   )
                                 else
@@ -489,35 +465,20 @@ class _LiftChartState extends State<_LiftChart> {
                           drawVerticalLine: false,
                           horizontalInterval: step,
                           getDrawingHorizontalLine: (_) =>
-                              FlLine(color: palette.border, strokeWidth: 1),
+                              FlLine(color: t.chartGrid, strokeWidth: 1),
                         ),
                         borderData: FlBorderData(show: false),
-                        // Mốc đổi đơn vị: đường dọc nét đứt vàng nhạt, nhãn "Đổi
-                        // sang {đơn vị}" (F22-R42, UA3-13).
+                        // Mốc đổi đơn vị: vạch dọc đứt, không chữ (04 Bản 4
+                        // S-69; VoiceOver đọc ở nhãn biểu đồ).
                         extraLinesData: ExtraLinesData(
                           verticalLines: [
                             if (widget.change case final change?
                                 when change.on.yearMonth == chart.month)
                               VerticalLine(
                                 x: change.on.day.toDouble(),
-                                color: palette.reference,
+                                color: t.textSecondary,
                                 strokeWidth: 1.5,
                                 dashArray: const [4, 4],
-                                label: VerticalLineLabel(
-                                  show: true,
-                                  alignment: Alignment.topRight,
-                                  padding: const EdgeInsets.only(
-                                    left: 6,
-                                    top: 2,
-                                  ),
-                                  style: context.text.bodySmall?.copyWith(
-                                    color: palette.reference,
-                                    backgroundColor: palette.referenceContainer,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                  labelResolver: (_) =>
-                                      S.changeUnitTo(Fmt.liftUnit(change.to)),
-                                ),
                               ),
                           ],
                         ),
@@ -533,8 +494,8 @@ class _LiftChartState extends State<_LiftChart> {
                                 meta: meta,
                                 child: Text(
                                   Fmt.kgNumber((value * 10).round()),
-                                  style: context.text.bodySmall?.copyWith(
-                                    color: palette.textSecondary,
+                                  style: IronlyText.columnLabel.copyWith(
+                                    color: t.textPrefill,
                                   ),
                                 ),
                               ),
@@ -558,8 +519,8 @@ class _LiftChartState extends State<_LiftChart> {
                                   meta: meta,
                                   child: Text(
                                     '$day',
-                                    style: context.text.bodySmall?.copyWith(
-                                      color: palette.textSecondary,
+                                    style: IronlyText.columnLabel.copyWith(
+                                      color: t.textPrefill,
                                     ),
                                   ),
                                 );
@@ -577,8 +538,8 @@ class _LiftChartState extends State<_LiftChart> {
                     child: Text(
                       Fmt.liftUnit(unit),
                       key: const ValueKey('chart-axis-unit'),
-                      style: context.text.bodySmall?.copyWith(
-                        color: palette.textSecondary,
+                      style: IronlyText.columnLabel.copyWith(
+                        color: t.textPrefill,
                       ),
                     ),
                   ),

@@ -156,7 +156,9 @@ void main() {
       await pumpUntil(tester, find.byKey(const ValueKey(press)));
       await tapVisible(tester, find.byKey(const ValueKey(press)));
       expect(find.byKey(const ValueKey('video-play')), findsOneWidget);
-      expect(find.text(S.mainRegion), findsOneWidget);
+      // Bản 4 (FR4-04): không câu "Vùng cơ chịu tác động chính".
+      expect(find.text(S.mainRegion), findsNothing);
+      expect(find.text(S.howTo), findsOneWidget);
       expect(
         find.byKey(const ValueKey('body-map-male_front-chest_upper')),
         findsOneWidget,

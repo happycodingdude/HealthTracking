@@ -16,6 +16,7 @@ import 'package:mobile/dev/review_matrix.dart';
 import 'package:mobile/features/me/data/account_repository.dart';
 import 'package:mobile/features/me/data/profile_repository.dart';
 import 'package:mobile/features/menu/data/menu_repository.dart';
+import 'package:mobile/features/workout/presentation/session_screen.dart';
 import 'package:mobile/ui/gallery.dart';
 import 'package:mobile/ui/theme.dart';
 
@@ -310,20 +311,23 @@ void main() {
       }
 
       Future<void> tapKey(WidgetTester tester, String key) async {
-        final f = find.byKey(ValueKey(key), skipOffstage: false);
-        if (f.evaluate().isEmpty ||
-            find.byKey(ValueKey(key)).evaluate().isEmpty) {
-          await tester.scrollUntilVisible(
-            find.byKey(ValueKey(key), skipOffstage: false),
-            300,
-            scrollable: find.byType(Scrollable).first,
-          );
+        // Mục giữ sống (IndexedStack, tab) cũng có key: ưu tiên phần tử đang
+        // hiện; chưa dựng (danh sách lười) thì cuộn tới.
+        var f = find.byKey(ValueKey(key));
+        if (f.evaluate().isEmpty) {
+          f = find.byKey(ValueKey(key), skipOffstage: false);
+          if (f.evaluate().isEmpty) {
+            await tester.scrollUntilVisible(
+              f,
+              300,
+              scrollable: find.byType(Scrollable).first,
+            );
+          }
+          f = f.first;
         }
-        await tester.ensureVisible(
-          find.byKey(ValueKey(key), skipOffstage: false),
-        );
+        await tester.ensureVisible(f);
         await tester.pumpAndSettle();
-        await tester.tap(find.byKey(ValueKey(key)));
+        await tester.tap(find.byKey(ValueKey(key)).first);
         await tester.pumpAndSettle();
       }
 
@@ -388,6 +392,31 @@ void main() {
         // Thứ 3 đang bật (mock sửa thứ 4; lịch chụp thứ 4 nghỉ).
         await tapKey(tester, 'day-row-2');
         await shot(tester, 'm19_s22');
+      });
+
+      // VS-47: Thư viện (S-66), Chi tiết bài (S-67), Tiến bộ (S-68), Biểu
+      // đồ (S-69), Đổi đơn vị (S-72).
+      testWidgets('M19: S-66, S-67, S-72, S-68, S-69', (tester) async {
+        final db = AppDatabase(NativeDatabase.memory());
+        addTearDown(db.close);
+        await seedCapture(db);
+        final c = await pump(tester, db, DateTime(2026, 10, 26, 18, 5));
+        await tapKey(tester, 'tab-schedule');
+        await tapKey(tester, 'section-library');
+        await shot(tester, 'm19_s66');
+        // S-67 từ buổi hôm nay: bài nấc máy có mức buổi này + ghi chú.
+        c.read(routerProvider).go(todayExercisePath('chest-2', captureMonday));
+        await tester.pumpAndSettle();
+        await shot(tester, 'm19_s67');
+        await tapKey(tester, 'exercise-change-unit');
+        await shot(tester, 'm19_s72');
+        await tapKey(tester, 'change-unit-cancel');
+        c.read(routerProvider).go('/schedule');
+        await tester.pumpAndSettle();
+        await tapKey(tester, 'section-progress');
+        await shot(tester, 'm19_s68');
+        await tapKey(tester, 'progress-chest-1');
+        await shot(tester, 'm19_s69');
       });
     }
   });

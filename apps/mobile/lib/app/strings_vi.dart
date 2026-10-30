@@ -768,6 +768,19 @@ abstract final class S {
   /// "Còn 3 lượt" (04 Bản 4 S-30).
   static String remainingShort(int n) => 'Còn $n lượt';
 
+  /// 04 Bản 4 S-67: nhãn "Đơn vị" trên thanh chọn kg | nấc máy.
+  static const unitLabel = 'Đơn vị';
+
+  /// 04 Bản 4 S-67: chữ cam "Biểu đồ ›" → S-69.
+  static const chartLink = 'Biểu đồ';
+
+  /// 04 Bản 4 S-67: dòng ghi chú "Hôm nay · …".
+  static const todayLabel = 'Hôm nay';
+
+  /// 04 Bản 4 S-69: chú giải "○ Bắt đầu  ● Kết thúc".
+  static const chartStart = 'Bắt đầu';
+  static const chartEnd = 'Kết thúc';
+
   /// "Đang sửa Thứ 4" (04 Bản 4 S-22: khối sửa một ngày).
   static String editingDay(String weekday) => 'Đang sửa $weekday';
 
@@ -1219,5 +1232,10 @@ abstract final class S {
     'extraSessionButton': extraSessionButton,
     'generateMenuShort': generateMenuShort,
     'logWeight': logWeight,
+    'unitLabel': unitLabel,
+    'chartLink': chartLink,
+    'todayLabel': todayLabel,
+    'chartStart': chartStart,
+    'chartEnd': chartEnd,
   };
 }

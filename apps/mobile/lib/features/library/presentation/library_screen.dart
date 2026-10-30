@@ -6,10 +6,10 @@ import 'package:go_router/go_router.dart';
 import '../../../app/shell/app_tab.dart';
 import '../../../app/shell/tab_scroll.dart';
 import '../../../app/strings_vi.dart';
-import '../../../app/theme.dart';
 import '../../../app/time_ticker.dart';
 import '../../../core/formatters.dart';
-import '../../../core/widgets/tab_page.dart';
+import '../../../ui/components/components.dart';
+import '../../../ui/theme.dart';
 import '../../schedule/application/schedule_providers.dart';
 import '../../training/application/training_section.dart';
 import '../../training/presentation/training_screen.dart';
@@ -17,12 +17,11 @@ import '../application/library_providers.dart';
 import 'body_map.dart';
 import 'exercise_screen.dart';
 
-/// S-66 — Thư viện bài tập (mục Bài tập của tab Tập luyện, 04 Bản 3 §6.6):
-/// hàng 7 nhóm cơ theo thứ tự thư viện, cuộn ngang; mặc định Ngực, hoặc nhóm
-/// cơ đầu tiên của buổi tập hôm nay (UA3-11); danh sách phẳng các bài của
-/// nhóm, vùng cơ là nhãn dưới tên, không có tiêu đề vùng, không nhãn dụng cụ
-/// (PD3-01, UR3-03). Dữ liệu nằm sẵn trong app: không có vòng xoay, không cần
-/// mạng, không phụ thuộc ngân sách AI hay lịch (F18-R4, UR3-14).
+/// S-66 — Thư viện bài tập (mục Bài tập của tab Tập luyện, 04 Bản 4 S-66):
+/// thanh viên 7 nhóm cơ cuộn ngang (chọn = cam; mặc định Ngực hoặc nhóm cơ
+/// đầu của buổi hôm nay, UA3-11); thẻ danh sách phẳng: ảnh vùng cơ tròn
+/// (viền cam) + tên bài + ›. Không nhãn vùng cơ, không câu cuối danh sách
+/// (FR4-04). Bài đã bỏ không hiện. Dữ liệu nằm sẵn trong app (F18-R4).
 class LibraryScreen extends ConsumerStatefulWidget {
   const LibraryScreen({super.key});
 
@@ -44,9 +43,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             ? MuscleGroup.chest
             : session.first);
     final exercises = ref.watch(libraryProvider(group)).value ?? const [];
-    final palette = context.palette;
 
-    return TabPage(
+    return IronlyTabPage(
       tab: AppTab.schedule,
       title: S.tabTraining,
       scrollController: ref
@@ -54,42 +52,30 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           .section(TrainingSection.library),
       children: [
         const TrainingSectionBar(),
-        const SizedBox(height: 16),
+        const SizedBox(height: TokenSpace.s4),
         _GroupChips(
           selected: group,
           onSelected: (g) => setState(() => _chosen = g),
         ),
         if (exercises.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          Card(
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              children: [
-                for (final (i, e) in exercises.indexed) ...[
-                  if (i > 0) const Divider(indent: 16, endIndent: 16),
-                  ExerciseRow(
-                    exercise: e,
-                    onTap: () =>
-                        context.push(exercisePath(e.id, ExerciseFrom.library)),
-                  ),
-                ],
-              ],
-            ),
+          const SizedBox(height: TokenSpace.s4),
+          IronlyListCard(
+            children: [
+              for (final e in exercises)
+                ExerciseRow(
+                  exercise: e,
+                  onTap: () =>
+                      context.push(exercisePath(e.id, ExerciseFrom.library)),
+                ),
+            ],
           ),
         ],
-        const SizedBox(height: 20),
-        Text(
-          S.libraryFootnote,
-          textAlign: TextAlign.center,
-          style: context.text.bodySmall?.copyWith(color: palette.textSecondary),
-        ),
       ],
     );
   }
 }
 
-/// Hàng 7 nhóm cơ dạng viên thuốc theo thứ tự thư viện, cuộn ngang (04 Bản 3
-/// S-66, UR3-04, UA3-11).
+/// Hàng 7 viên nhóm cơ theo thứ tự thư viện, cuộn ngang (04 Bản 4 S-66).
 class _GroupChips extends StatelessWidget {
   const _GroupChips({required this.selected, required this.onSelected});
 
@@ -98,7 +84,6 @@ class _GroupChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       clipBehavior: Clip.none,
@@ -106,41 +91,12 @@ class _GroupChips extends StatelessWidget {
         children: [
           for (final g in LibraryRules.groupOrder)
             Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: Semantics(
-                button: true,
-                selected: g == selected,
+              padding: const EdgeInsets.only(right: TokenSpace.s2),
+              child: IronlyChip(
+                key: ValueKey('group-${g.name}'),
                 label: Fmt.muscle(g),
-                child: ExcludeSemantics(
-                  child: InkWell(
-                    key: ValueKey('group-${g.name}'),
-                    borderRadius: BorderRadius.circular(24),
-                    onTap: () => onSelected(g),
-                    child: Container(
-                      constraints: const BoxConstraints(minHeight: 44),
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: g == selected ? colors.primary : null,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: g == selected
-                              ? colors.primary
-                              : context.palette.border,
-                        ),
-                      ),
-                      child: Text(
-                        Fmt.muscle(g),
-                        style: context.text.titleSmall?.copyWith(
-                          color: g == selected ? colors.onPrimary : null,
-                          fontWeight: g == selected
-                              ? FontWeight.w700
-                              : FontWeight.w400,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+                selected: g == selected,
+                onTap: () => onSelected(g),
               ),
             ),
         ],
@@ -149,9 +105,8 @@ class _GroupChips extends StatelessWidget {
   }
 }
 
-/// Một dòng bài (S-66; S-63 dùng lại): hình vùng cơ thu nhỏ · tên bài · nhãn
-/// vùng cơ dưới tên · mũi tên (04 Bản 3 §6.6, §6.10). Không còn nhãn dụng cụ
-/// (UR3-03).
+/// Một dòng bài (S-66): ảnh vùng cơ tròn viền cam · tên bài 14 / 500 · ›
+/// (04 Bản 4 S-66). VoiceOver đọc tên bài và vùng cơ.
 class ExerciseRow extends StatelessWidget {
   const ExerciseRow({
     super.key,
@@ -163,11 +118,12 @@ class ExerciseRow extends StatelessWidget {
   final Exercise exercise;
   final VoidCallback onTap;
 
-  /// Phần bên phải thay cho mũi tên (VS-27: nút "Ghi", con số mức tạ).
+  /// Phần bên phải thay cho mũi tên.
   final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
+    final t = context.tokens;
     return Semantics(
       button: true,
       label: '${exercise.nameVi}, ${Fmt.region(exercise.region)}',
@@ -176,49 +132,38 @@ class ExerciseRow extends StatelessWidget {
           key: ValueKey('exercise-${exercise.id}'),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(
+              horizontal: TokenSize.cardPadding,
+              vertical: TokenSpace.s3,
+            ),
             child: Row(
               children: [
-                BodyMap(region: exercise.region),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(exercise.nameVi, style: context.text.bodyLarge),
-                      const SizedBox(height: 4),
-                      RegionLabel(exercise.region),
-                    ],
+                ExerciseAvatar(
+                  id: exercise.id,
+                  ring: true,
+                  child: BodyMap(
+                    region: exercise.region,
+                    size: BodyMap.avatar,
+                    bare: true,
                   ),
                 ),
-                const SizedBox(width: 8),
-                trailing ??
-                    Icon(
-                      Icons.chevron_right,
-                      color: context.palette.textSecondary,
+                const SizedBox(width: TokenSpace.s3),
+                Expanded(
+                  // Tên bài 14 / 500 trắng (04 Bản 4 S-66).
+                  child: Text(
+                    exercise.nameVi,
+                    style: IronlyText.body.copyWith(
+                      fontWeight: FontWeight.w500,
                     ),
+                  ),
+                ),
+                const SizedBox(width: TokenSpace.s2),
+                trailing ??
+                    Icon(Icons.chevron_right, size: 18, color: t.textSecondary),
               ],
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// Nhãn vùng cơ dưới tên bài: chữ xám nhỏ, không nền, không màu (04 Bản 3
-/// §6.10).
-class RegionLabel extends StatelessWidget {
-  const RegionLabel(this.region, {super.key});
-
-  final MuscleRegion region;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      Fmt.region(region),
-      style: context.text.bodyMedium?.copyWith(
-        color: context.palette.textSecondary,
       ),
     );
   }

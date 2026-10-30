@@ -6,8 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
 import '../../../app/strings_vi.dart';
-import '../../../app/theme.dart';
 import '../../../core/formatters.dart';
+import '../../../ui/components/components.dart';
+import '../../../ui/theme.dart';
 import '../data/video_player_gateway.dart';
 
 enum _VideoState { idle, loading, playing, offline, failed }
@@ -87,25 +88,28 @@ class _VideoAreaState extends ConsumerState<VideoArea> {
 
   @override
   Widget build(BuildContext context) {
-    // Khung video nền thẻ (04 Bản 4 S-67).
-    final frame = context.tokens.surface;
-    final onFrame = context.tokens.textPrimary;
-    final palette = context.palette;
+    // Khung video nền thẻ, bo 14, nút play tròn cam (04 Bản 4 S-67).
+    final t = context.tokens;
+    final frame = t.surface;
+    final onFrame = t.textPrimary;
     final duration = widget.exercise.videoDurationS;
 
     Widget grey(String text, {Widget? action}) => _Box(
-      color: palette.neutralContainer,
+      color: t.surfaceRaised,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          Icon(Icons.videocam_off_outlined, size: 28, color: t.textSecondary),
+          const SizedBox(height: TokenSpace.s2),
           Text(
             text,
             textAlign: TextAlign.center,
-            style: context.text.bodyLarge?.copyWith(
-              color: palette.textSecondary,
-            ),
+            style: IronlyText.caption.copyWith(color: t.textSecondary),
           ),
-          if (action != null) ...[const SizedBox(height: 8), action],
+          if (action != null) ...[
+            const SizedBox(height: TokenSpace.s2),
+            action,
+          ],
         ],
       ),
     );
@@ -127,10 +131,13 @@ class _VideoAreaState extends ConsumerState<VideoArea> {
           key: const ValueKey('video-failed'),
           child: grey(
             S.videoLoadFailed,
-            action: TextButton(
+            action: IronlyButton(
               key: const ValueKey('video-retry'),
+              kind: IronlyButtonKind.secondaryAccent,
+              label: S.retry,
+              small: true,
+              expand: false,
               onPressed: _play,
-              child: const Text(S.retry),
             ),
           ),
         );
@@ -149,14 +156,26 @@ class _VideoAreaState extends ConsumerState<VideoArea> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.play_arrow_rounded, size: 56, color: onFrame),
-                    if (duration != null)
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: t.accent,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.play_arrow_rounded,
+                        size: 34,
+                        color: onFrame,
+                      ),
+                    ),
+                    if (duration != null) ...[
+                      const SizedBox(height: TokenSpace.s2),
                       Text(
                         Fmt.videoDuration(duration),
-                        style: context.text.titleMedium?.copyWith(
-                          color: onFrame,
-                        ),
+                        style: IronlyText.caption2.copyWith(color: onFrame),
                       ),
+                    ],
                   ],
                 ),
               ),
@@ -171,15 +190,20 @@ class _VideoAreaState extends ConsumerState<VideoArea> {
           key: key,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.play_arrow_rounded,
-              size: 56,
-              color: onFrame.withValues(alpha: 0.6),
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: t.accent.withValues(alpha: 0.5),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.play_arrow_rounded, size: 34, color: onFrame),
             ),
+            const SizedBox(height: TokenSpace.s2),
             Text(
               S.videoLoading,
               textAlign: TextAlign.center,
-              style: context.text.bodyLarge?.copyWith(color: onFrame),
+              style: IronlyText.caption.copyWith(color: onFrame),
             ),
           ],
         );
@@ -300,7 +324,7 @@ class _Box extends StatelessWidget {
       builder: (context, constraints) {
         final width = constraints.maxWidth;
         return ClipRRect(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(TokenRadius.card),
           child: ColoredBox(
             color: color,
             child: Stack(

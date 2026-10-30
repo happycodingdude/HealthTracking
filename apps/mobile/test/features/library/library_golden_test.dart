@@ -94,7 +94,8 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(legs);
       await tester.pumpAndSettle();
-      expect(find.text('Đùi trước'), findsWidgets);
+      // Bản 4: không nhãn vùng cơ; VoiceOver đọc vùng.
+      expect(find.bySemanticsLabel(RegExp('Đùi trước')), findsWidgets);
       await snap('s66_legs_${v.name}');
     });
 
