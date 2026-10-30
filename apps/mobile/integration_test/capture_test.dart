@@ -1,3 +1,5 @@
+import 'dart:async';
+
 // Chụp màn hình cho bộ ảnh so sánh (06 Bản 4 ED4-04, VS43-T11). Chạy bằng
 // tool/capture_screens.sh <M17…M21> qua `flutter drive` trên simulator; ảnh
 // vào build/review/<id>.png. Dữ liệu là fixture trong bộ nhớ (như golden),
@@ -15,6 +17,8 @@ import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/dev/review_matrix.dart';
 import 'package:mobile/features/me/data/account_repository.dart';
 import 'package:mobile/features/me/data/profile_repository.dart';
+import 'package:mobile/features/me/presentation/calorie_proposal_sheet.dart';
+import 'package:mobile/features/me/presentation/me_screen.dart';
 import 'package:mobile/features/menu/data/menu_repository.dart';
 import 'package:mobile/features/workout/presentation/session_screen.dart';
 import 'package:mobile/ui/gallery.dart';
@@ -417,6 +421,84 @@ void main() {
         await shot(tester, 'm19_s68');
         await tapKey(tester, 'progress-chest-1');
         await shot(tester, 'm19_s69');
+      });
+    }
+    if (milestone == Milestone.m20) {
+      Future<ProviderContainer> pump(
+        WidgetTester tester,
+        AppDatabase db,
+        DateTime now,
+      ) async {
+        final container = ProviderContainer(
+          retry: (_, _) => null,
+          overrides: appOverrides(db: db, clock: FixedClock(now)),
+        );
+        addTearDown(container.dispose);
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const IronlyApp(),
+          ),
+        );
+        await tester.pumpAndSettle();
+        return container;
+      }
+
+      Future<void> tapKey(WidgetTester tester, String key) async {
+        var f = find.byKey(ValueKey(key));
+        if (f.evaluate().isEmpty) {
+          f = find.byKey(ValueKey(key), skipOffstage: false);
+          if (f.evaluate().isEmpty) {
+            await tester.scrollUntilVisible(
+              f,
+              300,
+              scrollable: find.byType(Scrollable).first,
+            );
+          }
+          f = f.first;
+        }
+        await tester.ensureVisible(f);
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(ValueKey(key)).first);
+        await tester.pumpAndSettle();
+      }
+
+      Future<void> dismiss(WidgetTester tester) async {
+        await tester.tapAt(const Offset(20, 20));
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('M20: S-50, S-51, S-52, S-53, S-54, S-56, S-73', (
+        tester,
+      ) async {
+        final db = AppDatabase(NativeDatabase.memory());
+        addTearDown(db.close);
+        await seedCapture(db);
+        final now = DateTime(2026, 10, 26, 18, 5);
+        await seedMeCapture(db, FixedClock(now));
+        final c = await pump(tester, db, now);
+        await tapKey(tester, 'tab-me');
+        await shot(tester, 'm20_s50');
+        await tapKey(tester, 'row-profile');
+        await shot(tester, 'm20_s51');
+        await tapKey(tester, 'profile-back');
+        await tapKey(tester, 'row-calorie');
+        await shot(tester, 'm20_s52');
+        await tapKey(tester, 'page-back');
+        unawaited(
+          showCalorieProposalSheet(tester.element(find.byType(MeScreen))),
+        );
+        await tester.pumpAndSettle();
+        await shot(tester, 'm20_s53');
+        await dismiss(tester);
+        await tapKey(tester, 'row-budget');
+        await shot(tester, 'm20_s54');
+        c.read(routerProvider).go('/me/account');
+        await tester.pumpAndSettle();
+        await shot(tester, 'm20_s56');
+        await tapKey(tester, 'row-logout');
+        await shot(tester, 'm20_s73');
+        await tapKey(tester, 'logout-cancel');
       });
     }
   });

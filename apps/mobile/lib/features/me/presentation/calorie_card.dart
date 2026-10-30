@@ -2,89 +2,90 @@ import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
 
 import '../../../app/strings_vi.dart';
-import '../../../app/theme.dart';
 import '../../../core/formatters.dart';
-import '../../../core/widgets/app_sheet.dart';
-import '../../../core/widgets/heading.dart';
-import '../../../core/widgets/reference_tag.dart';
+import '../../../ui/components/components.dart';
+import '../../../ui/theme.dart';
 import '../application/calorie_view.dart';
 
-/// Thẻ mức calo (S-04, S-52): chế độ, nhãn "tham khảo" (F02-R11), con số lớn,
-/// dòng giải thích, ghi chú F02-E1/E2, liên kết "Cách app ước tính".
+/// Thẻ mức calo (S-04, S-52, 04 Bản 4): số lớn 34 "2.210" + "kcal"; thanh
+/// chọn Tự động | Tự đặt (chọn = cam); dưới ngưỡng an toàn: số đỏ + câu cảnh
+/// báo giữ nguyên (F02-E1/E2). Không nhãn "tham khảo", không "Cách app ước
+/// tính" (FR4-04, FR4-05).
 class CalorieCard extends StatelessWidget {
-  const CalorieCard({super.key, required this.view});
+  const CalorieCard({
+    super.key,
+    required this.view,
+    this.onAuto,
+    this.onManual,
+  });
 
   final CalorieView view;
 
+  /// Chạm "Tự động" khi đang Tự đặt → dùng lại ước tính của app (F02-AC6).
+  /// null (S-04): không có thanh chọn, nút đặt mức nằm dưới thẻ.
+  final VoidCallback? onAuto;
+
+  /// Chạm "Tự đặt" → bảng đặt mức (F02-R4).
+  final VoidCallback? onManual;
+
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
+    final t = context.tokens;
     final below = view.belowMaintenance;
     final note = view.note;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-      decoration: BoxDecoration(
-        color: palette.card,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: palette.border),
-      ),
+    final manual = view.mode == CalorieMode.manual;
+    return IronlyCard(
+      key: const ValueKey('calorie-card'),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Wrap(
-            spacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              _Chip(
-                view.mode == CalorieMode.auto ? S.calorieAuto : S.calorieManual,
-                color: context.colors.onPrimaryContainer,
-                background: context.colors.primaryContainer,
-              ),
-              const ReferenceTag(),
-              if (view.belowSafetyFloor)
-                _Chip(
-                  S.belowSafetyFloor,
-                  color: palette.attention,
-                  background: palette.attentionContainer,
-                ),
-            ],
-          ),
-          const SizedBox(height: 8),
           Semantics(
             label: Fmt.kcal(view.kcal),
             child: ExcludeSemantics(
               child: Text.rich(
                 key: const ValueKey('calorie-kcal'),
+                textAlign: TextAlign.center,
                 TextSpan(
                   children: [
                     TextSpan(
                       text: Fmt.integer(view.kcal),
-                      style: context.text.displayMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
+                      style: IronlyText.numberLarge.copyWith(
+                        color: view.belowSafetyFloor ? t.danger : null,
                       ),
                     ),
-                    TextSpan(
-                      text: ' ${S.unitKcal}',
-                      style: context.text.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+                    TextSpan(text: ' ${S.unitKcal}', style: IronlyText.caption),
                   ],
                 ),
               ),
             ),
           ),
+          if (onManual != null) ...[
+            const SizedBox(height: TokenSpace.s3),
+            SegmentBar<CalorieMode>(
+              items: const [CalorieMode.auto, CalorieMode.manual],
+              selected: view.mode,
+              label: (m) =>
+                  m == CalorieMode.auto ? S.calorieAuto : S.calorieManualShort,
+              keyOf: (m) => ValueKey(
+                m == CalorieMode.auto
+                    ? (manual ? 'use-app-estimate' : 'calorie-auto')
+                    : 'set-other-level',
+              ),
+              style: SegmentStyle.accent,
+              onSelected: (m) => m == CalorieMode.auto
+                  ? (manual ? onAuto?.call() : null)
+                  : onManual?.call(),
+            ),
+          ],
           if (below != null) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: TokenSpace.s3),
             Text(
               S.belowMaintenance(Fmt.integer(below)),
-              style: context.text.bodyLarge?.copyWith(
-                color: palette.textSecondary,
-              ),
+              style: IronlyText.caption,
             ),
           ],
           if (note != null) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: TokenSpace.s2),
             Text(
               switch (note) {
                 CalorieNote.raisedToSafetyFloor => S.noteRaisedToFloor,
@@ -92,63 +93,11 @@ class CalorieCard extends StatelessWidget {
                   S.noteMaintenanceBelowFloor,
               },
               key: const ValueKey('calorie-note'),
-              style: context.text.bodyLarge,
+              style: IronlyText.caption.copyWith(color: t.danger),
             ),
           ],
-          const SizedBox(height: 4),
-          TextButton(
-            style: TextButton.styleFrom(padding: EdgeInsets.zero),
-            onPressed: () => showAppSheet<void>(
-              context,
-              builder: (sheetContext) => Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Heading(
-                      S.howEstimated,
-                      style: sheetContext.text.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      S.howEstimatedBody,
-                      style: sheetContext.text.bodyLarge,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            child: const Text(S.howEstimated),
-          ),
         ],
       ),
     );
   }
-}
-
-class _Chip extends StatelessWidget {
-  const _Chip(this.label, {required this.color, required this.background});
-
-  final String label;
-  final Color color;
-  final Color background;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-    decoration: BoxDecoration(
-      color: background,
-      borderRadius: BorderRadius.circular(10),
-    ),
-    child: Text(
-      label,
-      style: context.text.labelLarge?.copyWith(
-        color: color,
-        fontWeight: FontWeight.w700,
-      ),
-    ),
-  );
 }

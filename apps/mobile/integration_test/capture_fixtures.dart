@@ -1,7 +1,12 @@
 // Dữ liệu dựng màn cho bộ ảnh so sánh (06 Bản 4 ED4-04, `todayFiveStates`):
 // trong bộ nhớ, không cần server; tên bài theo mock 04 Bản 4.
+import 'dart:convert';
+
+import 'package:api_contract/api_contract.dart';
 import 'package:domain/domain.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:mobile/data/db/app_database.dart';
+import 'package:mobile/data/sync/outbox_writer.dart';
 import 'package:mobile/features/library/data/exercise_repository.dart';
 import 'package:mobile/features/me/data/profile_repository.dart';
 import 'package:mobile/features/menu/data/menu_repository.dart';
@@ -146,4 +151,30 @@ Future<void> seedWeights(AppDatabase db) async {
   ]) {
     await weights.put(LocalDate(2026, m, d), kg);
   }
+}
+
+/// Dữ liệu tab Tôi của mock (S-50 → S-56): đề xuất mức calo chờ 2.180, ngân
+/// sách AI 12.500đ / 50.000đ, một mục chưa đồng bộ.
+Future<void> seedMeCapture(AppDatabase db, Clock clock) async {
+  final profiles = ProfileRepository(db);
+  final p = (await profiles.get())!;
+  await profiles.put(p.withPending(2180, CaloriePendingReason.weight));
+  await (db.update(db.syncState)..where((s) => s.id.equals(1))).write(
+    SyncStateCompanion(
+      aiBudget: Value(
+        jsonEncode(
+          AiBudgetMeta(
+            month: YearMonth(2026, 10),
+            usedVnd: 12500,
+            capVnd: 50000,
+            blocked: false,
+          ).toJson(),
+        ),
+      ),
+    ),
+  );
+  await OutboxWriter(
+    db,
+    clock,
+  ).enqueue('weight', '2026-10-26', SyncOp.upsert, {'kgX10': 724});
 }

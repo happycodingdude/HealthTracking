@@ -11,6 +11,7 @@ import 'package:mobile/features/me/data/profile_repository.dart';
 import 'package:mobile/features/onboarding/application/setup_state.dart';
 import 'package:mobile/features/schedule/data/schedule_repository.dart';
 import 'package:mobile/features/weight/data/weight_repository.dart';
+import 'package:mobile/ui/components/ironly_switch.dart';
 import 'package:mobile/ui/components/ironly_tab_bar.dart';
 
 import '../../support/app_harness.dart';
@@ -196,7 +197,7 @@ void main() {
       await tester.tap(tab(S.tabMe));
       await tester.pumpAndSettle();
       expect(find.text(S.notificationsBlocked), findsOneWidget);
-      final toggle = tester.widget<Switch>(
+      final toggle = tester.widget<IronlySwitch>(
         find.byKey(const ValueKey('reminders-switch')),
       );
       expect(toggle.value, isTrue);

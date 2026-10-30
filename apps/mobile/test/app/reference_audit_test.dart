@@ -9,6 +9,7 @@ import 'package:mobile/app/strings_vi.dart';
 import 'package:mobile/core/widgets/reference_tag.dart';
 import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/features/me/presentation/about_reference_screen.dart';
+import 'package:mobile/features/me/presentation/calorie_screen.dart';
 import 'package:mobile/features/menu/data/menu_repository.dart';
 import 'package:mobile/ui/components/ironly_tab_bar.dart';
 
@@ -95,24 +96,28 @@ void main() {
     await tab(tester, S.tabMe);
     await tester.tap(find.byKey(const ValueKey('row-calorie')));
     await tester.pumpAndSettle();
-    expect(find.byType(ReferenceTag), findsOneWidget, reason: 'S-52');
+    // Bản 4 (FR4-05): S-52 không còn nhãn.
+    expect(find.byType(ReferenceTag), findsNothing, reason: 'S-52');
   });
 
-  testWidgets('UX-AC15: chạm nhãn "tham khảo" → bảng trượt nhắc ý chính F10-R1 '
-      '→ "Xem đầy đủ" → S-55', (tester) async {
+  testWidgets('UX-AC15 (Bản 4, FR4-05): không còn nhãn "tham khảo" ở S-52; '
+      '4 ý chính chỉ còn ở S-55', (tester) async {
     await seedSetUp(db);
     await pump(tester);
     await tab(tester, S.tabMe);
     await tester.tap(find.byKey(const ValueKey('row-calorie')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('reference-tag')));
+    expect(find.byKey(const ValueKey('reference-tag')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('page-back')));
     await tester.pumpAndSettle();
+    final row = find.byKey(const ValueKey('row-about-reference'));
+    await reveal(tester, row);
+    await tester.tap(row);
+    await tester.pumpAndSettle();
+    expect(find.byType(AboutReferenceScreen), findsOneWidget);
     for (final point in DisclaimerPoints.points) {
       expect(find.text(point), findsOneWidget);
     }
-    await tester.tap(find.text(S.seeFull));
-    await tester.pumpAndSettle();
-    expect(find.byType(AboutReferenceScreen), findsOneWidget);
   });
 
   testWidgets('F10-R4: tab Tôi có "Về gợi ý tham khảo" → S-55 (không có nút '
@@ -142,7 +147,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('row-calorie')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 16));
-    expect(tester.getTopLeft(find.text(S.calorieLevel).last).dx, 16);
+    expect(tester.getTopLeft(find.byType(CalorieScreen)).dx, 0);
   });
 
   testWidgets(
@@ -155,10 +160,7 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('row-calorie')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 16));
-      expect(
-        tester.getTopLeft(find.text(S.calorieLevel).last).dx,
-        greaterThan(16),
-      );
+      expect(tester.getTopLeft(find.byType(CalorieScreen)).dx, greaterThan(0));
       await tester.pumpAndSettle();
     },
   );

@@ -185,7 +185,8 @@ class IronlyValueRow extends StatelessWidget {
           child: ExcludeSemantics(
             child: Material(
               color: color ?? t.surface,
-              borderRadius: radius,
+              // Material không nhận cả borderRadius lẫn shape.
+              borderRadius: error == null ? radius : null,
               shape: error == null
                   ? null
                   : RoundedRectangleBorder(

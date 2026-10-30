@@ -3,12 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/strings_vi.dart';
-import '../../../app/theme.dart';
 import '../../../core/formatters.dart';
-import '../../../core/widgets/app_sheet.dart';
-import '../../../core/widgets/heading.dart';
-import '../../../core/widgets/primary_button.dart';
-import '../../../core/widgets/toast.dart';
+import '../../../ui/components/components.dart';
+import '../../../ui/theme.dart';
 import '../application/calorie_updates.dart';
 import '../application/calorie_view.dart';
 
@@ -31,10 +28,14 @@ void showCalorieOutcome(BuildContext context, CalorieOutcome outcome) {
   }
 }
 
-/// S-53 — Đề xuất mức calo. Vuốt đóng mà không chọn → đề xuất nằm lại ở S-52,
-/// tab Tôi có chấm (UA-14, F02-E3).
+/// S-53 — Đề xuất mức calo (04 Bản 4 S-53): câu nguyên văn 15 / 600 + "Hiện
+/// tại Bạn đang dùng…" chữ phụ; nút cam "Dùng 2.180 kcal", xám "Giữ nguyên".
+/// Vuốt đóng mà không chọn → đề xuất nằm lại ở S-52, tab Tôi có chấm (UA-14).
 Future<void> showCalorieProposalSheet(BuildContext context) =>
-    showAppSheet<void>(context, builder: (_) => const CalorieProposalSheet());
+    showIronlySheet<void>(
+      context,
+      builder: (_) => const CalorieProposalSheet(),
+    );
 
 class CalorieProposalSheet extends ConsumerWidget {
   const CalorieProposalSheet({super.key});
@@ -47,36 +48,12 @@ class CalorieProposalSheet extends ConsumerWidget {
       return const SizedBox(height: 120);
     }
     final kcal = Fmt.kcal(pending);
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+    return IronlySheet(
+      footer: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Heading(
-            S.updateCalorieTitle,
-            style: context.text.titleLarge?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            S.calorieProposal(
-              kcal,
-              byWeight:
-                  profile.caloriePendingReason == CaloriePendingReason.weight,
-            ),
-            style: context.text.bodyLarge,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            S.currentlyUsing(Fmt.kcal(profile.calorieKcal!)),
-            style: context.text.bodyLarge?.copyWith(
-              color: context.palette.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 24),
-          PrimaryButton(
+          IronlyButton.primary(
             key: const ValueKey('proposal-accept'),
             label: S.useKcal(kcal),
             onPressed: () async {
@@ -84,23 +61,38 @@ class CalorieProposalSheet extends ConsumerWidget {
               if (context.mounted) Navigator.of(context).pop();
             },
           ),
-          const SizedBox(height: 12),
-          OutlinedButton(
+          const SizedBox(height: TokenSpace.s2),
+          IronlyButton.gray(
             key: const ValueKey('proposal-keep'),
+            label: S.keepCurrent,
             onPressed: () async {
               await ref.read(calorieUpdatesProvider).keepManual();
               if (context.mounted) Navigator.of(context).pop();
             },
-            child: const Text(S.keepCurrent),
           ),
         ],
       ),
+      children: [
+        Text(
+          S.calorieProposal(
+            kcal,
+            byWeight:
+                profile.caloriePendingReason == CaloriePendingReason.weight,
+          ),
+          style: IronlyText.subtitle,
+        ),
+        const SizedBox(height: TokenSpace.s2),
+        Text(
+          S.currentlyUsing(Fmt.kcal(profile.calorieKcal!)),
+          style: IronlyText.caption,
+        ),
+      ],
     );
   }
 }
 
-/// Banner đề xuất đang chờ ở S-52 (F02-E3, mock S-52-1): nội dung F02-R9 kèm
-/// "Dùng {Y} kcal" · "Giữ nguyên".
+/// Banner viền cam đề xuất đang chờ ở S-52 (F02-E3, 04 Bản 4 S-52): câu
+/// nguyên văn + nút xám "Giữ nguyên", cam "Dùng 2.180".
 class CalorieProposalBanner extends ConsumerWidget {
   const CalorieProposalBanner({super.key, required this.profile});
 
@@ -108,29 +100,29 @@ class CalorieProposalBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final palette = context.palette;
+    final t = context.tokens;
     final kcal = Fmt.kcal(profile.caloriePendingKcal!);
-    final stacked = MediaQuery.textScalerOf(context).scale(1) >= 1.6;
-    final accept = FilledButton(
+    final stacked =
+        MediaQuery.textScalerOf(context).scale(1) >= IronlyRow.stackedScale;
+    final accept = IronlyButton.primary(
       key: const ValueKey('banner-accept'),
+      label: S.useKcal(Fmt.integer(profile.caloriePendingKcal!)),
+      small: true,
       onPressed: () => ref.read(calorieUpdatesProvider).acceptProposal(),
-      child: Text(S.useKcal(kcal), textAlign: TextAlign.center),
     );
-    final keep = OutlinedButton(
+    final keep = IronlyButton.gray(
       key: const ValueKey('banner-keep'),
-      style: OutlinedButton.styleFrom(
-        foregroundColor: palette.attention,
-        side: BorderSide(color: palette.attention),
-      ),
+      label: S.keepCurrent,
+      small: true,
       onPressed: () => ref.read(calorieUpdatesProvider).keepManual(),
-      child: const Text(S.keepCurrent, textAlign: TextAlign.center),
     );
     return Container(
       key: const ValueKey('proposal-banner'),
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+      padding: const EdgeInsets.all(TokenSize.cardPadding),
       decoration: BoxDecoration(
-        color: palette.attentionContainer,
-        borderRadius: BorderRadius.circular(16),
+        color: t.surface,
+        borderRadius: BorderRadius.circular(TokenRadius.banner),
+        border: Border.all(color: t.accent, width: TokenSize.fieldStroke),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -141,19 +133,19 @@ class CalorieProposalBanner extends ConsumerWidget {
               byWeight:
                   profile.caloriePendingReason == CaloriePendingReason.weight,
             ),
-            style: context.text.bodyLarge?.copyWith(color: palette.attention),
+            style: IronlyText.body,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: TokenSpace.s3),
           if (stacked) ...[
-            accept,
-            const SizedBox(height: 8),
             keep,
+            const SizedBox(height: TokenSpace.s2),
+            accept,
           ] else
             Row(
               children: [
-                Expanded(child: accept),
-                const SizedBox(width: 12),
                 Expanded(child: keep),
+                const SizedBox(width: TokenSpace.s3),
+                Expanded(child: accept),
               ],
             ),
         ],

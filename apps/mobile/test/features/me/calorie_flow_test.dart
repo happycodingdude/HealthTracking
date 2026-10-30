@@ -117,15 +117,9 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  /// "‹ Tôi" ở đầu S-51 (cuộn lên nếu đã khuất).
-  Future<void> profileBack(WidgetTester tester) async {
-    await tester.scrollUntilVisible(
-      find.byKey(const ValueKey('profile-back')),
-      -200,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tapKey(tester, 'profile-back');
-  }
+  /// Nút quay lại ở thanh tiêu đề S-51 (Bản 4: luôn thấy).
+  Future<void> profileBack(WidgetTester tester) =>
+      tapKey(tester, 'profile-back');
 
   bool meDot() => container.read(tabDotsProvider).contains(AppTab.me);
 
@@ -141,16 +135,18 @@ void main() {
     await tapKey(tester, 'row-profile');
     expect(find.text(S.bodyProfile), findsOneWidget);
     await reveal(tester, find.text(S.currentWeight));
-    expect(find.text('80 kg'), findsOneWidget);
+    expect(find.text('80'), findsOneWidget);
     await profileBack(tester);
 
     await tapKey(tester, 'row-calorie');
     expect(find.text(S.calorieLevel), findsOneWidget);
     expect(find.text('2.210 kcal', findRichText: true), findsOneWidget);
-    expect(find.text(S.setOtherLevel), findsOneWidget);
-    // Chế độ Tự động: không có "Dùng lại ước tính của app".
+    // Bản 4 (04 S-52): thanh chọn Tự động | Tự đặt; không "Cách app ước
+    // tính", không nhãn "tham khảo" (FR4-04, FR4-05).
+    expect(find.text(S.calorieManualShort), findsOneWidget);
+    expect(find.byKey(const ValueKey('set-other-level')), findsOneWidget);
     expect(find.byKey(const ValueKey('use-app-estimate')), findsNothing);
-    expect(find.text(S.howEstimated), findsOneWidget);
+    expect(find.text(S.howEstimated), findsNothing);
   });
 
   testWidgets(
@@ -200,7 +196,8 @@ void main() {
       await pump(tester);
       await logWeight(tester, '76');
       expect(find.byType(CalorieProposalSheet), findsOneWidget);
-      expect(find.text(S.updateCalorieTitle), findsOneWidget);
+      // Bản 4 (04 S-53): câu nguyên văn làm tiêu đề, không dòng "Cập nhật…".
+      expect(find.text(S.updateCalorieTitle), findsNothing);
       expect(
         find.text(
           'Theo cân nặng mới, mức ước tính là 2.150 kcal. Bạn muốn dùng con '
@@ -226,10 +223,10 @@ void main() {
       expect(find.byKey(const ValueKey('row-dot')), findsOneWidget);
       await tapKey(tester, 'row-calorie');
       expect(find.byKey(const ValueKey('proposal-banner')), findsOneWidget);
-      expect(
-        find.text('Dùng lại ước tính của app (2.150 kcal)'),
-        findsOneWidget,
-      );
+      // Bản 4 (04 S-52): banner có nút "Dùng 2.150", không dòng "Dùng lại
+      // ước tính của app"; chạm "Tự động" ở thanh chọn cũng dùng lại.
+      expect(find.text('Dùng lại ước tính của app (2.150 kcal)'), findsNothing);
+      expect(find.text(S.useKcal('2.150')), findsOneWidget);
 
       await tapKey(tester, 'banner-accept');
       expect(find.byKey(const ValueKey('proposal-banner')), findsNothing);
@@ -275,8 +272,10 @@ void main() {
     await pump(tester);
     await openMe(tester);
     await tapKey(tester, 'row-calorie');
-    expect(find.text(S.calorieManual), findsOneWidget);
-    expect(find.text('Dùng lại ước tính của app (2.210 kcal)'), findsOneWidget);
+    // Bản 4 (04 S-52): thanh chọn Tự động | Tự đặt; chạm "Tự động" khi đang
+    // tự đặt = dùng lại ước tính của app.
+    expect(find.text(S.calorieManualShort), findsOneWidget);
+    expect(find.text('Dùng lại ước tính của app (2.210 kcal)'), findsNothing);
     await tapKey(tester, 'use-app-estimate');
     final p = await profile();
     expect((p.calorieMode, p.calorieKcal), (CalorieMode.auto, 2210));
@@ -300,7 +299,10 @@ void main() {
       await tapKey(tester, 'row-calorie');
       await tapKey(tester, 'set-other-level');
       expect(find.text(S.setCalorieTitle), findsOneWidget);
-      await tester.enterText(input(S.fieldDailyCalorie), '1.300');
+      await tester.enterText(
+        find.byKey(const ValueKey('field-daily-calorie')),
+        '1.300',
+      );
       await tapText(tester, S.save);
       expect(find.text(S.lowCalorieWarning('1.500')), findsOneWidget);
       await tapText(tester, S.saveAnyway);
@@ -309,7 +311,8 @@ void main() {
         (p.calorieMode, p.calorieKcal, p.caloriePendingKcal),
         (CalorieMode.manual, 1300, null),
       );
-      expect(find.text(S.belowSafetyFloor), findsOneWidget);
+      // Bản 4: số đỏ, không chữ "Dưới ngưỡng an toàn" ở S-52 (S-50 vẫn có).
+      expect(find.text(S.belowSafetyFloor), findsNothing);
       expect(find.byKey(const ValueKey('proposal-banner')), findsNothing);
       await tapFinder(tester, find.text(S.tabMe).first);
       expect(find.text('1.300 kcal · Dưới ngưỡng an toàn'), findsOneWidget);
@@ -326,14 +329,18 @@ void main() {
       await tapKey(tester, 'row-profile');
       // F01-R4: không có ô cân nặng; cân nặng hiện tại chỉ xem.
       expect(input(S.fieldWeight), findsNothing);
-      await reveal(tester, find.text(S.logInWeightTab));
+      expect(find.text(S.logInWeightTab), findsNothing);
+      await reveal(
+        tester,
+        find.byKey(const ValueKey('profile-current-weight')),
+      );
       await tester.scrollUntilVisible(
-        input(S.fieldHeight),
+        find.byKey(const ValueKey('field-height')),
         -200,
         scrollable: find.byType(Scrollable).first,
       );
 
-      await tester.enterText(input(S.fieldHeight), '231');
+      await tester.enterText(find.byKey(const ValueKey('field-height')), '231');
       // Ô đang nhập giữ con trỏ trong tầm nhìn; ẩn bàn phím như khi chạm ra
       // ngoài rồi mới bấm "Lưu".
       FocusManager.instance.primaryFocus?.unfocus();
@@ -342,7 +349,7 @@ void main() {
       expect(find.text(S.invalidHeight), findsOneWidget);
       expect((await profile()).heightCm, 175);
 
-      await tester.enterText(input(S.fieldHeight), '175');
+      await tester.enterText(find.byKey(const ValueKey('field-height')), '175');
       FocusManager.instance.primaryFocus?.unfocus();
       await tester.pumpAndSettle();
       await tapKey(tester, 'activity-light');
@@ -406,16 +413,17 @@ void main() {
     expect(find.text('175 cm · 30 tuổi · Nam'), findsOneWidget);
   });
 
-  testWidgets('04 S-51: "Ghi ở tab Cân nặng" → tab Cân nặng; cân nặng hiện tại '
-      'là số cân mới nhất', (tester) async {
+  testWidgets('04 Bản 4 S-51: cân nặng hiện tại là số cân mới nhất, chỉ xem; '
+      'không dòng "Ghi ở tab Cân nặng"', (tester) async {
     await seedSetUp(db);
     await WeightRepository(db).put(LocalDate(2026, 10, 12), 725);
     await pump(tester);
     await openMe(tester);
     await tapKey(tester, 'row-profile');
-    await reveal(tester, find.text('72,5 kg'));
-    await tapKey(tester, 'go-weight-tab');
-    expect(find.byKey(const ValueKey('log-weight')), findsOneWidget);
+    await reveal(tester, find.byKey(const ValueKey('profile-current-weight')));
+    expect(find.text('72,5'), findsOneWidget);
+    expect(find.byKey(const ValueKey('go-weight-tab')), findsNothing);
+    expect(find.text(S.logInWeightTab), findsNothing);
   });
 
   testWidgets('F01-E2, ED-07: mở app ngày 01/01/2027 ở chế độ Bạn tự đặt → đề '

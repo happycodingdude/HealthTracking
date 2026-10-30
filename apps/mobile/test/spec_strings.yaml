@@ -432,6 +432,8 @@ thisWeek: "Tuần này"
 extraSessionButton: "+ Buổi thêm"
 generateMenuShort: "Gợi ý thực đơn"
 logWeight: "Ghi cân" # 04 Bản 4 S-40
+calorieManualShort: "Tự đặt" # 04 Bản 4 S-52
+syncAutoWhenOnline: "Sẽ tự đồng bộ khi có mạng" # 04 Bản 4 S-56
 unitLabel: "Đơn vị" # 04 Bản 4 S-67
 chartLink: "Biểu đồ" # 04 Bản 4 S-67
 todayLabel: "Hôm nay" # 04 Bản 4 S-67 dòng ghi chú

@@ -6,55 +6,106 @@ import 'package:go_router/go_router.dart';
 import '../../../app/providers.dart';
 import '../../../app/shell/app_tab.dart';
 import '../../../app/strings_vi.dart';
-import '../../../app/theme.dart';
 import '../../../core/formatters.dart';
+import '../../../core/widgets/phone_input_formatter.dart';
 import '../../../core/widgets/reference_tag.dart';
-import '../../../core/widgets/settings_card.dart';
-import '../../../core/widgets/tab_page.dart';
-import '../../../core/widgets/toast.dart';
 import '../../../data/sync/sync_providers.dart';
+import '../../../ui/components/components.dart';
+import '../../../ui/theme.dart';
+import '../../auth/application/auth_controller.dart';
 import '../../schedule/application/schedule_providers.dart';
 import '../application/budget_view.dart';
 import '../application/calorie_view.dart';
 import '../application/reminders.dart';
+import '../application/update_display_name.dart';
 import 'budget_screen.dart';
 import 'dev_server_status.dart';
 
-/// S-50 — Tôi: "Hồ sơ cơ thể", "Mức calo" (VS-11), "Nhắc đi tập" (VS-05),
-/// "Ngân sách AI" (VS-13), "Tài khoản và dữ liệu" (VS-02), "Về gợi ý tham
-/// khảo" (VS-15).
+/// S-50 — Tôi (04 Bản 4 S-50): thẻ hồ sơ (vòng tròn cam chữ cái đầu · tên ·
+/// số điện thoại); thẻ danh sách mục icon tròn + tên + giá trị tóm tắt + ›:
+/// Hồ sơ cơ thể · Mức calo (chấm cam khi có đề xuất chờ) · Nhắc đi tập +
+/// công tắc; banner "iPhone đang chặn thông báo…" + "Mở Cài đặt"; thẻ tiếp:
+/// Ngân sách AI + thanh nhỏ · Tài khoản và dữ liệu ("Chưa đồng bộ" chỉ khi
+/// chưa) · Về gợi ý tham khảo.
 class MeScreen extends ConsumerWidget {
   const MeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final pending = ref.watch(syncStatusProvider).value?.hasPending;
+    final t = context.tokens;
+    final pending = ref.watch(syncStatusProvider).value?.hasPending ?? false;
     final profile = ref.watch(profileProvider).value;
     final view = ref.watch(calorieViewProvider);
     final budget = ref.watch(aiBudgetViewProvider);
     final year = ref.watch(clockProvider).now().year;
-    return TabPage(
+    final name = ref.watch(displayNameProvider).value ?? '';
+    final phone = ref.watch(authControllerProvider).phone;
+    return IronlyTabPage(
       tab: AppTab.me,
       title: S.tabMe,
       children: [
-        SettingsCard(
+        IronlyCard(
+          key: const ValueKey('me-profile-card'),
+          child: Row(
+            children: [
+              Container(
+                width: TokenSize.avatarLarge,
+                height: TokenSize.avatarLarge,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: t.accent,
+                  shape: BoxShape.circle,
+                ),
+                child: ExcludeSemantics(
+                  child: Text(
+                    name.isEmpty ? '' : name.characters.first.toUpperCase(),
+                    style: IronlyText.subtitle.copyWith(color: t.textPrimary),
+                  ),
+                ),
+              ),
+              const SizedBox(width: TokenSpace.s3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      key: const ValueKey('me-display-name'),
+                      style: IronlyText.subtitle,
+                    ),
+                    if (phone != null)
+                      Text(
+                        PhoneInputFormatter.format(phone),
+                        style: IronlyText.caption,
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const CardGap(),
+        IronlyListCard(
           children: [
-            SettingsRow(
+            IronlyRow(
               key: const ValueKey('row-profile'),
-              label: S.bodyProfile,
-              value: profile == null || !profile.hasBody
+              leading: const CircleIcon(Icons.person_outline),
+              title: S.bodyProfile,
+              subtitle: profile == null || !profile.hasBody
                   ? null
                   : S.profileSummary(
                       profile.heightCm!,
                       ProfileRules.age(profile.birthYear!, year),
                       profile.sex == Sex.male ? S.sexMale : S.sexFemale,
                     ),
+              chevron: true,
               onTap: () => context.go('/me/profile'),
             ),
-            SettingsRow(
+            IronlyRow(
               key: const ValueKey('row-calorie'),
-              label: S.calorieLevel,
-              value: view == null
+              leading: const CircleIcon(Icons.local_fire_department_outlined),
+              title: S.calorieLevel,
+              subtitle: view == null
                   ? null
                   : S.calorieSummary(
                       Fmt.kcal(view.kcal),
@@ -66,44 +117,57 @@ class MeScreen extends ConsumerWidget {
                     ),
               // F02-E3: có chấm khi đang chờ đề xuất.
               dot: profile?.caloriePendingKcal != null,
+              chevron: true,
               onTap: () => context.go('/me/calorie'),
             ),
             const _RemindersRow(),
-            SettingsRow(
+          ],
+        ),
+        const _BlockedBanner(),
+        const CardGap(),
+        IronlyListCard(
+          children: [
+            IronlyRow(
               key: const ValueKey('row-budget'),
-              label: S.aiBudget,
-              value: S.budgetSummary(
-                Fmt.vnd(budget.usedVnd),
-                Fmt.vnd(budget.capVnd),
+              leading: const CircleIcon(Icons.account_balance_wallet_outlined),
+              title: S.aiBudget,
+              value: Fmt.vnd(budget.usedVnd),
+              below: Padding(
+                padding: const EdgeInsets.only(top: TokenSpace.s1),
+                child: SizedBox(
+                  width: 72,
+                  child: BudgetBar(view: budget, height: 4),
+                ),
               ),
-              below: BudgetBar(view: budget, height: 8),
+              chevron: true,
               onTap: () => context.go(budgetPath),
             ),
-            SettingsRow(
+            IronlyRow(
               key: const ValueKey('row-account-data'),
-              label: S.accountAndData,
-              value: pending == null
-                  ? null
-                  : (pending ? S.syncPending : S.syncDone),
+              leading: const CircleIcon(Icons.cloud_outlined),
+              title: S.accountAndData,
+              subtitle: pending ? S.syncPending : null,
+              chevron: true,
               onTap: () => context.go('/me/account'),
             ),
             // F10-R4: xem lại nội dung thông báo tham khảo bất cứ lúc nào.
-            SettingsRow(
+            IronlyRow(
               key: const ValueKey('row-about-reference'),
-              label: S.aboutReferenceTitle,
+              leading: const CircleIcon(Icons.visibility_outlined),
+              title: S.aboutReferenceTitle,
+              chevron: true,
               onTap: () => context.push(aboutReferencePath),
             ),
           ],
         ),
-        const SizedBox(height: 24),
+        const CardGap(),
         const DevServerStatus(),
       ],
     );
   }
 }
 
-/// Công tắc nhắc ngay trên dòng (04 S-50, F-04). Chưa có quyền → cảnh báo kèm
-/// "Mở Cài đặt" (F04-E2, UX-AC14).
+/// Dòng "Nhắc đi tập" + công tắc tại chỗ (04 Bản 4 S-50, F-04).
 class _RemindersRow extends ConsumerWidget {
   const _RemindersRow();
 
@@ -121,74 +185,40 @@ class _RemindersRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final enabled = ref.watch(remindersEnabledProvider).value ?? false;
-    final blocked = ref.watch(remindersBlockedProvider);
-    final palette = context.palette;
+    return IronlyRow(
+      key: const ValueKey('row-reminders'),
+      leading: const CircleIcon(Icons.notifications_none),
+      title: S.remindersRow,
+      // 04 Bản 2 UA2-15: chưa có lịch thì nói rõ vì sao bật mà chưa có nhắc.
+      subtitle: ref.watch(scheduleStateProvider)?.hasSchedule == false
+          ? S.remindersHintNoSchedule
+          : S.remindersHint,
+      trailing: IronlySwitch(
+        key: const ValueKey('reminders-switch'),
+        value: enabled,
+        label: S.remindersRow,
+        onChanged: (on) => _toggle(context, ref, on),
+      ),
+    );
+  }
+}
+
+/// Banner viền cam "iPhone đang chặn thông báo của app." + "Mở Cài đặt" khi
+/// bị chặn (F04-E2, UX-AC14).
+class _BlockedBanner extends ConsumerWidget {
+  const _BlockedBanner();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (!ref.watch(remindersBlockedProvider)) return const SizedBox.shrink();
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(S.remindersRow, style: context.text.bodyLarge),
-                    Text(
-                      // 04 Bản 2 UA2-15: chưa có lịch thì nói rõ vì sao bật
-                      // mà chưa có nhắc.
-                      ref.watch(scheduleStateProvider)?.hasSchedule == false
-                          ? S.remindersHintNoSchedule
-                          : S.remindersHint,
-                      style: context.text.bodyMedium?.copyWith(
-                        color: palette.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Switch(
-                key: const ValueKey('reminders-switch'),
-                value: enabled,
-                onChanged: (on) => _toggle(context, ref, on),
-              ),
-            ],
-          ),
-          if (blocked)
-            Container(
-              key: const ValueKey('notifications-blocked'),
-              margin: const EdgeInsets.only(top: 8, right: 8, bottom: 8),
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-              decoration: BoxDecoration(
-                color: palette.attentionContainer,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Semantics(
-                    liveRegion: true,
-                    child: Text(
-                      S.notificationsBlocked,
-                      style: context.text.bodyLarge?.copyWith(
-                        color: palette.attention,
-                      ),
-                    ),
-                  ),
-                  TextButton(
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      foregroundColor: palette.attention,
-                    ),
-                    onPressed: () =>
-                        ref.read(notificationGatewayProvider).openSettings(),
-                    child: const Text(S.openSettings),
-                  ),
-                ],
-              ),
-            ),
-        ],
+      padding: const EdgeInsets.only(top: TokenSpace.s3),
+      child: IronlyBanner(
+        key: const ValueKey('notifications-blocked'),
+        text: S.notificationsBlocked,
+        actionLabel: S.openSettings,
+        actionKey: const ValueKey('open-settings'),
+        onAction: () => ref.read(notificationGatewayProvider).openSettings(),
       ),
     );
   }

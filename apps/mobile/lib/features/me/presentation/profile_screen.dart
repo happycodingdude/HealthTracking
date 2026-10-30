@@ -8,23 +8,20 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/providers.dart';
 import '../../../app/strings_vi.dart';
-import '../../../app/theme.dart';
 import '../../../core/formatters.dart';
-import '../../../core/widgets/app_sheet.dart';
-import '../../../core/widgets/heading.dart';
-import '../../../core/widgets/labeled_field.dart';
-import '../../../core/widgets/primary_button.dart';
-import '../../../core/widgets/toast.dart';
 import '../../../core/widgets/unsaved_changes.dart';
 import '../../../data/sync/sync_providers.dart';
+import '../../../ui/components/components.dart';
+import '../../../ui/theme.dart';
 import '../../onboarding/presentation/profile_fields.dart';
 import '../application/calorie_updates.dart';
 import '../application/calorie_view.dart';
 import 'calorie_proposal_sheet.dart';
 
-/// S-51 — Hồ sơ cơ thể (04 S-51): các ô giống S-03 trừ cân nặng ban đầu; cân
-/// nặng hiện tại chỉ xem, ghi ở tab Cân nặng (F01-R4). Lưu → "Đã lưu hồ sơ",
-/// rồi xử lý mức calo như S-41 (F01-R5).
+/// S-51 — Hồ sơ cơ thể (04 Bản 4 S-51): ô dạng thẻ Chiều cao · Năm sinh › ·
+/// Giới tính Nam | Nữ · Mức vận động (thẻ dòng chọn) · Cân nặng hiện tại (chỉ
+/// xem, ghi ở tab Cân nặng — F01-R4, không dòng hướng dẫn); nút cam "Lưu" →
+/// "Đã lưu hồ sơ", rồi xử lý mức calo như S-41 (F01-R5). Lỗi đỏ dưới ô.
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
@@ -83,7 +80,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Future<void> _pickBirthYear() async {
     final year = ref.read(clockProvider).now().year;
-    final picked = await showAppSheet<int>(
+    final picked = await showIronlySheet<int>(
       context,
       builder: (_) => BirthYearPicker(
         first: ProfileRules.firstBirthYear(year),
@@ -170,137 +167,101 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget build(BuildContext context) {
     final year = ref.watch(clockProvider).now().year;
     final weight = ref.watch(latestWeightProvider).value;
-    final palette = context.palette;
+    final t = context.tokens;
     return PopScope<Object?>(
       canPop: !_dirty,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) unawaited(_back());
       },
-      child: Scaffold(
-        body: SafeArea(
-          bottom: false,
-          // Dựng đủ mọi ô (không lười như ListView) để cuộn được tới ô lỗi.
-          child: SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(
-              16,
-              8,
-              16,
-              MediaQuery.paddingOf(context).bottom + 24,
+      child: IronlySubPage(
+        title: S.bodyProfile,
+        onBack: _back,
+        leading: Semantics(
+          button: true,
+          label: S.back,
+          child: ExcludeSemantics(
+            child: GestureDetector(
+              key: const ValueKey('profile-back'),
+              behavior: HitTestBehavior.opaque,
+              onTap: _back,
+              child: SizedBox(
+                width: 44,
+                height: 44,
+                child: Icon(Icons.chevron_left, color: t.accent, size: 26),
+              ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton.icon(
-                    key: const ValueKey('profile-back'),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.only(right: 12),
-                    ),
-                    onPressed: _back,
-                    icon: const Icon(Icons.chevron_left),
-                    label: const Text(S.tabMe),
-                  ),
+          ),
+        ),
+        bottom: IronlyButton.primary(
+          key: const ValueKey('profile-save'),
+          label: S.save,
+          onPressed: _save,
+        ),
+        // Dựng đủ mọi ô (không lười) để cuộn được tới ô lỗi.
+        body: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            pageInset,
+            TokenSpace.s2,
+            pageInset,
+            MediaQuery.paddingOf(context).bottom + 24,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ProfileInputRow(
+                key: _keys[ProfileField.height],
+                name: 'height',
+                label: S.fieldHeight,
+                controller: _height,
+                unit: S.unitCm,
+                error: _error(ProfileField.height),
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                onChanged: (_) => _changed(ProfileField.height),
+              ),
+              const SizedBox(height: TokenSpace.s3),
+              FieldBlock(
+                key: _keys[ProfileField.birthYear],
+                label: '',
+                error: _error(ProfileField.birthYear),
+                child: BirthYearField(
+                  year: _birthYear,
+                  age: _birthYear == null
+                      ? null
+                      : ProfileRules.age(_birthYear!, year),
+                  hasError: _errors.contains(ProfileField.birthYear),
+                  onTap: _pickBirthYear,
                 ),
-                const SizedBox(height: 16),
-                Heading(
-                  S.bodyProfile,
-                  style: context.text.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+              ),
+              const SizedBox(height: TokenSpace.s4),
+              FieldBlock(
+                key: _keys[ProfileField.sex],
+                label: S.fieldSex,
+                error: _error(ProfileField.sex),
+                child: SexSelector(
+                  value: _sex,
+                  onChanged: (v) => _changed(ProfileField.sex, () => _sex = v),
                 ),
-                const SizedBox(height: 20),
-                LabeledField(
-                  key: _keys[ProfileField.height],
-                  label: S.fieldHeight,
-                  controller: _height,
-                  error: _error(ProfileField.height),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  suffix: const FieldUnit(S.unitCm),
-                  onChanged: (_) => _changed(ProfileField.height),
+              ),
+              const SizedBox(height: TokenSpace.s4),
+              FieldBlock(
+                key: _keys[ProfileField.activityLevel],
+                label: S.fieldActivityLevel,
+                error: _error(ProfileField.activityLevel),
+                child: ActivityCards(
+                  value: _activity,
+                  onChanged: (v) =>
+                      _changed(ProfileField.activityLevel, () => _activity = v),
                 ),
-                const SizedBox(height: 20),
-                FieldBlock(
-                  key: _keys[ProfileField.birthYear],
-                  label: S.fieldBirthYear,
-                  error: _error(ProfileField.birthYear),
-                  child: BirthYearField(
-                    year: _birthYear,
-                    age: _birthYear == null
-                        ? null
-                        : ProfileRules.age(_birthYear!, year),
-                    hasError: _errors.contains(ProfileField.birthYear),
-                    onTap: _pickBirthYear,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                FieldBlock(
-                  key: _keys[ProfileField.sex],
-                  label: S.fieldSex,
-                  error: _error(ProfileField.sex),
-                  child: SexSelector(
-                    value: _sex,
-                    onChanged: (v) =>
-                        _changed(ProfileField.sex, () => _sex = v),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                FieldBlock(
-                  key: _keys[ProfileField.activityLevel],
-                  label: S.fieldActivityLevel,
-                  error: _error(ProfileField.activityLevel),
-                  child: ActivityCards(
-                    value: _activity,
-                    onChanged: (v) => _changed(
-                      ProfileField.activityLevel,
-                      () => _activity = v,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                // F01-R4: cân nặng chỉ đổi ở tab Cân nặng.
-                Card(
-                  key: const ValueKey('profile-current-weight'),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 14, 12, 14),
-                    child: Wrap(
-                      alignment: WrapAlignment.spaceBetween,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      spacing: 8,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              S.currentWeight,
-                              style: context.text.bodyLarge?.copyWith(
-                                color: palette.textSecondary,
-                              ),
-                            ),
-                            if (weight != null)
-                              Text(
-                                Fmt.kg(weight.kgX10),
-                                style: context.text.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                          ],
-                        ),
-                        TextButton(
-                          key: const ValueKey('go-weight-tab'),
-                          onPressed: () => context.go('/weight'),
-                          child: const Text(S.logInWeightTab),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                PrimaryButton(label: S.save, onPressed: _save),
-              ],
-            ),
+              ),
+              const SizedBox(height: TokenSpace.s4),
+              // F01-R4: cân nặng chỉ đổi ở tab Cân nặng (chỉ xem).
+              IronlyValueRow(
+                key: const ValueKey('profile-current-weight'),
+                label: S.currentWeight,
+                value: weight == null ? '' : Fmt.kgNumber(weight.kgX10),
+                unit: S.unitKg,
+              ),
+            ],
           ),
         ),
       ),

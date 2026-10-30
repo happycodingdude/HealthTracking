@@ -92,8 +92,10 @@ void main() {
       'đỏ) + dòng giải thích → hộp "Đăng xuất?" câu nguyên văn, nút đỏ; "Hủy" '
       '→ không đổi gì', (tester) async {
     await pump(tester);
-    expect(find.text(S.thisDevice.toUpperCase()), findsOneWidget);
-    expect(find.text(S.logoutHint), findsOneWidget);
+    // Bản 4 (04 S-56): thẻ "Đăng xuất" đỏ, không nhóm "Thiết bị này", không
+    // câu giải thích (FR4-04).
+    expect(find.text(S.thisDevice.toUpperCase()), findsNothing);
+    expect(find.text(S.logoutHint), findsNothing);
     final context = tester.element(find.byKey(const ValueKey('row-logout')));
     final rowText = tester.widget<Text>(
       find.descendant(
@@ -101,7 +103,8 @@ void main() {
         matching: find.text(S.logout),
       ),
     );
-    expect(rowText.style?.color, isNot(context.colors.error));
+    // Bản 4 (04 S-56): "Đăng xuất" chữ đỏ.
+    expect(rowText.style?.color, context.tokens.danger);
 
     await tapKey(tester, 'row-logout');
     expect(find.byKey(const ValueKey('logout-dialog')), findsOneWidget);
@@ -113,10 +116,14 @@ void main() {
       ),
       findsOneWidget,
     );
-    final confirm = tester.widget<FilledButton>(
-      find.byKey(const ValueKey('logout-confirm')),
+    // Bản 4 (04 S-73): nút "Đăng xuất" đỏ nền (IronlyDialog destructive).
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('logout-confirm')),
+        matching: find.text(S.logout),
+      ),
+      findsOneWidget,
     );
-    expect(confirm.style?.backgroundColor?.resolve({}), context.colors.error);
     await tapKey(tester, 'logout-cancel');
     expect(find.byKey(const ValueKey('logout-dialog')), findsNothing);
     expect(find.byKey(const ValueKey('row-logout')), findsOneWidget);
@@ -206,9 +213,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.byKey(const ValueKey('logout-syncing')), findsOneWidget);
     expect(find.text(S.logoutSyncing), findsOneWidget);
+    // Bản 4 (04 S-73): chỉ vòng xoay + "Đang đồng bộ…".
     expect(
       find.text('Đồng bộ xong app mới đăng xuất. Đừng tắt mạng.'),
-      findsOneWidget,
+      findsNothing,
     );
     expect(
       find.descendant(

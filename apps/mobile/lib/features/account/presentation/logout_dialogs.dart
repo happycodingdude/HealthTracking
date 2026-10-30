@@ -4,43 +4,38 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/strings_vi.dart';
-import '../../../app/theme.dart';
-import '../../../core/widgets/app_sheet.dart';
+import '../../../ui/components/components.dart';
+import '../../../ui/theme.dart';
 import '../application/logout.dart';
 
-/// S-73 (04 Bản 3 §6.9, UA3-04, NAV-19): hộp xác nhận → không có mạng: hộp
-/// "Chưa đăng xuất được"; có mạng: hộp "Đang đồng bộ…" không nút → thành công:
-/// gốc app dựng lại ở màn Đăng nhập, không thông báo nhanh; lỗi: hộp "Chưa đăng
-/// xuất được" với câu F27-R3, ở lại S-56.
+/// S-73 (04 Bản 4 S-73, UA3-04, NAV-19): hộp "Đăng xuất?" + câu nguyên văn
+/// Bản 3, nút xám Hủy + đỏ Đăng xuất → không có mạng: hộp lỗi; có mạng: hộp
+/// "Đang đồng bộ…" (vòng xoay cam, không nút) → thành công: gốc app dựng lại
+/// ở màn Đăng nhập; lỗi: hộp câu nguyên văn + "Thử lại" / "Hủy", ở lại S-56.
 Future<void> confirmLogout(BuildContext context, WidgetRef ref) async {
   final confirmed =
-      await showAppDialog<bool>(
+      await showIronlyDialog<bool>(
         context,
-        builder: (dialogContext) => AlertDialog(
+        builder: (dialogContext) => IronlyDialog(
           key: const ValueKey('logout-dialog'),
-          title: const Text(S.logoutConfirmTitle, textAlign: TextAlign.center),
-          content: const Text(S.logoutConfirmBody, textAlign: TextAlign.center),
-          actions: [
-            OutlinedButton(
-              key: const ValueKey('logout-cancel'),
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text(S.cancel),
-            ),
-            // Nút đỏ: bước này xóa dữ liệu trên máy (UA3-16, NAV-6).
-            FilledButton(
-              key: const ValueKey('logout-confirm'),
-              style: FilledButton.styleFrom(
-                backgroundColor: dialogContext.colors.error,
-                foregroundColor: dialogContext.colors.onError,
-              ),
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text(S.logout),
-            ),
-          ],
+          title: S.logoutConfirmTitle,
+          body: S.logoutConfirmBody,
+          secondaryLabel: S.cancel,
+          secondaryKey: const ValueKey('logout-cancel'),
+          onSecondary: () => Navigator.of(dialogContext).pop(false),
+          // Nút đỏ: bước này xóa dữ liệu trên máy (UA3-16, NAV-6).
+          primaryLabel: S.logout,
+          primaryKey: const ValueKey('logout-confirm'),
+          destructive: true,
+          onPrimary: () => Navigator.of(dialogContext).pop(true),
         ),
       ) ??
       false;
   if (!confirmed || !context.mounted) return;
+  await _attempt(context, ref);
+}
+
+Future<void> _attempt(BuildContext context, WidgetRef ref) async {
   var syncing = false;
   final outcome = await ref
       .read(logoutProvider)
@@ -48,7 +43,7 @@ Future<void> confirmLogout(BuildContext context, WidgetRef ref) async {
         onSyncing: () {
           syncing = true;
           unawaited(
-            showAppDialog<void>(
+            showIronlyDialog<void>(
               context,
               barrierDismissible: false,
               builder: (_) => const _SyncingDialog(),
@@ -58,24 +53,25 @@ Future<void> confirmLogout(BuildContext context, WidgetRef ref) async {
       );
   if (outcome == LogoutOutcome.done || !context.mounted) return;
   if (syncing) Navigator.of(context, rootNavigator: true).pop();
-  await showAppDialog<void>(
-    context,
-    builder: (dialogContext) => AlertDialog(
-      key: const ValueKey('logout-failed'),
-      title: const Text(S.logoutFailedTitle, textAlign: TextAlign.center),
-      content: Text(
-        outcome == LogoutOutcome.offline ? S.logoutOffline : S.logoutSyncFailed,
-        textAlign: TextAlign.center,
-      ),
-      actions: [
-        FilledButton(
-          key: const ValueKey('logout-failed-ok'),
-          onPressed: () => Navigator.of(dialogContext).pop(),
-          child: const Text(S.understood),
+  final retry =
+      await showIronlyDialog<bool>(
+        context,
+        builder: (dialogContext) => IronlyDialog(
+          key: const ValueKey('logout-failed'),
+          title: S.logoutFailedTitle,
+          body: outcome == LogoutOutcome.offline
+              ? S.logoutOffline
+              : S.logoutSyncFailed,
+          secondaryLabel: S.cancel,
+          secondaryKey: const ValueKey('logout-failed-ok'),
+          onSecondary: () => Navigator.of(dialogContext).pop(false),
+          primaryLabel: S.retry,
+          primaryKey: const ValueKey('logout-failed-retry'),
+          onPrimary: () => Navigator.of(dialogContext).pop(true),
         ),
-      ],
-    ),
-  );
+      ) ??
+      false;
+  if (retry && context.mounted) await _attempt(context, ref);
 }
 
 /// "Đang đồng bộ…" không có nút, không đóng được (UA3-04): đăng xuất không hủy
@@ -85,23 +81,18 @@ class _SyncingDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.tokens;
     return PopScope(
       canPop: false,
-      child: AlertDialog(
+      child: IronlyDialog(
         key: const ValueKey('logout-syncing'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const CircularProgressIndicator(),
-            const SizedBox(height: 16),
-            Text(
-              S.logoutSyncing,
-              textAlign: TextAlign.center,
-              style: context.text.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            const Text(S.logoutSyncingBody, textAlign: TextAlign.center),
-          ],
+        title: S.logoutSyncing,
+        child: Center(
+          child: SizedBox(
+            width: 28,
+            height: 28,
+            child: CircularProgressIndicator(color: t.accent, strokeWidth: 3),
+          ),
         ),
       ),
     );

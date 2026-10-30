@@ -768,6 +768,12 @@ abstract final class S {
   /// "Còn 3 lượt" (04 Bản 4 S-30).
   static String remainingShort(int n) => 'Còn $n lượt';
 
+  /// 04 Bản 4 S-52: thanh chọn "Tự động | Tự đặt".
+  static const calorieManualShort = 'Tự đặt';
+
+  /// 04 Bản 4 S-56: dòng chữ phụ dưới "Chưa đồng bộ".
+  static const syncAutoWhenOnline = 'Sẽ tự đồng bộ khi có mạng';
+
   /// 04 Bản 4 S-67: nhãn "Đơn vị" trên thanh chọn kg | nấc máy.
   static const unitLabel = 'Đơn vị';
 
@@ -1232,6 +1238,8 @@ abstract final class S {
     'extraSessionButton': extraSessionButton,
     'generateMenuShort': generateMenuShort,
     'logWeight': logWeight,
+    'calorieManualShort': calorieManualShort,
+    'syncAutoWhenOnline': syncAutoWhenOnline,
     'unitLabel': unitLabel,
     'chartLink': chartLink,
     'todayLabel': todayLabel,

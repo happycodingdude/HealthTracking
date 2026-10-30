@@ -1,22 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../app/strings_vi.dart';
-import '../../../app/theme.dart';
 import '../../../core/formatters.dart';
-import '../../../core/widgets/heading.dart';
 import '../../../core/widgets/phone_input_formatter.dart';
-import '../../../core/widgets/settings_card.dart';
 import '../../../data/sync/sync_providers.dart';
 import '../../../data/sync/sync_status.dart';
+import '../../../ui/components/components.dart';
+import '../../../ui/theme.dart';
 import '../../account/presentation/logout_dialogs.dart';
 import '../../auth/application/auth_controller.dart';
 import '../application/update_display_name.dart';
 import 'edit_display_name_sheet.dart';
 
-/// S-56 — Tài khoản và dữ liệu (F09). Không có mục xóa tài khoản ở Bản 1 (IA-02).
-/// Bản 3: nhóm "Thiết bị này" với "Đăng xuất" (F-27).
+/// S-56 — Tài khoản và dữ liệu (04 Bản 4 S-56, F09, F-27): thẻ "Tên hiển
+/// thị · Anton ›" · "Số điện thoại"; thẻ đồng bộ: icon tròn viền cam + "Chưa
+/// đồng bộ" cam + "Sẽ tự đồng bộ khi có mạng" chữ phụ (đã đồng bộ: icon chữ
+/// phụ + "Đã đồng bộ lúc …"); thẻ "Đăng xuất" đỏ với icon. Không câu giải
+/// thích, không nhóm "Thiết bị này" (FR4-04).
 class AccountDataScreen extends ConsumerWidget {
   const AccountDataScreen({super.key});
 
@@ -24,111 +25,75 @@ class AccountDataScreen extends ConsumerWidget {
   static String statusText(SyncStatus status) {
     final last = status.lastSyncedAt;
     if (!status.hasPending && last != null) return S.syncedAt(Fmt.clock(last));
-    return S.syncPendingDetail;
+    return S.syncPending;
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final t = context.tokens;
     final name = ref.watch(displayNameProvider).value;
     final phone = ref.watch(authControllerProvider).phone;
     final status = ref.watch(syncStatusProvider).value;
-    return Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: ListView(
-          padding: EdgeInsets.fromLTRB(
-            16,
-            8,
-            16,
-            MediaQuery.paddingOf(context).bottom + 24,
-          ),
+    final pending = status?.hasPending ?? false;
+    return IronlySubPage(
+      title: S.accountAndData,
+      children: [
+        IronlyListCard(
           children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.only(right: 12),
-                ),
-                onPressed: () => context.pop(),
-                icon: const Icon(Icons.chevron_left),
-                label: const Text(S.tabMe),
-              ),
+            IronlyRow(
+              key: const ValueKey('row-display-name'),
+              title: S.fieldDisplayName,
+              value: name ?? '',
+              chevron: true,
+              onTap: () => showEditDisplayNameSheet(context, name ?? ''),
             ),
-            const SizedBox(height: 16),
-            Heading(
-              S.accountAndData,
-              style: context.text.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 20),
-            SettingsCard(
-              children: [
-                SettingsRow(
-                  key: const ValueKey('row-display-name'),
-                  label: S.fieldDisplayName,
-                  value: name ?? '',
-                  onTap: () => showEditDisplayNameSheet(context, name ?? ''),
-                ),
-                SettingsRow(
-                  label: S.fieldPhone,
-                  value: phone == null ? '' : PhoneInputFormatter.format(phone),
-                ),
-                SettingsRow(
-                  key: const ValueKey('row-sync'),
-                  label: S.syncLabel,
-                  value: status == null ? '' : statusText(status),
-                ),
-              ],
-            ),
-            if (status?.hasPending ?? false)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: Text(
-                  S.syncLossWarning,
-                  style: context.text.bodyMedium?.copyWith(
-                    color: context.palette.textSecondary,
-                  ),
-                ),
-              ),
-            // Thiết bị này (04 Bản 3 S-56, UA3-16): "Đăng xuất" chữ thường,
-            // chỉ hộp xác nhận mới có nút đỏ.
-            const SizedBox(height: 24),
-            Semantics(
-              header: true,
-              child: Padding(
-                padding: const EdgeInsets.only(left: 4, bottom: 8),
-                child: Text(
-                  S.thisDevice.toUpperCase(),
-                  style: context.text.labelLarge?.copyWith(
-                    color: context.palette.textSecondary,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.4,
-                  ),
-                ),
-              ),
-            ),
-            SettingsCard(
-              children: [
-                SettingsRow(
-                  key: const ValueKey('row-logout'),
-                  label: S.logout,
-                  onTap: () => confirmLogout(context, ref),
-                ),
-              ],
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(4, 12, 4, 0),
-              child: Text(
-                S.logoutHint,
-                style: context.text.bodyMedium?.copyWith(
-                  color: context.palette.textSecondary,
-                ),
-              ),
+            IronlyRow(
+              key: const ValueKey('row-phone'),
+              title: S.fieldPhone,
+              value: phone == null ? '' : PhoneInputFormatter.format(phone),
             ),
           ],
         ),
-      ),
+        const CardGap(),
+        IronlyListCard(
+          children: [
+            IronlyRow(
+              key: const ValueKey('row-sync'),
+              leading: CircleIcon(
+                pending ? Icons.sync_problem : Icons.cloud_done_outlined,
+                color: pending ? t.accent : t.textSecondary,
+                ring: pending ? t.accent : null,
+              ),
+              title: status == null ? '' : statusText(status),
+              titleStyle: pending
+                  ? IronlyText.body.copyWith(
+                      color: t.accent,
+                      fontWeight: FontWeight.w600,
+                    )
+                  : null,
+              subtitle: pending ? S.syncAutoWhenOnline : null,
+              semanticsLabel: status == null
+                  ? null
+                  : pending
+                  ? '${S.syncPending}, ${S.syncAutoWhenOnline}'
+                  : statusText(status),
+            ),
+          ],
+        ),
+        const CardGap(),
+        // Đăng xuất (F-27): chữ đỏ với icon; hộp xác nhận mới có nút đỏ.
+        IronlyListCard(
+          children: [
+            IronlyRow(
+              key: const ValueKey('row-logout'),
+              leading: CircleIcon(Icons.logout, color: t.danger),
+              title: S.logout,
+              titleStyle: IronlyText.body.copyWith(color: t.danger),
+              onTap: () => confirmLogout(context, ref),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

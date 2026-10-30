@@ -11,9 +11,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/app.dart';
-import 'package:mobile/app/strings_vi.dart';
+import 'package:mobile/app/router.dart';
 import 'package:mobile/data/db/app_database.dart';
-import 'package:mobile/ui/components/ironly_tab_bar.dart';
+import 'package:mobile/features/me/presentation/budget_screen.dart';
 
 import '../../support/app_harness.dart';
 import '../../support/fake_server.dart';
@@ -66,17 +66,8 @@ void main() {
       UncontrolledProviderScope(container: container, child: const IronlyApp()),
     );
     await tester.pumpAndSettle();
-    await tester.tap(
-      find.descendant(
-        of: find.byType(IronlyTabBar),
-        matching: find.text(S.tabMe),
-      ),
-    );
-    await tester.pumpAndSettle();
-    final row = find.byKey(const ValueKey('row-budget'));
-    await tester.ensureVisible(row);
-    await tester.pumpAndSettle();
-    await tester.tap(row);
+    // Mở S-54 thẳng bằng router (cỡ chữ lớn: dòng ở S-50 nằm ngoài khung).
+    container.read(routerProvider).go(budgetPath);
     await tester.pumpAndSettle();
   }
 

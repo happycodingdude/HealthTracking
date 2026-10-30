@@ -98,7 +98,11 @@ class IronlyRow extends StatelessWidget {
     this.minHeight = 52,
     this.dot = false,
     this.titleWidget,
+    this.below,
   });
+
+  /// Dưới tiêu đề / chữ phụ (thanh ngân sách nhỏ ở S-50).
+  final Widget? below;
 
   final String title;
 
@@ -164,6 +168,7 @@ class IronlyRow extends StatelessWidget {
       children: [
         titleText,
         if (sub != null) ...[const SizedBox(height: 2), sub],
+        if (below != null) below!,
         if (stacked && rightRow != null) ...[
           const SizedBox(height: TokenSpace.s2),
           rightRow,

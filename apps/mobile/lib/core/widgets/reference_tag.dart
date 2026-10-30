@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/strings_vi.dart';
 import '../../app/theme.dart';
+import '../../ui/components/components.dart';
 import 'app_sheet.dart';
 import 'heading.dart';
 
@@ -23,34 +24,34 @@ class DisclaimerPoints extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.tokens;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (final point in points)
+        for (final (i, point) in points.indexed)
           Padding(
-            padding: const EdgeInsets.only(bottom: 20),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ExcludeSemantics(
-                  child: CircleAvatar(
-                    radius: 18,
-                    backgroundColor: context.colors.primaryContainer,
-                    child: Icon(
+            padding: EdgeInsets.only(bottom: i == points.length - 1 ? 0 : 10),
+            child: IronlyCard(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ExcludeSemantics(
+                    child: CircleIcon(
                       Icons.check,
-                      size: 20,
-                      color: context.colors.primary,
+                      size: 32,
+                      color: t.accent,
+                      background: t.accentSoft,
                     ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Text(point, style: context.text.bodyLarge),
+                  const SizedBox(width: TokenSpace.s3),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text(point, style: IronlyText.body),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
       ],

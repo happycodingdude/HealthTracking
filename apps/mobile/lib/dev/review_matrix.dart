@@ -300,6 +300,56 @@ final reviewMatrix = <ReviewCell>[
     state: 'biểu đồ mức tạ',
     mock: col(3, 3, 805, 300),
   ),
+  // M20 — tab Tôi (trang 4): S-50, S-51, S-52, S-53, S-54, S-56, S-73.
+  ReviewCell(
+    id: 'm20_s50',
+    milestone: Milestone.m20,
+    screen: 'S-50',
+    state: 'thẻ hồ sơ, danh sách mục, banner chặn thông báo',
+    mock: col(4, 0, 125, 480),
+  ),
+  ReviewCell(
+    id: 'm20_s51',
+    milestone: Milestone.m20,
+    screen: 'S-51',
+    state: 'ô dạng thẻ, mức vận động',
+    mock: col(4, 1, 125, 400),
+  ),
+  ReviewCell(
+    id: 'm20_s52',
+    milestone: Milestone.m20,
+    screen: 'S-52',
+    state: 'số lớn, Tự động | Tự đặt, banner đề xuất',
+    mock: col(4, 1, 525, 200),
+  ),
+  ReviewCell(
+    id: 'm20_s53',
+    milestone: Milestone.m20,
+    screen: 'S-53',
+    state: 'bảng trượt đề xuất',
+    mock: col(4, 2, 125, 190),
+  ),
+  ReviewCell(
+    id: 'm20_s54',
+    milestone: Milestone.m20,
+    screen: 'S-54',
+    state: 'số lớn, thanh tiến độ',
+    mock: col(4, 2, 330, 110),
+  ),
+  ReviewCell(
+    id: 'm20_s56',
+    milestone: Milestone.m20,
+    screen: 'S-56',
+    state: 'chưa đồng bộ, đăng xuất',
+    mock: col(4, 3, 125, 210),
+  ),
+  ReviewCell(
+    id: 'm20_s73',
+    milestone: Milestone.m20,
+    screen: 'S-73',
+    state: 'hộp đăng xuất',
+    mock: col(4, 3, 345, 130),
+  ),
 ];
 
 List<ReviewCell> cellsOf(Milestone m) => [

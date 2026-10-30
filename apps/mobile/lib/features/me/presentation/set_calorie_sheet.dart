@@ -1,24 +1,20 @@
 import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../../app/strings_vi.dart';
-import '../../../app/theme.dart';
 import '../../../core/formatters.dart';
-import '../../../core/widgets/app_sheet.dart';
-import '../../../core/widgets/heading.dart';
-import '../../../core/widgets/labeled_field.dart';
-import '../../../core/widgets/primary_button.dart';
 import '../../../core/widgets/unsaved_changes.dart';
+import '../../../ui/components/components.dart';
+import '../../../ui/theme.dart';
 
-/// "Đặt mức khác" (S-04, S-52): ô nhập đuôi "kcal" (F02-V1). Dưới ngưỡng an
-/// toàn → hộp cảnh báo F02-R5 trước khi lưu ("Vẫn lưu" · "Sửa lại"). Trả mức
-/// Bạn đặt, null khi đóng.
+/// "Tự đặt" (S-04, S-52, 04 Bản 4): bảng trượt một ô số lớn đuôi "kcal"
+/// (F02-V1). Dưới ngưỡng an toàn → hộp cảnh báo F02-R5 trước khi lưu ("Vẫn
+/// lưu" · "Sửa lại"). Trả mức Bạn đặt, null khi đóng.
 Future<int?> showSetCalorieSheet(
   BuildContext context, {
   required Sex sex,
   int? initial,
-}) => showAppSheet<int>(
+}) => showIronlySheet<int>(
   context,
   enableDrag: false,
   builder: (_) => SetCalorieSheet(sex: sex, initial: initial),
@@ -39,11 +35,13 @@ class _SetCalorieSheetState extends State<SetCalorieSheet> {
     text: widget.initial == null ? '' : Fmt.integer(widget.initial!),
   );
   late final _initialText = _controller.text;
+  final _focus = FocusNode();
   String? _error;
 
   @override
   void dispose() {
     _controller.dispose();
+    _focus.dispose();
     super.dispose();
   }
 
@@ -64,21 +62,17 @@ class _SetCalorieSheetState extends State<SetCalorieSheet> {
   /// F02-R5: "Vẫn lưu" → true, "Sửa lại" → false.
   Future<bool> _confirmLow() async {
     final floor = Fmt.integer(CalorieRules.safetyFloor(widget.sex));
-    return await showAppDialog<bool>(
+    return await showIronlyDialog<bool>(
           context,
-          builder: (dialogContext) => AlertDialog(
-            title: const Text(S.lowCalorieTitle),
-            content: Text(S.lowCalorieWarning(floor)),
-            actions: [
-              OutlinedButton(
-                onPressed: () => Navigator.of(dialogContext).pop(false),
-                child: const Text(S.editAgain),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.of(dialogContext).pop(true),
-                child: const Text(S.saveAnyway),
-              ),
-            ],
+          builder: (dialogContext) => IronlyDialog(
+            key: const ValueKey('low-calorie-dialog'),
+            title: S.lowCalorieTitle,
+            body: S.lowCalorieWarning(floor),
+            secondaryLabel: S.editAgain,
+            onSecondary: () => Navigator.of(dialogContext).pop(false),
+            primaryLabel: S.saveAnyway,
+            primaryKey: const ValueKey('low-calorie-save'),
+            onPrimary: () => Navigator.of(dialogContext).pop(true),
           ),
         ) ??
         false;
@@ -88,48 +82,40 @@ class _SetCalorieSheetState extends State<SetCalorieSheet> {
   Widget build(BuildContext context) {
     return UnsavedChangesGuard(
       dirty: _controller.text != _initialText,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Heading(
-              S.setCalorieTitle,
-              style: context.text.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 16),
-            LabeledField(
-              label: S.fieldDailyCalorie,
-              controller: _controller,
-              error: _error,
-              keyboardType: TextInputType.number,
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-              ],
-              suffix: Padding(
-                padding: const EdgeInsets.only(right: 16),
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  widthFactor: 1,
-                  child: Text(
-                    S.unitKcal,
-                    style: context.text.bodyLarge?.copyWith(
-                      color: context.palette.textSecondary,
-                    ),
-                  ),
+      child: IronlySheet(
+        title: S.setCalorieTitle,
+        footer: IronlyButton.primary(
+          key: const ValueKey('calorie-save'),
+          label: S.save,
+          onPressed: _save,
+        ),
+        children: [
+          BigNumberField(
+            name: 'daily-calorie',
+            controller: _controller,
+            focusNode: _focus,
+            unit: S.unitKcal,
+            active: true,
+            decimal: false,
+            style: IronlyText.numberField,
+            height: 72,
+            semanticsLabel: S.fieldDailyCalorie,
+            background: context.tokens.surfaceRaised,
+            onChanged: (_) => setState(() => _error = null),
+          ),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 6, left: 2),
+              child: Semantics(
+                liveRegion: true,
+                child: Text(
+                  _error!,
+                  key: const ValueKey('field-daily-calorie-error'),
+                  style: IronlyText.error,
                 ),
               ),
-              textInputAction: TextInputAction.done,
-              onChanged: (_) => setState(() => _error = null),
-              onSubmitted: (_) => _save(),
             ),
-            const SizedBox(height: 24),
-            PrimaryButton(label: S.save, onPressed: _save),
-          ],
-        ),
+        ],
       ),
     );
   }

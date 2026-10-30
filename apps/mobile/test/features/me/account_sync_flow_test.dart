@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/app.dart';
 import 'package:mobile/app/strings_vi.dart';
-import 'package:mobile/core/widgets/labeled_field.dart';
 import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/features/me/data/account_repository.dart';
 import 'package:mobile/ui/components/ironly_tab_bar.dart';
@@ -55,14 +54,11 @@ void main() {
   Future<void> rename(WidgetTester tester, String name) async {
     await tester.tap(find.byKey(const ValueKey('row-display-name')));
     await tester.pumpAndSettle();
-    final field = find.descendant(
-      of: find.byWidgetPredicate(
-        (w) => w is LabeledField && w.label == S.fieldDisplayName,
-      ),
-      matching: find.byType(TextField),
+    await tester.enterText(
+      find.byKey(const ValueKey('field-display-name')),
+      name,
     );
-    await tester.enterText(field, name);
-    await tester.tap(find.widgetWithText(FilledButton, S.save));
+    await tester.tap(find.byKey(const ValueKey('display-name-save')));
     await tester.pumpAndSettle();
   }
 
@@ -96,7 +92,10 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text(S.syncDone), findsOneWidget);
+      // Bản 4 (04 S-50): dòng "Tài khoản và dữ liệu" chỉ ghi "Chưa đồng bộ"
+      // khi chưa; đã đồng bộ thì không chữ.
+      expect(find.text(S.syncDone), findsNothing);
+      expect(find.text(S.syncPending), findsNothing);
       await tester.tap(find.byKey(const ValueKey('row-account-data')));
       await tester.pumpAndSettle();
       expect(find.text('Minh'), findsOneWidget);
@@ -122,17 +121,12 @@ void main() {
       await tester.tapAt(const Offset(195, 60));
       await tester.pumpAndSettle();
       expect(find.text(S.discardChangesTitle), findsNothing);
-      expect(find.widgetWithText(FilledButton, S.save), findsNothing);
+      expect(find.byKey(const ValueKey('display-name-save')), findsNothing);
 
       await tester.tap(find.byKey(const ValueKey('row-display-name')));
       await tester.pumpAndSettle();
       await tester.enterText(
-        find.descendant(
-          of: find.byWidgetPredicate(
-            (w) => w is LabeledField && w.label == S.fieldDisplayName,
-          ),
-          matching: find.byType(TextField),
-        ),
+        find.byKey(const ValueKey('field-display-name')),
         'Minh Anh',
       );
       await tester.pump();
@@ -169,8 +163,11 @@ void main() {
       // Cập nhật ngay, không có lời gọi mạng nào trước khi giao diện đổi (TAC-01).
       expect(find.text('Minh Anh'), findsOneWidget);
       expect(server.requests.length, before);
-      expect(find.text(S.syncPendingDetail), findsOneWidget);
-      expect(find.text(S.syncLossWarning), findsOneWidget);
+      // Bản 4 (04 S-56): "Chưa đồng bộ" cam + "Sẽ tự đồng bộ khi có mạng";
+      // không câu cảnh báo (FR4-04).
+      expect(find.text(S.syncPending), findsWidgets);
+      expect(find.text(S.syncAutoWhenOnline), findsOneWidget);
+      expect(find.text(S.syncLossWarning), findsNothing);
 
       await tester.tap(find.byIcon(Icons.chevron_left));
       await tester.pumpAndSettle();

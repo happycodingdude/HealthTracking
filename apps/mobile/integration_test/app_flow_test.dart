@@ -78,7 +78,8 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, S.continueLabel));
     await pumpUntil(tester, find.text(S.calorieTitle));
     expect(find.text(S.stepOf(3)), findsOneWidget);
-    expect(find.text(S.calorieAuto), findsOneWidget);
+    // Bản 4 (04 S-04): thẻ chỉ số lớn, không chữ chế độ.
+    expect(find.text('2.210 kcal', findRichText: true), findsOneWidget);
     // Thoát app ở bước 3; test sau mở lại.
   });
 
@@ -181,8 +182,11 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('row-display-name')));
       await tester.pumpAndSettle();
-      await tester.enterText(input(S.fieldDisplayName), 'Minh Anh');
-      await tester.tap(find.widgetWithText(FilledButton, S.save));
+      await tester.enterText(
+        find.byKey(const ValueKey('field-display-name')),
+        'Minh Anh',
+      );
+      await tester.tap(find.byKey(const ValueKey('display-name-save')));
       await tester.pumpAndSettle();
       expect(find.text('Minh Anh'), findsOneWidget);
       await pumpUntil(tester, find.textContaining(S.syncedAt('')));
@@ -302,9 +306,13 @@ void main() {
       await tester.pumpAndSettle();
       await tapVisible(tester, find.byKey(const ValueKey('row-calorie')));
       await tapVisible(tester, find.byKey(const ValueKey('set-other-level')));
-      await tester.enterText(input(S.fieldDailyCalorie), '1900');
-      await tester.tap(find.widgetWithText(FilledButton, S.save).last);
-      await pumpUntil(tester, find.text(S.calorieManual));
+      await tester.enterText(
+        find.byKey(const ValueKey('field-daily-calorie')),
+        '1900',
+      );
+      await tester.tap(find.byKey(const ValueKey('calorie-save')));
+      // Bản 4: đang Tự đặt → mục "Tự động" của thanh chọn là lối dùng lại.
+      await pumpUntil(tester, find.byKey(const ValueKey('use-app-estimate')));
       await tester.tap(find.byIcon(Icons.chevron_left));
       await tester.pumpAndSettle();
 
@@ -319,15 +327,13 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('weight-save')));
       await tester.pumpAndSettle();
       await tester.tap(find.text(S.replace).last);
-      await pumpUntil(tester, find.text(S.updateCalorieTitle));
+      // Bản 4 (04 S-53): bảng không tiêu đề, câu nguyên văn + hai nút.
+      final accept = find.byKey(const ValueKey('proposal-accept'));
+      await pumpUntil(tester, accept);
       expect(find.text(S.useKcal(Fmt.kcal(proposed))), findsOneWidget);
-      await tester.fling(
-        find.text(S.updateCalorieTitle),
-        const Offset(0, 600),
-        2000,
-      );
+      await tester.fling(accept, const Offset(0, 600), 2000);
       await tester.pumpAndSettle();
-      expect(find.text(S.updateCalorieTitle), findsNothing);
+      expect(accept, findsNothing);
       await tester.tap(tabLabel(S.tabMe));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('row-dot')), findsOneWidget);
@@ -347,7 +353,7 @@ void main() {
       // Thông báo nhanh "Đã lưu 76 kg" (4 giây) còn nổi trên nút "Lưu" ở cuối
       // trang: chờ nó tắt rồi mới chạm.
       await pumpUntilGone(tester, find.byType(SnackBar));
-      await tapVisible(tester, find.widgetWithText(FilledButton, S.save));
+      await tapVisible(tester, find.byKey(const ValueKey('profile-save')));
       await pumpUntil(tester, find.text(S.profileSaved));
       await pumpUntil(
         tester,
@@ -424,14 +430,16 @@ void main() {
       await tester.pumpAndSettle();
       final row = find.byKey(const ValueKey('row-budget'));
       await reveal(tester, row);
+      // Bản 4 (04 S-50): giá trị "{đã dùng}đ" + thanh nhỏ; S-54 không đoạn
+      // giải thích.
       expect(
-        find.descendant(of: row, matching: find.textContaining('/ 50.000đ')),
-        findsOneWidget,
+        find.descendant(of: row, matching: find.textContaining('đ')),
+        findsWidgets,
       );
-      expect(find.text('0đ / 50.000đ'), findsNothing);
+      expect(find.descendant(of: row, matching: find.text('0đ')), findsNothing);
       await tester.tap(row);
       await tester.pumpAndSettle();
-      expect(find.text(S.budgetExplain), findsOneWidget);
+      expect(find.text(S.budgetExplain), findsNothing);
     },
   );
 

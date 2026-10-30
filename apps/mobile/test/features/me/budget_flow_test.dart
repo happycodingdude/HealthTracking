@@ -12,6 +12,7 @@ import 'package:mobile/app/strings_vi.dart';
 import 'package:mobile/app/theme.dart';
 import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/ui/components/ironly_tab_bar.dart';
+import 'package:mobile/ui/theme.dart';
 
 import '../../support/app_harness.dart';
 import '../../support/fake_server.dart';
@@ -94,7 +95,8 @@ void main() {
     await budget(12500);
     await pump(tester);
     await tapTab(tester, S.tabMe);
-    expect(find.text('12.500đ / 50.000đ'), findsOneWidget);
+    // Bản 4 (04 S-50): giá trị "12.500đ" + thanh nhỏ.
+    expect(find.text('12.500đ'), findsOneWidget);
     expect(
       find.descendant(
         of: find.byKey(const ValueKey('row-budget')),
@@ -104,11 +106,13 @@ void main() {
     );
     await tapKey(tester, 'row-budget');
     expect(find.text(S.aiBudget), findsOneWidget);
-    expect(find.text('12.500đ'), findsOneWidget);
-    expect(find.text('trên 50.000đ của tháng 10'), findsOneWidget);
+    // Bản 4 (04 S-54): "12.500đ / 50.000đ", "25%"; không "Đặt lại vào…",
+    // không đoạn giải thích (FR4-04).
+    expect(find.text('12.500đ / 50.000đ', findRichText: true), findsOneWidget);
+    expect(find.text('trên 50.000đ của tháng 10'), findsNothing);
     expect(find.text('25%'), findsOneWidget);
-    expect(find.text('Đặt lại vào 01/11'), findsOneWidget);
-    expect(find.text(S.budgetExplain), findsOneWidget);
+    expect(find.text('Đặt lại vào 01/11'), findsNothing);
+    expect(find.text(S.budgetExplain), findsNothing);
     expect(find.byType(TextField), findsNothing);
     final bar = tester.widget<LinearProgressIndicator>(
       find.byType(LinearProgressIndicator),
@@ -135,7 +139,7 @@ void main() {
               find.byType(LinearProgressIndicator),
             )
             .color,
-        context.palette.attention,
+        context.tokens.danger,
       );
       expect(find.byKey(const ValueKey('budget-blocked')), findsNothing);
       await budget(49700, blocked: true);
@@ -156,7 +160,7 @@ void main() {
     await budget(49700, month: '2026-09', blocked: true);
     await pump(tester);
     await tapTab(tester, S.tabMe);
-    expect(find.text('0đ / 50.000đ'), findsOneWidget);
+    expect(find.text('0đ'), findsOneWidget);
     await tapKey(tester, 'row-budget');
     expect(find.text('0%'), findsOneWidget);
     expect(find.byKey(const ValueKey('budget-blocked')), findsNothing);
@@ -199,6 +203,6 @@ void main() {
     await tapKey(tester, 'generate-menu');
     await tapKey(tester, 'budget-warning-details');
     expect(find.text(S.budgetWarning80), findsNothing);
-    expect(find.text('trên 50.000đ của tháng 10'), findsOneWidget);
+    expect(find.text(S.aiBudget), findsOneWidget);
   });
 }

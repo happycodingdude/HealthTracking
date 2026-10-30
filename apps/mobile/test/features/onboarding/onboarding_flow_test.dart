@@ -213,8 +213,9 @@ void main() {
       await tapText(tester, S.continueLabel);
 
       expect(find.text(S.stepOf(3)), findsOneWidget);
-      expect(find.text(S.calorieAuto), findsOneWidget);
-      expect(find.text(S.referenceTag), findsOneWidget);
+      // Bản 4 (FR4-04, FR4-05): thẻ chỉ số lớn, không chữ chế độ, không nhãn.
+      expect(find.text(S.calorieAuto), findsNothing);
+      expect(find.text(S.referenceTag), findsNothing);
       expect(find.text('2.210 kcal', findRichText: true), findsOneWidget);
       expect(find.text(S.belowMaintenance('500')), findsOneWidget);
       expect(find.byKey(const ValueKey('calorie-note')), findsNothing);
@@ -242,11 +243,17 @@ void main() {
 
       await tapText(tester, S.setOtherLevel);
       expect(find.text(S.setCalorieTitle), findsOneWidget);
-      await tester.enterText(input(S.fieldDailyCalorie), '799');
+      await tester.enterText(
+        find.byKey(const ValueKey('field-daily-calorie')),
+        '799',
+      );
       await tapText(tester, S.save);
       expect(find.text(S.invalidManualKcal), findsOneWidget);
 
-      await tester.enterText(input(S.fieldDailyCalorie), '1.300');
+      await tester.enterText(
+        find.byKey(const ValueKey('field-daily-calorie')),
+        '1.300',
+      );
       await tapText(tester, S.save);
       expect(find.text(S.lowCalorieTitle), findsOneWidget);
       expect(find.text(S.lowCalorieWarning('1.500')), findsOneWidget);
@@ -263,8 +270,8 @@ void main() {
 
       // OB-2: quay lại bước 3 thấy đúng mức đã đặt.
       await tapText(tester, S.back);
-      expect(find.text(S.calorieManual), findsOneWidget);
-      expect(find.text(S.belowSafetyFloor), findsOneWidget);
+      expect(find.text(S.calorieManual), findsNothing);
+      expect(find.text(S.belowSafetyFloor), findsNothing);
       expect(find.text('1.300 kcal', findRichText: true), findsOneWidget);
     },
   );
@@ -357,7 +364,10 @@ void main() {
       await fillProfile(tester);
       await tapText(tester, S.continueLabel);
       await tapText(tester, S.setOtherLevel);
-      await tester.enterText(input(S.fieldDailyCalorie), '1900');
+      await tester.enterText(
+        find.byKey(const ValueKey('field-daily-calorie')),
+        '1900',
+      );
       await tester.pumpAndSettle();
 
       await tester.tapAt(const Offset(195, 60));
@@ -387,13 +397,8 @@ void main() {
       await tapText(tester, S.iUnderstand);
       await fillProfile(tester);
       await tapText(tester, S.continueLabel);
-      await tapKey(tester, 'reference-tag');
-      expect(find.text(S.aboutReferenceTitle), findsOneWidget);
-      expect(find.text(S.disclaimerPoint4), findsOneWidget);
-      await tapText(tester, S.seeFull);
-      expect(find.text(S.disclaimerTitle), findsOneWidget);
-      expect(find.text(S.iUnderstand), findsNothing);
-      await tapText(tester, S.back);
+      // Bản 4 (FR4-05): không còn nhãn "tham khảo" ở S-04.
+      expect(find.byKey(const ValueKey('reference-tag')), findsNothing);
       expect(find.text(S.calorieTitle), findsOneWidget);
     },
   );
