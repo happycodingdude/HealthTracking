@@ -6,14 +6,12 @@ import 'package:go_router/go_router.dart';
 import '../../../app/shell/app_tab.dart';
 import '../../../app/shell/tab_scroll.dart';
 import '../../../app/strings_vi.dart';
-import '../../../app/theme.dart';
 import '../../../app/time_ticker.dart';
 import '../../../core/formatters.dart';
-import '../../../core/widgets/app_sheet.dart';
-import '../../../core/widgets/empty_card.dart';
-import '../../../core/widgets/tab_page.dart';
-import '../../../core/widgets/toast.dart';
+import '../../../ui/components/components.dart';
+import '../../../ui/theme.dart';
 import '../../today/application/progress_view.dart';
+import '../../today/presentation/today_cards.dart';
 import '../../today/presentation/week_progress_screen.dart';
 import '../../training/application/training_section.dart';
 import '../../training/presentation/training_screen.dart';
@@ -23,12 +21,11 @@ import 'day_line.dart';
 import 'day_sheet.dart';
 import 'weekly_schedule_screen.dart';
 
-/// S-20 — Lịch tháng, chế độ xem (VS04-T11), mục Lịch của tab Tập luyện
-/// (Bản 2, 04 Bản 2 S-20). Danh sách ngày nhóm theo tuần,
-/// hôm nay được làm nổi bật và tự cuộn tới khi mở tab; xem được các tháng
-/// trước, không có tháng sau trước ngày 1 (F03-R13). Mỗi buổi tập có nhãn
-/// trạng thái (04 §6.13.3, VS06-T08). Nút "Lịch tuần" → S-22; banner Chia lại
-/// khi lịch tuần đã đổi; chạm một ngày → S-21 (VS-09).
+/// S-20 — Lịch tháng (04 Bản 4 S-20): tiêu đề "Tập luyện" + icon lịch cam
+/// (→ S-22); thanh chọn Lịch · Bài tập · Tiến bộ; banner "Lịch tuần đã thay
+/// đổi" + nút nhỏ "Chia lại"; thẻ lịch "‹ Tháng 10/2026 ›" + lưới 7 cột ô
+/// màu theo trạng thái (chạm ô → S-21); dưới: "Tuần này n / m" + thẻ danh
+/// sách buổi của tuần đang chọn. Quy tắc F-03 như Bản 1 → 3.
 class ScheduleScreen extends ConsumerStatefulWidget {
   const ScheduleScreen({super.key});
 
@@ -39,28 +36,13 @@ class ScheduleScreen extends ConsumerStatefulWidget {
 class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
   /// null = tháng hiện tại.
   YearMonth? _shown;
-  final _todayKey = GlobalKey();
-  bool _scrolledToToday = false;
 
-  void _scrollToToday() {
-    if (_scrolledToToday) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final target = _todayKey.currentContext;
-      if (target == null || !target.mounted || _scrolledToToday) return;
-      _scrolledToToday = true;
-      // Chỉ cuộn khi hôm nay còn khuất phía dưới. Nội dung trang kéo dài dưới
-      // thanh tab (padding đáy) nên mép thấy được là phía trên thanh tab.
-      final row = target.findRenderObject();
-      if (row is! RenderBox) return;
-      final bottom = row.localToGlobal(Offset(0, row.size.height)).dy;
-      final media = MediaQuery.of(target);
-      if (bottom <= media.size.height - media.padding.bottom) return;
-      Scrollable.ensureVisible(target, alignment: 0.5);
-    });
-  }
+  /// Tuần đang chọn (thứ 2); null = tuần chứa hôm nay.
+  LocalDate? _week;
 
   @override
   Widget build(BuildContext context) {
+    final t = context.tokens;
     final now = ref.watch(nowProvider);
     final today = LocalDate.fromDateTime(now);
     final current = today.yearMonth;
@@ -69,82 +51,79 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     final plan = plans.where((p) => p.month == month).firstOrNull;
     final first = plans.isEmpty ? current : plans.first.month;
     final days = ref.watch(monthDaysProvider(month)).value ?? const [];
-    if (month == current && plan != null) _scrollToToday();
-
     final changed = month == current && ref.watch(templateChangedProvider);
     final noSchedule = ref.watch(scheduleStateProvider)?.hasSchedule == false;
+    final weekStart = _week ?? today.weekStart;
 
-    return TabPage(
+    return IronlyTabPage(
       tab: AppTab.schedule,
       title: S.tabTraining,
       scrollController: ref
           .watch(tabScrollControllersProvider)
           .section(TrainingSection.schedule),
-      trailing: OutlinedButton(
-        key: const ValueKey('open-weekly'),
-        onPressed: () => context.push(weeklySchedulePath),
-        child: const Text(S.weeklySchedule),
-      ),
-      // Một khối duy nhất: dựng đủ mọi dòng để tự cuộn tới hôm nay.
-      children: [
-        const TrainingSectionBar(),
-        const SizedBox(height: 16),
-        // Chưa có lịch (04 Bản 2 S-20, UA2-03): không thanh tháng, không
-        // banner, không danh sách; lời mời "Xếp lịch tuần" → S-22.
-        if (noSchedule) ...[
-          const SizedBox(height: 48),
-          EmptyCard(
-            key: const ValueKey('no-schedule'),
-            title: S.noScheduleTitle,
-            body: S.noScheduleInvite,
-            action: FilledButton(
-              key: const ValueKey('arrange-weekly'),
-              onPressed: () => context.push(weeklySchedulePath),
-              child: const Text(S.arrangeWeekly),
+      trailing: Semantics(
+        button: true,
+        label: S.weeklySchedule,
+        child: ExcludeSemantics(
+          child: GestureDetector(
+            key: const ValueKey('open-weekly'),
+            behavior: HitTestBehavior.opaque,
+            onTap: () => context.push(weeklySchedulePath),
+            child: SizedBox(
+              width: 44,
+              height: 36,
+              child: Icon(Icons.calendar_month_outlined, color: t.accent),
             ),
           ),
-        ] else
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _MonthBar(
-                month: month,
-                // "‹" dừng ở tháng thiết lập; ở tháng hiện tại ẩn "›" (04 S-20).
-                onPrevious: month.compareTo(first) > 0
-                    ? () => setState(() => _shown = month.previous)
-                    : null,
-                onNext: month.compareTo(current) < 0
-                    ? () => setState(
-                        () =>
-                            _shown = month.next == current ? null : month.next,
-                      )
-                    : null,
-              ),
-              const SizedBox(height: 12),
-              if (changed) ...[
-                const _RedistributeBanner(),
-                const SizedBox(height: 16),
-              ],
-              if (plan != null)
-                _MonthList(
-                  plan: plan,
-                  days: days,
-                  now: now,
-                  todayKey: _todayKey,
+        ),
+      ),
+      children: [
+        const TrainingSectionBar(),
+        const SizedBox(height: TokenSpace.s4),
+        if (noSchedule)
+          // Chưa có lịch: chỉ nút "Xếp lịch tuần" (F4-R7).
+          const NoScheduleCard(key: ValueKey('no-schedule'))
+        else ...[
+          if (changed) ...[const _RedistributeBanner(), const CardGap()],
+          IronlyCard(
+            key: const ValueKey('month-card'),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _MonthBar(
+                  month: month,
+                  onPrevious: month.compareTo(first) > 0
+                      ? () => setState(() {
+                          _shown = month.previous;
+                          _week = null;
+                        })
+                      : null,
+                  onNext: month.compareTo(current) < 0
+                      ? () => setState(() {
+                          _shown = month.next == current ? null : month.next;
+                          _week = null;
+                        })
+                      : null,
                 ),
-              if (month == current && plan != null)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: Text(
-                    S.nextMonthNotice(current.next.month),
-                    textAlign: TextAlign.center,
-                    style: context.text.bodyMedium?.copyWith(
-                      color: context.palette.textSecondary,
-                    ),
+                const SizedBox(height: TokenSpace.s3),
+                if (plan != null)
+                  _Grid(
+                    plan: plan,
+                    days: days,
+                    now: now,
+                    onTap: (date) {
+                      setState(() => _week = date.weekStart);
+                      showDaySheet(context, date);
+                    },
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
+          if (plan != null) ...[
+            const SizedBox(height: TokenSpace.s4),
+            _WeekSummary(start: weekStart, days: days, now: now),
+          ],
+        ],
       ],
     );
   }
@@ -159,17 +138,24 @@ class _MonthBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.tokens;
     Widget arrow(IconData icon, String label, VoidCallback? onTap, Key key) =>
         SizedBox(
-          width: 48,
-          height: 48,
+          width: 36,
+          height: 36,
           child: onTap == null
               ? null
-              : IconButton(
-                  key: key,
-                  tooltip: label,
-                  onPressed: onTap,
-                  icon: Icon(icon, color: context.colors.primary),
+              : Semantics(
+                  button: true,
+                  label: label,
+                  child: ExcludeSemantics(
+                    child: GestureDetector(
+                      key: key,
+                      behavior: HitTestBehavior.opaque,
+                      onTap: onTap,
+                      child: Icon(icon, size: 20, color: t.textSecondary),
+                    ),
+                  ),
                 ),
         );
     return Row(
@@ -184,9 +170,7 @@ class _MonthBar extends StatelessWidget {
           child: Text(
             S.monthTitle(month.month, month.year),
             textAlign: TextAlign.center,
-            style: context.text.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
+            style: IronlyText.body.copyWith(fontWeight: FontWeight.w600),
           ),
         ),
         arrow(
@@ -200,152 +184,194 @@ class _MonthBar extends StatelessWidget {
   }
 }
 
-/// Các ngày từ ngày bắt đầu của lịch (tháng đầu = ngày thiết lập, UA-12) đến
-/// cuối tháng, nhóm theo tuần thứ 2 → chủ nhật.
-class _MonthList extends StatelessWidget {
-  const _MonthList({
+/// Lưới tháng: từ ngày 1 (ngày trước ngày bắt đầu lịch là ô nghỉ mờ, không
+/// chạm được) đến cuối tháng; ô theo bộ dấu hiệu 03 Bản 4 §6.4.
+class _Grid extends StatelessWidget {
+  const _Grid({
     required this.plan,
     required this.days,
     required this.now,
-    required this.todayKey,
+    required this.onTap,
   });
 
   final MonthPlan plan;
   final List<PlanDay> days;
   final DateTime now;
-  final GlobalKey todayKey;
+  final ValueChanged<LocalDate> onTap;
+
+  /// Ô và nhãn VoiceOver của một ngày (dùng chung với S-25, S-10).
+  static (MonthCellKind, String) kindOf(
+    LocalDate date,
+    PlanDay? d,
+    DateTime now,
+  ) {
+    final today = LocalDate.fromDateTime(now);
+    if (d == null) return (MonthCellKind.rest, S.rest);
+    final status = SessionStatus.derive(d, now);
+    if (status != null) {
+      final label = status.locked
+          ? '${_label(status.state)}, ${S.statusLocked}'
+          : _label(status.state);
+      return switch (status.state) {
+        SessionState.done => (MonthCellKind.done, label),
+        SessionState.awaitingMark => (MonthCellKind.today, label),
+        SessionState.upcoming => (MonthCellKind.upcoming, label),
+        SessionState.skipped ||
+        SessionState.autoSkipped => (MonthCellKind.skipped, label),
+      };
+    }
+    if (d.extraMuscles != null) {
+      return (
+        date == today ? MonthCellKind.today : MonthCellKind.rest,
+        S.extraSessionLine(Fmt.muscles(d.extraMuscles!)),
+      );
+    }
+    return (date == today ? MonthCellKind.today : MonthCellKind.rest, S.rest);
+  }
+
+  static String _label(SessionState s) => switch (s) {
+    SessionState.upcoming => S.statusUpcoming,
+    SessionState.awaitingMark => S.statusAwaiting,
+    SessionState.done => S.sessionDone,
+    SessionState.skipped => S.sessionSkipped,
+    SessionState.autoSkipped => S.statusAutoSkipped,
+  };
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
-    final today = LocalDate.fromDateTime(now);
     final byDate = {for (final d in days) d.date: d};
-    final weeks = <List<LocalDate>>[];
-    for (var d = plan.startDate; d <= plan.month.lastDay; d = d.addDays(1)) {
-      if (weeks.isEmpty || d.weekday == DateTime.monday) weeks.add([]);
-      weeks.last.add(d);
+    final month = plan.month;
+    final cells = <MonthCell>[];
+    for (
+      var date = month.firstDay;
+      date <= month.lastDay;
+      date = date.addDays(1)
+    ) {
+      final inPlan = date >= plan.startDate;
+      final d = inPlan ? byDate[date] : null;
+      final (kind, label) = inPlan
+          ? kindOf(date, d, now)
+          : (MonthCellKind.rest, S.rest);
+      cells.add((
+        dateKey: date.toKey(),
+        day: date.day,
+        kind: kind,
+        extra: d?.extraMuscles != null,
+        overridden: d?.source == DaySource.override,
+        semantics: '${Fmt.weekdayDate(date)}: $label',
+      ));
     }
-    return Container(
-      decoration: BoxDecoration(
-        color: palette.card,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: palette.border),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (final week in weeks) ...[
-            _WeekHeader(start: week.first.weekStart),
-            for (final date in week)
-              DayLine(
-                key: date == today ? todayKey : ValueKey('day-${date.toKey()}'),
-                date: date,
-                day: byDate[date],
-                now: now,
-                onTap: () => showDaySheet(context, date),
-              ),
-          ],
-        ],
-      ),
+    return MonthGrid(
+      weekdayLabels: S.weekdaysShort,
+      leading: month.firstDay.weekday - 1,
+      cells: cells,
+      extraLabel: S.extraSession,
+      overriddenLabel: S.overridden,
+      onTap: (c) {
+        final date = LocalDate.parse(c.dateKey);
+        if (date >= plan.startDate) onTap(date);
+      },
     );
   }
 }
 
-/// Tiêu đề tuần "05/10 – 11/10" và bên phải "Đã tập 2/3 ›" (04 S-20, mock
-/// S-20-1). Chạm → S-25 của tuần đó; tuần chưa tới không mở được (F06-R5).
-class _WeekHeader extends ConsumerWidget {
-  const _WeekHeader({required this.start});
+/// "Tuần này n / m" (n cam) + thẻ danh sách buổi của tuần đang chọn: nhóm cơ
+/// · "Thứ · giờ" · dấu hiệu. Chạm dòng → S-21; chạm tiêu đề → S-25.
+class _WeekSummary extends ConsumerWidget {
+  const _WeekSummary({
+    required this.start,
+    required this.days,
+    required this.now,
+  });
 
-  /// Thứ 2 của tuần.
   final LocalDate start;
+  final List<PlanDay> days;
+  final DateTime now;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final palette = context.palette;
+    final t = context.tokens;
     final week = ProgressWeek.containing(start);
     final weeks = ref.watch(progressWeeksProvider);
     final progress = ref.watch(weekProgressProvider(week));
-    final style = context.text.bodyMedium?.copyWith(
-      color: palette.textSecondary,
-      fontWeight: FontWeight.w700,
-    );
-    // Tuần trước tuần thiết lập (chỉ có chủ nhật trong lịch) không có tiến độ.
     final shown =
         progress != null && weeks.isNotEmpty && week.start >= weeks.first.start;
     final openable = shown && week.start <= weeks.last.start;
-    final count = !shown
-        ? null
-        : Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(S.weekDone(progress.done, progress.planned), style: style),
-              if (openable)
-                Icon(
-                  Icons.chevron_right,
-                  size: 20,
-                  color: palette.textSecondary,
-                ),
-            ],
-          );
-    return InkWell(
-      key: ValueKey('week-header-${start.toKey()}'),
-      onTap: openable
-          ? () => context.push(weekProgressPath(AppTab.schedule, week))
-          : null,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-        child: Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 8,
-          runSpacing: 4,
+    final byDate = {for (final d in days) d.date: d};
+    final today = LocalDate.fromDateTime(now);
+    final title = week.start.weekStart == today.weekStart
+        ? S.thisWeek
+        : Fmt.weekRange(week.start, week.end);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        InkWell(
+          key: ValueKey('week-header-${start.toKey()}'),
+          onTap: openable
+              ? () => context.push(weekProgressPath(AppTab.schedule, week))
+              : null,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(2, 4, 2, TokenSpace.s2),
+            child: Row(
+              children: [
+                Expanded(child: Text(title, style: IronlyText.cardTitle)),
+                if (shown)
+                  Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '${progress.done}',
+                          style: TextStyle(color: t.accent),
+                        ),
+                        TextSpan(text: ' / ${progress.planned}'),
+                      ],
+                    ),
+                    key: ValueKey('week-ratio-${start.toKey()}'),
+                    style: IronlyText.body.copyWith(
+                      fontWeight: FontWeight.w600,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        IronlyListCard(
           children: [
-            Text(Fmt.weekRange(start, start.addDays(6)), style: style),
-            ?count,
+            for (var i = 0; i < 6; i++)
+              if (byDate[start.addDays(i)] case final d?
+                  when d.isWorkout || d.extraMuscles != null)
+                DayLine(
+                  key: ValueKey('day-${d.date.toKey()}'),
+                  date: d.date,
+                  day: d,
+                  now: now,
+                  onTap: () => showDaySheet(context, d.date),
+                ),
           ],
         ),
-      ),
+      ],
     );
   }
 }
 
-/// Banner "Lịch tuần đã thay đổi…" kèm "Chia lại" (F03-R7, F03-R8, mock
-/// S-20-1, S-20-2). Hiện cho đến khi chia lại hoặc sang tháng mới.
+/// Banner "Lịch tuần đã thay đổi…" + nút nhỏ cam "Chia lại" (F03-R7, R8).
 class _RedistributeBanner extends ConsumerWidget {
   const _RedistributeBanner();
 
   Future<void> _redistribute(BuildContext context, WidgetRef ref) async {
     final ok =
-        await showAppDialog<bool>(
+        await showIronlyDialog<bool>(
           context,
-          builder: (dialogContext) => AlertDialog(
-            title: const Text(S.redistributeTitle),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(S.redistributeBody),
-                const SizedBox(height: 12),
-                Text(
-                  S.redistributeNote,
-                  style: dialogContext.text.bodyMedium?.copyWith(
-                    color: dialogContext.palette.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              OutlinedButton(
-                onPressed: () => Navigator.of(dialogContext).pop(false),
-                child: const Text(S.cancel),
-              ),
-              FilledButton(
-                key: const ValueKey('confirm-redistribute'),
-                onPressed: () => Navigator.of(dialogContext).pop(true),
-                child: const Text(S.redistribute),
-              ),
-            ],
+          builder: (dialogContext) => IronlyDialog(
+            title: S.redistributeTitle,
+            body: S.redistributeBody,
+            secondaryLabel: S.cancel,
+            onSecondary: () => Navigator.of(dialogContext).pop(false),
+            primaryLabel: S.redistribute,
+            primaryKey: const ValueKey('confirm-redistribute'),
+            onPrimary: () => Navigator.of(dialogContext).pop(true),
+            child: Text(S.redistributeNote, style: IronlyText.dialogBody),
           ),
         ) ??
         false;
@@ -363,30 +389,12 @@ class _RedistributeBanner extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final palette = context.palette;
-    return Container(
-      key: const ValueKey('redistribute-banner'),
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-      decoration: BoxDecoration(
-        color: palette.attentionContainer,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            S.templateChangedBanner,
-            style: context.text.bodyLarge?.copyWith(color: palette.attention),
-          ),
-          const SizedBox(height: 12),
-          FilledButton(
-            key: const ValueKey('redistribute'),
-            onPressed: () => _redistribute(context, ref),
-            child: const Text(S.redistribute),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context, WidgetRef ref) => IronlyBanner(
+    key: const ValueKey('redistribute-banner'),
+    text: S.templateChangedBanner,
+    actionLabel: S.redistribute,
+    actionKey: const ValueKey('redistribute'),
+    filledAction: true,
+    onAction: () => _redistribute(context, ref),
+  );
 }

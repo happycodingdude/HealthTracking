@@ -364,7 +364,7 @@ void main() {
       expect(find.textContaining('Ngực'), findsNothing);
       await close();
       await openDay(tester, LegacyDoneDays.extra.date);
-      expect(find.textContaining(S.extraSession), findsWidgets);
+      expect(find.bySemanticsLabel(S.extraSession), findsWidgets);
       expect(find.byKey(const ValueKey('day-log-extra')), findsNothing);
       await close();
       await openDay(tester, LegacyDoneDays.skipped.date);

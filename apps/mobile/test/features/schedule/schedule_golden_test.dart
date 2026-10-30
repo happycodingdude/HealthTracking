@@ -191,8 +191,9 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    Future<void> tapRow(WidgetTester tester, String text) async {
-      final f = find.text(text);
+    /// Bản 4 (04 S-20): chạm ô lưới tháng → S-21.
+    Future<void> tapRow(WidgetTester tester, String dateKey) async {
+      final f = find.byKey(ValueKey('month-cell-$dateKey'));
       await tester.ensureVisible(f);
       await tester.pumpAndSettle();
       await tester.tap(f);
@@ -211,20 +212,20 @@ void main() {
       tester,
     ) async {
       await seedOctober(tester, v);
-      await tapRow(tester, 'T4 14/10');
+      await tapRow(tester, '2026-10-14');
       await snap('s21_workout_${v.name}');
     });
 
     testWidgets('S-21 hôm nay nghỉ (mock S-21-2) ${v.name}', (tester) async {
       await seedOctober(tester, v);
-      await tapRow(tester, 'T5 08/10');
+      await tapRow(tester, '2026-10-08');
       await snap('s21_today_rest_${v.name}');
     });
 
     testWidgets('S-21 chờ đánh dấu: hai nút trong bảng (mock S-21-1 Bản 2) '
         '${v.name}', (tester) async {
       await seedOctober(tester, v);
-      await tapRow(tester, 'T4 07/10');
+      await tapRow(tester, '2026-10-07');
       await snap('s21_markable_${v.name}');
     });
 
@@ -232,14 +233,14 @@ void main() {
       tester,
     ) async {
       await seedOctober(tester, v);
-      await tapRow(tester, 'T2 05/10');
+      await tapRow(tester, '2026-10-05');
       await snap('s21_done_${v.name}');
     });
 
     testWidgets('S-21 "Không tập" còn trong 7 ngày (mock S-21-3 Bản 2) '
         '${v.name}', (tester) async {
       await seedOctober(tester, v, skipWed: true);
-      await tapRow(tester, 'T4 07/10');
+      await tapRow(tester, '2026-10-07');
       await snap('s21_change_${v.name}');
     });
 

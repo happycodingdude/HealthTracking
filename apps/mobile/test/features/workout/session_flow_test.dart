@@ -141,7 +141,11 @@ void main() {
   }
 
   Future<void> tapKey(WidgetTester tester, String key) async {
-    final f = find.byKey(ValueKey(key), skipOffstage: false);
+    // Màn chồng nhau (S-25 dưới S-63) cùng có `page-back`: lấy màn đang hiện.
+    var f = find.byKey(ValueKey(key));
+    if (f.evaluate().isEmpty) {
+      f = find.byKey(ValueKey(key), skipOffstage: false).last;
+    }
     await tester.ensureVisible(f);
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(ValueKey(key)));
@@ -419,7 +423,7 @@ void main() {
       // Buổi thứ 4 07/10 (ngày khác) → S-63; buổi hôm nay → tab Hôm nay.
       await pump(tester, tall: false);
       await go(tester, '/today/progress/2026-10-05');
-      await tester.tap(find.text('T4 07/10'));
+      await tester.tap(find.byKey(const ValueKey('progress-day-2026-10-07')));
       await tester.pumpAndSettle();
       await tapKey(tester, 'day-view-exercises');
       expect(find.byType(SessionScreen), findsOneWidget);

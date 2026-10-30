@@ -199,6 +199,7 @@ lockConfirmLine2: "Mức tạ của buổi vẫn ghi được đến hết hôm 
 extraConfirmTitle: "Lưu buổi tập thêm?" # 04 Bản 2 S-65, UA2-02
 lockedOnSave: "Đã chốt khi lưu" # 04 Bản 2 §6.6.1, S-21, UA2-06
 changeToDone: "Đổi sang Đã tập" # 04 Bản 2 §6.6.1, S-21, UR2-05
+viewSession: "Xem buổi" # 04 Bản 4 S-21
 delete: "Xóa" # 04 §6.13.1 (hộp xác nhận: nút xóa chữ đỏ)
 cancel: "Hủy" # 04 S-20 (hộp xác nhận "Chia lại" · "Hủy")
 

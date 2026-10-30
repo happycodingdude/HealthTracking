@@ -108,11 +108,15 @@ void main() {
 
       await tester.tap(card());
       await tester.pumpAndSettle();
-      expect(find.text(S.weekProgressTitle), findsOneWidget);
+      // Bản 4 (04 S-25): tiêu đề giữa = khoảng tuần với ‹ ›.
+      expect(find.byKey(const ValueKey('week-range')), findsOneWidget);
       expect(find.text('12/10 – 17/10'), findsOneWidget);
       expect(find.byKey(const ValueKey('week-next')), findsNothing);
       expect(
-        find.descendant(of: summary(), matching: find.text('0/3')),
+        find.descendant(
+          of: summary(),
+          matching: find.text('0/3', findRichText: true),
+        ),
         findsOneWidget,
       );
 
@@ -120,11 +124,16 @@ void main() {
       expect(find.text('05/10 – 10/10'), findsOneWidget);
       expect(find.byKey(const ValueKey('week-previous')), findsNothing);
       expect(
-        find.descendant(of: summary(), matching: find.text('1/2')),
+        find.descendant(
+          of: summary(),
+          matching: find.text('1/2', findRichText: true),
+        ),
         findsOneWidget,
       );
-      expect(find.text(S.progressLine(1, 2)), findsOneWidget);
-      expect(find.text(S.extraCount(1)), findsOneWidget);
+      expect(find.bySemanticsLabel(S.progressLine(1, 2)), findsOneWidget);
+      // Bản 4: "+1" chữ phụ, VoiceOver đọc "+1 buổi thêm".
+      expect(find.text('+1'), findsOneWidget);
+      expect(find.bySemanticsLabel(S.extraCount(1)), findsOneWidget);
       for (final d in [5, 6]) {
         expect(
           find.byKey(ValueKey('progress-day-2026-10-0$d')),
@@ -138,8 +147,13 @@ void main() {
           findsOneWidget,
         );
       }
-      expect(find.text(S.restWithExtra('Bụng')), findsOneWidget);
-      expect(find.text(S.statusAutoSkipped), findsOneWidget, reason: 'thứ 6');
+      // Bản 4 (04 S-25): "Nghỉ + Bụng" (phần cam) và dấu hiệu thay chữ.
+      expect(find.text('${S.rest} + Bụng', findRichText: true), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(RegExp(S.statusAutoSkipped)),
+        findsWidgets,
+        reason: 'thứ 6',
+      );
 
       await tapKey(tester, 'week-next');
       expect(find.text('12/10 – 17/10'), findsOneWidget);
@@ -162,13 +176,13 @@ void main() {
       await tester.tap(card());
       await tester.pumpAndSettle();
       await tapKey(tester, 'week-previous');
-      expect(find.text(S.progressLine(1, 2)), findsOneWidget);
+      expect(find.bySemanticsLabel(S.progressLine(1, 2)), findsOneWidget);
 
       await container
           .read(markSessionDoneProvider)
           .call(LocalDate(2026, 10, 9), confirmed: true);
       await tester.pumpAndSettle();
-      expect(find.text(S.progressLine(2, 2)), findsOneWidget);
+      expect(find.bySemanticsLabel(S.progressLine(2, 2)), findsOneWidget);
     },
   );
 
@@ -211,34 +225,35 @@ void main() {
       await tester.pumpAndSettle();
       final first = find.byKey(const ValueKey('week-header-2026-10-05'));
       expect(
-        find.descendant(of: first, matching: find.text(S.weekDone(1, 2))),
+        find.descendant(
+          of: first,
+          matching: find.text('1 / 2', findRichText: true),
+        ),
         findsOneWidget,
       );
-      final future = find.byKey(const ValueKey('week-header-2026-10-12'));
-      await tester.ensureVisible(future);
+      // Bản 4 (04 S-20): mỗi lúc một tuần — chạm ô của tuần sau để xem.
+      await tapKey(tester, 'month-cell-2026-10-14');
+      await tester.tapAt(const Offset(195, 60));
       await tester.pumpAndSettle();
+      final future = find.byKey(const ValueKey('week-header-2026-10-12'));
       expect(
-        find.descendant(of: future, matching: find.text(S.weekDone(0, 3))),
+        find.descendant(
+          of: future,
+          matching: find.text('0 / 3', findRichText: true),
+        ),
         findsOneWidget,
-      );
-      expect(
-        find.descendant(of: future, matching: find.byIcon(Icons.chevron_right)),
-        findsNothing,
       );
       await tester.tap(future);
       await tester.pumpAndSettle();
-      expect(find.text(S.weekProgressTitle), findsNothing);
+      expect(find.byKey(const ValueKey('week-range')), findsNothing);
 
-      await tapKey(tester, 'week-header-2026-10-05');
-      expect(find.text(S.weekProgressTitle), findsOneWidget);
-      expect(find.text('05/10 – 10/10'), findsOneWidget);
-      final back = find.ancestor(
-        of: find.text(S.tabTraining),
-        matching: find.byWidgetPredicate((w) => w is TextButton),
-      );
-      expect(back, findsOneWidget);
-      await tester.tap(back);
+      await tapKey(tester, 'month-cell-2026-10-07');
+      await tester.tapAt(const Offset(195, 60));
       await tester.pumpAndSettle();
+      await tapKey(tester, 'week-header-2026-10-05');
+      expect(find.byKey(const ValueKey('week-range')), findsOneWidget);
+      expect(find.text('05/10 – 10/10'), findsOneWidget);
+      await tapKey(tester, 'page-back');
       expect(find.text(S.weekProgressTitle), findsNothing);
       expect(first, findsOneWidget);
     },

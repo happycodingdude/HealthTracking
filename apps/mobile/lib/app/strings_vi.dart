@@ -283,6 +283,9 @@ abstract final class S {
   static const lockedOnSave = 'Đã chốt khi lưu';
   static const changeToDone = 'Đổi sang Đã tập';
 
+  /// 04 Bản 4 S-21: nút "Xem buổi" → S-63.
+  static const viewSession = 'Xem buổi';
+
   /// 04 Bản 2 S-65: "Đã tập {nhóm cơ}?".
   static String doneConfirmTitle(String muscles) => 'Đã tập $muscles?';
 
@@ -765,6 +768,9 @@ abstract final class S {
   /// "Còn 3 lượt" (04 Bản 4 S-30).
   static String remainingShort(int n) => 'Còn $n lượt';
 
+  /// "Đang sửa Thứ 4" (04 Bản 4 S-22: khối sửa một ngày).
+  static String editingDay(String weekday) => 'Đang sửa $weekday';
+
   /// "Gợi ý lại · 2" (04 Bản 4 S-30: nút phụ viền cam, số lượt còn).
   static String regenerateShort(int n) => '$regenerate · $n';
 
@@ -1025,6 +1031,7 @@ abstract final class S {
     'extraConfirmTitle': extraConfirmTitle,
     'lockedOnSave': lockedOnSave,
     'changeToDone': changeToDone,
+    'viewSession': viewSession,
     'delete': delete,
     'cancel': cancel,
     'weekProgressTitle': weekProgressTitle,

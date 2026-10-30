@@ -3,15 +3,16 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../../app/strings_vi.dart';
-import '../../../app/theme.dart';
 import '../../../core/formatters.dart';
-import '../../../core/widgets/app_sheet.dart';
-import '../../../core/widgets/primary_button.dart';
+import '../../../ui/components/components.dart';
+import '../../../ui/theme.dart';
 import 'muscle_picker.dart';
 
-/// Trình sửa lịch tuần (S-22), dùng cho S-05 khi thiết lập lần đầu. Thứ 2 →
-/// thứ 7 có công tắc; bật thì dòng mở ra để chọn giờ và nhóm cơ. Chủ nhật luôn
-/// nghỉ, không có công tắc (F03-AC1). Lỗi F03-V2, V3 hiện ngay dưới dòng.
+/// Trình sửa lịch tuần (04 Bản 4 S-22), dùng cho S-05 khi thiết lập lần đầu.
+/// Thẻ 7 dòng: "Thứ 2" 14 + "Ngực · 18:00" chữ phụ, công tắc phải (cam = có
+/// buổi); chủ nhật chữ mờ + ổ khóa (F03-AC1, thay câu "Luôn nghỉ"). Chạm
+/// dòng đang bật → khối "Đang sửa Thứ 4": ô "Giờ 18:00 ›", "Nhóm cơ" + 7 viên.
+/// Lỗi F03-V2, V3 đỏ ngay dưới dòng, câu giữ nguyên.
 class WeeklyTemplateEditor extends StatelessWidget {
   const WeeklyTemplateEditor({
     super.key,
@@ -37,65 +38,51 @@ class WeeklyTemplateEditor extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
-    return Container(
-      decoration: BoxDecoration(
-        color: palette.card,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: palette.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (var w = DateTime.monday; w <= DateTime.saturday; w++) ...[
-            _DayRow(
-              key: rowKeys[w],
-              weekday: w,
-              day: days[w] ?? TemplateDay.off,
-              expanded: expanded == w,
-              errors: [
-                for (final e in errors)
-                  if (e.weekday == w) e.issue,
-              ],
-              onChanged: (d) => onChanged(w, d),
-              onExpand: onExpand,
-            ),
-            Divider(
-              height: 1,
-              indent: 16,
-              endIndent: 16,
-              color: palette.border,
-            ),
-          ],
-          // Chủ nhật luôn nghỉ (F03-R1).
-          Semantics(
-            label: '${S.weekdays[6]}, ${S.alwaysRest}',
-            child: ExcludeSemantics(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                child: Wrap(
-                  alignment: WrapAlignment.spaceBetween,
-                  spacing: 12,
-                  children: [
-                    Text(
+    final t = context.tokens;
+    return IronlyListCard(
+      children: [
+        for (var w = DateTime.monday; w <= DateTime.saturday; w++)
+          _DayRow(
+            key: rowKeys[w],
+            weekday: w,
+            day: days[w] ?? TemplateDay.off,
+            expanded: expanded == w,
+            errors: [
+              for (final e in errors)
+                if (e.weekday == w) e.issue,
+            ],
+            onChanged: (d) => onChanged(w, d),
+            onExpand: onExpand,
+          ),
+        // Chủ nhật luôn nghỉ (F03-R1): chữ mờ + ổ khóa.
+        Semantics(
+          label: '${S.weekdays[6]}, ${S.alwaysRest}',
+          child: ExcludeSemantics(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: TokenSize.cardPadding,
+                vertical: TokenSpace.s3,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
                       S.weekdays[6],
-                      style: context.text.bodyLarge?.copyWith(
-                        color: palette.textSecondary,
-                      ),
+                      style: IronlyText.body.copyWith(color: t.textPrefill),
                     ),
-                    Text(
-                      S.alwaysRest,
-                      style: context.text.bodyMedium?.copyWith(
-                        color: palette.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                  const StatusGlyph(
+                    GlyphStatus.locked,
+                    key: ValueKey('sunday-locked'),
+                    label: S.alwaysRest,
+                    size: TokenSize.lockSmall,
+                  ),
+                ],
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -120,11 +107,12 @@ class _DayRow extends StatelessWidget {
 
   String get _name => S.weekdays[weekday - 1];
 
+  /// "Ngực · 18:00" (chữ phụ dưới tên thứ).
   String? get _summary {
     if (!day.enabled) return null;
     final parts = [
+      if (day.muscles.isNotEmpty) Fmt.musclesTitle(day.muscles),
       if (day.time != null) Fmt.time(day.time!),
-      if (day.muscles.isNotEmpty) Fmt.muscles(day.muscles),
     ];
     return parts.isEmpty ? null : parts.join(' · ');
   }
@@ -138,48 +126,47 @@ class _DayRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
+    final t = context.tokens;
     final summary = _summary;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: InkWell(
-                  key: ValueKey('day-row-$weekday'),
-                  onTap: day.enabled
-                      ? () => onExpand(expanded ? null : weekday)
-                      : null,
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(minHeight: 44),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: InkWell(
+                key: ValueKey('day-row-$weekday'),
+                onTap: day.enabled
+                    ? () => onExpand(expanded ? null : weekday)
+                    : null,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 52),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      TokenSize.cardPadding,
+                      TokenSpace.s2,
+                      TokenSpace.s2,
+                      TokenSpace.s2,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(
-                          _name,
-                          style: context.text.bodyLarge?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                        Text(_name, style: IronlyText.body),
                         if (summary != null && !expanded)
-                          Text(
-                            summary,
-                            style: context.text.bodyMedium?.copyWith(
-                              color: palette.textSecondary,
-                            ),
-                          ),
+                          Text(summary, style: IronlyText.caption),
                       ],
                     ),
                   ),
                 ),
               ),
-              Switch(
+            ),
+            Padding(
+              padding: const EdgeInsets.only(right: TokenSize.cardPadding),
+              child: IronlySwitch(
                 key: ValueKey('day-switch-$weekday'),
                 value: day.enabled,
+                label: _name,
                 onChanged: (on) {
                   onChanged(
                     TemplateDay(
@@ -191,95 +178,67 @@ class _DayRow extends StatelessWidget {
                   onExpand(on ? weekday : null);
                 },
               ),
-            ],
-          ),
-          if (day.enabled && expanded) ...[
-            const SizedBox(height: 8),
-            Wrap(
-              alignment: WrapAlignment.spaceBetween,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 12,
-              runSpacing: 8,
+            ),
+          ],
+        ),
+        if (day.enabled && expanded)
+          Padding(
+            key: ValueKey('day-editing-$weekday'),
+            padding: const EdgeInsets.fromLTRB(
+              TokenSize.cardPadding,
+              0,
+              TokenSize.cardPadding,
+              TokenSpace.s3,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  S.workoutTime,
-                  style: context.text.bodyLarge?.copyWith(
-                    color: palette.textSecondary,
-                  ),
+                Text(S.editingDay(_name), style: IronlyText.caption),
+                const SizedBox(height: TokenSpace.s2),
+                IronlyValueRow(
+                  key: ValueKey('day-time-$weekday'),
+                  label: S.workoutTime,
+                  value: day.time == null ? S.timeNotSet : Fmt.time(day.time!),
+                  color: t.surfaceRaised,
+                  onTap: () => _pickTime(context),
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: Semantics(
-                    button: true,
-                    label: '${S.workoutTime} $_name',
-                    value: day.time == null ? null : Fmt.time(day.time!),
-                    child: ExcludeSemantics(
-                      child: InkWell(
-                        key: ValueKey('day-time-$weekday'),
-                        borderRadius: BorderRadius.circular(12),
-                        onTap: () => _pickTime(context),
-                        child: Container(
-                          constraints: const BoxConstraints(minHeight: 44),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: palette.neutralContainer,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            day.time == null
-                                ? S.timeNotSet
-                                : Fmt.time(day.time!),
-                            style: context.text.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+                const SizedBox(height: TokenSpace.s3),
+                Text(S.muscleGroups, style: IronlyText.caption),
+                const SizedBox(height: TokenSpace.s2),
+                MusclePicker(
+                  selected: day.muscles,
+                  onChanged: (m) => onChanged(
+                    TemplateDay(enabled: true, time: day.time, muscles: m),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: MusclePicker(
-                selected: day.muscles,
-                onChanged: (m) => onChanged(
-                  TemplateDay(enabled: true, time: day.time, muscles: m),
-                ),
-              ),
+          ),
+        for (final issue in errors)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              TokenSize.cardPadding,
+              0,
+              TokenSize.cardPadding,
+              TokenSpace.s3,
             ),
-          ],
-          for (final issue in errors)
-            Padding(
-              padding: const EdgeInsets.only(top: 8, right: 8),
-              child: Semantics(
-                liveRegion: true,
-                child: Text(
-                  switch (issue) {
-                    TemplateIssue.missingTime => S.missingTimeFor(_name),
-                    TemplateIssue.missingMuscles => S.missingMusclesFor(_name),
-                    TemplateIssue.noWorkoutDay => S.noWorkoutDay,
-                  },
-                  style: context.text.bodyMedium?.copyWith(
-                    color: context.colors.error,
-                  ),
-                ),
-              ),
+            child: Semantics(
+              liveRegion: true,
+              child: Text(switch (issue) {
+                TemplateIssue.missingTime => S.missingTimeFor(_name),
+                TemplateIssue.missingMuscles => S.missingMusclesFor(_name),
+                TemplateIssue.noWorkoutDay => S.noWorkoutDay,
+              }, style: IronlyText.error),
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 }
 
-/// Mở bánh xe chọn giờ (UA-18); null khi Bạn đóng bảng.
+/// Mở bánh xe chọn giờ (UA-18) trong bảng trượt; null khi Bạn đóng bảng.
 Future<LocalTime?> pickTime(BuildContext context, LocalTime initial) =>
-    showAppSheet<LocalTime>(
+    showIronlySheet<LocalTime>(
       context,
       builder: (_) => _TimePicker(initial: initial),
     );
@@ -302,20 +261,14 @@ class _TimePickerState extends State<_TimePicker> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          TimeWheel(initial: _time, onChanged: (t) => _time = t),
-          const SizedBox(height: 16),
-          PrimaryButton(
-            label: S.done,
-            onPressed: () => Navigator.of(context).pop(_time),
-          ),
-        ],
+    return IronlySheet(
+      title: S.workoutTime,
+      footer: IronlyButton.primary(
+        key: const ValueKey('time-done'),
+        label: S.done,
+        onPressed: () => Navigator.of(context).pop(_time),
       ),
+      children: [TimeWheel(initial: _time, onChanged: (t) => _time = t)],
     );
   }
 }
@@ -330,19 +283,29 @@ class TimeWheel extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SizedBox(
     height: 216,
-    child: CupertinoDatePicker(
-      key: const ValueKey('time-picker'),
-      mode: CupertinoDatePickerMode.time,
-      use24hFormat: true,
-      minuteInterval: 5,
-      initialDateTime: DateTime(
-        2000,
-        1,
-        1,
-        initial.hour,
-        initial.minute - initial.minute % 5,
+    child: CupertinoTheme(
+      data: CupertinoThemeData(
+        brightness: Brightness.dark,
+        textTheme: CupertinoTextThemeData(
+          dateTimePickerTextStyle: IronlyText.number.copyWith(
+            color: context.tokens.textPrimary,
+          ),
+        ),
       ),
-      onDateTimeChanged: (d) => onChanged(LocalTime.fromDateTime(d)),
+      child: CupertinoDatePicker(
+        key: const ValueKey('time-picker'),
+        mode: CupertinoDatePickerMode.time,
+        use24hFormat: true,
+        minuteInterval: 5,
+        initialDateTime: DateTime(
+          2000,
+          1,
+          1,
+          initial.hour,
+          initial.minute - initial.minute % 5,
+        ),
+        onDateTimeChanged: (d) => onChanged(LocalTime.fromDateTime(d)),
+      ),
     ),
   );
 }

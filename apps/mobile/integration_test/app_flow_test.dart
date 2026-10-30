@@ -111,7 +111,7 @@ void main() {
       for (var w = DateTime.monday; w <= DateTime.saturday; w++) {
         await tapVisible(tester, find.byKey(ValueKey('day-switch-$w')));
         await tapVisible(tester, find.byKey(ValueKey('day-time-$w')));
-        await tester.tap(find.text(S.done));
+        await tester.tap(find.byKey(const ValueKey('time-done')));
         await tester.pumpAndSettle();
         await tapVisible(tester, find.byKey(const ValueKey('muscle-chest')));
       }
@@ -139,8 +139,11 @@ void main() {
       await tester.tap(tabLabel(S.tabTraining));
       await tester.pumpAndSettle();
       expect(find.text(S.monthTitle(now.month, now.year)), findsOneWidget);
+      // Bản 4 (04 S-20): lưới tháng, ô hôm nay viền cam.
       expect(
-        find.text(Fmt.shortWeekdayDate(LocalDate.fromDateTime(now))),
+        find.byKey(
+          ValueKey('month-cell-${LocalDate.fromDateTime(now).toKey()}'),
+        ),
         findsOneWidget,
       );
 

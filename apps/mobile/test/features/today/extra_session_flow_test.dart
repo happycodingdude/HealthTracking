@@ -228,15 +228,19 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      // Bản 4 (04 S-20): dòng "Nghỉ + Bụng" (phần cam) + dấu "+".
       final row = find.byKey(const ValueKey('day-2026-10-08'));
       expect(
-        find.descendant(of: row, matching: find.text(S.restWithExtra('Bụng'))),
+        find.descendant(
+          of: row,
+          matching: find.text('${S.rest} + Bụng', findRichText: true),
+        ),
         findsOneWidget,
       );
       expect(
         find.descendant(
           of: row,
-          matching: find.byKey(const ValueKey('session-tag-extra')),
+          matching: find.bySemanticsLabel(RegExp(S.extraSession)),
         ),
         findsOneWidget,
       );

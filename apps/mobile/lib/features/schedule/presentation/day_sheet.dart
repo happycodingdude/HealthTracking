@@ -4,28 +4,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
 import '../../../app/strings_vi.dart';
-import '../../../app/theme.dart';
 import '../../../app/time_ticker.dart';
 import '../../../core/formatters.dart';
-import '../../../core/widgets/app_sheet.dart';
-import '../../../core/widgets/heading.dart';
-import '../../../core/widgets/primary_button.dart';
-import '../../../core/widgets/session_tag.dart';
-import '../../../core/widgets/settings_card.dart';
-import '../../../core/widgets/toast.dart';
 import '../../../core/widgets/unsaved_changes.dart';
+import '../../../ui/components/components.dart';
+import '../../../ui/theme.dart';
 import '../../workout/presentation/session_screen.dart';
 import '../application/schedule_edits.dart';
 import '../application/schedule_providers.dart';
+import 'day_line.dart';
 import 'extra_session_sheet.dart';
 import 'muscle_picker.dart';
 import 'session_marking.dart';
 import 'weekly_template_editor.dart';
 
-/// Mở S-21 cho ngày [date] (từ S-20, S-25, "Sửa buổi hôm nay" ở Hôm nay).
-/// S-24 mở từ đây và thông báo nhanh dùng [context] của màn hình gọi.
+/// Mở S-21 cho ngày [date] (từ S-20, S-25).
 Future<void> showDaySheet(BuildContext context, LocalDate date) =>
-    showAppSheet<void>(
+    showIronlySheet<void>(
       context,
       // Đang đổi giờ, nhóm cơ: tự bắt cử chỉ vuốt để hỏi trước (Q-2).
       enableDrag: false,
@@ -34,17 +29,18 @@ Future<void> showDaySheet(BuildContext context, LocalDate date) =>
 
 enum _Mode { actions, time, muscles, schedule }
 
-/// S-21 — Chi tiết ngày (04 Bản 2 S-21): đầu bảng "Thứ 4, 21/10" và thông
-/// tin hiện tại; phần dưới chỉ có thao tác hợp lệ theo tình huống
-/// ([DaySituation]). "Đã tập" · "Không tập" ngay trong bảng (không còn S-23);
-/// buổi đã chốt chỉ xem (UR2-06).
+/// S-21 — Chi tiết ngày (04 Bản 4 S-21): tiêu đề "Thứ 4, 28/10" + dấu trạng
+/// thái phải; dòng "Lưng · 18:00" chữ phụ (+ ổ khóa khi quá 7 ngày); các nút
+/// xám xếp dọc, chỉ hiện nút hợp lệ: Đổi giờ · Đổi nhóm cơ · Cho nghỉ ngày
+/// này · Xem buổi · Đã tập / Không tập · Đổi sang Đã tập; "Trả về theo lịch
+/// tuần" chữ cam. Không câu "Chỉ sửa được trong 7 ngày", "Đã chốt khi lưu".
+/// Quy tắc F-03, F-05 như Bản 1 → 3 ([DaySituation]).
 class DaySheet extends ConsumerStatefulWidget {
   const DaySheet({super.key, required this.date, required this.host});
 
   final LocalDate date;
 
-  /// Màn hình mở bảng này; dùng để mở S-24 và hiện thông báo nhanh sau khi
-  /// bảng đóng.
+  /// Màn hình mở bảng này; dùng để mở S-24 và hiện thông báo nhanh.
   final BuildContext host;
 
   @override
@@ -73,8 +69,6 @@ class _DaySheetState extends ConsumerState<DaySheet> {
     });
   }
 
-  /// Chạy một thao tác sửa riêng; xong thì đóng bảng. false khi lỗi (đã báo
-  /// lỗi kỹ thuật; bảng chỉ hiện thao tác hợp lệ nên hiếm gặp).
   Future<bool> _run(Future<void> Function(ScheduleEdits edits) action) async {
     try {
       await action(ref.read(scheduleEditsProvider));
@@ -139,98 +133,72 @@ class _DaySheetState extends ConsumerState<DaySheet> {
     if (!async.hasValue) return const SizedBox(height: 120);
     final day = async.value;
     final situation = OverrideRules.situation(_date, day, now);
-    final today = LocalDate.fromDateTime(now);
+    final glyph = DayLine.glyphOf(day, now);
+    // Ổ khóa khi ngày đã quá 7 ngày (04 Bản 4 S-21) hoặc buổi đã khóa.
+    final locked =
+        situation == DaySituation.locked ||
+        _date.daysUntil(LocalDate.fromDateTime(now)) > 7 ||
+        (day != null && (SessionStatus.derive(day, now)?.locked ?? false));
 
     return UnsavedChangesGuard(
       dirty: _mode != _Mode.actions && _changed,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Heading(
-              S.dayTitle(_label, today: _date == today),
-              style: context.text.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
+      child: IronlySheet(
+        key: const ValueKey('day-sheet'),
+        title: _label,
+        titleTrailing: glyph == null
+            ? null
+            : StatusGlyph(
+                glyph.$1,
+                key: const ValueKey('day-status'),
+                label: glyph.$2,
+              ),
+        children: [
+          if (day != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: TokenSpace.s4),
+              child: Row(
+                key: const ValueKey('day-summary'),
+                children: [
+                  Expanded(
+                    child: Text(_summary(day), style: IronlyText.caption),
+                  ),
+                  if (locked) ...[
+                    const SizedBox(width: TokenSpace.s2),
+                    const StatusGlyph(
+                      GlyphStatus.locked,
+                      label: S.lockedNote,
+                      size: TokenSize.lockSmall,
+                    ),
+                  ],
+                ],
               ),
             ),
-            if (day != null) ...[
-              const SizedBox(height: 4),
-              _summaryLine(context, day, now),
-            ],
-            // Ngày có buổi: "Xem bài tập" → S-63 ở mọi trạng thái (F20-R4).
-            if (_mode == _Mode.actions && LiftLogRules.isSession(day))
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton(
-                  key: const ValueKey('day-view-exercises'),
-                  style: TextButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    textStyle: context.text.titleMedium,
-                  ),
-                  onPressed: () => _open((h) => openSession(h, _date)),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(child: Text(S.viewExercises)),
-                      Icon(Icons.chevron_right, size: 22),
-                    ],
-                  ),
-                ),
-              ),
-            const SizedBox(height: 20),
-            ...switch (_mode) {
-              _Mode.actions => _actions(context, situation, day, now),
-              _Mode.time => _timeEditor(context, day!, now, today),
-              _Mode.muscles => _musclesEditor(context, day!),
-              _Mode.schedule => _scheduleEditor(context, day!, now, today),
-            },
-          ],
-        ),
+          ...switch (_mode) {
+            _Mode.actions => _actions(context, situation, day, now),
+            _Mode.time => _timeEditor(context, day!, now),
+            _Mode.muscles => _musclesEditor(context, day!),
+            _Mode.schedule => _scheduleEditor(context, day!, now),
+          },
+        ],
       ),
     );
   }
 
-  /// "Lưng · 18:00 · [Chờ đánh dấu]" khi buổi đã đến giờ (mock S-21-1, S-21-3
-  /// Bản 2); ngược lại "Lưng · 18:00 · Theo lịch tuần".
-  Widget _summaryLine(BuildContext context, PlanDay d, DateTime now) {
-    final style = context.text.bodyLarge?.copyWith(
-      color: context.palette.textSecondary,
-    );
-    final status = SessionStatus.derive(d, now);
-    if (status == null || status.state == SessionState.upcoming) {
-      return Text(
-        _summary(d),
-        key: const ValueKey('day-summary'),
-        style: style,
-      );
-    }
-    final muscles = Fmt.muscles(SessionRules.musclesOf(d));
-    return Wrap(
-      key: const ValueKey('day-summary'),
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: 6,
-      runSpacing: 6,
-      children: [
-        Text('$muscles · ${Fmt.time(d.time!)} ·', style: style),
-        SessionTag(status),
-      ],
-    );
-  }
+  /// "Lưng · 18:00" / "Nghỉ · Bụng" / "Nghỉ" (chữ phụ, không câu trạng thái).
+  String _summary(PlanDay d) => d.isWorkout
+      ? '${Fmt.musclesTitle(SessionRules.musclesOf(d))} · ${Fmt.time(d.time!)}'
+      : d.extraMuscles != null
+      ? S.restWithExtra(Fmt.musclesTitle(d.extraMuscles!))
+      : S.rest;
 
-  /// "Lưng · 18:00 · Theo lịch tuần" (mock S-21-1).
-  String _summary(PlanDay d) {
-    final info = d.isWorkout
-        ? '${Fmt.muscles(d.muscles)} · ${Fmt.time(d.time!)}'
-        : d.extraMuscles != null
-        ? S.restWithExtra(Fmt.muscles(d.extraMuscles!))
-        : S.rest;
-    final source = d.source == DaySource.override
-        ? S.overridden
-        : S.fromTemplate;
-    return '$info · $source';
-  }
+  Widget _gray(String label, String key, VoidCallback onTap) => Padding(
+    padding: const EdgeInsets.only(bottom: TokenSpace.s2),
+    child: IronlyButton.gray(
+      key: ValueKey(key),
+      label: label,
+      onPressed: onTap,
+    ),
+  );
 
   List<Widget> _actions(
     BuildContext context,
@@ -238,174 +206,115 @@ class _DaySheetState extends ConsumerState<DaySheet> {
     PlanDay? day,
     DateTime now,
   ) {
-    final palette = context.palette;
-    final note = Text(
-      S.onlyThisDay,
-      style: context.text.bodyMedium?.copyWith(color: palette.textSecondary),
-    );
-    final revert = day?.source == DaySource.override
-        ? SettingsRow(
-            key: const ValueKey('day-revert'),
-            label: S.revertToTemplate,
-            onTap: _revert,
+    final canAdd = day != null && ExtraSessionRules.canAdd(day, now);
+    void close() => Navigator.of(context).pop();
+    final viewSession = LiftLogRules.isSession(day)
+        ? _gray(
+            S.viewSession,
+            'day-view-exercises',
+            () => _open((h) => openSession(h, _date)),
           )
         : null;
-    final secondary = context.text.bodyLarge?.copyWith(
-      color: palette.textSecondary,
+    final revert = day?.source == DaySource.override
+        ? IronlyButton.link(
+            key: const ValueKey('day-revert'),
+            label: S.revertToTemplate,
+            onPressed: _revert,
+          )
+        : null;
+    final logExtra = _gray(
+      S.logExtraSession,
+      'day-log-extra',
+      () => _open((h) => showExtraSessionSheet(h, _date)),
     );
-    final canAdd = day != null && ExtraSessionRules.canAdd(day, now);
-    final logExtra = SettingsCard(
-      children: [
-        SettingsRow(
-          key: const ValueKey('day-log-extra'),
-          label: S.logExtraSession,
-          onTap: () => _open((h) => showExtraSessionSheet(h, _date)),
-        ),
-      ],
-    );
-    void close() => Navigator.of(context).pop();
     return switch (situation) {
       DaySituation.editableWorkout => [
-        SettingsCard(
-          children: [
-            SettingsRow(
-              key: const ValueKey('day-change-time'),
-              label: S.changeTime,
-              value: Fmt.time(day!.time!),
-              onTap: () => _edit(_Mode.time, day),
-            ),
-            SettingsRow(
-              key: const ValueKey('day-change-muscles'),
-              label: S.changeMuscles,
-              value: Fmt.muscles(day.muscles),
-              onTap: () => _edit(_Mode.muscles, day),
-            ),
-            SettingsRow(
-              key: const ValueKey('day-rest'),
-              label: S.restThisDay,
-              onTap: _rest,
-            ),
-            ?revert,
-          ],
+        _gray(S.changeTime, 'day-change-time', () => _edit(_Mode.time, day!)),
+        _gray(
+          S.changeMuscles,
+          'day-change-muscles',
+          () => _edit(_Mode.muscles, day!),
         ),
-        const SizedBox(height: 16),
-        note,
+        _gray(S.restThisDay, 'day-rest', _rest),
+        ?viewSession,
+        ?revert,
       ],
       DaySituation.futureRest || DaySituation.todayRest => [
-        _Option(
-          id: 'day-schedule',
-          title: situation == DaySituation.todayRest
+        _gray(
+          situation == DaySituation.todayRest
               ? S.scheduleToday
               : S.scheduleThisDay,
-          subtitle: S.countsInPlan,
-          onTap: () => _edit(_Mode.schedule, day!),
+          'day-schedule',
+          () => _edit(_Mode.schedule, day!),
         ),
-        if (situation == DaySituation.todayRest && canAdd) ...[
-          const SizedBox(height: 12),
-          _Option(
-            id: 'day-log-extra',
-            title: S.logExtraSession,
-            subtitle: S.extraNotCounted,
-            onTap: () => _open((h) => showExtraSessionSheet(h, _date)),
-          ),
-        ],
-        if (revert != null) ...[
-          const SizedBox(height: 12),
-          SettingsCard(children: [revert]),
-        ],
-        const SizedBox(height: 16),
-        note,
+        if (situation == DaySituation.todayRest && canAdd) logExtra,
+        ?revert,
       ],
       DaySituation.markable => [
-        MarkButtons(
-          day: day!,
-          onDone: () => SessionMarking.done(context, day, onConfirmed: close),
-          onSkipped: () =>
-              SessionMarking.skipped(context, day, onConfirmed: close),
+        _gray(
+          S.sessionDone,
+          'mark-done-${day!.date.toKey()}',
+          () => SessionMarking.done(context, day, onConfirmed: close),
         ),
-      ],
-      DaySituation.done => [
-        Text(
-          S.doneLine(Fmt.muscles(SessionRules.musclesOf(day!))),
-          style: context.text.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
+        _gray(
+          S.sessionSkipped,
+          'mark-skipped-${day.date.toKey()}',
+          () => SessionMarking.skipped(context, day, onConfirmed: close),
         ),
-        const SizedBox(height: 8),
-        const LockedOnSaveLine(),
+        ?viewSession,
       ],
+      DaySituation.done => [?viewSession],
       DaySituation.changeToDone => [
-        Text(
-          S.changeableUntil(
-            Fmt.dayMonth(SessionRules.lastChangeDate(day!.date)),
-          ),
-          style: secondary,
+        _gray(
+          S.changeToDone,
+          'change-to-done-${day!.date.toKey()}',
+          () => SessionMarking.done(context, day, onConfirmed: close),
         ),
-        const SizedBox(height: 16),
-        ChangeToDoneButton(
-          day: day,
-          onTap: () => SessionMarking.done(context, day, onConfirmed: close),
-        ),
+        ?viewSession,
       ],
       DaySituation.pastRest => [if (canAdd) logExtra],
-      DaySituation.extraSaved => [
-        Text(
-          S.extraSessionLine(Fmt.muscles(day!.extraMuscles!)),
-          style: context.text.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 8),
-        const LockedOnSaveLine(),
-        // F03-E4: hôm nay đã có buổi tập thêm nên không lên lịch tập được.
-        if (_date == LocalDate.fromDateTime(now)) ...[
-          const SizedBox(height: 12),
-          Text(S.extraBlocksSchedule, style: secondary),
-        ],
-      ],
-      DaySituation.upcoming => const [],
+      DaySituation.extraSaved => [?viewSession],
+      DaySituation.upcoming => [?viewSession],
+      // Quá 7 ngày: nút mờ, không câu giải thích (F4-R6).
       DaySituation.locked => [
-        Row(
-          children: [
-            ExcludeSemantics(
-              child: Icon(Icons.lock, size: 18, color: palette.neutral),
+        if (day != null && day.isWorkout)
+          Padding(
+            padding: const EdgeInsets.only(bottom: TokenSpace.s2),
+            child: IronlyButton.gray(
+              key: ValueKey('change-to-done-${day.date.toKey()}-locked'),
+              label: S.changeToDone,
+              enabled: false,
+              onPressed: () {},
             ),
-            const SizedBox(width: 8),
-            Expanded(child: Text(S.lockedNote, style: secondary)),
-          ],
-        ),
+          ),
+        ?viewSession,
       ],
-      DaySituation.sunday => [
-        Text(S.sundayRest, style: context.text.bodyLarge),
-      ],
+      DaySituation.sunday => const [],
     };
   }
 
-  /// F03-E2: hôm nay, giờ mới cách hiện tại chưa đầy 1 giờ → không có nhắc.
-  Widget? _underHourNote(BuildContext context, DateTime now, LocalDate today) {
+  /// F03-E2: hôm nay, giờ mới cách hiện tại chưa đầy 1 giờ → không có nhắc
+  /// (câu cảnh báo giữ nguyên, dạng banner).
+  Widget? _underHourNote(BuildContext context, DateTime now) {
+    final today = LocalDate.fromDateTime(now);
     if (_date != today) return null;
     final start = _date.atTime(_time);
     if (!start.isAfter(now) ||
         !start.isBefore(now.add(const Duration(hours: 1)))) {
       return null;
     }
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Text(
-        S.noReminderUnderHour,
-        key: const ValueKey('under-hour-note'),
-        style: context.text.bodyMedium?.copyWith(
-          color: context.palette.textSecondary,
-        ),
+    return const Padding(
+      padding: EdgeInsets.only(top: TokenSpace.s2),
+      child: IronlyBanner(
+        key: ValueKey('under-hour-note'),
+        text: S.noReminderUnderHour,
       ),
     );
   }
 
-  Widget _sectionTitle(BuildContext context, String text) => Text(
-    text,
-    style: context.text.bodyLarge?.copyWith(
-      color: context.palette.textSecondary,
-    ),
+  Widget _sectionTitle(String text) => Padding(
+    padding: const EdgeInsets.only(bottom: TokenSpace.s2),
+    child: Text(text, style: IronlyText.caption),
   );
 
   Widget _wheel() => TimeWheel(
@@ -425,129 +334,71 @@ class _DaySheetState extends ConsumerState<DaySheet> {
     }),
   );
 
-  Widget? _error(BuildContext context) => !_showError
+  Widget? _error() => !_showError
       ? null
       : Padding(
-          padding: const EdgeInsets.only(top: 8),
+          padding: const EdgeInsets.only(top: TokenSpace.s2),
           child: Semantics(
             liveRegion: true,
-            child: Text(
-              S.missingTimeOrMuscles,
-              style: context.text.bodyMedium?.copyWith(
-                color: context.colors.error,
-              ),
-            ),
+            child: Text(S.missingTimeOrMuscles, style: IronlyText.error),
           ),
         );
 
-  List<Widget> _timeEditor(
-    BuildContext context,
-    PlanDay day,
-    DateTime now,
-    LocalDate today,
-  ) => [
-    _sectionTitle(context, S.changeTime),
+  Widget _save(PlanDay day) => Padding(
+    padding: const EdgeInsets.only(top: TokenSpace.s5),
+    child: IronlyButton.primary(
+      key: const ValueKey('day-save'),
+      label: S.save,
+      onPressed: () => _saveWorkout(day),
+    ),
+  );
+
+  List<Widget> _timeEditor(BuildContext context, PlanDay day, DateTime now) => [
+    _sectionTitle(S.changeTime),
     _wheel(),
-    ?_underHourNote(context, now, today),
-    const SizedBox(height: 16),
-    PrimaryButton(label: S.save, onPressed: () => _saveWorkout(day)),
+    ?_underHourNote(context, now),
+    _save(day),
   ];
 
   List<Widget> _musclesEditor(BuildContext context, PlanDay day) => [
-    _sectionTitle(context, S.changeMuscles),
-    const SizedBox(height: 12),
+    _sectionTitle(S.changeMuscles),
     _picker(),
-    ?_error(context),
-    const SizedBox(height: 24),
-    PrimaryButton(label: S.save, onPressed: () => _saveWorkout(day)),
+    ?_error(),
+    _save(day),
   ];
 
   List<Widget> _scheduleEditor(
     BuildContext context,
     PlanDay day,
     DateTime now,
-    LocalDate today,
   ) => [
-    _sectionTitle(context, S.workoutTime),
+    _sectionTitle(S.workoutTime),
     _wheel(),
-    ?_underHourNote(context, now, today),
-    const SizedBox(height: 16),
-    _sectionTitle(context, S.muscleGroups),
-    const SizedBox(height: 12),
+    ?_underHourNote(context, now),
+    const SizedBox(height: TokenSpace.s4),
+    _sectionTitle(S.muscleGroups),
     _picker(),
-    ?_error(context),
-    const SizedBox(height: 24),
-    PrimaryButton(label: S.save, onPressed: () => _saveWorkout(day)),
+    ?_error(),
+    _save(day),
   ];
 }
 
-/// Lựa chọn lớn có dòng phụ (mock S-21-2).
-class _Option extends StatelessWidget {
-  const _Option({
-    required this.id,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  final String id;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => Card(
-    clipBehavior: Clip.antiAlias,
-    child: InkWell(
-      key: ValueKey(id),
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: context.text.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: context.text.bodyLarge?.copyWith(
-                color: context.palette.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-}
-
-/// Hộp xác nhận 2 nút "Hủy" · [action] (NAV-6).
+/// Hộp xác nhận 2 nút "Hủy" · [action] (NAV-6), câu giữ nguyên.
 Future<bool> _confirm(
   BuildContext context, {
   required String title,
   required String action,
   required String key,
 }) async =>
-    await showAppDialog<bool>(
+    await showIronlyDialog<bool>(
       context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(title),
-        actions: [
-          OutlinedButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text(S.cancel),
-          ),
-          FilledButton(
-            key: ValueKey(key),
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(action),
-          ),
-        ],
+      builder: (dialogContext) => IronlyDialog(
+        title: title,
+        secondaryLabel: S.cancel,
+        onSecondary: () => Navigator.of(dialogContext).pop(false),
+        primaryLabel: action,
+        primaryKey: ValueKey(key),
+        onPrimary: () => Navigator.of(dialogContext).pop(true),
       ),
     ) ??
     false;

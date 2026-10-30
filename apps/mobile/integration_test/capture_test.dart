@@ -288,5 +288,107 @@ void main() {
         await shot(tester, 'm18_s41_big');
       });
     }
+    if (milestone == Milestone.m19) {
+      Future<ProviderContainer> pump(
+        WidgetTester tester,
+        AppDatabase db,
+        DateTime now,
+      ) async {
+        final container = ProviderContainer(
+          retry: (_, _) => null,
+          overrides: appOverrides(db: db, clock: FixedClock(now)),
+        );
+        addTearDown(container.dispose);
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const IronlyApp(),
+          ),
+        );
+        await tester.pumpAndSettle();
+        return container;
+      }
+
+      Future<void> tapKey(WidgetTester tester, String key) async {
+        final f = find.byKey(ValueKey(key), skipOffstage: false);
+        if (f.evaluate().isEmpty ||
+            find.byKey(ValueKey(key)).evaluate().isEmpty) {
+          await tester.scrollUntilVisible(
+            find.byKey(ValueKey(key), skipOffstage: false),
+            300,
+            scrollable: find.byType(Scrollable).first,
+          );
+        }
+        await tester.ensureVisible(
+          find.byKey(ValueKey(key), skipOffstage: false),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(ValueKey(key)));
+        await tester.pumpAndSettle();
+      }
+
+      Future<void> dismiss(WidgetTester tester) async {
+        await tester.tapAt(const Offset(20, 20));
+        await tester.pumpAndSettle();
+      }
+
+      // Tháng 10 của mock: T2 Ngực, T3 Lưng + Bụng, T5 Vai, T7 Tay trước, lịch
+      // từ 07/10; hôm nay thứ 2 26/10 18:05 (đã tập 8, 10, 12, 13, 17, 19,
+      // 20, 24; không tập 15, 22; buổi thêm Tay sau thứ 6 23/10).
+      Future<AppDatabase> seedMonth() async {
+        final db = AppDatabase(NativeDatabase.memory());
+        addTearDown(db.close);
+        await seedCapture(db, todayLogs: false);
+        for (final d in [8, 10, 12, 13, 17, 19, 20, 24]) {
+          await seedMark(db, LocalDate(2026, 10, d), DayMark.done);
+        }
+        for (final d in [15, 22]) {
+          await seedMark(db, LocalDate(2026, 10, d), DayMark.skipped);
+        }
+        await seedExtra(db, LocalDate(2026, 10, 23), const [
+          MuscleGroup.triceps,
+        ]);
+        return db;
+      }
+
+      testWidgets('M19: S-20, S-21, S-22, S-24, S-25', (tester) async {
+        final db = await seedMonth();
+        final c = await pump(tester, db, DateTime(2026, 10, 26, 18, 5));
+        await tapKey(tester, 'tab-schedule');
+        await shot(tester, 'm19_s20');
+        // S-21 ngày tập chưa đến: thứ 5 29/10 (Vai).
+        await tapKey(tester, 'month-cell-2026-10-29');
+        await shot(tester, 'm19_s21');
+        await dismiss(tester);
+        // S-21 quá 7 ngày: thứ 2 12/10 (đã tập, khóa).
+        await tapKey(tester, 'month-cell-2026-10-12');
+        await shot(tester, 'm19_s21_locked');
+        await dismiss(tester);
+        // S-24 buổi thêm: thứ 4 21/10 nghỉ, đã qua trong 7 ngày → từ S-21.
+        await tapKey(tester, 'month-cell-2026-10-21');
+        await tapKey(tester, 'day-log-extra');
+        await tapKey(tester, 'muscle-abs');
+        await shot(tester, 'm19_s24');
+        await dismiss(tester);
+        if (find
+            .byKey(const ValueKey('discard-confirm'))
+            .evaluate()
+            .isNotEmpty) {
+          await tapKey(tester, 'discard-confirm');
+        }
+        // S-25 của tuần 19/10 (đang chọn sau khi chạm ô 21/10): 3/4 +1.
+        await tapKey(tester, 'week-header-2026-10-19');
+        await shot(tester, 'm19_s25');
+        c.read(routerProvider).go('/schedule');
+        await tester.pumpAndSettle();
+        // Về đầu trang (danh sách dựng lười) rồi mở S-22, đang sửa thứ 4.
+        await tester.drag(find.byType(Scrollable).first, const Offset(0, 3000));
+        await tester.pumpAndSettle();
+        await tapKey(tester, 'open-weekly');
+        // Thứ 3 đang bật (mock sửa thứ 4; lịch chụp thứ 4 nghỉ).
+        await tapKey(tester, 'day-row-2');
+        await shot(tester, 'm19_s22');
+      });
+    }
   });
 }

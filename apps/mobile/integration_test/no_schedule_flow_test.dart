@@ -78,11 +78,11 @@ void main() {
     for (var w = DateTime.monday; w <= DateTime.saturday; w++) {
       await tapVisible(tester, find.byKey(ValueKey('day-switch-$w')));
       await tapVisible(tester, find.byKey(ValueKey('day-time-$w')));
-      await tester.tap(find.text(S.done));
+      await tester.tap(find.byKey(const ValueKey('time-done')));
       await tester.pumpAndSettle();
       await tapVisible(tester, find.byKey(const ValueKey('muscle-back')));
     }
-    await tapVisible(tester, find.widgetWithText(FilledButton, S.save));
+    await tapVisible(tester, find.byKey(const ValueKey('weekly-save')));
     await pumpUntil(tester, find.text(S.templateSaved));
     expect(find.byKey(const ValueKey('no-schedule')), findsNothing);
     expect(find.byKey(const ValueKey('redistribute-banner')), findsNothing);

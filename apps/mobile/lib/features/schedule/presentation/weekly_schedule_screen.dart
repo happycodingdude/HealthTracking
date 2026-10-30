@@ -6,22 +6,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/strings_vi.dart';
-import '../../../app/theme.dart';
-import '../../../core/widgets/heading.dart';
-import '../../../core/widgets/primary_button.dart';
-import '../../../core/widgets/toast.dart';
 import '../../../core/widgets/unsaved_changes.dart';
 import '../../../data/sync/sync_providers.dart';
+import '../../../ui/components/components.dart';
+import '../../../ui/theme.dart';
 import '../application/schedule_edits.dart';
-import '../application/schedule_providers.dart';
 import 'weekly_template_editor.dart';
 
-/// Đường dẫn S-22 (mở từ nút "Lịch tuần" ở S-20).
+/// Đường dẫn S-22 (mở từ icon lịch ở S-20).
 const weeklySchedulePath = '/schedule/weekly';
 
-/// S-22 — Lịch tuần, chế độ sửa sau khi thiết lập (04 S-22, F03-R7). Lưu
-/// không đổi lịch tháng hiện tại; quay lại S-20 có thông báo nhanh "Đã lưu
-/// lịch tuần", banner Chia lại và chấm ở tab Lịch tập.
+/// S-22 — Lịch tuần, chế độ sửa sau khi thiết lập (04 Bản 4 S-22, F03-R7):
+/// tiêu đề giữa "Lịch tuần", thẻ 7 dòng, nút cam "Lưu" ghim đáy. Lưu không
+/// đổi lịch tháng hiện tại; quay lại S-20 có thông báo nhanh "Đã lưu lịch
+/// tuần", banner Chia lại và chấm ở tab Tập luyện. Không câu "áp dụng từ
+/// tháng sau…" (FR4-04).
 class WeeklyScheduleScreen extends ConsumerStatefulWidget {
   const WeeklyScheduleScreen({super.key});
 
@@ -113,76 +112,34 @@ class _WeeklyScheduleScreenState extends ConsumerState<WeeklyScheduleScreen> {
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) unawaited(_back());
       },
-      child: Scaffold(
-        body: SafeArea(
-          bottom: false,
-          child: ListView(
-            padding: EdgeInsets.fromLTRB(
-              16,
-              8,
-              16,
-              MediaQuery.paddingOf(context).bottom + 24,
-            ),
-            children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  key: const ValueKey('weekly-back'),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.only(right: 12),
-                  ),
-                  onPressed: _back,
-                  icon: const Icon(Icons.chevron_left),
-                  label: const Text(S.tabTraining),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Heading(
-                S.weeklySchedule,
-                style: context.text.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              // Câu "áp dụng từ tháng sau / Chia lại" chỉ đúng khi đã có lịch:
-              // lần lưu đầu áp dụng ngay (F03-R23).
-              if (ref.watch(scheduleStateProvider)?.hasSchedule ?? true) ...[
-                const SizedBox(height: 4),
-                Text(
-                  S.weeklyEditHint,
-                  style: context.text.bodyLarge?.copyWith(
-                    color: context.palette.textSecondary,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 16),
-              WeeklyTemplateEditor(
-                days: _days,
-                expanded: _expanded,
-                errors: _errors,
-                rowKeys: _rowKeys,
-                onChanged: _changed,
-                onExpand: (w) => setState(() => _expanded = w),
-              ),
-              Padding(
-                key: _noDayKey,
-                padding: const EdgeInsets.only(top: 12),
-                child: noDay
-                    ? Semantics(
-                        liveRegion: true,
-                        child: Text(
-                          S.noWorkoutDay,
-                          style: context.text.bodyMedium?.copyWith(
-                            color: context.colors.error,
-                          ),
-                        ),
-                      )
-                    : const SizedBox.shrink(),
-              ),
-              const SizedBox(height: 12),
-              PrimaryButton(label: S.save, onPressed: _save),
-            ],
-          ),
+      child: IronlySubPage(
+        title: S.weeklySchedule,
+        onBack: _back,
+        bottom: IronlyButton.primary(
+          key: const ValueKey('weekly-save'),
+          label: S.save,
+          onPressed: _save,
         ),
+        children: [
+          WeeklyTemplateEditor(
+            days: _days,
+            expanded: _expanded,
+            errors: _errors,
+            rowKeys: _rowKeys,
+            onChanged: _changed,
+            onExpand: (w) => setState(() => _expanded = w),
+          ),
+          Padding(
+            key: _noDayKey,
+            padding: const EdgeInsets.only(top: TokenSpace.s3),
+            child: noDay
+                ? Semantics(
+                    liveRegion: true,
+                    child: Text(S.noWorkoutDay, style: IronlyText.error),
+                  )
+                : const SizedBox.shrink(),
+          ),
+        ],
       ),
     );
   }

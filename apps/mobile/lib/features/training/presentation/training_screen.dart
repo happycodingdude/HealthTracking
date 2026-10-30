@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/widgets/section_bar.dart';
+import '../../../ui/components/components.dart';
 import '../../library/presentation/library_screen.dart';
 import '../../progress/presentation/progress_screen.dart';
 import '../../schedule/presentation/schedule_screen.dart';
@@ -22,13 +22,14 @@ class TrainingScreen extends ConsumerWidget {
   }
 }
 
-/// Thanh chọn mục ở đầu mỗi mục của tab Tập luyện, ngay dưới tiêu đề.
+/// Thanh chọn mục ở đầu mỗi mục của tab Tập luyện (04 Bản 4 S-20: thanh nền
+/// thẻ bo 10, mục chọn nổi bo 8).
 class TrainingSectionBar extends ConsumerWidget {
   const TrainingSectionBar({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return SectionBar<TrainingSection>(
+    return SegmentBar<TrainingSection>(
       items: TrainingSection.values,
       selected: ref.watch(trainingTabProvider),
       label: (s) => s.label,

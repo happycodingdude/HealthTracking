@@ -221,6 +221,85 @@ final reviewMatrix = <ReviewCell>[
     state: 'hộp chênh 5 kg',
     mock: col(2, 2, 1050, 130),
   ),
+  // M19 — Tập luyện còn lại (trang 3): S-20, S-21, S-22, S-24, S-25 (VS-46);
+  // S-66, S-67, S-68, S-69, S-72 (VS-47).
+  ReviewCell(
+    id: 'm19_s20',
+    milestone: Milestone.m19,
+    screen: 'S-20',
+    state: 'lịch tháng, banner Chia lại, tuần này',
+    mock: col(3, 0, 180, 540),
+  ),
+  ReviewCell(
+    id: 'm19_s21',
+    milestone: Milestone.m19,
+    screen: 'S-21',
+    state: 'ngày tập chưa đến (3 nút + Trả về)',
+    mock: col(3, 1, 180, 230),
+  ),
+  ReviewCell(
+    id: 'm19_s21_locked',
+    milestone: Milestone.m19,
+    screen: 'S-21',
+    state: 'ngày quá 7 ngày: ổ khóa, nút mờ',
+    mock: col(3, 1, 415, 110),
+  ),
+  ReviewCell(
+    id: 'm19_s22',
+    milestone: Milestone.m19,
+    screen: 'S-22',
+    state: 'đang sửa Thứ 4',
+    mock: col(3, 2, 180, 505),
+  ),
+  ReviewCell(
+    id: 'm19_s24',
+    milestone: Milestone.m19,
+    screen: 'S-24',
+    state: 'buổi thêm, chọn Bụng',
+    mock: col(3, 1, 180, 230),
+  ),
+  ReviewCell(
+    id: 'm19_s25',
+    milestone: Milestone.m19,
+    screen: 'S-25',
+    state: '3/4 +1, dải tuần, danh sách ngày',
+    mock: col(3, 3, 180, 330),
+  ),
+  ReviewCell(
+    id: 'm19_s66',
+    milestone: Milestone.m19,
+    screen: 'S-66',
+    state: 'nhóm Ngực',
+    mock: col(3, 0, 805, 420),
+  ),
+  ReviewCell(
+    id: 'm19_s67',
+    milestone: Milestone.m19,
+    screen: 'S-67',
+    state: 'từ buổi, nấc máy, ghi chú',
+    mock: col(3, 1, 805, 440),
+  ),
+  ReviewCell(
+    id: 'm19_s68',
+    milestone: Milestone.m19,
+    screen: 'S-68',
+    state: 'tiến bộ, bài đã rời thư viện',
+    mock: col(3, 2, 805, 330),
+  ),
+  ReviewCell(
+    id: 'm19_s72',
+    milestone: Milestone.m19,
+    screen: 'S-72',
+    state: 'hộp đổi đơn vị',
+    mock: col(3, 2, 1140, 150),
+  ),
+  ReviewCell(
+    id: 'm19_s69',
+    milestone: Milestone.m19,
+    screen: 'S-69',
+    state: 'biểu đồ mức tạ',
+    mock: col(3, 3, 805, 300),
+  ),
 ];
 
 List<ReviewCell> cellsOf(Milestone m) => [

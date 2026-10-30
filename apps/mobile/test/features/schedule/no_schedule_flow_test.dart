@@ -157,7 +157,8 @@ void main() {
       await pump(tester);
       await tab(tester, S.tabTraining);
       expect(find.byKey(const ValueKey('no-schedule')), findsOneWidget);
-      expect(find.text(S.noScheduleInvite), findsOneWidget);
+      // Bản 4 (F4-R7): thẻ chỉ còn nút, không câu mời.
+      expect(find.text(S.noScheduleInvite), findsNothing);
       expect(find.byKey(const ValueKey('arrange-weekly')), findsOneWidget);
       expect(find.byKey(const ValueKey('open-weekly')), findsOneWidget);
       expect(find.byKey(const ValueKey('section-library')), findsOneWidget);
@@ -185,15 +186,11 @@ void main() {
       for (final (w, m) in [(3, 'back'), (5, 'shoulders')]) {
         await tapKey(tester, 'day-switch-$w');
         await tapKey(tester, 'day-time-$w');
-        await tester.tap(find.text(S.done));
+        await tester.tap(find.byKey(const ValueKey('time-done')));
         await tester.pumpAndSettle();
         await tapKey(tester, 'muscle-$m');
       }
-      final save = find.widgetWithText(FilledButton, S.save);
-      await tester.ensureVisible(save);
-      await tester.pumpAndSettle();
-      await tester.tap(save);
-      await tester.pumpAndSettle();
+      await tapKey(tester, 'weekly-save');
       expect(find.text(S.templateSaved), findsOneWidget);
       expect(find.byKey(const ValueKey('no-schedule')), findsNothing);
       expect(find.byKey(const ValueKey('redistribute-banner')), findsNothing);

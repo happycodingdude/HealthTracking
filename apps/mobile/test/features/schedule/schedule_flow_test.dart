@@ -9,6 +9,7 @@ import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/features/me/data/profile_repository.dart';
 import 'package:mobile/features/onboarding/application/setup_state.dart';
 import 'package:mobile/features/schedule/data/schedule_repository.dart';
+import 'package:mobile/ui/components/ironly_switch.dart';
 import 'package:mobile/ui/components/ironly_tab_bar.dart';
 
 import '../../support/app_harness.dart';
@@ -101,9 +102,12 @@ void main() {
       await pump(tester);
       expect(find.text(S.stepOf(4)), findsOneWidget);
       expect(find.text(S.scheduleStepTitle), findsOneWidget);
-      expect(find.text(S.alwaysRest), findsOneWidget);
+      // Bản 4 (04 S-22): chủ nhật chữ mờ + ổ khóa thay câu "Luôn nghỉ".
+      expect(find.text(S.alwaysRest), findsNothing);
+      expect(find.byKey(const ValueKey('sunday-locked')), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp(S.alwaysRest)), findsOneWidget);
       expect(find.byKey(const ValueKey('day-switch-7')), findsNothing);
-      expect(find.byType(Switch), findsNWidgets(6));
+      expect(find.byType(IronlySwitch), findsNWidgets(6));
 
       await tapText(tester, S.saveSchedule);
       expect(find.text(S.noWorkoutDay), findsOneWidget);
@@ -133,7 +137,7 @@ void main() {
       await setDay(tester, 5, [MuscleGroup.shoulders]);
       // Dòng đã thu gọn hiện tóm tắt.
       await tapKey(tester, 'day-row-5');
-      expect(find.text('18:00 · Ngực và tay sau'), findsOneWidget);
+      expect(find.text('Ngực và Tay sau · 18:00'), findsOneWidget);
 
       await tapText(tester, S.saveSchedule);
       expect(find.text(S.stepOf(5)), findsOneWidget);
@@ -195,11 +199,11 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await pump(tester);
     expect(find.text(S.stepOf(4)), findsOneWidget);
-    final on = tester.widget<Switch>(
+    final on = tester.widget<IronlySwitch>(
       find.byKey(const ValueKey('day-switch-1')),
     );
     expect(on.value, isTrue);
-    expect(find.text('18:00 · Ngực'), findsOneWidget);
+    expect(find.text('Ngực · 18:00'), findsOneWidget);
   });
 
   testWidgets(
@@ -224,16 +228,22 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      // Bản 4 (04 S-20): lưới tháng 7 cột; ngày trước ngày thiết lập là ô
+      // nghỉ mờ; danh sách buổi của tuần đang chọn ở dưới; không câu
+      // "Lịch tháng 11 sẽ…" (FR4-04).
       expect(find.text(S.monthTitle(10, 2026)), findsOneWidget);
-      expect(find.text('T4 07/10'), findsOneWidget);
       expect(
-        find.text('T2 05/10'),
-        findsNothing,
+        find.byKey(const ValueKey('month-cell-2026-10-07')),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel('Thứ 2, 05/10: ${S.rest}'),
+        findsOneWidget,
         reason: 'trước ngày thiết lập',
       );
-      expect(find.text('Lưng · 18:00'), findsWidgets);
-      expect(find.text('CN 11/10'), findsOneWidget);
-      expect(find.text(S.nextMonthNotice(11)), findsOneWidget);
+      expect(find.text('Lưng'), findsWidgets);
+      expect(find.text('Thứ 4 · 18:00'), findsOneWidget);
+      expect(find.text(S.nextMonthNotice(11)), findsNothing);
       expect(find.byKey(const ValueKey('month-next')), findsNothing);
       expect(find.byKey(const ValueKey('month-previous')), findsNothing);
 
@@ -244,8 +254,16 @@ void main() {
       final nov = await ScheduleRepository(db).plan(YearMonth(2026, 11));
       expect(nov!.startDate, LocalDate(2026, 11, 1));
       expect(find.text(S.monthTitle(11, 2026)), findsOneWidget);
-      expect(find.text('T2 02/11'), findsOneWidget);
-      expect(find.text('Ngực và tay sau · 18:00'), findsWidgets);
+      expect(
+        find.byKey(const ValueKey('month-cell-2026-11-02')),
+        findsOneWidget,
+      );
+      // Tuần chứa hôm nay (01/11) thuộc tháng 10 → danh sách tuần trống;
+      // chạm ô 02/11 → S-21 "Ngực và Tay sau · 18:00".
+      await tapKey(tester, 'month-cell-2026-11-02');
+      expect(find.text('Ngực và Tay sau · 18:00'), findsOneWidget);
+      await tester.tapAt(const Offset(195, 60));
+      await tester.pumpAndSettle();
 
       await tapKey(tester, 'month-previous');
       expect(find.text(S.monthTitle(10, 2026)), findsOneWidget);
@@ -283,11 +301,19 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      final row = tester.getRect(find.text('T3 27/10'));
-      expect(row.top, greaterThan(0));
+      // Bản 4: lưới tháng gọn, ô hôm nay và tuần này thấy ngay, không bị
+      // thanh tab che.
+      final cell = tester.getRect(
+        find.byKey(const ValueKey('month-cell-2026-10-27')),
+      );
+      expect(cell.top, greaterThan(0));
       expect(
-        row.bottom,
+        cell.bottom,
         lessThanOrEqualTo(tester.getRect(find.byType(IronlyTabBar)).top),
+      );
+      expect(
+        find.byKey(const ValueKey('week-header-2026-10-26')),
+        findsOneWidget,
       );
     },
   );

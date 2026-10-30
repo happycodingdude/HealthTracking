@@ -16,6 +16,7 @@ import 'package:mobile/features/schedule/presentation/day_sheet.dart';
 import 'package:mobile/features/schedule/presentation/muscle_picker.dart';
 import 'package:mobile/features/schedule/presentation/schedule_screen.dart';
 import 'package:mobile/features/workout/presentation/session_screen.dart';
+import 'package:mobile/ui/components/ironly_button.dart';
 import 'package:mobile/ui/components/ironly_tab_bar.dart';
 
 import '../../support/app_harness.dart';
@@ -74,18 +75,12 @@ void main() {
 
   Future<void> tapKey(WidgetTester tester, String key) async {
     final f = find.byKey(ValueKey(key));
-    // S-20 tự cuộn tới hôm nay; phần đầu (tiêu đề, thanh chọn mục, nút "Lịch
-    // tuần") có thể đã ra khỏi vùng dựng sẵn của danh sách → cuộn lên.
+    // Phần tử ngoài khung nhìn (S-22 dài, S-21 cuộn): cuộn danh sách gần nhất.
     if (f.evaluate().isEmpty) {
       await tester.scrollUntilVisible(
-        f,
-        -300,
-        scrollable: find
-            .descendant(
-              of: find.byType(ScheduleScreen),
-              matching: find.byType(Scrollable),
-            )
-            .first,
+        find.byKey(ValueKey(key), skipOffstage: false),
+        200,
+        scrollable: find.byType(Scrollable).last,
       );
     }
     await tester.ensureVisible(f);
@@ -95,6 +90,15 @@ void main() {
   }
 
   /// Mở S-21 của ngày [date] như chạm vào dòng ở S-20.
+  /// "Lưu" của S-22 (`weekly-save`) hoặc của khối sửa trong S-21 (`day-save`).
+  Future<void> tapSave(WidgetTester tester) async {
+    final weekly = find.byKey(const ValueKey('weekly-save'));
+    await tapKey(
+      tester,
+      weekly.evaluate().isEmpty ? 'day-save' : 'weekly-save',
+    );
+  }
+
   Future<void> open(WidgetTester tester, LocalDate date) async {
     unawaited(showDaySheet(tester.element(find.byType(ScheduleScreen)), date));
     await tester.pumpAndSettle();
@@ -112,12 +116,13 @@ void main() {
         await pump(tester);
         await tapKey(tester, 'day-2026-10-16');
         expect(find.text('Thứ 6, 16/10'), findsOneWidget);
-        expect(find.text('Vai · 18:00 · ${S.fromTemplate}'), findsOneWidget);
+        // Bản 4: dòng chữ phụ "Vai · 18:00", không "Theo lịch tuần" (FR4-04).
+        expect(find.text('Vai · 18:00'), findsOneWidget);
         for (final k in ['day-change-time', 'day-change-muscles', 'day-rest']) {
           expect(find.byKey(ValueKey(k)), findsOneWidget, reason: k);
         }
         expect(find.byKey(const ValueKey('day-revert')), findsNothing);
-        expect(find.text(S.onlyThisDay), findsOneWidget);
+        expect(find.text(S.onlyThisDay), findsNothing);
       },
     );
 
@@ -141,7 +146,7 @@ void main() {
         await seedSetUp(db);
         await pump(tester);
         await open(tester, LocalDate(2026, 10, 15));
-        expect(find.text('Thứ 5, 15/10 · Hôm nay'), findsOneWidget);
+        expect(find.text('Thứ 5, 15/10'), findsOneWidget);
         expect(find.text(S.scheduleToday), findsOneWidget);
         expect(find.text(S.logExtraSession), findsOneWidget);
         await tapKey(tester, 'day-log-extra');
@@ -153,9 +158,12 @@ void main() {
         await open(tester, LocalDate(2026, 10, 15));
         expect(find.text(S.scheduleToday), findsNothing);
         expect(find.text(S.logExtraSession), findsNothing);
-        expect(find.text(S.extraSessionLine('Bụng')), findsOneWidget);
-        expect(find.byKey(const ValueKey('locked-on-save')), findsOneWidget);
-        expect(find.text(S.extraBlocksSchedule), findsOneWidget);
+        // Bản 4: "Nghỉ · Bụng" + dấu "+" ở tiêu đề; không câu "Đã chốt khi
+        // lưu", không câu F03-E4 (FR4-04).
+        expect(find.text(S.restWithExtra('Bụng')), findsOneWidget);
+        expect(find.bySemanticsLabel(S.extraSession), findsOneWidget);
+        expect(find.byKey(const ValueKey('locked-on-save')), findsNothing);
+        expect(find.text(S.extraBlocksSchedule), findsNothing);
       },
     );
 
@@ -167,7 +175,7 @@ void main() {
         await pump(tester);
         await open(tester, LocalDate(2026, 10, 9));
         expect(find.byKey(const ValueKey('day-change-time')), findsNothing);
-        expect(find.text(S.changeableUntil('16/10')), findsOneWidget);
+        expect(find.text(S.changeableUntil('16/10')), findsNothing);
         expect(
           find.byKey(const ValueKey('change-to-done-2026-10-09')),
           findsOneWidget,
@@ -189,7 +197,12 @@ void main() {
         scheduler.fireSync();
         await tester.pumpAndSettle();
         await open(tester, LocalDate(2026, 10, 7));
-        expect(find.text(S.lockedNote), findsOneWidget);
+        // Bản 4: ổ khóa cạnh dòng tóm tắt, nút "Đổi sang Đã tập" mờ (F4-R6).
+        expect(find.bySemanticsLabel(S.lockedNote), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('change-to-done-2026-10-07-locked')),
+          findsOneWidget,
+        );
         expect(
           find.byKey(const ValueKey('change-to-done-2026-10-07')),
           findsNothing,
@@ -198,8 +211,9 @@ void main() {
         await tester.pumpAndSettle();
 
         await open(tester, LocalDate(2026, 10, 18));
-        expect(find.text(S.sundayRest), findsOneWidget);
-        expect(find.byType(ListTile), findsNothing);
+        expect(find.text('Chủ nhật, 18/10'), findsOneWidget);
+        expect(find.text(S.sundayRest), findsNothing);
+        expect(find.byType(IronlyButton), findsNothing);
       },
     );
   });
@@ -215,13 +229,7 @@ void main() {
       await pump(tester);
       final wed7 = LocalDate(2026, 10, 7);
       await open(tester, wed7);
-      expect(
-        find.descendant(
-          of: find.byKey(const ValueKey('day-summary')),
-          matching: find.text(S.statusAwaiting),
-        ),
-        findsOneWidget,
-      );
+      expect(find.bySemanticsLabel(S.statusAwaiting), findsWidgets);
       await tapKey(tester, 'mark-done-${wed7.toKey()}');
       expect(find.text(S.doneConfirmTitle('Lưng')), findsOneWidget);
       expect(find.byKey(const ValueKey('lock-confirm-line2')), findsNothing);
@@ -238,7 +246,9 @@ void main() {
       expect((await day(7)).mark, DayMark.done);
 
       await open(tester, wed7);
-      expect(find.byKey(const ValueKey('locked-on-save')), findsOneWidget);
+      // Bản 4: dấu tích ở tiêu đề, không câu "Đã chốt khi lưu".
+      expect(find.bySemanticsLabel(S.sessionDone), findsWidgets);
+      expect(find.byKey(const ValueKey('locked-on-save')), findsNothing);
       expect(
         find.byKey(ValueKey('mark-skipped-${wed7.toKey()}')),
         findsNothing,
@@ -273,16 +283,10 @@ void main() {
       await pump(tester);
       await open(tester, LocalDate(2026, 10, 22));
       await tapKey(tester, 'day-schedule');
-      await tester.ensureVisible(find.widgetWithText(FilledButton, S.save));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, S.save));
-      await tester.pumpAndSettle();
+      await tapSave(tester);
       expect(find.text(S.missingTimeOrMuscles), findsOneWidget);
       await tapKey(tester, 'muscle-abs');
-      await tester.ensureVisible(find.widgetWithText(FilledButton, S.save));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, S.save));
-      await tester.pumpAndSettle();
+      await tapSave(tester);
       expect(find.text('Đã sửa riêng Thứ 5 22/10'), findsOneWidget);
       final d = await day(22);
       expect((d.isWorkout, d.time), (true, LocalTime(18, 0)));
@@ -291,9 +295,17 @@ void main() {
         notifications.scheduled.map((n) => n.at),
         contains(DateTime(2026, 10, 22, 17)),
       );
+      // Bản 4: chấm "Đã sửa riêng" (VoiceOver đọc trong nhãn dòng); danh
+      // sách tuần hiện tuần của ô vừa chạm.
+      await tapKey(tester, 'month-cell-2026-10-22');
+      await tester.tapAt(const Offset(195, 60));
+      await tester.pumpAndSettle();
       final row = find.byKey(const ValueKey('day-2026-10-22'));
       expect(
-        find.descendant(of: row, matching: find.text(S.overridden)),
+        find.descendant(
+          of: row,
+          matching: find.bySemanticsLabel(RegExp(S.overridden)),
+        ),
         findsOneWidget,
       );
 
@@ -359,14 +371,11 @@ void main() {
       expect(find.byKey(const ValueKey('tab-dot-schedule')), findsNothing);
 
       await tapKey(tester, 'open-weekly');
-      expect(find.text(S.weeklyEditHint), findsOneWidget);
+      expect(find.text(S.weeklyEditHint), findsNothing);
       await tapKey(tester, 'day-row-3');
       await tapKey(tester, 'muscle-back');
       await tapKey(tester, 'muscle-shoulders');
-      await tester.ensureVisible(find.widgetWithText(FilledButton, S.save));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, S.save));
-      await tester.pumpAndSettle();
+      await tapSave(tester);
       expect(find.text(S.templateSaved), findsOneWidget);
       expect(find.byKey(const ValueKey('redistribute-banner')), findsOneWidget);
       expect(find.text(S.templateChangedBanner), findsOneWidget);
@@ -402,10 +411,7 @@ void main() {
       await tapKey(tester, 'day-row-3');
       await tapKey(tester, 'muscle-back');
       await tapKey(tester, 'muscle-shoulders');
-      await tester.ensureVisible(find.widgetWithText(FilledButton, S.save));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, S.save));
-      await tester.pumpAndSettle();
+      await tapSave(tester);
       expect(find.byKey(const ValueKey('redistribute-banner')), findsOneWidget);
 
       clock.set(DateTime(2026, 11, 1, 0, 0, 1));
@@ -428,7 +434,7 @@ void main() {
       await pump(tester);
       await tapKey(tester, 'open-weekly');
       await tapKey(tester, 'day-switch-2');
-      await tapKey(tester, 'weekly-back');
+      await tapKey(tester, 'page-back');
       expect(find.text(S.discardChangesTitle), findsOneWidget);
       await tester.tap(find.text(S.discard));
       await tester.pumpAndSettle();
@@ -492,7 +498,7 @@ void main() {
       await tapKey(tester, 'open-weekly');
       await tapKey(tester, 'day-row-3');
       expectSevenPills(tester);
-      await tapKey(tester, 'weekly-back');
+      await tapKey(tester, 'page-back');
 
       await open(tester, LocalDate(2026, 10, 22));
       await tapKey(tester, 'day-schedule');
@@ -540,13 +546,10 @@ void main() {
       await tapKey(tester, 'open-weekly');
       await tapKey(tester, 'day-switch-5');
       await tapKey(tester, 'day-time-5');
-      await tester.tap(find.text(S.done).last);
+      await tester.tap(find.byKey(const ValueKey('time-done')));
       await tester.pumpAndSettle();
       await tapKey(tester, 'muscle-legs');
-      await tester.ensureVisible(find.widgetWithText(FilledButton, S.save));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, S.save));
-      await tester.pumpAndSettle();
+      await tapSave(tester);
       await tapKey(tester, 'redistribute');
       await tapKey(tester, 'confirm-redistribute');
 
@@ -556,7 +559,10 @@ void main() {
         expect(fri.time, LocalTime(18, 0), reason: '$d/10');
         expect(fri.muscles, [MuscleGroup.legs], reason: '$d/10');
       }
-      expect(find.text('T6 16/10'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('month-cell-2026-10-16')),
+        findsOneWidget,
+      );
 
       container.read(routerProvider).go('/schedule/session/2026-10-16');
       await tester.pumpAndSettle();
