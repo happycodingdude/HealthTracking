@@ -15,7 +15,7 @@ dependencies:
     path: ../../packages/api_contract
   # 7.3.2 kéo nm 0.6 → dbus 0.8, xung đột với flutter_local_notifications 20
   # (gói Linux cần dbus 0.7). App chỉ chạy iOS; bỏ ghim khi hai bên cùng dbus.
-  connectivity_plus: ">=7.3.0 <7.3.2"
+  connectivity_plus: ^7.3.2
   dio: ^5.11.1
   domain:
     path: ../../packages/domain
@@ -25,7 +25,7 @@ dependencies:
   fl_chart: 1.0.0
   flutter:
     sdk: flutter
-  flutter_local_notifications: ^20.1.0
+  flutter_local_notifications: ^22.3.2
   flutter_localizations:
     sdk: flutter
   flutter_riverpod: ^3.4.3
@@ -41,7 +41,7 @@ dependencies:
   sentry_flutter: ^9.30.1
   # Cờ logout_pending trong UserDefaults (05 Bản 3 TD3-17).
   shared_preferences: ^2.5.6
-  timezone: ^0.10.1
+  timezone: ^0.11.2
   url_launcher: ^6.3.2
   uuid: ^4.6.0
   # Chặn WebView của trình phát chỉ tải miền YouTube (05 Bản 2 §6.4.6, §6.13).
