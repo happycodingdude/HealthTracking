@@ -117,12 +117,12 @@ void main() {
 
   bool meDot() => container.read(tabDotsProvider).contains(AppTab.me);
 
-  testWidgets('04 S-50: dòng "Hồ sơ cơ thể" "175 cm · 30 tuổi · Nam", "Mức '
+  testWidgets('04 S-50: dòng "Hồ sơ cơ thể" "175 cm · Nam", "Mức '
       'calo" "2.210 kcal · Tự động"; chạm → S-51, S-52', (tester) async {
     await seedSetUp(db);
     await pump(tester);
     await openMe(tester);
-    expect(find.text('175 cm · 30 tuổi · Nam'), findsOneWidget);
+    expect(find.text('175 cm · Nam'), findsOneWidget);
     expect(find.text('2.210 kcal · Tự động'), findsOneWidget);
     expect(find.byKey(const ValueKey('row-dot')), findsNothing);
 
@@ -404,7 +404,7 @@ void main() {
     await tapText(tester, S.discard);
     expect(find.byKey(const ValueKey('row-profile')), findsOneWidget);
     expect((await profile()).sex, Sex.male);
-    expect(find.text('175 cm · 30 tuổi · Nam'), findsOneWidget);
+    expect(find.text('175 cm · Nam'), findsOneWidget);
   });
 
   testWidgets('04 Bản 4 S-51: cân nặng hiện tại là số cân mới nhất, chỉ xem; '

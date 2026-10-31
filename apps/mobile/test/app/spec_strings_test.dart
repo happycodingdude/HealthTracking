@@ -37,7 +37,6 @@ void main() {
 
   test('OB-1, mock S-03, S-04/S-52, F02-R5: câu có tham số', () {
     expect(S.stepOf(2), 'Bước 2/5');
-    expect(S.ageYears(30), '30 tuổi');
     expect(S.belowMaintenance('690'), 'Thấp hơn mức duy trì khoảng 690 kcal');
     expect(
       S.lowCalorieWarning('1.500'),
@@ -115,7 +114,7 @@ void main() {
   });
 
   test('F02-R8, F02-R9, 04 S-50, S-52, S-53: câu mức calo có tham số', () {
-    expect(S.profileSummary(175, 30, 'Nam'), '175 cm · 30 tuổi · Nam');
+    expect(S.profileSummary(175, 'Nam'), '175 cm · Nam');
     expect(S.calorieSummary('2.210 kcal', 'Tự động'), '2.210 kcal · Tự động');
     expect(
       S.calorieUpdated('2.210', '2.090'),

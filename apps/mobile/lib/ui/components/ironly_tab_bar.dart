@@ -28,6 +28,15 @@ class IronlyTabBar extends StatelessWidget {
   /// Nhãn thanh tab chỉ phóng tới mức này, giống thanh tab hệ thống.
   static const maxLabelScale = 1.35;
 
+  // Icon của 4 mục thường: cách mép thanh 7, cỡ 24, cách nhãn 3.
+  static const _iconTop = 7.0;
+  static const _iconSize = 24.0;
+  static const _labelGap = 3.0;
+
+  /// Mép trên nhãn của mọi mục, kể cả Hôm nay: 5 nhãn cùng một hàng (mock
+  /// thanh tab 04 Bản 4).
+  static const labelTop = protrusion + _iconTop + _iconSize + _labelGap;
+
   @override
   Widget build(BuildContext context) {
     final t = context.tokens;
@@ -119,7 +128,7 @@ class _TabItem extends StatelessWidget {
           onTap: onTap,
           child: Padding(
             padding: const EdgeInsets.only(
-              top: IronlyTabBar.protrusion + 7,
+              top: IronlyTabBar.protrusion + IronlyTabBar._iconTop,
               bottom: 4,
             ),
             child: Column(
@@ -127,7 +136,11 @@ class _TabItem extends StatelessWidget {
                 Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    Icon(_icon(tab), size: 24, color: color),
+                    Icon(
+                      _icon(tab),
+                      size: IronlyTabBar._iconSize,
+                      color: color,
+                    ),
                     if (dot)
                       Positioned(
                         right: -3,
@@ -144,7 +157,7 @@ class _TabItem extends StatelessWidget {
                       ),
                   ],
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: IronlyTabBar._labelGap),
                 Expanded(child: _Label(tab.label, color: color)),
               ],
             ),
@@ -204,6 +217,7 @@ class _TodayItem extends StatelessWidget {
                   ),
                 ),
               ),
+              const SizedBox(height: IronlyTabBar.labelTop - outer),
               Expanded(
                 child: _Label(
                   AppTab.today.label,

@@ -185,18 +185,16 @@ class FieldBlock extends StatelessWidget {
   }
 }
 
-/// Ô "Năm sinh 1996 ›" (giá trị + tuổi chữ phụ).
+/// Ô "Năm sinh 1996 ›". Không hiện số tuổi (Bạn quyết 31/10/2026).
 class BirthYearField extends StatelessWidget {
   const BirthYearField({
     super.key,
     required this.year,
-    required this.age,
     required this.hasError,
     required this.onTap,
   });
 
   final int? year;
-  final int? age;
   final bool hasError;
   final VoidCallback onTap;
 
@@ -206,7 +204,6 @@ class BirthYearField extends StatelessWidget {
       key: const ValueKey('birth-year-field'),
       label: S.fieldBirthYear,
       value: year?.toString() ?? '',
-      unit: age == null ? null : S.ageYears(age!),
       error: hasError ? '' : null,
       onTap: onTap,
     );
@@ -214,7 +211,7 @@ class BirthYearField extends StatelessWidget {
 }
 
 /// Bánh xe chọn năm sinh trong bảng trượt, chỉ trong khoảng 18–80 tuổi
-/// (S-03, 04 §6.13.5); nút "Xong".
+/// (S-03, 04 §6.13.5); nút "Xong". Mỗi dòng chỉ có năm, không hiện số tuổi.
 class BirthYearPicker extends StatefulWidget {
   const BirthYearPicker({
     super.key,

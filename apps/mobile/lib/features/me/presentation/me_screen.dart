@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../app/providers.dart';
 import '../../../app/shell/app_tab.dart';
 import '../../../app/strings_vi.dart';
 import '../../../core/formatters.dart';
@@ -37,7 +36,6 @@ class MeScreen extends ConsumerWidget {
     final profile = ref.watch(profileProvider).value;
     final view = ref.watch(calorieViewProvider);
     final budget = ref.watch(aiBudgetViewProvider);
-    final year = ref.watch(clockProvider).now().year;
     final name = ref.watch(displayNameProvider).value ?? '';
     final phone = ref.watch(authControllerProvider).phone;
     return IronlyTabPage(
@@ -95,7 +93,6 @@ class MeScreen extends ConsumerWidget {
                   ? null
                   : S.profileSummary(
                       profile.heightCm!,
-                      ProfileRules.age(profile.birthYear!, year),
                       profile.sex == Sex.male ? S.sexMale : S.sexFemale,
                     ),
               chevron: true,

@@ -206,7 +206,8 @@ void main() {
       await pump(tester);
       await tapText(tester, S.iUnderstand);
       await fillProfile(tester);
-      expect(find.text(S.ageYears(30)), findsOneWidget);
+      // Bạn quyết 31/10/2026: không hiện số tuổi.
+      expect(find.textContaining('30 tuổi'), findsNothing);
       await tapText(tester, S.continueLabel);
 
       expect(find.bySemanticsLabel(S.stepOf(3)), findsOneWidget);
@@ -292,7 +293,7 @@ void main() {
     await pump(tester);
     expect(find.text(S.profileTitle), findsOneWidget);
     expect(find.text('1971'), findsOneWidget);
-    expect(find.text(S.ageYears(55)), findsOneWidget);
+    expect(find.textContaining('55 tuổi'), findsNothing);
     await tapText(tester, S.continueLabel);
     expect(find.text('1.200 kcal', findRichText: true), findsOneWidget);
     expect(find.text(S.noteMaintenanceBelowFloor), findsOneWidget);

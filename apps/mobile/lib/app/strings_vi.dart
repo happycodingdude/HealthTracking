@@ -54,9 +54,6 @@ abstract final class S {
   /// "Bước {n}/5" (OB-1).
   static String stepOf(int step) => 'Bước $step/5';
 
-  /// "{n} tuổi" (mock S-03).
-  static String ageYears(int age) => '$age tuổi';
-
   /// "Thấp hơn mức duy trì khoảng {N} kcal" (S-04, S-52); [kcal] đã định dạng.
   static String belowMaintenance(String kcal) =>
       'Thấp hơn mức duy trì khoảng $kcal kcal';
@@ -423,9 +420,9 @@ abstract final class S {
   static const updateCalorieTitle = 'Cập nhật mức calo?';
   static const keepCurrent = 'Giữ nguyên';
 
-  /// 04 S-50: "175 cm · 30 tuổi · Nam".
-  static String profileSummary(int heightCm, int age, String sex) =>
-      '$heightCm cm · $age tuổi · $sex';
+  /// 04 S-50: "175 cm · Nam" (không hiện số tuổi, Bạn quyết 31/10/2026).
+  static String profileSummary(int heightCm, String sex) =>
+      '$heightCm cm · $sex';
 
   /// 04 S-50: "2.210 kcal · Tự động".
   static String calorieSummary(String kcal, String mode) => '$kcal · $mode';

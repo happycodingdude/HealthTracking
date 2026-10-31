@@ -137,7 +137,6 @@ class _ProfileStepScreenState extends ConsumerState<ProfileStepScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final year = ref.watch(clockProvider).now().year;
     // 04 Bản 4 S-03: ô dạng thẻ; không dòng "Dùng để ước tính mức calo tham
     // khảo" (FR4-04, FR4-05).
     return OnboardingScaffold(
@@ -168,9 +167,6 @@ class _ProfileStepScreenState extends ConsumerState<ProfileStepScreen> {
           error: _error(ProfileField.birthYear),
           child: BirthYearField(
             year: _birthYear,
-            age: _birthYear == null
-                ? null
-                : ProfileRules.age(_birthYear!, year),
             hasError: _errors.contains(ProfileField.birthYear),
             onTap: _pickBirthYear,
           ),

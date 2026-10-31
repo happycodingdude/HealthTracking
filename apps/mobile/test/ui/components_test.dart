@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/app/shell/app_tab.dart';
 import 'package:mobile/ui/components/components.dart';
 import 'package:mobile/ui/keys.dart';
 import 'package:mobile/ui/theme.dart';
@@ -237,4 +239,74 @@ void main() {
     expect(theme.extension<IronlyTokens>(), isNotNull);
     expect(theme.colorScheme.primary, TokenColor.accent);
   });
+
+  testWidgets(
+    'Thanh tab: nhãn Hôm nay cùng hàng với 4 nhãn kia (mock 04 Bản 4)',
+    (tester) async {
+      await tester.pumpWidget(
+        goldenHost(
+          GoldenVariant.normal,
+          Scaffold(
+            bottomNavigationBar: IronlyTabBar(
+              current: AppTab.schedule,
+              onTap: (_) {},
+            ),
+          ),
+        ),
+      );
+      final tops = {
+        for (final tab in AppTab.values)
+          tab: tester.getTopLeft(find.text(tab.label)).dy,
+      };
+      for (final tab in AppTab.values) {
+        expect(
+          tops[tab],
+          moreOrLessEquals(tops[AppTab.schedule]!),
+          reason: tab.name,
+        );
+      }
+    },
+  );
+
+  testWidgets(
+    'IronlyTabPage: nút phải 44 không đẩy tiêu đề và nội dung xuống (mục Lịch ↔ Bài tập)',
+    (tester) async {
+      Future<(double, double)> layout({required bool withButton}) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            child: goldenHost(
+              GoldenVariant.normal,
+              IronlyTabPage(
+                tab: AppTab.schedule,
+                title: 'Tập luyện',
+                scrollController: ScrollController(),
+                trailing: withButton
+                    ? GestureDetector(
+                        key: const ValueKey('btn'),
+                        onTap: () {},
+                        child: const SizedBox(width: 44, height: 44),
+                      )
+                    : null,
+                children: const [SizedBox(key: ValueKey('body'), height: 10)],
+              ),
+            ),
+          ),
+        );
+        return (
+          tester.getTopLeft(find.text('Tập luyện')).dy,
+          tester.getTopLeft(find.byKey(const ValueKey('body'))).dy,
+        );
+      }
+
+      final plain = await layout(withButton: false);
+      final button = await layout(withButton: true);
+      expect(button.$1, moreOrLessEquals(plain.$1, epsilon: 0.5));
+      expect(button.$2, moreOrLessEquals(plain.$2, epsilon: 0.5));
+      // Vùng chạm đủ 44 × 44 (04 Bản 1).
+      expect(
+        tester.getSize(find.byKey(const ValueKey('btn'))),
+        const Size(44, 44),
+      );
+    },
+  );
 }

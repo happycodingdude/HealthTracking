@@ -102,7 +102,7 @@ class _ComponentGalleryState extends State<ComponentGallery> {
           children: [
             IronlyRow(
               title: 'Row with value',
-              subtitle: S.profileSummary(175, 30, S.sexMale),
+              subtitle: S.profileSummary(175, S.sexMale),
               leading: const CircleIcon(Icons.person_outline),
               chevron: true,
               onTap: () {},

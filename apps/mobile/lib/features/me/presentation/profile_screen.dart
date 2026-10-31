@@ -165,7 +165,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final year = ref.watch(clockProvider).now().year;
     final weight = ref.watch(latestWeightProvider).value;
     final t = context.tokens;
     return PopScope<Object?>(
@@ -225,9 +224,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 error: _error(ProfileField.birthYear),
                 child: BirthYearField(
                   year: _birthYear,
-                  age: _birthYear == null
-                      ? null
-                      : ProfileRules.age(_birthYear!, year),
                   hasError: _errors.contains(ProfileField.birthYear),
                   onTap: _pickBirthYear,
                 ),

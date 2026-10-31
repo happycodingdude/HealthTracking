@@ -34,8 +34,30 @@ class IronlyTabPage extends ConsumerWidget {
   final String? header;
   final Key? listKey;
 
+  /// Vùng chạm tối thiểu của nút (04 Bản 1: 44 × 44 điểm).
+  static const _tapTarget = 44.0;
+
+  /// Phần đệm hàng tiêu đề mượn từ khoảng trống trên và dưới để nút phải
+  /// (icon lịch S-20) đủ vùng chạm 44 mà hàng không cao thêm: tiêu đề và nội
+  /// dung bên dưới đứng cùng chỗ dù trang có nút hay không.
+  double _borrow(BuildContext context) {
+    if (trailing == null || header != null) return 0;
+    final text = DefaultTextStyle.of(context);
+    final painter = TextPainter(
+      text: TextSpan(text: title, style: text.style.merge(IronlyText.title)),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      textHeightBehavior: text.textHeightBehavior,
+      maxLines: 1,
+    )..layout();
+    final line = painter.height;
+    painter.dispose();
+    return ((_tapTarget - line) / 2).clamp(0.0, TokenSpace.s3);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final borrow = _borrow(context);
     return Scaffold(
       body: SafeArea(
         bottom: false,
@@ -46,27 +68,32 @@ class IronlyTabPage extends ConsumerWidget {
               ref.watch(tabScrollControllersProvider).of(tab),
           padding: EdgeInsets.fromLTRB(
             pageInset,
-            TokenSpace.s3,
+            TokenSpace.s3 - borrow,
             pageInset,
             MediaQuery.paddingOf(context).bottom + 40,
           ),
           children: [
             if (header != null)
               Text(header!.toUpperCase(), style: IronlyText.groupLabel),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: Semantics(
-                    header: true,
-                    child: Text(title, style: IronlyText.title),
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: borrow == 0 ? 0 : _tapTarget,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Semantics(
+                      header: true,
+                      child: Text(title, style: IronlyText.title),
+                    ),
                   ),
-                ),
-                if (trailing != null)
-                  KeyedSubtree(key: K.pageTrailing, child: trailing!),
-              ],
+                  if (trailing != null)
+                    KeyedSubtree(key: K.pageTrailing, child: trailing!),
+                ],
+              ),
             ),
-            const SizedBox(height: TokenSpace.s4),
+            SizedBox(height: TokenSpace.s4 - borrow),
             ...children,
           ],
         ),

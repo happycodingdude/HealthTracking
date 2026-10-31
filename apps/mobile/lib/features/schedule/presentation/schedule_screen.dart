@@ -71,7 +71,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
             onTap: () => context.push(weeklySchedulePath),
             child: SizedBox(
               width: 44,
-              height: 36,
+              height: 44,
               child: Icon(Icons.calendar_month_outlined, color: t.accent),
             ),
           ),
