@@ -37,10 +37,14 @@ trap cleanup EXIT
 for _ in $(seq 1 60); do curl -sf "http://127.0.0.1:$PORT/healthz" >/dev/null && break; sleep 1; done
 
 if [ -z "$DEVICE" ]; then
-  DEVICE="$(xcrun simctl list devices booted | grep -Eo '\([0-9A-F-]{36}\)' | head -1 | tr -d '()')"
+  # grep không thấy simulator nào đang bật thì trả mã lỗi; với pipefail + set -e
+  # script sẽ dừng không báo gì, nên chặn mã lỗi để rơi xuống nhánh tự bật.
+  DEVICE="$(xcrun simctl list devices booted | grep -Eo '\([0-9A-F-]{36}\)' | head -1 | tr -d '()' || true)"
   if [ -z "$DEVICE" ]; then
-    DEVICE="$(xcrun simctl list devices available | grep -E '^\s+iPhone' | grep -Eo '\([0-9A-F-]{36}\)' | head -1 | tr -d '()')"
+    DEVICE="$(xcrun simctl list devices available | grep -E '^\s+iPhone' | grep -Eo '\([0-9A-F-]{36}\)' | head -1 | tr -d '()' || true)"
+    [ -n "$DEVICE" ] || { echo "Không có simulator iPhone nào: tạo một máy trong Xcode rồi chạy lại." >&2; exit 1; }
     xcrun simctl boot "$DEVICE"
+    xcrun simctl bootstatus "$DEVICE" -b >/dev/null
   fi
 fi
 

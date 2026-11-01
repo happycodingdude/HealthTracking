@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../app/shell/app_tab.dart';
 import '../keys.dart';
 import '../theme.dart';
+import 'dumbbell_icon.dart';
 
 /// Thanh tab Bản 4 (04 Bản 4 §6.1): 5 mục theo thứ tự gốc Tập luyện · Thực
 /// đơn · Hôm nay · Cân nặng · Tôi. Hôm nay là nút tròn 46 nền cam, icon
@@ -136,11 +137,7 @@ class _TabItem extends StatelessWidget {
                 Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    Icon(
-                      _icon(tab),
-                      size: IronlyTabBar._iconSize,
-                      color: color,
-                    ),
+                    _icon(tab, color),
                     if (dot)
                       Positioned(
                         right: -3,
@@ -167,13 +164,28 @@ class _TabItem extends StatelessWidget {
     );
   }
 
-  static IconData _icon(AppTab tab) => switch (tab) {
-    AppTab.schedule => Icons.fitness_center,
-    AppTab.menu => Icons.soup_kitchen_outlined,
-    AppTab.weight => Icons.monitor_weight_outlined,
-    AppTab.me => Icons.person_outline,
-    AppTab.today => Icons.calendar_today_outlined,
-  };
+  static Widget _icon(AppTab tab, Color color) {
+    const size = IronlyTabBar._iconSize;
+    return switch (tab) {
+      AppTab.schedule => DumbbellIcon(size: size, color: color),
+      AppTab.menu => Icon(
+        Icons.soup_kitchen_outlined,
+        size: size,
+        color: color,
+      ),
+      AppTab.weight => Icon(
+        Icons.monitor_weight_outlined,
+        size: size,
+        color: color,
+      ),
+      AppTab.me => Icon(Icons.person_outline, size: size, color: color),
+      AppTab.today => Icon(
+        Icons.calendar_today_outlined,
+        size: size,
+        color: color,
+      ),
+    };
+  }
 }
 
 class _TodayItem extends StatelessWidget {

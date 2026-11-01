@@ -258,18 +258,43 @@ void main() {
         find.byKey(const ValueKey('month-cell-2026-11-02')),
         findsOneWidget,
       );
-      // Tuần chứa hôm nay (01/11) thuộc tháng 10 → danh sách tuần trống;
-      // chạm ô 02/11 → S-21 "Ngực và Tay sau · 18:00".
+      // Tuần chứa hôm nay (01/11, chủ nhật) là 26/10 – 01/11, nằm ở tháng
+      // 10: "Tuần này" vẫn đủ buổi dù đang xem tháng 11 (Bạn báo 01/11/2026).
+      void expectThisWeek() {
+        expect(find.text(S.thisWeek), findsOneWidget);
+        for (final d in ['2026-10-26', '2026-10-28', '2026-10-30']) {
+          expect(find.byKey(ValueKey('day-$d')), findsOneWidget, reason: d);
+        }
+      }
+
+      expectThisWeek();
+      // Ngày tập sắp tới có viền: nhìn lưới biết tháng đã xếp lịch.
+      expect(
+        find.bySemanticsLabel('Thứ 2, 02/11: ${S.statusUpcoming}'),
+        findsOneWidget,
+      );
+      final upcoming = tester.widget<Container>(
+        find.byKey(const ValueKey('month-cell-2026-11-02')),
+      );
+      expect((upcoming.decoration! as BoxDecoration).border, isNotNull);
+      final rest = tester.widget<Container>(
+        find.byKey(const ValueKey('month-cell-2026-11-03')),
+      );
+      expect((rest.decoration! as BoxDecoration).border, isNull);
+      // Chạm ô 02/11 → S-21 "Ngực và Tay sau · 18:00".
       await tapKey(tester, 'month-cell-2026-11-02');
       expect(find.text('Ngực và Tay sau · 18:00'), findsOneWidget);
       await tester.tapAt(const Offset(195, 60));
       await tester.pumpAndSettle();
 
+      // Sang tháng khác rồi quay lại: "Tuần này" vẫn đủ buổi.
       await tapKey(tester, 'month-previous');
       expect(find.text(S.monthTitle(10, 2026)), findsOneWidget);
       expect(find.text(S.nextMonthNotice(11)), findsNothing);
+      expectThisWeek();
       await tapKey(tester, 'month-next');
       expect(find.text(S.monthTitle(11, 2026)), findsOneWidget);
+      expectThisWeek();
     },
   );
 

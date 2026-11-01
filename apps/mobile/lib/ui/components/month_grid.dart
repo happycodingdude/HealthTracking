@@ -9,7 +9,7 @@ enum MonthCellKind {
   /// Cam = đã tập.
   done,
 
-  /// Thẻ = ngày tập sắp tới.
+  /// Viền xám + số trắng = ngày tập sắp tới: nhìn lưới biết tháng đã xếp lịch.
   upcoming,
 
   /// Thẻ nổi + số chữ phụ = không tập.
@@ -128,7 +128,7 @@ class _Cell extends StatelessWidget {
     final t = context.tokens;
     final (Color? fill, Color? border, Color text) = switch (cell.kind) {
       MonthCellKind.done => (t.accent, null, t.onAccent),
-      MonthCellKind.upcoming => (t.surface, null, t.textPrimary),
+      MonthCellKind.upcoming => (null, t.textSecondary, t.textPrimary),
       MonthCellKind.skipped => (t.surfaceRaised, null, t.textSecondary),
       MonthCellKind.today => (null, t.accent, t.accent),
       MonthCellKind.rest => (null, null, t.textFaint),

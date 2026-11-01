@@ -20,6 +20,7 @@ import 'package:mobile/data/logout_flag.dart';
 import 'package:mobile/features/auth/presentation/login_screen.dart';
 import 'package:mobile/features/native/live_activity_controller.dart';
 import 'package:mobile/features/native/native_bridge.dart';
+import 'package:mobile/features/workout/presentation/lift_log_sheet.dart';
 import 'package:mobile/main.dart' as app;
 import 'package:mobile/ui/components/ironly_tab_bar.dart';
 
@@ -254,6 +255,19 @@ void main() {
       );
       await tester.enterText(find.byKey(const ValueKey('field-lift-end')), '8');
       await tester.pumpAndSettle();
+      // Bàn phím số iPhone không có phím Xong: chạm ra ngoài ô thì đóng.
+      final endInput = tester.widget<EditableText>(
+        find.descendant(
+          of: find.byKey(const ValueKey('field-lift-end')),
+          matching: find.byType(EditableText),
+        ),
+      );
+      expect(endInput.focusNode.hasFocus, isTrue);
+      await tester.tapAt(
+        tester.getTopLeft(find.byType(LiftLogSheet)) + const Offset(24, 24),
+      );
+      await tester.pumpAndSettle();
+      expect(endInput.focusNode.hasFocus, isFalse);
       await tester.tap(find.byKey(const ValueKey('lift-save')));
       await pumpUntil(
         tester,

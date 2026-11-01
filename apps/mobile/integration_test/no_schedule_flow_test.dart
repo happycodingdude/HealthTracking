@@ -91,8 +91,17 @@ void main() {
     await tester.tap(tabLabel(S.tabToday));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('no-schedule-card')), findsNothing);
-    // Bản 4: buổi hôm nay = hàng số liệu + danh sách bài ngay ở Hôm nay.
-    await pumpUntil(tester, find.byKey(const ValueKey('session-stats')));
+    // Bản 4: buổi hôm nay = hàng số liệu + danh sách bài ngay ở Hôm nay. Chạy
+    // vào chủ nhật (luôn nghỉ) hoặc sau giờ buổi (F03-AC3) thì hôm nay không
+    // có buổi → thẻ Nghỉ với buổi kế tiếp.
+    await pumpUntil(
+      tester,
+      find.byWidgetPredicate(
+        (w) =>
+            w.key == const ValueKey('session-stats') ||
+            w.key == const ValueKey('next-session'),
+      ),
+    );
     await tester.tap(tabLabel(S.tabMe));
     await tester.pumpAndSettle();
     await pumpUntilGone(tester, find.text(S.syncPending));

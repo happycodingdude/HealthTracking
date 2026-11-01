@@ -610,14 +610,21 @@ void main() {
     });
 
     testWidgets(
-      'F21-AC49, FA3-05, F21-AC47: ô trống bấm ±bước không đổi; 13 → '
+      'F21-AC49, F21-AC47: chọn đơn vị rồi, ô trống bấm ±bước → một bước, '
+      'hoặc ±bước từ số ô còn lại (Bạn quyết 31/10/2026, thay FA3-05); 13 → '
       '+2,5 → 15,5; chặn ở 0,5 và 300; UA3-03: đã bấm ±bước → đóng phải hỏi',
       (tester) async {
         await openMonday(tester);
         await tapKey(tester, 'lift-row-${incline.id}');
         await tapKey(tester, 'lift-unit-kg');
         await tapKey(tester, 'lift-start-plus');
-        expect(fieldText(tester, 'start'), '');
+        expect(fieldText(tester, 'start'), '2,5');
+        await enter(tester, start: '40', save: false);
+        await tapKey(tester, 'lift-end-minus');
+        expect(fieldText(tester, 'end'), '37,5');
+        await enter(tester, end: '', save: false);
+        await tapKey(tester, 'lift-end-plus');
+        expect(fieldText(tester, 'end'), '42,5');
         await enter(tester, start: '13', end: '0,5', save: false);
         await tapKey(tester, 'lift-start-plus');
         expect(fieldText(tester, 'start'), '15,5');
@@ -633,10 +640,12 @@ void main() {
         expect(key('lift-save'), findsNothing);
         expect(await logs.get(mon, incline.id), isNull);
 
-        // Chỉ bấm ±bước khi ô trống (số không đổi) vẫn là có thay đổi.
+        // Chỉ bấm ±bước rồi đóng vẫn là có thay đổi; nấc máy: ô trống bấm
+        // −bước → 1 nấc.
         await tapKey(tester, 'lift-row-${incline.id}');
-        await tapKey(tester, 'lift-unit-kg');
-        await tapKey(tester, 'lift-end-plus');
+        await tapKey(tester, 'lift-unit-steps');
+        await tapKey(tester, 'lift-end-minus');
+        expect(fieldText(tester, 'end'), '1');
         await dismissSheet(tester);
         expect(find.text(S.discardChanges), findsOneWidget);
       },

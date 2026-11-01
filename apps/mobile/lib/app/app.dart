@@ -11,6 +11,15 @@ import 'sync_coordinator.dart';
 class IronlyApp extends ConsumerWidget {
   const IronlyApp({super.key});
 
+  /// Chạm ra ngoài ô nhập thì đóng bàn phím: bàn phím số của iPhone không có
+  /// phím Xong, mà Flutter mặc định chỉ đóng khi chạm ngoài trên máy tính.
+  static final Map<Type, Action<Intent>> actions = {
+    ...WidgetsApp.defaultActions,
+    EditableTextTapOutsideIntent: CallbackAction<EditableTextTapOutsideIntent>(
+      onInvoke: (intent) => intent.focusNode.unfocus(),
+    ),
+  };
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp.router(
@@ -21,6 +30,7 @@ class IronlyApp extends ConsumerWidget {
       locale: const Locale('vi'),
       supportedLocales: const [Locale('vi')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
+      actions: actions,
       routerConfig: ref.watch(routerProvider),
       builder: (context, child) => SyncCoordinator(
         child: BackgroundTasks(child: child ?? const SizedBox.shrink()),

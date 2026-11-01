@@ -1,6 +1,7 @@
 /// Bộ thành phần giao diện Bản 4 (05 Bản 4 TD4-04).
 library;
 
+export 'dumbbell_icon.dart';
 export 'empty_action.dart';
 export 'exercise_avatar.dart';
 export 'ironly_banner.dart';

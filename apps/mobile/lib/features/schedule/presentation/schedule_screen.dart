@@ -121,7 +121,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
           ),
           if (plan != null) ...[
             const SizedBox(height: TokenSpace.s4),
-            _WeekSummary(start: weekStart, days: days, now: now),
+            _WeekSummary(start: weekStart, now: now),
           ],
         ],
       ],
@@ -276,22 +276,20 @@ class _Grid extends StatelessWidget {
 }
 
 /// "Tuần này n / m" (n cam) + thẻ danh sách buổi của tuần đang chọn: nhóm cơ
-/// · "Thứ · giờ" · dấu hiệu. Chạm dòng → S-21; chạm tiêu đề → S-25.
+/// · "Thứ · giờ" · dấu hiệu. Chạm dòng → S-21; chạm tiêu đề → S-25. Ngày của
+/// tuần đọc theo tuần (F06-E4), không theo tháng đang xem: tuần nằm vắt hai
+/// tháng hoặc khác tháng đang xem vẫn đủ buổi.
 class _WeekSummary extends ConsumerWidget {
-  const _WeekSummary({
-    required this.start,
-    required this.days,
-    required this.now,
-  });
+  const _WeekSummary({required this.start, required this.now});
 
   final LocalDate start;
-  final List<PlanDay> days;
   final DateTime now;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = context.tokens;
     final week = ProgressWeek.containing(start);
+    final days = ref.watch(progressWeekDaysProvider(week)).value ?? const [];
     final weeks = ref.watch(progressWeeksProvider);
     final progress = ref.watch(weekProgressProvider(week));
     final shown =

@@ -147,12 +147,23 @@ final class LiftDraft {
         : _copy(end: shown, endEdited: true);
   }
 
-  /// Nút −bước / +bước (F21-R43): ô trống hoặc chưa chọn đơn vị → không tác
-  /// dụng (FA3-05); ra ngoài khoảng → giữ nguyên (F21-E44, E45).
+  /// Nút −bước / +bước (F21-R43): chưa chọn đơn vị → không tác dụng; ra
+  /// ngoài khoảng → giữ nguyên (F21-E44, E45). Đã chọn đơn vị mà ô trống
+  /// thì vẫn bấm được (Bạn quyết 31/10/2026, thay FA3-05): ±bước từ số của ô
+  /// còn lại; ô còn lại cũng trống → một bước (2,5 kg / 1 nấc).
   LiftDraft step(LiftField f, int delta) {
     final u = unit;
     final (value, _) = LiftKg.parse(text(f));
-    final next = u == null ? null : LiftStep.apply(value, delta, u);
+    final int? next;
+    if (u == null) {
+      next = null;
+    } else if (text(f).trim().isEmpty) {
+      final other = f == LiftField.start ? end : start;
+      final (base, _) = LiftKg.parse(other);
+      next = base == null ? LiftStep.of(u) : LiftStep.apply(base, delta, u);
+    } else {
+      next = LiftStep.apply(value, delta, u);
+    }
     final changed = next != null && next != value;
     final shown = changed ? LiftKg.format(next) : text(f);
     return f == LiftField.start

@@ -40,11 +40,7 @@ class WelcomeScreen extends StatelessWidget {
                             TokenRadius.sheet,
                           ),
                         ),
-                        child: Icon(
-                          Icons.fitness_center,
-                          size: 40,
-                          color: t.accent,
-                        ),
+                        child: DumbbellIcon(size: 40, color: t.accent),
                       ),
                     ),
                     const SizedBox(height: TokenSpace.s4),
