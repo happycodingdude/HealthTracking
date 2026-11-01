@@ -174,16 +174,25 @@ void main() {
     });
 
     testWidgets(
-      'số điện thoại hiển thị dạng 0912 345 678, gửi lên chỉ có chữ số',
+      'số điện thoại khi nhập các số liền nhau, không dấu cách; dán số có '
+      'dấu cách thì bỏ dấu cách; gửi lên chỉ có chữ số (Bạn yêu cầu '
+      '01/11/2026)',
       (tester) async {
         await openRegister(tester);
         await fillRegister(tester, phone: '0912345678');
-        expect(find.text('0912 345 678'), findsOneWidget);
+        expect(find.text('0912345678'), findsOneWidget);
+        expect(find.text('0912 345 678'), findsNothing);
+        await tester.enterText(
+          find.byKey(const ValueKey('field-phone')),
+          '0912 345 678 9',
+        );
+        await tester.pump();
+        expect(find.text('0912345678'), findsOneWidget);
         await tapRegisterButton(tester);
         expect(
           (server.calls('POST', '/v1/auth/register').single.body!
               as Map)['phone'],
-          '0912 345 678',
+          '0912345678',
         );
       },
     );
@@ -417,7 +426,7 @@ void main() {
         session: const StoredSession(userId: 'u1', phone: '0912345678'),
       );
       expect(find.byType(LoginScreen), findsOneWidget);
-      expect(find.text('0912 345 678'), findsOneWidget);
+      expect(find.text('0912345678'), findsOneWidget);
     });
   });
 }

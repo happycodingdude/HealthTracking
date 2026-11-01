@@ -36,7 +36,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.initState();
     // Phiên hết hạn: điền sẵn số của tài khoản trên máy (05 §6.6.6).
     final phone = ref.read(authControllerProvider).phone;
-    if (phone != null) _phone.text = PhoneInputFormatter.format(phone);
+    if (phone != null) _phone.text = phone;
   }
 
   @override
