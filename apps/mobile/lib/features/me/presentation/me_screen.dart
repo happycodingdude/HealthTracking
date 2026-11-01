@@ -24,8 +24,8 @@ import 'dev_server_status.dart';
 /// số điện thoại); thẻ danh sách mục icon tròn + tên + giá trị tóm tắt + ›:
 /// Hồ sơ cơ thể · Mức calo (chấm cam khi có đề xuất chờ) · Nhắc đi tập +
 /// công tắc; banner "iPhone đang chặn thông báo…" + "Mở Cài đặt"; thẻ tiếp:
-/// Ngân sách AI + thanh nhỏ · Tài khoản và dữ liệu ("Chưa đồng bộ" chỉ khi
-/// chưa) · Về gợi ý tham khảo.
+/// Ngân sách AI + thanh nhỏ · Tài khoản và dữ liệu (icon đồng bộ xám xoay
+/// vòng cạnh tên chỉ khi chưa đồng bộ) · Về gợi ý tham khảo.
 class MeScreen extends ConsumerWidget {
   const MeScreen({super.key});
 
@@ -143,7 +143,26 @@ class MeScreen extends ConsumerWidget {
               key: const ValueKey('row-account-data'),
               leading: const CircleIcon(Icons.cloud_outlined),
               title: S.accountAndData,
-              subtitle: pending ? S.syncPending : null,
+              // Chưa đồng bộ = icon cùng dòng với tên, không thêm dòng chữ
+              // phụ: dòng giữ nguyên chiều cao khi đồng bộ xong.
+              titleWidget: Row(
+                children: [
+                  Flexible(
+                    child: Text(S.accountAndData, style: IronlyText.body),
+                  ),
+                  if (pending) ...[
+                    const SizedBox(width: TokenSpace.s2),
+                    // Bạn yêu cầu 01/11/2026: icon xoay vòng để thấy đang chạy.
+                    SpinningIcon(
+                      Icons.sync,
+                      key: const ValueKey('sync-pending-icon'),
+                      size: 16,
+                      color: t.textSecondary,
+                      semanticLabel: S.syncPending,
+                    ),
+                  ],
+                ],
+              ),
               chevron: true,
               onTap: () => context.go('/me/account'),
             ),

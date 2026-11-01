@@ -232,6 +232,45 @@ void main() {
     expect(find.byKey(K.skeleton), findsOneWidget);
   });
 
+  testWidgets(
+    'SpinningIcon: xoay ngược chiều kim đồng hồ 1 vòng/giây; Reduce Motion '
+    'thì đứng yên (Bạn yêu cầu 01/11/2026: icon chưa đồng bộ xoay vòng)',
+    (tester) async {
+      SpinningIcon.animate = true;
+      addTearDown(() => SpinningIcon.animate = false);
+      const icon = SpinningIcon(Icons.sync, size: 16, color: Colors.grey);
+      double turns() => tester
+          .widget<RotationTransition>(
+            find.descendant(
+              of: find.byType(SpinningIcon),
+              matching: find.byType(RotationTransition),
+            ),
+          )
+          .turns
+          .value;
+
+      await tester.pumpWidget(host(icon));
+      expect(turns(), 0);
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(turns(), moreOrLessEquals(-0.25));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(turns(), moreOrLessEquals(-0.75));
+
+      // Giảm chuyển động: dừng ở góc 0, không còn khung hình nào chờ vẽ.
+      await tester.pumpWidget(
+        host(
+          const MediaQuery(
+            data: MediaQueryData(disableAnimations: true),
+            child: icon,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(turns(), 0);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+
   test('TD4-03: theme tối duy nhất, token qua ThemeExtension', () {
     final theme = IronlyTheme.dark();
     expect(theme.brightness, Brightness.dark);

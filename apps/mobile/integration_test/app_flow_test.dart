@@ -197,7 +197,7 @@ void main() {
       await tester.pumpAndSettle();
       // Bản 4: Hôm nay không còn câu chào; "Chưa đồng bộ" chỉ ở tab Tôi và
       // S-56, đã biến mất sau khi server nhận tên mới.
-      expect(find.text(S.syncPending), findsNothing);
+      expect(find.byKey(const ValueKey('sync-pending-icon')), findsNothing);
       await tester.tap(find.byKey(const ValueKey('tab-today-button')));
       await tester.pumpAndSettle();
       expect(find.text(S.tabToday), findsWidgets);
@@ -436,8 +436,13 @@ void main() {
       // ba dòng (giờ thật nên không biết trước).
       await expectMenuOnToday(tester);
       await tester.tap(tabLabel(S.tabMe));
-      await tester.pumpAndSettle();
-      await pumpUntilGone(tester, find.text(S.syncPending));
+      // Icon chưa đồng bộ xoay liên tục: pumpAndSettle sẽ chờ tới khi đồng bộ
+      // xong, bỏ qua giới hạn của pumpUntilGone.
+      await tester.pump();
+      await pumpUntilGone(
+        tester,
+        find.byKey(const ValueKey('sync-pending-icon')),
+      );
 
       // VS-13: chi phí của 2 lần tạo hiện ở dòng "Ngân sách AI" và S-54.
       await tester.tap(tabLabel(S.tabMe));

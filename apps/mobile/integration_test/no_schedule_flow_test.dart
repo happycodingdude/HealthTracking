@@ -103,7 +103,12 @@ void main() {
       ),
     );
     await tester.tap(tabLabel(S.tabMe));
-    await tester.pumpAndSettle();
-    await pumpUntilGone(tester, find.text(S.syncPending));
+    // Icon chưa đồng bộ xoay liên tục: pumpAndSettle sẽ chờ tới khi đồng bộ
+    // xong, bỏ qua giới hạn của pumpUntilGone.
+    await tester.pump();
+    await pumpUntilGone(
+      tester,
+      find.byKey(const ValueKey('sync-pending-icon')),
+    );
   });
 }

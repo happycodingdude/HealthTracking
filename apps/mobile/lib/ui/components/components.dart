@@ -19,5 +19,6 @@ export 'number_field.dart';
 export 'progress_dots.dart';
 export 'segment_bar.dart';
 export 'skeleton_box.dart';
+export 'spinning_icon.dart';
 export 'status_glyph.dart';
 export 'week_strip.dart';

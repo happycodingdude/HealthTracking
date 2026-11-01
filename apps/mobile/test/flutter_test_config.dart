@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/ui/components/skeleton_box.dart';
+import 'package:mobile/ui/components/spinning_icon.dart';
 
 /// Cấu hình chung cho mọi test của app:
 /// - Nạp font đóng gói trong repo (Roboto có đủ dấu tiếng Việt, Material Icons)
@@ -12,8 +13,9 @@ import 'package:mobile/ui/components/skeleton_box.dart';
 /// - So sánh golden có ngưỡng sai khác rất nhỏ cho khác biệt khử răng cưa.
 Future<void> testExecutable(FutureOr<void> Function() testMain) async {
   TestWidgetsFlutterBinding.ensureInitialized();
-  // Khung chờ không nhấp nháy trong test (pumpAndSettle).
+  // Khung chờ không nhấp nháy, icon không xoay trong test (pumpAndSettle).
   SkeletonBox.animate = false;
+  SpinningIcon.animate = false;
   await _loadFont('Roboto', [
     'Roboto-Regular.ttf',
     'Roboto-Medium.ttf',

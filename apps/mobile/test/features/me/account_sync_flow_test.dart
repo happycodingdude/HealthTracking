@@ -7,6 +7,7 @@ import 'package:mobile/app/strings_vi.dart';
 import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/features/me/data/account_repository.dart';
 import 'package:mobile/ui/components/ironly_tab_bar.dart';
+import 'package:mobile/ui/components/spinning_icon.dart';
 
 import '../../support/app_harness.dart';
 import '../../support/fake_server.dart';
@@ -78,6 +79,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text(S.syncPending), findsNothing);
+      expect(find.byKey(const ValueKey('sync-pending-icon')), findsNothing);
     },
   );
 
@@ -92,10 +94,11 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      // Bản 4 (04 S-50): dòng "Tài khoản và dữ liệu" chỉ ghi "Chưa đồng bộ"
-      // khi chưa; đã đồng bộ thì không chữ.
+      // Bản 4 (04 S-50): dòng "Tài khoản và dữ liệu" chỉ có icon đồng bộ
+      // khi chưa; đã đồng bộ thì không chữ, không icon.
       expect(find.text(S.syncDone), findsNothing);
       expect(find.text(S.syncPending), findsNothing);
+      expect(find.byKey(const ValueKey('sync-pending-icon')), findsNothing);
       await tester.tap(find.byKey(const ValueKey('row-account-data')));
       await tester.pumpAndSettle();
       expect(find.text('Minh'), findsOneWidget);
@@ -171,13 +174,33 @@ void main() {
 
       await tester.tap(find.byIcon(Icons.chevron_left));
       await tester.pumpAndSettle();
-      expect(find.text(S.syncPending), findsOneWidget, reason: 'dòng S-50');
+      // Bạn báo 01/11/2026: chưa đồng bộ = icon cùng dòng với tên mục, không
+      // thêm dòng chữ phụ (đồng bộ xong dòng không đổi chiều cao).
+      final icon = find.byKey(const ValueKey('sync-pending-icon'));
+      final row = find.byKey(const ValueKey('row-account-data'));
+      expect(icon, findsOneWidget, reason: 'dòng S-50');
+      // Bạn yêu cầu 01/11/2026: icon xoay vòng (xoay thật kiểm ở components_test).
+      expect(tester.widget(icon), isA<SpinningIcon>());
+      expect(find.bySemanticsLabel(RegExp(S.syncPending)), findsOneWidget);
+      expect(find.text(S.syncPending), findsNothing);
+      final title = find.descendant(
+        of: row,
+        matching: find.text(S.accountAndData),
+      );
+      expect(
+        (tester.getCenter(icon).dy - tester.getCenter(title).dy).abs(),
+        lessThan(1),
+        reason: 'icon ngang hàng với tên mục',
+      );
+      final pendingHeight = tester.getSize(row).height;
 
-      // Có mạng trở lại: dòng "Chưa đồng bộ" ở tab Tôi biến mất.
+      // Có mạng trở lại: icon ở tab Tôi biến mất, dòng giữ nguyên chiều cao.
       server.offline = false;
       net.setOnline(true);
       await tester.pumpAndSettle();
+      expect(icon, findsNothing);
       expect(find.text(S.syncPending), findsNothing);
+      expect(tester.getSize(row).height, pendingHeight);
       final pushed = server.calls('POST', '/v1/sync/push').last.body! as Map;
       expect(((pushed['mutations']! as List).single as Map)['data'], {
         'displayName': 'Minh Anh',
