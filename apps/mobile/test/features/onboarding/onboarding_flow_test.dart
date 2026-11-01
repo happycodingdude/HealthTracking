@@ -495,7 +495,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tapText(tester, S.login);
+      await tapText(tester, S.haveCard);
       await tester.enterText(
         find.byKey(const ValueKey('field-phone')),
         '0912345678',

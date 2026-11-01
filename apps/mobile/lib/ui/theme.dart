@@ -36,6 +36,7 @@ class IronlyTokens extends ThemeExtension<IronlyTokens> {
   Color get chartLine => TokenColor.chartLine;
   Color get chartGrid => TokenColor.chartGrid;
   Color get scrim => TokenColor.scrim;
+  Color get surfaceSunken => TokenColor.surfaceSunken;
 
   @override
   IronlyTokens copyWith() => this;
@@ -186,11 +187,87 @@ abstract final class IronlyText {
 
   /// Tên app ở màn Chào mừng 26 / 600.
   static TextStyle get appName => _s(TokenType.appName, TokenWeight.semibold);
+
+  // Bộ màn đăng nhập S-01 → S-01c, style "Thẻ hội viên" (04 Bản 4 v1.7 §6.1
+  // ngoại lệ cỡ, §6.7).
+
+  /// "Ironly" góc trên trái S-01: 22 / 800.
+  static TextStyle get authAppName =>
+      _s(TokenType.authAppName, TokenWeight.heavy);
+
+  /// Tiêu đề màn cạnh nút quay lại, tiêu đề bảng trượt S-01c: 17 / 700.
+  static TextStyle get authTitle => _s(TokenType.title, TokenWeight.bold);
+
+  /// Chữ trong ô nhập: 17 / 500.
+  static TextStyle get authField =>
+      _s(TokenType.authControl, TokenWeight.medium);
+
+  /// Nhãn nút cam: 17 / 700 (màu do nút đặt).
+  static TextStyle get authButton =>
+      _s(TokenType.authControl, TokenWeight.bold);
+
+  /// Nhãn nút xám: 17 / 600.
+  static TextStyle get authButtonGray =>
+      _s(TokenType.authControl, TokenWeight.semibold);
+
+  /// Chữ dẫn dưới nút ("Đã có thẻ?"): 14 chữ phụ.
+  static TextStyle get authLead =>
+      _s(TokenType.body, TokenWeight.regular, color: TokenColor.textSecondary);
+
+  /// Phần liên kết của chữ dẫn, "Quên mật khẩu?": 14 / 600 cam.
+  static TextStyle get authLink =>
+      _s(TokenType.body, TokenWeight.semibold, color: TokenColor.accent);
+
+  /// Tên trên tấm thẻ hội viên (S-01a), số điện thoại ở S-01b: 26 / 800,
+  /// giãn 4.
+  static TextStyle get memberName =>
+      _s(TokenType.memberName, TokenWeight.heavy, letterSpacing: 4);
+
+  /// "IRONLY" giữa thẻ trước ở S-01: 30 / 800, giãn 5.
+  static TextStyle get memberBrand =>
+      _s(TokenType.memberBrand, TokenWeight.heavy, letterSpacing: 5);
+
+  /// Số điện thoại dưới tên trên thẻ (S-01a): 14 / 500 chữ phụ, giãn 2.
+  static TextStyle get memberPhone => _s(
+    TokenType.body,
+    TokenWeight.medium,
+    color: TokenColor.textSecondary,
+    letterSpacing: 2,
+  );
+
+  /// "IRONLY" đáy thẻ: 11 / 700 chữ phụ, giãn 3.
+  static TextStyle get memberFooter => _s(
+    TokenType.caption,
+    TokenWeight.bold,
+    color: TokenColor.textSecondary,
+    letterSpacing: 3,
+  );
 }
 
 /// Theme tối duy nhất của Bản 4 (TD4-03): không có theme sáng, không rẽ nhánh
 /// theo `Brightness`. Mọi màu, cỡ chữ, bo góc từ token.
 abstract final class IronlyTheme {
+  /// Ô nhập của bộ màn đăng nhập S-01a, S-01b (04 Bản 4 v1.7 §6.1 ngoại lệ
+  /// cỡ): cao 54, bo 14, đệm ngang 18, gợi ý trong ô 17 chữ phụ; đang nhập
+  /// viền 1,5 cam, lỗi viền 1,5 đỏ.
+  static InputDecorationThemeData authInputs(InputDecorationThemeData base) {
+    final radius = BorderRadius.circular(TokenRadius.authField);
+    OutlineInputBorder border(Color color) => OutlineInputBorder(
+      borderRadius: radius,
+      borderSide: BorderSide(color: color, width: TokenSize.fieldStroke),
+    );
+    return base.copyWith(
+      hintStyle: IronlyText.authField.copyWith(color: TokenColor.textSecondary),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+      constraints: const BoxConstraints(minHeight: TokenSize.authField),
+      border: border(TokenColor.transparent),
+      enabledBorder: border(TokenColor.transparent),
+      focusedBorder: border(TokenColor.accent),
+      errorBorder: border(TokenColor.danger),
+      focusedErrorBorder: border(TokenColor.danger),
+    );
+  }
+
   static ThemeData dark() {
     const scheme = ColorScheme(
       brightness: Brightness.dark,

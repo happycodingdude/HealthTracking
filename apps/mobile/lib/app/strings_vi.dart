@@ -22,8 +22,24 @@ abstract final class S {
       'Nhắc Bạn tập đúng lịch, gợi ý ăn gì mỗi ngày, cho Bạn thấy mình tiến bộ.';
   static const welcomeFootnote =
       'Tài khoản giúp giữ dữ liệu khi Bạn đổi điện thoại.';
-  static const register = 'Đăng ký';
   static const login = 'Đăng nhập';
+
+  // Bộ màn đăng nhập style "Thẻ hội viên" (04 Bản 4 v1.7 §6.7; 03 Bản 4
+  // F4-R16): nhãn nút đổi, hành động không đổi.
+  /// S-01 nút cam, S-01a tiêu đề + nút (= Đăng ký), liên kết ở S-01b.
+  static const createCard = 'Tạo thẻ';
+
+  /// S-01 nút xám (= Đăng nhập).
+  static const haveCard = 'Đã có thẻ';
+
+  /// Chữ dẫn S-01a: "Đã có thẻ? Đăng nhập".
+  static const haveCardQuestion = 'Đã có thẻ?';
+
+  /// Chữ dẫn S-01b: "Chưa có thẻ? Tạo thẻ".
+  static const noCardQuestion = 'Chưa có thẻ?';
+
+  /// Chữ trên tấm thẻ hội viên (03 Bản 4 F4-AC3).
+  static const cardBrand = 'IRONLY';
 
   // S-01a Đăng ký.
   static const registerSubtitle =
@@ -34,12 +50,10 @@ abstract final class S {
   static const fieldPasswordConfirm = 'Nhập lại mật khẩu';
   static const passwordHint = 'Ít nhất 8 ký tự';
   static const invalidPasswordConfirm = 'Mật khẩu nhập lại chưa khớp';
-  static const haveAccount = 'Đã có tài khoản?';
   static const showPassword = 'Hiện mật khẩu';
   static const hidePassword = 'Ẩn mật khẩu';
 
   // S-01b Đăng nhập, S-01c Quên mật khẩu.
-  static const noAccount = 'Chưa có tài khoản?';
   static const forgotPassword = 'Quên mật khẩu?';
   static const forgotPasswordBody =
       'Hiện app chưa hỗ trợ tự lấy lại mật khẩu. Liên hệ người quản trị app để được đặt lại mật khẩu.';
@@ -886,8 +900,12 @@ abstract final class S {
     'appName': appName,
     'welcomeTagline': welcomeTagline,
     'welcomeFootnote': welcomeFootnote,
-    'register': register,
     'login': login,
+    'createCard': createCard,
+    'haveCard': haveCard,
+    'haveCardQuestion': haveCardQuestion,
+    'noCardQuestion': noCardQuestion,
+    'cardBrand': cardBrand,
     'registerSubtitle': registerSubtitle,
     'fieldDisplayName': fieldDisplayName,
     'fieldPhone': fieldPhone,
@@ -895,10 +913,8 @@ abstract final class S {
     'fieldPasswordConfirm': fieldPasswordConfirm,
     'passwordHint': passwordHint,
     'invalidPasswordConfirm': invalidPasswordConfirm,
-    'haveAccount': haveAccount,
     'showPassword': showPassword,
     'hidePassword': hidePassword,
-    'noAccount': noAccount,
     'forgotPassword': forgotPassword,
     'forgotPasswordBody': forgotPasswordBody,
     'forgotPasswordNote': forgotPasswordNote,

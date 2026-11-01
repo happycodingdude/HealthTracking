@@ -73,23 +73,12 @@ class IronlySheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = context.tokens;
     return Column(
       key: K.sheet,
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Center(
-          child: Container(
-            margin: const EdgeInsets.only(top: TokenSpace.s2, bottom: 14),
-            width: TokenSize.sheetHandleWidth,
-            height: TokenSize.sheetHandleHeight,
-            decoration: BoxDecoration(
-              color: t.textFaint,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-        ),
+        const IronlySheetHandle(),
         Flexible(
           child: SingleChildScrollView(
             controller: scrollController,
@@ -130,4 +119,22 @@ class IronlySheet extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Thanh kéo 36 × 4 rất mờ ở đầu bảng trượt.
+class IronlySheetHandle extends StatelessWidget {
+  const IronlySheetHandle({super.key});
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: Container(
+      margin: const EdgeInsets.only(top: TokenSpace.s2, bottom: 14),
+      width: TokenSize.sheetHandleWidth,
+      height: TokenSize.sheetHandleHeight,
+      decoration: BoxDecoration(
+        color: context.tokens.textFaint,
+        borderRadius: BorderRadius.circular(2),
+      ),
+    ),
+  );
 }

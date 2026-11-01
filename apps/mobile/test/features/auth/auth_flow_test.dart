@@ -8,6 +8,7 @@ import 'package:mobile/app/providers.dart';
 import 'package:mobile/app/strings_vi.dart';
 import 'package:mobile/data/auth/session_store.dart';
 import 'package:mobile/features/auth/presentation/login_screen.dart';
+import 'package:mobile/features/auth/presentation/member_card.dart';
 import 'package:mobile/features/auth/presentation/register_screen.dart';
 import 'package:mobile/features/auth/presentation/welcome_screen.dart';
 import 'package:mobile/ui/components/components.dart';
@@ -99,18 +100,56 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// Chữ của một dòng trên tấm thẻ hội viên ('member-card-name' /
+  /// 'member-card-phone'); dòng trống giữ một khoảng trắng.
+  String cardLine(WidgetTester tester, String line) =>
+      tester.widget<Text>(find.byKey(ValueKey(line))).data!;
+
+  /// [text] nằm trong ô nhập [name] (không tính tấm thẻ).
+  Finder inField(String name, String text) => find.descendant(
+    of: find.byKey(ValueKey('field-$name')),
+    matching: find.text(text),
+  );
+
   group('S-01', () {
     testWidgets(
-      'chưa đăng nhập → S-01 có Đăng ký (chính), Đăng nhập, câu giá trị',
+      'F4-AC14: chưa đăng nhập → S-01 có hai tấm thẻ xếp chồng (thẻ trước '
+      '"IRONLY"), nút cam "Tạo thẻ", nút xám "Đã có thẻ"; không câu giá trị',
       (tester) async {
         await pumpSignedOut(tester);
         expect(find.byType(WelcomeScreen), findsOneWidget);
         expect(find.text(S.welcomeTagline), findsNothing);
         expect(find.text(S.welcomeFootnote), findsNothing);
-        expect(find.byKey(const ValueKey('welcome-register')), findsOneWidget);
-        expect(find.byKey(const ValueKey('welcome-login')), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('welcome-card-front')),
+          findsOneWidget,
+        );
+        expect(find.byKey(const ValueKey('welcome-card-back')), findsOneWidget);
+        expect(find.text(S.cardBrand), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byKey(const ValueKey('welcome-register')),
+            matching: find.text(S.createCard),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byKey(const ValueKey('welcome-login')),
+            matching: find.text(S.haveCard),
+          ),
+          findsOneWidget,
+        );
+        expect(find.text(S.login), findsNothing);
       },
     );
+
+    testWidgets('"Đã có thẻ" → S-01b', (tester) async {
+      await pumpSignedOut(tester);
+      await tester.tap(find.text(S.haveCard));
+      await tester.pumpAndSettle();
+      expect(find.byType(LoginScreen), findsOneWidget);
+    });
   });
 
   group('S-01a', () {
@@ -180,14 +219,16 @@ void main() {
       (tester) async {
         await openRegister(tester);
         await fillRegister(tester, phone: '0912345678');
-        expect(find.text('0912345678'), findsOneWidget);
+        expect(inField('phone', '0912345678'), findsOneWidget);
         expect(find.text('0912 345 678'), findsNothing);
+        expect(cardLine(tester, 'member-card-phone'), '0912345678');
         await tester.enterText(
           find.byKey(const ValueKey('field-phone')),
           '0912 345 678 9',
         );
         await tester.pump();
-        expect(find.text('0912345678'), findsOneWidget);
+        expect(inField('phone', '0912345678'), findsOneWidget);
+        expect(cardLine(tester, 'member-card-phone'), '0912345678');
         await tapRegisterButton(tester);
         expect(
           (server.calls('POST', '/v1/auth/register').single.body!
@@ -196,6 +237,111 @@ void main() {
         );
       },
     );
+
+    testWidgets(
+      'F4-AC14: tiêu đề "Tạo thẻ"; thẻ hiện tên in hoa và số đang gõ ngay khi '
+      'gõ; bấm "Tạo thẻ" với số 7 chữ số → lỗi dưới ô, thẻ không đổi, không '
+      'câu lỗi trên thẻ',
+      (tester) async {
+        await openRegister(tester);
+        expect(
+          find.text(S.createCard),
+          findsNWidgets(2),
+          reason: 'tiêu đề, nút',
+        );
+        expect(
+          find.text('${S.haveCardQuestion} ${S.login}', findRichText: true),
+          findsOneWidget,
+        );
+        await tester.enterText(
+          find.byKey(const ValueKey('field-display-name')),
+          'Anton',
+        );
+        await tester.pump();
+        expect(cardLine(tester, 'member-card-name'), 'ANTON');
+        await tester.enterText(
+          find.byKey(const ValueKey('field-phone')),
+          '0912345',
+        );
+        await tester.pump();
+        expect(cardLine(tester, 'member-card-phone'), '0912345');
+        await tapRegisterButton(tester);
+        expect(inField('phone', S.invalidPhone), findsNothing);
+        expect(find.text(S.invalidPhone), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(MemberCard),
+            matching: find.text(S.invalidPhone),
+          ),
+          findsNothing,
+        );
+        expect(cardLine(tester, 'member-card-name'), 'ANTON');
+        expect(cardLine(tester, 'member-card-phone'), '0912345');
+        expect(server.calls('POST', '/v1/auth/register'), isEmpty);
+      },
+    );
+
+    testWidgets(
+      'UA4-04: ô trống → dòng trên thẻ để trống, thẻ không đổi cỡ, ô dưới '
+      'không xê dịch; tên dài → một dòng cắt "…"; hiện mật khẩu → thẻ không '
+      'hiện mật khẩu',
+      (tester) async {
+        await openRegister(tester);
+        final card = find.byType(MemberCard);
+        final size = tester.getSize(card);
+        final phoneTop = tester.getTopLeft(
+          find.byKey(const ValueKey('field-phone')),
+        );
+        expect(size.width / size.height, closeTo(342 / 206, 0.01));
+        expect(cardLine(tester, 'member-card-name').trim(), isEmpty);
+        expect(cardLine(tester, 'member-card-phone').trim(), isEmpty);
+
+        await tester.enterText(
+          find.byKey(const ValueKey('field-display-name')),
+          'Nguyễn Thị Phương Thảo Minh An',
+        );
+        await tester.pump();
+        expect(tester.getSize(card), size);
+        final name = tester.widget<Text>(
+          find.byKey(const ValueKey('member-card-name')),
+        );
+        expect(name.data, 'NGUYỄN THỊ PHƯƠNG THẢO MINH AN');
+        expect(name.maxLines, 1);
+        expect(name.overflow, TextOverflow.ellipsis);
+
+        await tester.enterText(
+          find.byKey(const ValueKey('field-display-name')),
+          '',
+        );
+        await tester.pump();
+        expect(cardLine(tester, 'member-card-name').trim(), isEmpty);
+        expect(tester.getSize(card), size);
+        expect(
+          tester.getTopLeft(find.byKey(const ValueKey('field-phone'))),
+          phoneTop,
+        );
+
+        final password = randomTestPassword();
+        await tester.enterText(
+          find.byKey(const ValueKey('field-password')),
+          password,
+        );
+        await tester.tap(find.byKey(const ValueKey('password-toggle')));
+        await tester.pump();
+        expect(inField('password', password), findsOneWidget);
+        expect(
+          find.descendant(of: card, matching: find.textContaining(password)),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets('"Đã có thẻ? Đăng nhập" → S-01b', (tester) async {
+      await openRegister(tester);
+      await tester.tap(find.byKey(const ValueKey('link-${S.login}')));
+      await tester.pumpAndSettle();
+      expect(find.byType(LoginScreen), findsOneWidget);
+    });
 
     testWidgets('VS01-T10: đăng ký thành công → S-02, lưu phiên', (
       tester,
@@ -286,6 +432,30 @@ void main() {
       );
       await tester.tap(find.byKey(const ValueKey('login-submit')));
     }
+
+    testWidgets(
+      'F4-AC14: thẻ chỉ có dòng số đang gõ (không dòng tên); "Quên mật '
+      'khẩu?", "Chưa có thẻ? Tạo thẻ" → S-01a',
+      (tester) async {
+        await openLogin(tester);
+        expect(find.byKey(const ValueKey('member-card-name')), findsNothing);
+        expect(cardLine(tester, 'member-card-phone').trim(), isEmpty);
+        await tester.enterText(
+          find.byKey(const ValueKey('field-phone')),
+          '0912345678',
+        );
+        await tester.pump();
+        expect(cardLine(tester, 'member-card-phone'), '0912345678');
+        expect(find.text(S.forgotPassword), findsOneWidget);
+        expect(
+          find.text('${S.noCardQuestion} ${S.createCard}', findRichText: true),
+          findsOneWidget,
+        );
+        await tester.tap(find.byKey(const ValueKey('link-${S.createCard}')));
+        await tester.pumpAndSettle();
+        expect(find.byType(RegisterScreen), findsOneWidget);
+      },
+    );
 
     testWidgets('đúng → vào S-02 (tài khoản chưa thiết lập, OB-6)', (
       tester,
@@ -426,7 +596,8 @@ void main() {
         session: const StoredSession(userId: 'u1', phone: '0912345678'),
       );
       expect(find.byType(LoginScreen), findsOneWidget);
-      expect(find.text('0912345678'), findsOneWidget);
+      expect(inField('phone', '0912345678'), findsOneWidget);
+      expect(cardLine(tester, 'member-card-phone'), '0912345678');
     });
   });
 }

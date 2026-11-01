@@ -37,6 +37,8 @@ class IronlyButton extends StatelessWidget {
     this.loading = false,
     this.icon,
     this.expand = true,
+    this.large = false,
+    this.height,
   });
 
   const IronlyButton.primary({
@@ -48,6 +50,8 @@ class IronlyButton extends StatelessWidget {
     this.loading = false,
     this.icon,
     this.expand = true,
+    this.large = false,
+    this.height,
   }) : kind = IronlyButtonKind.primary;
 
   const IronlyButton.gray({
@@ -59,6 +63,8 @@ class IronlyButton extends StatelessWidget {
     this.loading = false,
     this.icon,
     this.expand = true,
+    this.large = false,
+    this.height,
   }) : kind = IronlyButtonKind.gray;
 
   const IronlyButton.secondary({
@@ -70,6 +76,8 @@ class IronlyButton extends StatelessWidget {
     this.loading = false,
     this.icon,
     this.expand = true,
+    this.large = false,
+    this.height,
   }) : kind = IronlyButtonKind.secondary;
 
   const IronlyButton.danger({
@@ -81,6 +89,8 @@ class IronlyButton extends StatelessWidget {
     this.loading = false,
     this.icon,
     this.expand = true,
+    this.large = false,
+    this.height,
   }) : kind = IronlyButtonKind.danger;
 
   const IronlyButton.link({
@@ -92,6 +102,8 @@ class IronlyButton extends StatelessWidget {
     this.loading = false,
     this.icon,
     this.expand = true,
+    this.large = false,
+    this.height,
   }) : kind = IronlyButtonKind.link;
 
   final String label;
@@ -105,6 +117,14 @@ class IronlyButton extends StatelessWidget {
   /// Trọn bề ngang (mặc định); false = vừa chữ (nút nhỏ trong banner, thẻ).
   final bool expand;
 
+  /// Nút của bộ màn đăng nhập S-01 → S-01c (04 Bản 4 v1.7 §6.1 ngoại lệ cỡ):
+  /// cao 56, bo 16, nhãn 17; nút cam chữ màu nền `#121212` 700, nút xám nền
+  /// thẻ chữ trắng 600.
+  final bool large;
+
+  /// Chiều cao riêng (nút "Đã hiểu" S-01c cao 52); mặc định theo cỡ nút.
+  final double? height;
+
   /// Độ mờ của nút không làm được (F4-R6).
   static const disabledOpacity = 0.4;
 
@@ -112,11 +132,33 @@ class IronlyButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.tokens;
     final active = enabled && onPressed != null;
-    final height = small ? TokenSize.buttonSmall : TokenSize.button;
+    final height =
+        this.height ??
+        (large
+            ? TokenSize.authButton
+            : small
+            ? TokenSize.buttonSmall
+            : TokenSize.button);
     final radius = BorderRadius.circular(
-      small ? TokenRadius.buttonSmall : TokenRadius.button,
+      large
+          ? TokenRadius.authButton
+          : small
+          ? TokenRadius.buttonSmall
+          : TokenRadius.button,
     );
     final (Color bg, Color fg, Color? border, TextStyle style) = switch (kind) {
+      IronlyButtonKind.primary when large => (
+        t.accent,
+        t.bg,
+        null,
+        IronlyText.authButton,
+      ),
+      IronlyButtonKind.gray when large => (
+        t.surface,
+        t.textPrimary,
+        null,
+        IronlyText.authButtonGray,
+      ),
       IronlyButtonKind.primary => (
         t.accent,
         t.onAccent,

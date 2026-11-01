@@ -29,8 +29,14 @@ menuGenerating: "Đang lên thực đơn…"
 appName: "Ironly" # SỬA NGAY 17/10 — tên chính thức của app (FX2-04), Bạn Chốt 17/10
 welcomeTagline: "Nhắc Bạn tập đúng lịch, gợi ý ăn gì mỗi ngày, cho Bạn thấy mình tiến bộ."
 welcomeFootnote: "Tài khoản giúp giữ dữ liệu khi Bạn đổi điện thoại."
-register: "Đăng ký"
 login: "Đăng nhập"
+
+# 04 Bản 4 v1.7 §6.7 — bộ màn đăng nhập style "Thẻ hội viên" (Bạn Chốt 01/11/2026; 03 Bản 4 F4-R16)
+createCard: "Tạo thẻ" # S-01 nút cam, S-01a tiêu đề + nút, S-01b "Chưa có thẻ? Tạo thẻ"
+haveCard: "Đã có thẻ" # S-01 nút xám
+haveCardQuestion: "Đã có thẻ?" # S-01a "Đã có thẻ? Đăng nhập"
+noCardQuestion: "Chưa có thẻ?" # S-01b "Chưa có thẻ? Tạo thẻ"
+cardBrand: "IRONLY" # chữ trên tấm thẻ hội viên (03 Bản 4 F4-AC3)
 
 # 04 S-01a (bảng ô nhập; mock S-01a-1, S-01a-2)
 registerSubtitle: "Tài khoản giúp Bạn lấy lại dữ liệu trên điện thoại mới."
@@ -40,13 +46,11 @@ fieldPassword: "Mật khẩu"
 fieldPasswordConfirm: "Nhập lại mật khẩu"
 passwordHint: "Ít nhất 8 ký tự" # dòng gợi ý luôn hiện (mock S-01a-1)
 invalidPasswordConfirm: "Mật khẩu nhập lại chưa khớp"
-haveAccount: "Đã có tài khoản?" # "Đã có tài khoản? Đăng nhập"
 showPassword: "Hiện mật khẩu" # nhãn VoiceOver của nút hiện/ẩn (S-01a, 04 §6.17)
 hidePassword: "Ẩn mật khẩu"
 back: "Quay lại" # mock S-01a, S-01b
 
 # 04 S-01b, S-01c
-noAccount: "Chưa có tài khoản?" # "Chưa có tài khoản? Đăng ký"
 forgotPassword: "Quên mật khẩu?"
 forgotPasswordBody: "Hiện app chưa hỗ trợ tự lấy lại mật khẩu. Liên hệ người quản trị app để được đặt lại mật khẩu."
 forgotPasswordNote: "Dữ liệu của Bạn vẫn được giữ nguyên trong lúc chờ."

@@ -29,6 +29,7 @@ enum Tokens {
     static let scrim = Color(red: 0.0000, green: 0.0000, blue: 0.0000, opacity: 0.5490)
     static let transparent = Color(red: 0.0000, green: 0.0000, blue: 0.0000, opacity: 0.0000)
     static let iconBg = Color(red: 0.1020, green: 0.1020, blue: 0.1020, opacity: 1.0000)
+    static let surfaceSunken = Color(red: 0.0941, green: 0.0941, blue: 0.0941, opacity: 1.0000)
   }
 
   enum type {
@@ -54,12 +55,18 @@ enum Tokens {
     static let widgetNumber: CGFloat = 24
     static let widgetCaption: CGFloat = 10
     static let activityTitle: CGFloat = 13
+    static let authAppName: CGFloat = 22
+    static let authControl: CGFloat = 17
+    static let memberName: CGFloat = 26
+    static let memberBrand: CGFloat = 30
   }
 
   enum weight {
     static let regular: CGFloat = 400
     static let medium: CGFloat = 500
     static let semibold: CGFloat = 600
+    static let bold: CGFloat = 700
+    static let heavy: CGFloat = 800
   }
 
   enum radius {
@@ -79,6 +86,10 @@ enum Tokens {
     static let icon: CGFloat = 22
     static let segmentOuter: CGFloat = 10
     static let segmentInner: CGFloat = 8
+    static let memberCard: CGFloat = 22
+    static let memberChip: CGFloat = 6
+    static let authButton: CGFloat = 16
+    static let authField: CGFloat = 14
   }
 
   enum space {
@@ -119,5 +130,11 @@ enum Tokens {
     static let cardGap: CGFloat = 10
     static let rowPadding: CGFloat = 8
     static let iconStroke: CGFloat = 2
+    static let memberCardWidth: CGFloat = 342
+    static let memberCardHeight: CGFloat = 206
+    static let memberCardPadding: CGFloat = 22
+    static let authButton: CGFloat = 56
+    static let authSheetButton: CGFloat = 52
+    static let authField: CGFloat = 54
   }
 }

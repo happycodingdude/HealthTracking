@@ -14,9 +14,11 @@ import '../../../ui/theme.dart';
 import '../application/auth_controller.dart';
 import 'auth_scaffold.dart';
 import 'forgot_password_sheet.dart';
+import 'member_card.dart';
 import 'password_field.dart';
 
-/// S-01b — Đăng nhập. Sai thì luôn báo câu chung, không nói ô nào sai.
+/// S-01b — Đăng nhập (04 Bản 4 v1.7 §6.7): tấm thẻ chỉ có dòng số điện thoại
+/// đang gõ (chưa biết tên). Sai thì luôn báo câu chung, không nói ô nào sai.
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -93,11 +95,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return AutofillGroup(
       child: AuthScaffold(
         title: S.login,
+        card: ValueListenableBuilder(
+          valueListenable: _phone,
+          builder: (_, value, _) => MemberCard(phone: value.text),
+        ),
         fields: [
           IronlyTextField(
             name: 'phone',
             hint: S.fieldPhone,
             controller: _phone,
+            style: IronlyText.authField,
             keyboardType: TextInputType.phone,
             textInputAction: TextInputAction.next,
             inputFormatters: [PhoneInputFormatter()],
@@ -115,14 +122,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             onChanged: (_) => _clear(),
             onSubmitted: (_) => _submit(),
           ),
+          // Dưới hai ô, căn phải, cách 4: chữ cam 14 / 600 → S-01c.
           Align(
             alignment: Alignment.centerRight,
-            child: IronlyButton.link(
-              key: const ValueKey('forgot-password'),
+            child: Semantics(
+              button: true,
               label: S.forgotPassword,
-              small: true,
-              expand: false,
-              onPressed: () => showForgotPasswordSheet(context),
+              child: ExcludeSemantics(
+                child: GestureDetector(
+                  key: const ValueKey('forgot-password'),
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => showForgotPasswordSheet(context),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      TokenSpace.s5,
+                      TokenSpace.s1,
+                      TokenSpace.s1,
+                      TokenSpace.s3,
+                    ),
+                    child: Text(S.forgotPassword, style: IronlyText.authLink),
+                  ),
+                ),
+              ),
             ),
           ),
         ],
@@ -131,14 +152,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           IronlyButton.primary(
             key: const ValueKey('login-submit'),
             label: S.login,
+            large: true,
             loading: _submitting,
             onPressed: _submit,
           ),
           const SizedBox(height: TokenSpace.s1),
-          // Như S-01a: chữ cam dưới nút.
           LinkText(
-            prefix: S.noAccount,
-            link: S.register,
+            prefix: S.noCardQuestion,
+            link: S.createCard,
             onTap: () => context.go('/welcome/register'),
           ),
         ],

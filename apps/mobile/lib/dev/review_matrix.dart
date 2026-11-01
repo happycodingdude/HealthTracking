@@ -353,18 +353,20 @@ final reviewMatrix = <ReviewCell>[
   // M20 — đăng nhập và thiết lập lần đầu (trang 4, hàng dưới): S-01, S-01a,
   // S-01b, S-02 → S-07 (VS-49). S-02, S-04, S-05 không có khung mock riêng:
   // đối chiếu phần chú thích dưới S-03 (mô tả S-02, S-04) và style chung.
+  // Từ 04 Bản 4 v1.7: S-01 → S-01c đối chiếu `04-ui-mockups-login.pdf` (hàng
+  // H "Thẻ hội viên"), không còn theo trang 4.
   ReviewCell(
     id: 'm20_s01',
     milestone: Milestone.m20,
     screen: 'S-01',
-    state: 'chào mừng: icon, tên app, hai nút',
+    state: 'chào mừng: hai thẻ xếp chồng, Tạo thẻ, Đã có thẻ',
     mock: col(4, 0, 870, 435),
   ),
   ReviewCell(
     id: 'm20_s01a',
     milestone: Milestone.m20,
     screen: 'S-01a',
-    state: 'đăng ký, ô số điện thoại lỗi',
+    state: 'tạo thẻ, ô số điện thoại lỗi',
     mock: col(4, 1, 870, 425),
   ),
   ReviewCell(

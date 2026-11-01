@@ -29,6 +29,7 @@ abstract final class TokenColor {
   static const scrim = Color(0x8C000000);
   static const transparent = Color(0x00000000);
   static const iconBg = Color(0xFF1A1A1A);
+  static const surfaceSunken = Color(0xFF181818);
 }
 
 /// Cỡ chữ (điểm, ở mức Dynamic Type mặc định).
@@ -55,6 +56,10 @@ abstract final class TokenType {
   static const double widgetNumber = 24;
   static const double widgetCaption = 10;
   static const double activityTitle = 13;
+  static const double authAppName = 22;
+  static const double authControl = 17;
+  static const double memberName = 26;
+  static const double memberBrand = 30;
 }
 
 /// Độ đậm chữ.
@@ -62,6 +67,8 @@ abstract final class TokenWeight {
   static const int regular = 400;
   static const int medium = 500;
   static const int semibold = 600;
+  static const int bold = 700;
+  static const int heavy = 800;
 }
 
 abstract final class TokenRadius {
@@ -81,6 +88,10 @@ abstract final class TokenRadius {
   static const double icon = 22;
   static const double segmentOuter = 10;
   static const double segmentInner = 8;
+  static const double memberCard = 22;
+  static const double memberChip = 6;
+  static const double authButton = 16;
+  static const double authField = 14;
 }
 
 abstract final class TokenSpace {
@@ -121,4 +132,10 @@ abstract final class TokenSize {
   static const double cardGap = 10;
   static const double rowPadding = 8;
   static const double iconStroke = 2;
+  static const double memberCardWidth = 342;
+  static const double memberCardHeight = 206;
+  static const double memberCardPadding = 22;
+  static const double authButton = 56;
+  static const double authSheetButton = 52;
+  static const double authField = 54;
 }

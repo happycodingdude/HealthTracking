@@ -4,8 +4,9 @@ import '../../../app/strings_vi.dart';
 import '../../../ui/components/components.dart';
 import '../../../ui/theme.dart';
 
-/// Ô mật khẩu dạng thẻ, gợi ý trong ô là tên trường, icon mắt bên phải (04
-/// Bản 4 S-01a / S-01b).
+/// Ô mật khẩu của S-01a / S-01b (04 Bản 4 v1.7 §6.7): chữ 17 / 500, gợi ý
+/// trong ô là tên trường, nút mắt 44 × 44 (icon 22 chữ phụ) bên phải để hiện /
+/// ẩn. Mật khẩu không bao giờ hiện trên tấm thẻ.
 class PasswordField extends StatefulWidget {
   const PasswordField({
     super.key,
@@ -47,6 +48,7 @@ class _PasswordFieldState extends State<PasswordField> {
       focusNode: widget.focusNode,
       error: widget.error,
       obscureText: !_visible,
+      style: IronlyText.authField,
       onChanged: widget.onChanged,
       onSubmitted: widget.onSubmitted,
       textInputAction: widget.textInputAction,
@@ -67,7 +69,7 @@ class _PasswordFieldState extends State<PasswordField> {
                 _visible
                     ? Icons.visibility_off_outlined
                     : Icons.visibility_outlined,
-                size: 20,
+                size: 22,
                 color: t.textSecondary,
               ),
             ),

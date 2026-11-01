@@ -13,10 +13,13 @@ import '../../../ui/components/components.dart';
 import '../../../ui/theme.dart';
 import '../application/auth_controller.dart';
 import 'auth_scaffold.dart';
+import 'member_card.dart';
 import 'password_field.dart';
 
-/// S-01a — Đăng ký (D-23, D-24). Nút "Đăng ký" luôn bấm được; lỗi hiện ngay
-/// dưới ô tương ứng và cuộn tới ô lỗi đầu tiên (P4).
+/// S-01a — Đăng ký, tiêu đề "Tạo thẻ" (D-23, D-24; 04 Bản 4 v1.7 §6.7). Tấm
+/// thẻ ở trên hiện đúng tên và số điện thoại đang gõ (03 Bản 4 F4-R15). Nút
+/// "Tạo thẻ" (= Đăng ký) luôn bấm được; lỗi hiện ngay dưới ô tương ứng, không
+/// hiện trên thẻ, và cuộn tới ô lỗi đầu tiên (P4).
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
 
@@ -141,10 +144,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return AutofillGroup(
-      // 04 Bản 4 S-01a: ô nhập dạng thẻ, gợi ý trong ô là tên trường; không
-      // câu phụ dưới tiêu đề (FR4-04).
       child: AuthScaffold(
-        title: S.register,
+        title: S.createCard,
+        card: ListenableBuilder(
+          listenable: Listenable.merge([_name, _phone]),
+          builder: (_, _) => MemberCard(name: _name.text, phone: _phone.text),
+        ),
         fields: [
           IronlyTextField(
             key: _keys[AccountField.displayName],
@@ -153,6 +158,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             controller: _name,
             focusNode: _focus[AccountField.displayName],
             error: _errors[AccountField.displayName],
+            style: IronlyText.authField,
             textInputAction: TextInputAction.next,
             textCapitalization: TextCapitalization.words,
             autofillHints: const [AutofillHints.name],
@@ -171,6 +177,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             errorAction: _phoneTaken
                 ? ErrorAction(S.login, () => context.go('/welcome/login'))
                 : null,
+            style: IronlyText.authField,
             keyboardType: TextInputType.phone,
             textInputAction: TextInputAction.next,
             inputFormatters: [PhoneInputFormatter()],
@@ -207,14 +214,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           if (_notice != null) FormNotice(_notice!),
           IronlyButton.primary(
             key: const ValueKey('register-submit'),
-            label: S.register,
+            label: S.createCard,
+            large: true,
             loading: _submitting,
             onPressed: _submit,
           ),
           const SizedBox(height: TokenSpace.s1),
-          // 04 Bản 4 S-01a (mock): chữ cam dưới nút.
           LinkText(
-            prefix: S.haveAccount,
+            prefix: S.haveCardQuestion,
             link: S.login,
             onTap: () => context.go('/welcome/login'),
           ),
