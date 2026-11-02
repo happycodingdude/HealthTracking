@@ -12,6 +12,7 @@ const pageInset = TokenSpace.s5;
 
 /// Trang của một tab (04 Bản 4): tiêu đề 17 trái, [trailing] phải (dấu trạng
 /// thái, ngày, icon); một cột cuộn dọc với `ScrollController` của tab.
+/// Có [pinned]: hàng tiêu đề và [pinned] neo trên cùng, chỉ [children] cuộn.
 class IronlyTabPage extends ConsumerWidget {
   const IronlyTabPage({
     super.key,
@@ -22,6 +23,7 @@ class IronlyTabPage extends ConsumerWidget {
     this.children = const [],
     this.header,
     this.listKey,
+    this.pinned,
   });
 
   final AppTab tab;
@@ -33,6 +35,10 @@ class IronlyTabPage extends ConsumerWidget {
   /// Dòng nhỏ in hoa phía trên tiêu đề (Thực đơn: "THỨ 2, 26/10").
   final String? header;
   final Key? listKey;
+
+  /// Phần neo ngay dưới hàng tiêu đề, không cuộn theo [children] (Hôm nay:
+  /// hàng số liệu Buổi · Đã ghi · Tuần, để chốt buổi không phải cuộn lên).
+  final Widget? pinned;
 
   /// Vùng chạm tối thiểu của nút (04 Bản 1: 44 × 44 điểm).
   static const _tapTarget = 44.0;
@@ -58,43 +64,75 @@ class IronlyTabPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final borrow = _borrow(context);
+    final controller =
+        scrollController ?? ref.watch(tabScrollControllersProvider).of(tab);
+    final top = TokenSpace.s3 - borrow;
+    final bottom = MediaQuery.paddingOf(context).bottom + 40;
+    final head = [
+      if (header != null)
+        Text(header!.toUpperCase(), style: IronlyText.groupLabel),
+      ConstrainedBox(
+        constraints: BoxConstraints(minHeight: borrow == 0 ? 0 : _tapTarget),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Semantics(
+                header: true,
+                child: Text(title, style: IronlyText.title),
+              ),
+            ),
+            if (trailing != null)
+              KeyedSubtree(key: K.pageTrailing, child: trailing!),
+          ],
+        ),
+      ),
+      SizedBox(height: TokenSpace.s4 - borrow),
+    ];
+    final pinned = this.pinned;
+    if (pinned == null) {
+      return Scaffold(
+        body: SafeArea(
+          bottom: false,
+          child: ListView(
+            key: listKey,
+            controller: controller,
+            padding: EdgeInsets.fromLTRB(pageInset, top, pageInset, bottom),
+            children: [...head, ...children],
+          ),
+        ),
+      );
+    }
+    // Phần neo giữ khoảng 16 với nội dung; nội dung cuộn khuất dưới khoảng
+    // này. Lúc chưa cuộn, vị trí mọi thứ như khi không neo.
     return Scaffold(
       body: SafeArea(
         bottom: false,
-        child: ListView(
-          key: listKey,
-          controller:
-              scrollController ??
-              ref.watch(tabScrollControllersProvider).of(tab),
-          padding: EdgeInsets.fromLTRB(
-            pageInset,
-            TokenSpace.s3 - borrow,
-            pageInset,
-            MediaQuery.paddingOf(context).bottom + 40,
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (header != null)
-              Text(header!.toUpperCase(), style: IronlyText.groupLabel),
-            ConstrainedBox(
-              constraints: BoxConstraints(
-                minHeight: borrow == 0 ? 0 : _tapTarget,
+            Padding(
+              key: K.pagePinned,
+              padding: EdgeInsets.fromLTRB(
+                pageInset,
+                top,
+                pageInset,
+                TokenSpace.s5,
               ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Semantics(
-                      header: true,
-                      child: Text(title, style: IronlyText.title),
-                    ),
-                  ),
-                  if (trailing != null)
-                    KeyedSubtree(key: K.pageTrailing, child: trailing!),
-                ],
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [...head, pinned],
               ),
             ),
-            SizedBox(height: TokenSpace.s4 - borrow),
-            ...children,
+            Expanded(
+              child: ListView(
+                key: listKey,
+                controller: controller,
+                padding: EdgeInsets.fromLTRB(pageInset, 0, pageInset, bottom),
+                children: children,
+              ),
+            ),
           ],
         ),
       ),

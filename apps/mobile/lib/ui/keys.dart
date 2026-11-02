@@ -10,6 +10,7 @@ abstract final class K {
 
   static const pageBack = ValueKey('page-back');
   static const pageTrailing = ValueKey('page-trailing');
+  static const pagePinned = ValueKey('page-pinned');
 
   static const sheet = ValueKey('ironly-sheet');
   static const dialog = ValueKey('ironly-dialog');

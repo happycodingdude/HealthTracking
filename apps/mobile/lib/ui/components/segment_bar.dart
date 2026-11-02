@@ -7,9 +7,14 @@ enum SegmentStyle {
   /// Mục chọn nền thẻ nổi, chữ trắng 600 (thanh Lịch · Bài tập · Tiến bộ).
   raised,
 
-  /// Mục chọn nền cam, chữ trắng 600 (kg | nấc máy, Tự động | Tự đặt, Nam |
-  /// Nữ, Đã tập / Không tập).
+  /// Mục chọn nền cam, chữ trắng 600 (Tự động | Tự đặt, Nam | Nữ, Đã tập /
+  /// Không tập).
   accent,
+
+  /// Mỗi mục là một nút rời cao 44, cách nhau 8: mục chưa chọn nền thẻ nổi,
+  /// chữ trắng 600 (như nút −2,5 / +2,5); mục chọn nền cam (kg | nấc máy —
+  /// nhìn là biết bấm được, kể cả khi chưa chọn mục nào).
+  buttons,
 }
 
 /// Thanh chọn mục (04 Bản 4 §6.1): nền thẻ bo 10, mục chọn bo 8. Cỡ chữ lớn
@@ -46,6 +51,22 @@ class SegmentBar<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.tokens;
     final textStyle = IronlyText.body;
+    if (style == SegmentStyle.buttons) {
+      return Opacity(
+        opacity: enabled ? 1 : 0.4,
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (final (i, item) in items.indexed) ...[
+                if (i > 0) const SizedBox(width: TokenSpace.s2),
+                Expanded(child: _button(context, item, textStyle)),
+              ],
+            ],
+          ),
+        ),
+      );
+    }
     return LayoutBuilder(
       builder: (context, constraints) {
         final scaler = MediaQuery.textScalerOf(context);
@@ -97,6 +118,45 @@ class SegmentBar<T> extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _button(BuildContext context, T item, TextStyle textStyle) {
+    final t = context.tokens;
+    final isSelected = item == selected;
+    final radius = BorderRadius.circular(TokenRadius.button);
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      enabled: enabled,
+      label: label(item),
+      child: ExcludeSemantics(
+        child: Material(
+          color: isSelected ? t.accent : t.surfaceRaised,
+          borderRadius: radius,
+          child: InkWell(
+            key: keyOf?.call(item) ?? K.segment(label(item)),
+            borderRadius: radius,
+            onTap: enabled ? () => onSelected(item) : null,
+            child: Container(
+              constraints: const BoxConstraints(minHeight: TokenSize.button),
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(
+                horizontal: _itemPadding,
+                vertical: 6,
+              ),
+              child: Text(
+                label(item),
+                textAlign: TextAlign.center,
+                style: textStyle.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: t.textPrimary,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 

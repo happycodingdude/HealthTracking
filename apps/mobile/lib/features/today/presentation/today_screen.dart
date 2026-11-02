@@ -27,11 +27,16 @@ class TodayScreen extends ConsumerWidget {
     if (state == null) {
       return const IronlyTabPage(tab: AppTab.today, title: S.tabToday);
     }
+    final hasSession =
+        state.kind != TodayKind.noSchedule && state.kind != TodayKind.rest;
     return IronlyTabPage(
       tab: AppTab.today,
       title: S.tabToday,
       listKey: const ValueKey('today-list'),
       trailing: _Trailing(state: state),
+      // Ngày có buổi: hàng tiêu đề (dấu chốt buổi) + hàng số liệu neo trên
+      // cùng, danh sách bài cuộn bên dưới.
+      pinned: hasSession ? SessionStats(state: state) : null,
       children: switch (state.kind) {
         TodayKind.noSchedule => const [NoScheduleCard(), CardGap(), MenuCard()],
         TodayKind.rest => [
@@ -42,8 +47,6 @@ class TodayScreen extends ConsumerWidget {
           const MenuCard(),
         ],
         _ => [
-          SessionStats(state: state),
-          const SizedBox(height: TokenSpace.s5),
           SessionLogList(date: state.today, tab: AppTab.today),
           const MenuLine(),
         ],

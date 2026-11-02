@@ -1051,4 +1051,70 @@ void main() {
       expect(server.requests, isEmpty, reason: 'không request nào tới được');
     });
   });
+
+  testWidgets(
+    'Neo đầu trang S-10 (02/11/2026): ngày có buổi, cuộn danh sách bài xuống '
+    'thì hàng tiêu đề (dấu chốt buổi) và hàng số liệu Buổi · Đã ghi · Tuần '
+    'đứng yên; chạm dấu chốt buổi khi đang cuộn → S-65 → Lưu; ngày nghỉ không '
+    'neo',
+    (tester) async {
+      await pump(tester, tall: false);
+      // Màn thấp để danh sách bài chắc chắn phải cuộn.
+      tester.view.physicalSize = const Size(390 * 3, 600 * 3);
+      await tester.pumpAndSettle();
+
+      final pinned = find.byKey(const ValueKey('page-pinned'));
+      final stats = find.byKey(const ValueKey('session-stats'));
+      final markDone = find.byKey(const ValueKey('today-mark-done'));
+      final list = find.byKey(const ValueKey('today-list'));
+      final logList = find.byKey(const ValueKey('session-log-list'));
+      expect(find.descendant(of: pinned, matching: stats), findsOneWidget);
+      expect(find.descendant(of: pinned, matching: markDone), findsOneWidget);
+      expect(
+        find.descendant(
+          of: pinned,
+          matching: find.byKey(const ValueKey('stat-logged')),
+        ),
+        findsOneWidget,
+      );
+      expect(find.descendant(of: list, matching: stats), findsNothing);
+      expect(find.descendant(of: list, matching: logList), findsOneWidget);
+
+      final scrollable = tester.state<ScrollableState>(
+        find.descendant(of: list, matching: find.byType(Scrollable)),
+      );
+      expect(scrollable.position.maxScrollExtent, greaterThan(0));
+      final statsAt = tester.getTopLeft(stats);
+      final markAt = tester.getTopLeft(markDone);
+      final listAt = tester.getTopLeft(logList);
+      // Chưa cuộn: danh sách bài cách hàng số liệu 16 như trước khi neo.
+      expect(listAt.dy - tester.getBottomLeft(stats).dy, TokenSpace.s5);
+
+      await tester.drag(list, const Offset(0, -400));
+      await tester.pumpAndSettle();
+      expect(scrollable.position.pixels, greaterThan(0));
+      expect(tester.getTopLeft(logList).dy, lessThan(listAt.dy));
+      expect(tester.getTopLeft(stats), statsAt);
+      expect(tester.getTopLeft(markDone), markAt);
+
+      // Không cuộn lên: chạm thẳng dấu chốt buổi.
+      await tester.tap(markDone);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('lock-confirm-save')), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('lock-confirm-save')));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: pinned,
+          matching: find.byKey(const ValueKey('today-status')),
+        ),
+        findsOneWidget,
+      );
+
+      // Thứ 3 13/10 nghỉ (H2): không có hàng số liệu nên không neo.
+      await advanceTo(tester, DateTime(2026, 10, 13, 9));
+      expect(find.byKey(const ValueKey('rest-card')), findsOneWidget);
+      expect(pinned, findsNothing);
+    },
+  );
 }

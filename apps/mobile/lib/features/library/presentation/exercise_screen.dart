@@ -167,7 +167,7 @@ class _InfoCard extends ConsumerWidget {
                   SegmentBar<LiftUnit>(
                     items: const [LiftUnit.kg, LiftUnit.steps],
                     selected: unit,
-                    style: SegmentStyle.accent,
+                    style: SegmentStyle.buttons,
                     label: Fmt.liftUnitFull,
                     keyOf: (u) => ValueKey(
                       u == unit
