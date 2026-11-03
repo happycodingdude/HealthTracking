@@ -181,6 +181,8 @@ void main() {
       logger: app.log.logger,
       alerts: alerts,
     );
+    // 05 Bản 5 §6.6.3: hook sau push như server thật (server_app.dart).
+    app.deps.sync.onPushed = scheduler.afterPush;
   });
   tearDown(() => app.dispose());
 
@@ -489,6 +491,364 @@ void main() {
       await runAt(DateTime.utc(2026, 10, 12, 17));
       expect(apns.events('end'), hasLength(1));
       expect((await sessions()).single[2], isTrue);
+    });
+  });
+
+  group('Bản 5 — thẻ hiện lại, nguồn bật, tắt 00:00 (TD5-13, F25-R61)', () {
+    const pauseId = '6f1d2c3b-0000-4000-8000-0000000000b2';
+    final mondayDay = generated.days.firstWhere((d) => d.date == monday);
+
+    Future<List<List<Object?>>> rows() async => [
+      for (final r in await app.tdb.pool.execute(
+        'SELECT to_char(date, \'YYYY-MM-DD\'), end_sent_at IS NOT NULL, '
+        'restarts, trigger, kind FROM live_activity_sessions ORDER BY date',
+      ))
+        r.toList(),
+    ];
+
+    PlanDay done(DateTime at) => mondayDay.withMark(
+      DayMark.done,
+      actual: mondayDay.muscles,
+      markedAt: at,
+    );
+
+    test('TAC5-07, F25-AC62: "Đã tập" 18:30 → thẻ tắt; bỏ đánh dấu 19:00 → '
+        'start mới, restarts = 1; 00:00 tắt; bỏ đánh dấu lúc 00:30 → không '
+        'gửi', () async {
+      await setUpSchedule();
+      await putToken();
+      await runAt(DateTime.utc(2026, 10, 12, 11));
+      expect(apns.events('start'), hasLength(1));
+      await setNow(DateTime.utc(2026, 10, 12, 11, 30));
+      await putToken(update: updateToken, date: monday);
+      await push([
+        dayMutation(
+          done(DateTime.utc(2026, 10, 12, 11, 30)),
+          DateTime.utc(2026, 10, 12, 11, 30),
+          ended: true,
+        ),
+      ]);
+      expect(apns.events('start'), hasLength(1), reason: 'Đã tập không bật');
+      expect(await rows(), [
+        ['2026-10-12', true, 0, 'time', 'session'],
+      ]);
+
+      await setNow(DateTime.utc(2026, 10, 12, 12));
+      await push([
+        dayMutation(mondayDay.withMark(null), DateTime.utc(2026, 10, 12, 12)),
+      ]);
+      final restart = apns.events('start');
+      expect(restart, hasLength(2));
+      expect(restart.last.token, startToken);
+      expect(
+        ((restart.last.payload['aps']! as Map)['attributes']! as Map)['date'],
+        '2026-10-12',
+      );
+      expect(await rows(), [
+        ['2026-10-12', false, 1, 'time', 'session'],
+      ]);
+      // Job mỗi phút không bật thêm; 00:00 gửi end như mọi thẻ.
+      await runAt(DateTime.utc(2026, 10, 12, 12, 1));
+      expect(apns.events('start'), hasLength(2));
+      await runAt(DateTime.utc(2026, 10, 12, 17));
+      expect(apns.events('end'), hasLength(1));
+
+      // 00:30 hôm sau: bỏ đánh dấu ngày 12/10 → day_locked, không gửi.
+      await setNow(DateTime.utc(2026, 10, 12, 17, 30));
+      final late = (await app.push(token, [
+        dayMutation(
+          done(DateTime.utc(2026, 10, 12, 11, 30)),
+          DateTime.utc(2026, 10, 12, 17, 30),
+        ),
+      ], appVersion: AppVersion.v3)).results.single;
+      expect(late.status, PushStatus.rejected);
+      expect(late.code, ErrorCode.dayLocked);
+      expect(apns.events('start'), hasLength(2));
+    });
+
+    test('Bỏ đánh dấu khi thẻ đang hiện → không gửi start thứ hai', () async {
+      await setUpSchedule();
+      await putToken();
+      await runAt(DateTime.utc(2026, 10, 12, 11));
+      await setNow(DateTime.utc(2026, 10, 12, 11, 30));
+      // "Đã tập" không kèm liveActivityEnded (app chưa kịp tắt): dòng còn mở.
+      await push([
+        dayMutation(
+          done(DateTime.utc(2026, 10, 12, 11, 30)),
+          DateTime.utc(2026, 10, 12, 11, 30),
+        ),
+        dayMutation(
+          mondayDay.withMark(null),
+          DateTime.utc(2026, 10, 12, 11, 31),
+        ),
+      ]);
+      expect(apns.events('start'), hasLength(1));
+      expect((await rows()).single[2], 0);
+    });
+
+    test('F25-E65: "Không tập" 10:00 → 18:00 không thẻ; bỏ đánh dấu 19:00 → '
+        'thẻ hiện (chưa có dòng → tạo, restarts = 0)', () async {
+      await setUpSchedule();
+      await putToken();
+      await setNow(DateTime.utc(2026, 10, 12, 3));
+      await push([
+        dayMutation(
+          mondayDay.withMark(
+            DayMark.skipped,
+            markedAt: DateTime.utc(2026, 10, 12, 3),
+          ),
+          DateTime.utc(2026, 10, 12, 3),
+        ),
+      ]);
+      await runAt(DateTime.utc(2026, 10, 12, 11));
+      expect(apns.sent, isEmpty);
+      await setNow(DateTime.utc(2026, 10, 12, 12));
+      await push([
+        dayMutation(mondayDay.withMark(null), DateTime.utc(2026, 10, 12, 12)),
+      ]);
+      expect(apns.events('start'), hasLength(1));
+      expect(await rows(), [
+        ['2026-10-12', false, 0, 'time', 'session'],
+      ]);
+    });
+
+    test(
+      'Bỏ đánh dấu trước giờ tập → không bật; 18:00 job bật như thường',
+      () async {
+        await setUpSchedule();
+        await putToken();
+        await setNow(DateTime.utc(2026, 10, 12, 3));
+        await push([
+          dayMutation(
+            mondayDay.withMark(
+              DayMark.skipped,
+              markedAt: DateTime.utc(2026, 10, 12, 3),
+            ),
+            DateTime.utc(2026, 10, 12, 3),
+          ),
+        ]);
+        await setNow(DateTime.utc(2026, 10, 12, 4));
+        await push([
+          dayMutation(mondayDay.withMark(null), DateTime.utc(2026, 10, 12, 4)),
+        ]);
+        expect(apns.sent, isEmpty);
+        await runAt(DateTime.utc(2026, 10, 12, 11));
+        expect(apns.events('start'), hasLength(1));
+      },
+    );
+
+    test('F31-E5, F31-R8: tạm dừng từ hôm qua, kết thúc sớm 19:00 ngày có '
+        'buổi 18:00 → thẻ hiện ngay', () async {
+      await setUpSchedule();
+      await putToken();
+      final pause = SchedulePause(
+        id: pauseId,
+        startDate: LocalDate(2026, 10, 11),
+        endDate: LocalDate(2026, 10, 14),
+      );
+      await setNow(DateTime.utc(2026, 10, 10, 13));
+      await push([
+        mutation(
+          'schedule_pause',
+          pauseId,
+          SyncOp.upsert,
+          at: DateTime.utc(2026, 10, 10, 13),
+          data: const SchedulePauseCodec().encode(pause),
+        ),
+      ]);
+      await runAt(DateTime.utc(2026, 10, 12, 11));
+      expect(apns.sent, isEmpty);
+      await setNow(DateTime.utc(2026, 10, 12, 12));
+      await push([
+        mutation(
+          'schedule_pause',
+          pauseId,
+          SyncOp.upsert,
+          at: DateTime.utc(2026, 10, 12, 12),
+          data: const SchedulePauseCodec().encode(
+            PauseRules.endEarly(pause, monday)!,
+          ),
+        ),
+      ]);
+      expect(apns.events('start'), hasLength(1));
+      expect(await rows(), [
+        ['2026-10-12', false, 0, 'time', 'session'],
+      ]);
+    });
+
+    test('F31-R7 → R8: đặt tạm dừng hôm nay khi thẻ đang hiện (tắt), kết '
+        'thúc vào ngày A (xóa khoảng) → thẻ hiện lại, restarts = 1', () async {
+      await setUpSchedule();
+      await putToken();
+      await runAt(DateTime.utc(2026, 10, 12, 11));
+      await setNow(DateTime.utc(2026, 10, 12, 11, 30));
+      await putToken(update: updateToken, date: monday);
+      await push([
+        mutation(
+          'schedule_pause',
+          pauseId,
+          SyncOp.upsert,
+          at: DateTime.utc(2026, 10, 12, 11, 30),
+          data: const SchedulePauseCodec().encode(
+            SchedulePause(
+              id: pauseId,
+              startDate: monday,
+              endDate: LocalDate(2026, 10, 14),
+            ),
+          ),
+        ),
+      ]);
+      await runAt(DateTime.utc(2026, 10, 12, 11, 31));
+      expect(apns.events('end'), hasLength(1));
+      await setNow(DateTime.utc(2026, 10, 12, 12));
+      await push([
+        mutation(
+          'schedule_pause',
+          pauseId,
+          SyncOp.delete,
+          at: DateTime.utc(2026, 10, 12, 12),
+        ),
+      ]);
+      expect(apns.events('start'), hasLength(2));
+      expect(await rows(), [
+        ['2026-10-12', false, 1, 'time', 'session'],
+      ]);
+    });
+
+    test('F25-AC64: tạm dừng → 18:00 không thẻ; bỏ đánh dấu trong khoảng → '
+        'không thẻ', () async {
+      await setUpSchedule();
+      await putToken();
+      await setNow(DateTime.utc(2026, 10, 12, 2));
+      await push([
+        mutation(
+          'schedule_pause',
+          pauseId,
+          SyncOp.upsert,
+          at: DateTime.utc(2026, 10, 12, 2),
+          data: const SchedulePauseCodec().encode(
+            SchedulePause(
+              id: pauseId,
+              startDate: monday,
+              endDate: LocalDate(2026, 10, 14),
+            ),
+          ),
+        ),
+      ]);
+      await runAt(DateTime.utc(2026, 10, 12, 11));
+      await setNow(DateTime.utc(2026, 10, 12, 11, 30));
+      await push([
+        dayMutation(
+          done(DateTime.utc(2026, 10, 12, 11, 30)),
+          DateTime.utc(2026, 10, 12, 11, 30),
+        ),
+      ]);
+      await setNow(DateTime.utc(2026, 10, 12, 12));
+      await push([
+        dayMutation(mondayDay.withMark(null), DateTime.utc(2026, 10, 12, 12)),
+      ]);
+      expect(apns.sent, isEmpty);
+    });
+
+    test(
+      'TD5-13.2: đã có dòng thẻ theo vị trí hôm nay → 18:00 job không bật '
+      'theo giờ; TD5-13.4: dòng thẻ ngày nghỉ (kind extra) tắt lúc 00:00',
+      () async {
+        await setUpSchedule();
+        await putToken();
+        await app.tdb.pool.execute(
+          Sql.named('''
+          INSERT INTO live_activity_sessions (user_id, date, started_at, trigger, kind)
+          SELECT id, '2026-10-12', @at, 'location', 'session' FROM users;
+          '''),
+          parameters: {'at': DateTime.utc(2026, 10, 12, 10, 20)},
+        );
+        await runAt(DateTime.utc(2026, 10, 12, 11));
+        expect(apns.events('start'), isEmpty);
+        await app.tdb.pool.execute(
+          Sql.named('''
+          INSERT INTO live_activity_sessions (user_id, date, started_at, trigger, kind)
+          SELECT id, '2026-10-13', @at, 'location', 'extra' FROM users;
+          '''),
+          parameters: {'at': DateTime.utc(2026, 10, 13, 9)},
+        );
+        await runAt(DateTime.utc(2026, 10, 13, 16, 59));
+        // Thẻ 12/10 tắt lúc 00:00 (không có token cập nhật → no_update_token).
+        expect((await rows()).first[1], isTrue);
+        expect((await rows()).last[1], isFalse);
+        await setNow(DateTime.utc(2026, 10, 13, 16, 59));
+        await putToken(update: updateToken, date: LocalDate(2026, 10, 13));
+        await runAt(DateTime.utc(2026, 10, 13, 17));
+        expect(
+          apns.events('end').single.token,
+          updateToken,
+          reason: 'thẻ extra 13/10 tắt 00:00',
+        );
+        expect(await rows(), [
+          ['2026-10-12', true, 0, 'location', 'session'],
+          ['2026-10-13', true, 0, 'location', 'extra'],
+        ]);
+      },
+    );
+
+    test('LiveActivityPlan.restart: ngoài cửa sổ, đã đánh dấu, thẻ đang mở, '
+        'tạm dừng → null', () {
+      final at = DateTime(2026, 10, 12, 19);
+      LiveActivityAccount account({
+        PlanDay? day,
+        DateTime? now,
+        List<OpenLiveActivity> open = const [],
+        List<SchedulePause> pauses = const [],
+      }) => LiveActivityAccount(
+        userId: 'u',
+        environment: ApnsEnvironment.sandbox,
+        pushToStartToken: startToken,
+        localNow: now ?? at,
+        tomorrowStart: DateTime.utc(2026, 10, 12, 17),
+        hasSchedule: true,
+        today: day ?? mondayDay,
+        open: open,
+        pauses: pauses,
+      );
+      expect(LiveActivityPlan.restart(account()), mondayDay);
+      expect(
+        LiveActivityPlan.restart(account(now: DateTime(2026, 10, 12, 17, 59))),
+        isNull,
+      );
+      expect(
+        LiveActivityPlan.restart(
+          account(
+            day: mondayDay.withOpenedAt(DateTime(2026, 10, 12, 17, 20)),
+            now: DateTime(2026, 10, 12, 17, 30),
+          ),
+        ),
+        isNotNull,
+        reason: 'FD5-01: cửa sổ mở từ lúc tới gym',
+      );
+      expect(
+        LiveActivityPlan.restart(
+          account(day: done(DateTime.utc(2026, 10, 12, 11))),
+        ),
+        isNull,
+      );
+      expect(
+        LiveActivityPlan.restart(
+          account(
+            open: [(date: monday, endsAt: DateTime.utc(2026, 10, 12, 17))],
+          ),
+        ),
+        isNull,
+      );
+      expect(
+        LiveActivityPlan.restart(
+          account(
+            pauses: [
+              SchedulePause(id: pauseId, startDate: monday, endDate: monday),
+            ],
+          ),
+        ),
+        isNull,
+      );
     });
   });
 }

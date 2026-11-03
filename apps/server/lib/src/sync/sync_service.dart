@@ -7,6 +7,10 @@ import '../db/transaction.dart';
 import '../logging/logger.dart';
 import 'sync_entity_handler.dart';
 
+/// Việc sau khi push commit (05 Bản 5 §6.6.3).
+typedef PushListener =
+    Future<void> Function(String userId, Set<PushSignal> signals);
+
 /// Đồng bộ (05 §6.6, TD-05): push các mutation, pull theo cursor.
 final class SyncService {
   SyncService({
@@ -61,21 +65,36 @@ final class SyncService {
     String userId,
     PushRequest request, {
     AppVersion? appVersion,
-  }) {
-    return inTransaction(_pool, (conn) async {
+  }) async {
+    final ctx = SyncContext(
+      userId: userId,
+      serverNow: _clock.now().toUtc(),
+      appVersion: appVersion,
+    );
+    final response = await inTransaction(_pool, (conn) async {
       await lockUser(conn, userId);
-      final ctx = SyncContext(
-        userId: userId,
-        serverNow: _clock.now().toUtc(),
-        appVersion: appVersion,
-      );
       final results = <PushResult>[];
       for (final m in request.mutations) {
         results.add(await _pushOne(conn, ctx, m));
       }
       return PushResponse(results);
     });
+    // 05 Bản 5 §6.6.3: việc sau commit (thẻ hiện lại). Lỗi không làm hỏng
+    // kết quả push đã ghi.
+    final listener = onPushed;
+    if (listener != null && ctx.signals.isNotEmpty) {
+      try {
+        await listener(userId, Set.of(ctx.signals));
+      } on Object catch (e) {
+        _log.warn('push_hook_failed', {'error': e.runtimeType.toString()});
+      }
+    }
+    return response;
   }
+
+  /// Gọi sau khi một lần push đã commit, khi handler ghi nhận [PushSignal]
+  /// (05 Bản 5 TD5-13.3). null = không có (dev, CI chưa có khóa APNs).
+  PushListener? onPushed;
 
   /// Các thay đổi của [userId] có `server_version > cursor`, tăng dần, tối đa
   /// [limit] (05 §6.6.3). Đọc trong một snapshot để `remaining` khớp `changes`.

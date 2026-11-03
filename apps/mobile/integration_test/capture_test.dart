@@ -27,6 +27,9 @@ import 'package:mobile/features/me/presentation/me_screen.dart';
 import 'package:mobile/features/menu/data/menu_repository.dart';
 import 'package:mobile/features/onboarding/application/setup_state.dart';
 import 'package:mobile/features/onboarding/data/onboarding_draft_repository.dart';
+import 'package:mobile/features/schedule/presentation/pause_sheet.dart';
+import 'package:mobile/features/schedule/presentation/schedule_screen.dart';
+import 'package:mobile/features/today/presentation/week_progress_screen.dart';
 import 'package:mobile/features/weight/data/weight_repository.dart';
 import 'package:mobile/features/workout/data/exercise_feel_repository.dart';
 import 'package:mobile/features/workout/data/exercise_note_repository.dart';
@@ -35,6 +38,7 @@ import 'package:mobile/features/workout/data/lift_log_repository.dart';
 import 'package:mobile/features/workout/data/session_exercise_repository.dart';
 import 'package:mobile/features/workout/presentation/pick_exercise_screen.dart';
 import 'package:mobile/features/workout/presentation/session_screen.dart';
+import 'package:mobile/ui/components/ironly_sheet.dart';
 import 'package:mobile/ui/components/ironly_tab_bar.dart';
 import 'package:mobile/ui/gallery.dart';
 import 'package:mobile/ui/keys.dart';
@@ -1037,6 +1041,133 @@ void main() {
             .go(sessionPath(AppTab.today, LocalDate(2026, 10, 29)));
         await tester.pumpAndSettle();
         await shot(tester, 'm24_s63_upcoming');
+      });
+    }
+    if (milestone == Milestone.m25) {
+      // 06 Bản 5 VS-56, VS-57: lịch mock M25 (T2 Ngực + Tay sau, T3 Ngực, T4
+      // Lưng, T6 Vai 18:00), T2 02/11 và T3 03/11 đã tập, tạm dừng T4 04/11 →
+      // CN 08/11 (seedCaptureM25). S-70 tạm dừng là snapshot XCTest (chép ở
+      // tool/capture_screens.sh).
+      Future<ProviderContainer> pumpAt(
+        WidgetTester tester,
+        AppDatabase db,
+        DateTime now,
+      ) async {
+        final container = ProviderContainer(
+          retry: (_, _) => null,
+          overrides: appOverrides(db: db, clock: FixedClock(now)),
+        );
+        addTearDown(container.dispose);
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const IronlyApp(),
+          ),
+        );
+        await tester.pumpAndSettle();
+        return container;
+      }
+
+      Future<void> tapKey(WidgetTester tester, String key) async {
+        final f = find.byKey(ValueKey(key));
+        await tester.ensureVisible(f);
+        await tester.pumpAndSettle();
+        await tester.tap(f);
+        await tester.pumpAndSettle();
+      }
+
+      Future<void> training(WidgetTester tester) async {
+        await tester.tap(
+          find.descendant(
+            of: find.byType(IronlyTabBar),
+            matching: find.text(S.tabTraining),
+          ),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      Future<AppDatabase> seeded({bool paused = true}) async {
+        final db = AppDatabase(NativeDatabase.memory());
+        addTearDown(db.close);
+        await seedCaptureM25(db, paused: paused);
+        return db;
+      }
+
+      final thu0940 = DateTime(2026, 11, 5, 9, 40);
+
+      testWidgets('M25: S-20 tạm dừng (nút hai vạch, banner, ô viền đứt)', (
+        tester,
+      ) async {
+        await pumpAt(tester, await seeded(), thu0940);
+        await training(tester);
+        await shot(tester, 'm25_s20');
+      });
+
+      testWidgets('M25: S-21 ngày tạm dừng (T6 06/11)', (tester) async {
+        await pumpAt(tester, await seeded(), thu0940);
+        await training(tester);
+        await tapKey(tester, 'month-cell-2026-11-06');
+        await shot(tester, 'm25_s21');
+      });
+
+      testWidgets('M25: S-76 đang có khoảng', (tester) async {
+        await pumpAt(tester, await seeded(), thu0940);
+        await training(tester);
+        await tapKey(tester, 'open-pause');
+        await shot(tester, 'm25_s76_active');
+      });
+
+      testWidgets('M25: S-76 chưa có khoảng (hôm nay 03/11 → CN 08/11)', (
+        tester,
+      ) async {
+        await pumpAt(
+          tester,
+          await seeded(paused: false),
+          DateTime(2026, 11, 3, 21, 10),
+        );
+        await training(tester);
+        unawaited(
+          showIronlySheet<void>(
+            tester.element(find.byType(ScheduleScreen)),
+            builder: (_) => PauseSheet(
+              initialFrom: LocalDate(2026, 11, 3),
+              initialTo: LocalDate(2026, 11, 8),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await shot(tester, 'm25_s76_new');
+      });
+
+      testWidgets('M25: S-25 tuần tạm dừng (2 / 2)', (tester) async {
+        final c = await pumpAt(tester, await seeded(), thu0940);
+        await training(tester);
+        unawaited(
+          c
+              .read(routerProvider)
+              .push(
+                weekProgressPath(
+                  AppTab.schedule,
+                  ProgressWeek.containing(captureMondayM25),
+                ),
+              ),
+        );
+        await tester.pumpAndSettle();
+        await shot(tester, 'm25_s25');
+      });
+
+      testWidgets('M25: S-10 H7 tạm dừng, ngày có buổi (T4 04/11 18:12)', (
+        tester,
+      ) async {
+        await pumpAt(tester, await seeded(), DateTime(2026, 11, 4, 18, 12));
+        await shot(tester, 'm25_s10_h7');
+      });
+
+      testWidgets('M25: S-10 H8 tạm dừng, ngày nghỉ (T5 05/11)', (
+        tester,
+      ) async {
+        await pumpAt(tester, await seeded(), thu0940);
+        await shot(tester, 'm25_s10_h8');
       });
     }
   });

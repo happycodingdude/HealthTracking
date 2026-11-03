@@ -413,7 +413,8 @@ final class ExerciseFeelHandler implements SyncEntityHandler, VersionedPull {
 /// sửa B không về quá khứ, `endedOn` ∈ [A − 1, B]; một khoảng hiệu lực tại một
 /// thời điểm → `pause_overlap`. `delete` chỉ với khoảng chưa bắt đầu (xóa
 /// khoảng đặt trước / kết thúc vào ngày A, F31-R8): ngày đã qua của khoảng
-/// không bị đổi. Hook thẻ ở 06 Bản 5 VS-56, VS-57.
+/// không bị đổi. Thẻ: tắt khi khoảng phủ hôm nay (job, VS-56), hiện lại khi
+/// khoảng thôi phủ hôm nay ([PushSignal.pauseEndedToday], VS-57).
 final class SchedulePauseHandler implements SyncEntityHandler, VersionedPull {
   const SchedulePauseHandler();
 
@@ -508,6 +509,10 @@ final class SchedulePauseHandler implements SyncEntityHandler, VersionedPull {
           WHERE user_id = @user AND id = @id::uuid'''),
         parameters: parameters,
       );
+      // Xóa khoảng đang phủ hôm nay (kết thúc vào ngày A, F31-R8).
+      if (before != null && before.covers(today)) {
+        ctx.signals.add(PushSignal.pauseEndedToday);
+      }
       return;
     }
     final after = _codec.decode(m.key, m.data!);
@@ -542,6 +547,11 @@ final class SchedulePauseHandler implements SyncEntityHandler, VersionedPull {
         'endedOn': after.endedOn?.toKey(),
       },
     );
+    // 05 Bản 5 §6.6.3, TD5-13.3: khoảng thôi phủ hôm nay (kết thúc sớm) → sau
+    // commit, thẻ hiện lại nếu còn trong cửa sổ (F31-R8, F25-R64).
+    if (before != null && before.covers(today) && !after.covers(today)) {
+      ctx.signals.add(PushSignal.pauseEndedToday);
+    }
   }
 
   @override

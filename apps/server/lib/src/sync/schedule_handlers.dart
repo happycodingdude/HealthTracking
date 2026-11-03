@@ -318,10 +318,11 @@ final class DayHandler implements SyncEntityHandler {
         ? null
         : _codec.decode(m.key, current.data!);
     final merged = d.withOpenedAt(DayChangeRules.mergeOpenedAt(before, d));
+    final localNow = await deviceNow(s, userId, m.clientUpdatedAt);
     final violation = DayChangeRules.check(
       await _openedLocal(s, userId, before),
       (await _openedLocal(s, userId, merged))!,
-      await deviceNow(s, userId, m.clientUpdatedAt),
+      localNow,
       fromV2App: ctx.appVersion != null,
     );
     // Buổi tập thêm mới khi chưa có lịch tuần (F05-R31, 05 Bản 2 §6.6.3).
@@ -395,6 +396,14 @@ final class DayHandler implements SyncEntityHandler {
         ),
         parameters: {'now': ctx.serverNow, 'user': userId, 'date': m.key},
       );
+    }
+    // 05 Bản 5 §6.6.3, TD5-13.3: bỏ đánh dấu buổi hôm nay → sau commit, thẻ
+    // hiện lại nếu còn trong cửa sổ (F25-R61, FC5-13).
+    if (before?.mark != null &&
+        d.mark == null &&
+        localNow != null &&
+        d.date == LocalDate.fromDateTime(localNow)) {
+      ctx.signals.add(PushSignal.dayUnmarkedToday);
     }
   }
 

@@ -20,10 +20,12 @@ final widgetDaysProvider = StreamProvider.family<List<PlanDay>, LocalDate>((
   return ref.watch(scheduleRepositoryProvider).watchRange(from, to);
 });
 
-/// Nội dung widget hiện tại (05 Bản 3 §6.8.1). Tự tính lại khi đăng nhập /
-/// đăng xuất / phiên hết hạn, lịch tuần, lịch tháng, bản ghi ngày (đánh dấu,
-/// buổi tập thêm, sửa riêng, dữ liệu pull về) hoặc sang ngày mới đổi (F24-R5,
-/// TD3-15). null khi dữ liệu chưa đọc xong hoặc đang khôi phục (S-07).
+/// Nội dung widget hiện tại (05 Bản 3 §6.8.1, Bản 5 §6.8 schema 2). Tự tính
+/// lại khi đăng nhập / đăng xuất / phiên hết hạn, lịch tuần, lịch tháng, bản
+/// ghi ngày (đánh dấu, bỏ đánh dấu, buổi tập thêm, sửa riêng, dữ liệu pull về),
+/// khoảng tạm dừng (đặt / sửa / kết thúc, F24-R63) hoặc sang ngày mới đổi
+/// (F24-R5, TD3-15). null khi dữ liệu chưa đọc xong hoặc đang khôi phục (S-07).
+/// Không có mức thoải mái, bài thay / thêm (F24-R64).
 final widgetStateProvider = Provider<WidgetState?>((ref) {
   final auth = ref.watch(authControllerProvider);
   final now = ref.read(clockProvider).now();
@@ -32,12 +34,19 @@ final widgetStateProvider = Provider<WidgetState?>((ref) {
   final template = ref.watch(weeklyTemplateProvider);
   final plans = ref.watch(monthPlansProvider);
   final days = ref.watch(widgetDaysProvider(ref.watch(todayProvider)));
-  if (!template.hasValue || !plans.hasValue || !days.hasValue) return null;
+  final pauses = ref.watch(pausesProvider);
+  if (!template.hasValue ||
+      !plans.hasValue ||
+      !days.hasValue ||
+      !pauses.hasValue) {
+    return null;
+  }
   return WidgetState.of(
     now: now,
     days: days.requireValue,
     planned: {for (final p in plans.requireValue) p.month},
     template: template.value,
+    pauses: pauses.requireValue,
   );
 });
 

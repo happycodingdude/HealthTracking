@@ -16,6 +16,7 @@ import 'package:mobile/features/native/live_activity_controller.dart';
 import 'package:mobile/features/native/native_bridge.dart';
 import 'package:mobile/features/native/native_logout_hooks.dart';
 import 'package:mobile/features/native/widget_state_writer.dart';
+import 'package:mobile/features/schedule/application/pause_edits.dart';
 import 'package:mobile/features/schedule/application/schedule_edits.dart';
 import 'package:mobile/features/schedule/data/schedule_repository.dart';
 import 'package:mobile/features/today/application/mark_session.dart';
@@ -80,8 +81,10 @@ void main() {
       'total': 3,
       'done': 0,
       'extra': 0,
-      'dots': [false, false, false],
+      'dots': ['today', 'pending', 'pending'],
     });
+    expect(native.current!['schema'], 2);
+    expect(today()['paused'], isFalse);
   });
 
   testWidgets('F24-AC2: "Đã tập" → ghi lại mark done, 1/3; không đổi gì thì '
@@ -94,7 +97,53 @@ void main() {
     await tester.pumpAndSettle();
     expect(native.written.length, before + 1);
     expect(today()['mark'], 'done');
-    expect(week()['dots'], [true, false, false]);
+    expect(week()['dots'], ['done', 'pending', 'pending']);
+    expect(native.calls.last, 'reloadWidgets');
+  });
+
+  testWidgets('F24-R63: bỏ đánh dấu → ghi lại, chấm hôm nay trở lại', (
+    tester,
+  ) async {
+    await pump(tester, DateTime(2026, 10, 12, 19, 30));
+    await container.read(markSessionDoneProvider).call(monday, confirmed: true);
+    await tester.pumpAndSettle();
+    final before = native.written.length;
+    await container.read(unmarkSessionProvider).call(monday);
+    await tester.pumpAndSettle();
+    expect(native.written.length, before + 1);
+    expect(today()['mark'], isNull);
+    expect(week()['done'], 0);
+    expect(week()['dots'], ['today', 'pending', 'pending']);
+  });
+
+  testWidgets('F24-AC61, F24-R63: đặt tạm dừng hôm nay → "Ngực + Tay sau" + '
+      'tạm dừng, tiến độ trừ buổi tạm dừng; kết thúc → ghi lại bình thường', (
+    tester,
+  ) async {
+    await pump(tester, DateTime(2026, 10, 12, 10));
+    final edits = container.read(pauseEditsProvider);
+    final pause = await edits.start(monday, LocalDate(2026, 10, 18));
+    await tester.pumpAndSettle();
+    expect(today()['paused'], isTrue);
+    expect(today()['groups'], ['Ngực', 'Tay sau']);
+    expect(today()['time'], '18:00');
+    expect(week(), {
+      'total': 0,
+      'done': 0,
+      'extra': 0,
+      'dots': ['paused', 'paused', 'paused'],
+    });
+    // Ngày nghỉ trong khoảng (thứ 3): "Nghỉ" + tạm dừng.
+    final tue = ((native.current!['days']! as List)[1] as Map)
+        .cast<String, Object?>();
+    expect(tue['kind'], 'rest');
+    expect(tue['paused'], isTrue);
+    final before = native.written.length;
+    await edits.endEarly(pause);
+    await tester.pumpAndSettle();
+    expect(native.written.length, before + 1);
+    expect(today()['paused'], isFalse);
+    expect(week()['total'], 3);
     expect(native.calls.last, 'reloadWidgets');
   });
 

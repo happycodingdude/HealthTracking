@@ -1,13 +1,22 @@
 import 'package:api_contract/api_contract.dart';
 import 'package:postgres/postgres.dart';
 
+/// Việc server làm sau khi một lần push đã commit (05 Bản 5 §6.6.3, TD5-13.3):
+/// handler ghi nhận trong transaction, [SyncService.onPushed] xử lý sau (gửi
+/// APNs ngoài transaction).
+enum PushSignal {
+  /// Buổi hôm nay vừa bỏ đánh dấu ("Đã tập" / "Không tập" → chưa đánh dấu,
+  /// FC5-13): thẻ hiện lại nếu còn trong cửa sổ (F25-R61, TA5-06).
+  dayUnmarkedToday,
+
+  /// Khoảng tạm dừng vừa thôi phủ hôm nay (kết thúc sớm, xóa khoảng — F31-R8):
+  /// thẻ hiện lại nếu còn trong cửa sổ (F25-R64).
+  pauseEndedToday,
+}
+
 /// Ngữ cảnh khi kiểm tra một mutation.
 final class SyncContext {
-  const SyncContext({
-    required this.userId,
-    required this.serverNow,
-    this.appVersion,
-  });
+  SyncContext({required this.userId, required this.serverNow, this.appVersion});
 
   final String userId;
 
@@ -17,6 +26,9 @@ final class SyncContext {
   /// Giờ server (UTC). Quy tắc phụ thuộc thời gian dùng `clientUpdatedAt` của
   /// mutation (05 §6.6.2), giờ server chỉ để chặn thời điểm tương lai.
   final DateTime serverNow;
+
+  /// Việc cần làm sau khi push commit, handler thêm vào ở cuối `apply`.
+  final Set<PushSignal> signals = {};
 }
 
 /// Handler từ chối mutation ở bước cần đọc database (ví dụ ngày thuộc tháng

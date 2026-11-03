@@ -10,6 +10,7 @@ import 'package:mobile/data/sync/outbox_writer.dart';
 import 'package:mobile/features/library/data/exercise_repository.dart';
 import 'package:mobile/features/me/data/profile_repository.dart';
 import 'package:mobile/features/menu/data/menu_repository.dart';
+import 'package:mobile/features/schedule/data/schedule_pause_repository.dart';
 import 'package:mobile/features/weight/data/weight_repository.dart';
 import 'package:mobile/features/workout/data/exercise_feel_repository.dart';
 import 'package:mobile/features/workout/data/exercise_note_repository.dart';
@@ -272,4 +273,84 @@ Future<List<Exercise>> seedCaptureV5(AppDatabase db, {bool rows = true}) async {
   }
   await MenuRepository(db).put(day, readyMenu(targetKcal: 1850));
   return library;
+}
+
+/// Lịch của mock Bản 5 mốc M25 (s20, s25, s10-h7, s10-h8, s76, s21): T2 Ngực
+/// + Tay sau, T3 Ngực, T4 Lưng, T6 Vai, 18:00.
+final captureTemplateM25 = WeeklyTemplate({
+  1: TemplateDay(
+    enabled: true,
+    time: LocalTime(18, 0),
+    muscles: const [MuscleGroup.chest, MuscleGroup.triceps],
+  ),
+  2: TemplateDay(
+    enabled: true,
+    time: LocalTime(18, 0),
+    muscles: const [MuscleGroup.chest],
+  ),
+  3: TemplateDay(
+    enabled: true,
+    time: LocalTime(18, 0),
+    muscles: const [MuscleGroup.back],
+  ),
+  5: TemplateDay(
+    enabled: true,
+    time: LocalTime(18, 0),
+    muscles: const [MuscleGroup.shoulders],
+  ),
+});
+
+/// Tuần của mock M25: thứ 2 02/11/2026.
+final captureMondayM25 = LocalDate(2026, 11, 2);
+
+/// Dựng dữ liệu M25 (06 Bản 5 VS-57, bộ ảnh M25): lịch tháng 10 + 11, T2
+/// 02/11 và T3 03/11 đã tập, tạm dừng T4 04/11 → CN 08/11 ([paused]; mock
+/// ghi "CN 09/11" nhưng 09/11/2026 là thứ 2 — lấy chủ nhật của tuần); buổi
+/// Lưng 4 bài theo mock s10-h7 (buổi trước T4 28/10: 50 → 55 kg · Vừa, 8 →
+/// 10 nấc · Mệt, 20 → 25 kg).
+Future<void> seedCaptureM25(AppDatabase db, {bool paused = true}) async {
+  await seedSetUp(
+    db,
+    template: captureTemplateM25,
+    extraMonths: [YearMonth(2026, 11)],
+  );
+  final repo = ExerciseRepository(db);
+  for (final e in [
+    ...captureLibraryV5(),
+    _ex('back-4', MuscleRegion.backLower, 'Đứng kéo thanh đòn gập hông', 4),
+  ]) {
+    await repo.put(e);
+  }
+  final units = ExerciseUnitRepository(db);
+  final logs = LiftLogRepository(db);
+  final feels = ExerciseFeelRepository(db);
+  final prev = LocalDate(2026, 10, 28);
+  for (final (id, unit, s, e, feel) in [
+    ('back-1', LiftUnit.kg, 500, 550, Feel.medium),
+    ('back-2', LiftUnit.steps, 80, 100, Feel.hard),
+    ('back-3', LiftUnit.kg, 200, 250, null),
+  ]) {
+    await units.put(ExerciseUnit(exerciseId: id, unit: unit, changedOn: prev));
+    await logs.put(
+      LiftLog(date: prev, exerciseId: id, startKgX10: s, endKgX10: e),
+    );
+    if (feel != null) {
+      await feels.put(ExerciseFeel(date: prev, exerciseId: id, feel: feel));
+    }
+  }
+  for (final d in [captureMondayM25, captureMondayM25.addDays(1)]) {
+    await seedMark(db, d, DayMark.done);
+  }
+  if (paused) {
+    await SchedulePauseRepository(db).put(
+      SchedulePause(
+        id: '6f1d2c3b-0000-4000-8000-0000000000d5',
+        startDate: captureMondayM25.addDays(2),
+        endDate: captureMondayM25.addDays(6),
+      ),
+    );
+  }
+  await MenuRepository(
+    db,
+  ).put(captureMondayM25.addDays(2), readyMenu(targetKcal: 1850));
 }

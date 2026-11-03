@@ -69,11 +69,13 @@ void main() {
       'time': '18:00',
       'mark': null,
       'extra': false,
+      'paused': false,
       'week': {
         'total': 4,
         'done': 1,
         'extra': 0,
-        'dots': [true, false, false, false],
+        // Schema 2 (TD5-16): chấm hôm nay ghi thẳng trong file.
+        'dots': ['done', 'today', 'pending', 'pending'],
       },
     });
   });
@@ -89,7 +91,7 @@ void main() {
       'total': 4,
       'done': 2,
       'extra': 0,
-      'dots': [true, true, false, false],
+      'dots': ['done', 'done', 'pending', 'pending'],
     });
   });
 
@@ -124,7 +126,7 @@ void main() {
       'total': 4,
       'done': 2,
       'extra': 1,
-      'dots': [true, true, false, false],
+      'dots': ['done', 'done', 'pending', 'pending'],
     });
   });
 
@@ -186,7 +188,7 @@ void main() {
       'total': 4,
       'done': 0,
       'extra': 0,
-      'dots': [false, false, false, false],
+      'dots': ['today', 'pending', 'pending', 'pending'],
     });
   });
 
@@ -231,11 +233,11 @@ void main() {
     expect(nov2.groups, [MuscleGroup.chest, MuscleGroup.triceps]);
   });
 
-  test('JSON theo 05 Bản 3 §6.8.1: schema 1, generatedAt kèm múi giờ, '
-      'range đủ để tính', () {
+  test('JSON theo 05 Bản 3 §6.8.1, Bản 5 §6.8: schema 2, generatedAt kèm '
+      'múi giờ, range đủ để tính', () {
     final s = at(DateTime(2026, 10, 13, 10), october());
     final j = s.toJson();
-    expect(j['schema'], 1);
+    expect(j['schema'], 2);
     expect(
       j['generatedAt'],
       matches(RegExp(r'^2026-10-13T10:00:00[+-]\d\d:\d\d$')),
@@ -244,5 +246,121 @@ void main() {
       LocalDate(2026, 10, 12),
       LocalDate(2026, 10, 25),
     ));
+  });
+
+  group('Bản 5 — tạm dừng (F24-R61 → R64, TD5-16)', () {
+    SchedulePause pause(int from, int to) => SchedulePause(
+      id: 'p',
+      startDate: LocalDate(2026, 10, from),
+      endDate: LocalDate(2026, 10, to),
+    );
+
+    WidgetState paused(DateTime now, List<PlanDay> days, SchedulePause p) =>
+        WidgetState.of(
+          now: now,
+          days: days,
+          planned: oct,
+          template: template,
+          pauses: [p],
+        );
+
+    test('F24-AC61: tạm dừng hôm nay (thứ 3 Lưng) → "Lưng" + tạm dừng, '
+        'không chấm hôm nay; tiến độ trừ buổi tạm dừng', () {
+      // Tuần: T2 Ngực + Tay sau (đã tập), T3 Lưng, T5 Vai, T6 Chân; tạm dừng
+      // T3 → CN.
+      final s = paused(
+        DateTime(2026, 10, 13, 10),
+        mark(october(), {12: DayMark.done}),
+        pause(13, 18),
+      );
+      expect(json(s.days.first), {
+        'date': '2026-10-13',
+        'weekday': 'Thứ 3',
+        'kind': 'workout',
+        'groups': ['Lưng'],
+        'time': '18:00',
+        'mark': null,
+        'extra': false,
+        'paused': true,
+        'week': {
+          'total': 1,
+          'done': 1,
+          'extra': 0,
+          'dots': ['done', 'paused', 'paused', 'paused'],
+        },
+      });
+      // Ngày nghỉ trong khoảng (T4): "Nghỉ" + tạm dừng.
+      final wed = json(s.days[1]);
+      expect(wed['kind'], 'rest');
+      expect(wed['paused'], isTrue);
+      // Ngày sau khoảng (T2 tuần sau): bình thường, chấm hôm nay của ngày đó.
+      final nextMonday = json(s.days[6]);
+      expect(nextMonday['paused'], isFalse);
+      expect((nextMonday['week']! as Map)['dots'], [
+        'today',
+        'pending',
+        'pending',
+        'pending',
+      ]);
+    });
+
+    test('F24-R62, A5-06: buổi trong khoảng đã "Đã tập" → Đã tập như thường, '
+        'tính vào X và Y', () {
+      final s = paused(
+        DateTime(2026, 10, 13, 19),
+        mark(october(), {12: DayMark.done, 13: DayMark.done}),
+        pause(13, 18),
+      );
+      final today = json(s.days.first);
+      expect(today['mark'], 'done');
+      expect(today['paused'], isFalse);
+      expect(today['week'], {
+        'total': 2,
+        'done': 2,
+        'extra': 0,
+        'dots': ['done', 'done', 'paused', 'paused'],
+      });
+    });
+
+    test('"Không tập" trong khoảng (Bạn chủ động) → không phải tạm dừng, '
+        'tính vào Y (F06-R61)', () {
+      final s = paused(
+        DateTime(2026, 10, 13, 19),
+        mark(october(), {12: DayMark.done, 13: DayMark.skipped}),
+        pause(13, 18),
+      );
+      final today = json(s.days.first);
+      expect(today['mark'], 'skipped');
+      expect(today['paused'], isFalse);
+      expect((today['week']! as Map)['total'], 2);
+      expect((today['week']! as Map)['dots'], [
+        'done',
+        'pending',
+        'paused',
+        'paused',
+      ]);
+    });
+
+    test('F06-R62: tạm dừng cả tuần → total 0, mọi chấm tạm dừng', () {
+      final s = paused(DateTime(2026, 10, 12, 10), october(), pause(12, 18));
+      expect(s.days.first.week.total, 0);
+      expect(s.days.first.week.toJson()['dots'], [
+        'paused',
+        'paused',
+        'paused',
+        'paused',
+      ]);
+    });
+
+    test('F24-R64: file không có mức thoải mái, bài thay / thêm', () {
+      final j = paused(
+        DateTime(2026, 10, 13, 10),
+        october(),
+        pause(13, 13),
+      ).toJson().toString();
+      for (final word in ['feel', 'replacement', 'extraExercise', 'skipped:']) {
+        expect(j, isNot(contains(word)));
+      }
+    });
   });
 }

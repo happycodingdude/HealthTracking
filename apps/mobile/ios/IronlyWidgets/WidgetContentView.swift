@@ -5,7 +5,9 @@ import SwiftUI
 /// ngang; nghỉ: "Nghỉ" chữ phụ + "+1 buổi thêm" cam) · giờ chữ phụ; **phải**
 /// "TUẦN NÀY" · "2" cam 24 / 600 + "/4" chữ phụ · chấm 8 pt (cam đã tập, viền
 /// cam hôm nay, thẻ nổi còn lại). Không chữ "Ironly", "Chưa tập" (FR4-04,
-/// FR4-05); nội dung, nguồn dữ liệu, URL như Bản 3 (F4-R9). Dấu hiệu có
+/// FR4-05); nội dung, nguồn dữ liệu, URL như Bản 3 (F4-R9). Bản 5 (04 S-70,
+/// F24-R61): ngày tạm dừng có hai vạch chữ phụ trước tên nhóm cơ / "Nghỉ",
+/// chấm buổi tạm dừng là chấm thẻ nổi, không viền cam hôm nay. Dấu hiệu có
 /// `accessibilityLabel` là câu chữ Bản 3 (TD4-07). Màu đặt thẳng theo token,
 /// không theo sáng / tối của máy (TA4-08).
 struct WidgetContentView: View {
@@ -75,6 +77,8 @@ private struct DayColumn: View {
       if day.kind == "workout" {
         HStack(alignment: .center, spacing: Tokens.space.s2) {
           switch day.mark {
+          case nil where day.paused:
+            PauseMark()
           case "done":
             Image(systemName: "checkmark")
               .scaledFont(15, .bold)
@@ -98,13 +102,17 @@ private struct DayColumn: View {
           Text(time)
             .scaledFont(Tokens.type.caption)
             .foregroundStyle(Tokens.color.textSecondary)
-            // Hôm nay chờ đánh dấu: VoiceOver đọc như Bản 3.
-            .accessibilityLabel(day.mark == nil ? "Chưa tập · \(time)" : time)
+            // Hôm nay chờ đánh dấu: VoiceOver đọc như Bản 3; tạm dừng thì
+            // dấu hai vạch đã đọc "Tạm dừng".
+            .accessibilityLabel(day.mark == nil && !day.paused ? "Chưa tập · \(time)" : time)
         }
       } else {
-        Text("Nghỉ")
-          .scaledFont(Tokens.type.widgetTitle, .semibold)
-          .foregroundStyle(Tokens.color.textSecondary)
+        HStack(alignment: .center, spacing: Tokens.space.s2) {
+          if day.paused { PauseMark() }
+          Text("Nghỉ")
+            .scaledFont(Tokens.type.widgetTitle, .semibold)
+            .foregroundStyle(Tokens.color.textSecondary)
+        }
         if day.extra {
           // Dấu "+" cam = buổi tập thêm (03 Bản 4 §6.4); file widget không có
           // nhóm cơ của buổi thêm nên giữ câu "+1 buổi thêm".
@@ -156,24 +164,44 @@ private struct WeekColumn: View {
 }
 
 /// Chấm tiến độ 8 pt (04 Bản 4 S-70): cam đã tập, viền cam hôm nay, thẻ nổi
-/// còn lại — cùng dấu hiệu với `ProgressDots` của app.
+/// còn lại (kể cả buổi tạm dừng, 04 Bản 5 S-70) — cùng dấu hiệu với
+/// `ProgressDots` của app.
 struct ProgressDots: View {
-  let dots: [Bool]
+  let dots: [WidgetDot]
   let todayDot: Int?
   var size: CGFloat = Tokens.size.dot
 
   var body: some View {
     HStack(spacing: size * 0.5) {
-      ForEach(Array(dots.enumerated()), id: \.offset) { i, done in
+      ForEach(Array(dots.enumerated()), id: \.offset) { i, dot in
+        let done = dot == .done
+        let ring = !done && i == todayDot
         Circle()
-          .fill(done ? Tokens.color.accent : (i == todayDot ? Tokens.color.transparent : Tokens.color.surfaceRaised))
+          .fill(done ? Tokens.color.accent : (ring ? Tokens.color.transparent : Tokens.color.surfaceRaised))
           .overlay(
-            Circle().strokeBorder(
-              Tokens.color.accent,
-              lineWidth: !done && i == todayDot ? 1.5 : 0))
+            Circle().strokeBorder(Tokens.color.accent, lineWidth: ring ? 1.5 : 0))
           .frame(width: size, height: size)
       }
     }
+  }
+}
+
+/// Dấu tạm dừng (04 Bản 5 §6.1 `PauseGlyph`, đứng rời): hai vạch 2,5 × 11
+/// cách 2, màu chữ phụ, theo cỡ chữ. VoiceOver "Tạm dừng".
+struct PauseMark: View {
+  @Environment(\.dynamicTypeSize) private var typeSize
+
+  var body: some View {
+    let k = typeSize.ironlyScale
+    HStack(spacing: 2 * k) {
+      ForEach(0..<2, id: \.self) { _ in
+        RoundedRectangle(cornerRadius: 1.25 * k)
+          .fill(Tokens.color.textSecondary)
+          .frame(width: 2.5 * k, height: 11 * k)
+      }
+    }
+    .accessibilityElement()
+    .accessibilityLabel("Tạm dừng")
   }
 }
 

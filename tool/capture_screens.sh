@@ -41,6 +41,21 @@ print(re.search(r"iOS-(\d+)", rt).group(1))')"
   CAPTURE=0
 fi
 
+# M25: widget tạm dừng là snapshot XCTest (06 Bản 5 VS57-T05), chép với tiền
+# tố m25_; màn app vẫn chụp qua flutter drive.
+if [ "$CAPTURE" = 1 ] && [ "$M" = "M25" ]; then
+  OS="ios$(xcrun simctl list -j devices booted | python3 -c '
+import json, sys, re
+d = json.load(sys.stdin)["devices"]
+rt = next(rt for rt, ds in d.items() if any(x["state"] == "Booted" for x in ds))
+print(re.search(r"iOS-(\d+)", rt).group(1))')"
+  SNAP="$ROOT/apps/mobile/ios/IronlyWidgetsTests/__Snapshots__/$OS"
+  for f in s70_paused s70_rest_paused; do
+    [ -f "$SNAP/$f.png" ] || { echo "Chưa có snapshot $SNAP/$f.png: chạy xcodebuild test (check.sh) trước" >&2; exit 1; }
+    cp "$SNAP/$f.png" "$SHOTS/m25_$f.png"
+  done
+fi
+
 if [ "$CAPTURE" = 1 ]; then
   if [ -z "$DEVICE" ]; then
     DEVICE="$(xcrun simctl list devices booted | grep -Eo '\([0-9A-F-]{36}\)' | head -1 | tr -d '()')"

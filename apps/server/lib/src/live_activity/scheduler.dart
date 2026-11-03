@@ -115,6 +115,22 @@ abstract final class LiveActivityPlan {
     ],
   ];
 
+  /// Thẻ hiện lại sau khi push commit (05 Bản 5 TD5-13.3, §6.6.3): buổi theo
+  /// lịch hôm nay chưa đánh dấu (vừa bỏ đánh dấu, FC5-13), không tạm dừng
+  /// (vừa kết thúc sớm, F31-R8), lúc này trong cửa sổ `[min(giờ tập, lúc tới
+  /// gym), 00:00)` (TD5-07, FC5-01), và thẻ hôm nay không đang hiện (chưa
+  /// bật, hoặc đã gửi tắt). Trả buổi cần gửi `start`; null = không làm gì.
+  static PlanDay? restart(LiveActivityAccount a) {
+    final day = a.today;
+    if (!a.hasSchedule || day == null) return null;
+    if (PauseRules.isPaused(a.localToday, a.pauses)) return null;
+    if (!day.isWorkout || day.time == null || day.mark != null) return null;
+    if (a.localNow.isBefore(SessionRules.opensAt(day))) return null;
+    if (!DayLock.isOpen(day.date, a.localNow)) return null;
+    if (a.open.any((o) => o.date == a.localToday)) return null;
+    return day;
+  }
+
   /// Buổi theo lịch hôm nay đã tới giờ, chưa đánh dấu, chưa bật thẻ (F25-R1,
   /// R2, FA3-12): không ngày nghỉ (kể cả sửa riêng thành nghỉ), không buổi
   /// tập thêm, không tài khoản Chưa có lịch. Bản 5: không bật trong khoảng
@@ -203,8 +219,27 @@ final class LiveActivityScheduler {
     }
   }
 
+  /// Việc sau khi push commit (05 Bản 5 §6.6.3, TD5-13.3), gắn vào
+  /// [SyncService.onPushed]: bỏ đánh dấu buổi hôm nay hoặc kết thúc tạm dừng
+  /// sớm khi còn trong cửa sổ → gửi `start` mới, `restarts + 1`,
+  /// `end_sent_at = null` (F25-R61, F31-R8). Không mạng lúc bỏ đánh dấu thì
+  /// app không gửi gì → thẻ không hiện lại (TA5-06).
+  Future<void> afterPush(String userId, Set<PushSignal> signals) async {
+    if (signals.isEmpty) return;
+    final now = _clock.now().toUtc();
+    for (final a in await accounts(now, userId: userId)) {
+      final day = LiveActivityPlan.restart(a);
+      if (day == null) continue;
+      await _restart(now, a, day);
+    }
+  }
+
   /// Tài khoản có token, kèm giờ theo timezone, ngày hôm nay, thẻ đang mở.
-  Future<List<LiveActivityAccount>> accounts(DateTime now) async {
+  /// [userId] = chỉ một tài khoản (hook sau push).
+  Future<List<LiveActivityAccount>> accounts(
+    DateTime now, {
+    String? userId,
+  }) async {
     final rows = await _pool.execute(
       Sql.named('''
         SELECT t.user_id, t.push_to_start_token, t.activity_push_token,
@@ -218,8 +253,9 @@ final class LiveActivityScheduler {
         JOIN profiles p ON p.user_id = t.user_id AND NOT p.deleted
         CROSS JOIN LATERAL (
           SELECT CASE WHEN p.timezone IN (SELECT name FROM pg_timezone_names)
-                      THEN p.timezone ELSE 'Asia/Ho_Chi_Minh' END AS tz) z'''),
-      parameters: {'now': now},
+                      THEN p.timezone ELSE 'Asia/Ho_Chi_Minh' END AS tz) z
+        WHERE @user::uuid IS NULL OR t.user_id = @user::uuid'''),
+      parameters: {'now': now, 'user': userId},
     );
     final out = <LiveActivityAccount>[];
     for (final r in rows) {
@@ -386,6 +422,70 @@ final class LiveActivityScheduler {
       case ApnsOutcome.retry || ApnsOutcome.rejected:
         // Không ghi dòng: phút sau thử lại, quá 10 phút thì thôi (§6.9.4).
         await _failed('start', user, a.date, result);
+    }
+  }
+
+  /// Bật lại thẻ hôm nay (TD5-13.3). Giành dòng `live_activity_sessions`
+  /// trước khi gửi để job mỗi phút và hook không cùng bật: chưa có dòng → tạo
+  /// (`trigger = time`); có dòng đã gửi tắt → `restarts + 1`,
+  /// `end_sent_at = null`. Dòng đang mở → không làm gì. Gửi lỗi → ghi lại
+  /// `end_sent_at` (thẻ không hiện), lần bỏ đánh dấu sau thử lại được.
+  Future<void> _restart(
+    DateTime now,
+    LiveActivityAccount account,
+    PlanDay day,
+  ) async {
+    final user = account.userId;
+    final date = account.localToday;
+    final claimed = await _pool.execute(
+      Sql.named('''
+        INSERT INTO live_activity_sessions (user_id, date, started_at, trigger, kind)
+        VALUES (@user, @date::date, @now, 'time', 'session')
+        ON CONFLICT (user_id, date) DO UPDATE
+          SET end_sent_at = NULL, last_error = NULL,
+              restarts = live_activity_sessions.restarts + 1
+          WHERE live_activity_sessions.end_sent_at IS NOT NULL
+        RETURNING restarts'''),
+      parameters: {'user': user, 'date': date.toKey(), 'now': now},
+    );
+    if (claimed.isEmpty) return;
+    final payload = LiveActivityPayload.start(
+      now: now,
+      date: date,
+      groups: day.sessionMuscles,
+      content: await content(user, day),
+      staleAt: account.tomorrowStart,
+    );
+    final result = await _apns.send(
+      ApnsPush(
+        token: account.pushToStartToken,
+        environment: account.environment,
+        payload: payload,
+      ),
+    );
+    _log.info('live_activity_restart', {
+      'userId': user,
+      'date': date.toKey(),
+      'restarts': claimed.first[0],
+      'result': result.outcome.name,
+      if (result.status != null) 'status': result.status,
+    });
+    if (result.outcome == ApnsOutcome.sent) return;
+    await _pool.execute(
+      Sql.named('''
+        UPDATE live_activity_sessions SET end_sent_at = @now, last_error = @error
+        WHERE user_id = @user AND date = @date::date'''),
+      parameters: {
+        'now': now,
+        'error': result.error,
+        'user': user,
+        'date': date.toKey(),
+      },
+    );
+    if (result.outcome == ApnsOutcome.invalidToken) {
+      await _deleteToken(user, result);
+    } else {
+      await _failed('restart', user, date, result);
     }
   }
 

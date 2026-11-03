@@ -118,7 +118,11 @@ final pauseRangeSessionsProvider =
               } else {
                 d = null;
               }
-              if (d != null && d.isWorkout) out.add(d);
+              // Buổi đã "Đã tập" giữ nguyên, không thành Tạm dừng (F31-R7,
+              // 03 Bản 5 §6.1 "Buổi tạm dừng") → không vào dòng (mock s76a).
+              if (d != null && d.isWorkout && d.mark != DayMark.done) {
+                out.add(d);
+              }
             }
             return out;
           });

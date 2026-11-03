@@ -18,10 +18,13 @@ enum WidgetTimeline {
   }
 
   /// Vị trí chấm của buổi hôm nay trong `week.dots` (một chấm mỗi buổi theo
-  /// lịch của tuần, theo ngày): tổng chấm trừ số buổi theo lịch còn lại trong
-  /// tuần (các ngày sau hôm nay trong file, tới chủ nhật) trừ 1. File không
-  /// ghi vị trí nên suy từ 8 ngày đã có (05 Bản 3 §6.8.1).
+  /// lịch của tuần, theo ngày). Schema 1: tổng chấm trừ số buổi theo lịch còn
+  /// lại trong tuần (các ngày sau hôm nay trong file, tới chủ nhật) trừ 1 —
+  /// file không ghi vị trí nên suy từ 8 ngày đã có (05 Bản 3 §6.8.1).
   static func todayDot(_ file: WidgetStateFile, day: WidgetDayFile, calendar: Calendar) -> Int? {
+    // Schema 2 (05 Bản 5 TD5-16): app ghi thẳng chấm "hôm nay"; ngày tạm dừng
+    // không có (dấu tạm dừng thay dấu chưa tập, F24-R61).
+    if day.week.marksToday { return day.week.dots.firstIndex(of: .today) }
     guard day.kind == "workout", let start = dayStart(day.date, calendar: calendar) else { return nil }
     let weekday = calendar.component(.weekday, from: start)  // 1 = chủ nhật … 7 = thứ 7
     let toNextMonday = (9 - weekday) % 7 == 0 ? 7 : (9 - weekday) % 7

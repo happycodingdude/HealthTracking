@@ -6,6 +6,8 @@ import XCTest
 /// S-71 — `content-state` thiếu trường không crash. 06 Bản 4 VS50-T03: ảnh
 /// chụp S-70 × 7, S-71 × 4 + Dynamic Island × 2, cỡ chữ lớn, theo token (màu
 /// không đổi theo sáng / tối của máy, TA4-08); vị trí chấm hôm nay (S-70).
+/// 06 Bản 5 VS57-T05: `widget_state.json` schema 2 (tạm dừng, chấm chuỗi),
+/// đọc schema 1 không crash (TAC5-09), ảnh S-70 tạm dừng (F24-AC61).
 final class IronlyWidgetsTests: XCTestCase {
   private var calendar: Calendar = {
     var c = Calendar(identifier: .gregorian)
@@ -32,8 +34,10 @@ final class IronlyWidgetsTests: XCTestCase {
     return #"{"date":"\#(date)","weekday":"\#(weekday)","kind":"\#(kind)","groups":[\#(g)],"time":\#(t),"mark":\#(m),"extra":\#(extra),"week":\#(week)}"#
   }
 
-  private func file(_ days: [String], signedIn: Bool = true, hasSchedule: Bool = true) -> WidgetStateFile? {
-    let json = #"{"schema":1,"signedIn":\#(signedIn),"hasSchedule":\#(hasSchedule),"generatedAt":"2026-10-13T10:00:00+07:00","days":[\#(days.joined(separator: ","))]}"#
+  private func file(
+    _ days: [String], signedIn: Bool = true, hasSchedule: Bool = true, schema: Int = 1
+  ) -> WidgetStateFile? {
+    let json = #"{"schema":\#(schema),"signedIn":\#(signedIn),"hasSchedule":\#(hasSchedule),"generatedAt":"2026-10-13T10:00:00+07:00","days":[\#(days.joined(separator: ","))]}"#
     return WidgetStateFile.decode(Data(json.utf8))
   }
 
@@ -45,7 +49,8 @@ final class IronlyWidgetsTests: XCTestCase {
       return XCTFail("phải là ngày có lịch")
     }
     XCTAssertEqual(d.groups, ["Lưng"])
-    XCTAssertEqual(d.week.dots, [true, false, false, false])
+    XCTAssertEqual(d.week.dots, [.done, .pending, .pending, .pending])
+    XCTAssertFalse(d.paused, "schema 1 không có tạm dừng")
     XCTAssertEqual(today, 3, "file chỉ có hôm nay (thứ 3) nên hôm nay là chấm cuối")
   }
 
@@ -75,10 +80,61 @@ final class IronlyWidgetsTests: XCTestCase {
     XCTAssertNil(none, "ngày nghỉ không có chấm hôm nay")
   }
 
+  /// Schema 2 (05 Bản 5 §6.8, TD5-16): `paused`, chấm chuỗi, chấm "hôm nay"
+  /// ghi thẳng; ngày tạm dừng không có viền cam hôm nay (F24-R61).
+  private func weekV2(_ done: Int, _ total: Int, _ dots: [String]) -> String {
+    let d = dots.map { "\"\($0)\"" }.joined(separator: ",")
+    return #"{"total":\#(total),"done":\#(done),"extra":0,"dots":[\#(d)]}"#
+  }
+
+  private func dayV2(
+    _ date: String, _ weekday: String, kind: String = "workout", groups: [String] = ["Lưng"],
+    time: String? = "18:00", mark: String? = nil, paused: Bool, week: String
+  ) -> String {
+    let base = day(date, weekday, kind: kind, groups: groups, time: time, mark: mark, week: week)
+    return base.replacingOccurrences(of: #""week":"#, with: #""paused":\#(paused),"week":"#)
+  }
+
+  func testTAC509Schema2PausedDay() throws {
+    let f = try XCTUnwrap(file([
+      dayV2("2026-10-14", "Thứ 4", paused: true,
+            week: weekV2(2, 2, ["done", "done", "paused", "paused", "paused", "paused"])),
+    ], schema: 2))
+    guard case .day(let d, let today) = WidgetTimeline.display(f, at: at(14), calendar: calendar) else {
+      return XCTFail("phải là ngày có lịch")
+    }
+    XCTAssertTrue(d.paused)
+    XCTAssertEqual(d.week.total, 2)
+    XCTAssertEqual(d.week.dots, [.done, .done, .paused, .paused, .paused, .paused])
+    XCTAssertNil(today, "tạm dừng: không viền cam hôm nay")
+    XCTAssertEqual(WidgetTimeline.display(f, at: at(14), calendar: calendar).url.absoluteString,
+                   "ironly://session/today", "F24-R61: chạm mở Hôm nay như thường")
+  }
+
+  func testSchema2TodayDotWrittenByApp() throws {
+    let f = try XCTUnwrap(file([
+      dayV2("2026-10-13", "Thứ 3", paused: false,
+            week: weekV2(1, 4, ["done", "today", "pending", "pending"])),
+    ], schema: 2))
+    guard case .day(let d, let today) = WidgetTimeline.display(f, at: at(13), calendar: calendar) else {
+      return XCTFail()
+    }
+    XCTAssertFalse(d.paused)
+    XCTAssertEqual(today, 1)
+    // Giá trị lạ (bản sau) không làm hỏng file.
+    let odd = try XCTUnwrap(file([
+      dayV2("2026-10-13", "Thứ 3", paused: false, week: weekV2(0, 2, ["today", "rest"])),
+    ], schema: 2))
+    guard case .day(let o, _) = WidgetTimeline.display(odd, at: at(13), calendar: calendar) else {
+      return XCTFail()
+    }
+    XCTAssertEqual(o.week.dots, [.today, .pending])
+  }
+
   func testED307BrokenOrMissingFileShowsSignedOut() {
     XCTAssertNil(WidgetStateFile.decode(nil))
     XCTAssertNil(WidgetStateFile.decode(Data("{".utf8)))
-    XCTAssertNil(WidgetStateFile.decode(Data(#"{"schema":2,"signedIn":true,"hasSchedule":true,"days":[]}"#.utf8)))
+    XCTAssertNil(WidgetStateFile.decode(Data(#"{"schema":3,"signedIn":true,"hasSchedule":true,"days":[]}"#.utf8)))
     XCTAssertEqual(WidgetTimeline.display(nil, at: at(13), calendar: calendar), .signedOut(weekday: nil))
     XCTAssertEqual(WidgetTimeline.entries(nil, now: at(13), calendar: calendar).count, 1)
   }
@@ -264,6 +320,10 @@ final class IronlyWidgetsTests: XCTestCase {
       let f = try XCTUnwrap(file([json]))
       return WidgetTimeline.display(f, at: at(13), calendar: calendar)
     }
+    func d2(_ json: String) throws -> WidgetDisplay {
+      let f = try XCTUnwrap(file([json], schema: 2))
+      return WidgetTimeline.display(f, at: at(13), calendar: calendar)
+    }
     return [
       ("not_done", try d(day("2026-10-13", "Thứ 3", week: week(1, 4)))),
       ("done", try d(day("2026-10-13", "Thứ 3", mark: "done", week: week(2, 4)))),
@@ -272,6 +332,11 @@ final class IronlyWidgetsTests: XCTestCase {
       ("rest_no_sessions", try d(day("2026-10-13", "Chủ nhật", kind: "rest", groups: [], time: nil, week: week(0, 0)))),
       ("no_schedule", .noSchedule(weekday: "Thứ 4")),
       ("signed_out", .signedOut(weekday: "Thứ 4")),
+      // 04 Bản 5 S-70 (F24-AC61): tạm dừng thứ 4 → CN, lịch thứ 2 → thứ 7.
+      ("paused", try d2(dayV2("2026-10-13", "Thứ 4", paused: true,
+        week: weekV2(2, 2, ["done", "done", "paused", "paused", "paused", "paused"])))),
+      ("rest_paused", try d2(dayV2("2026-10-13", "Thứ 5", kind: "rest", groups: [], time: nil,
+        paused: true, week: weekV2(2, 2, ["done", "done", "paused", "paused", "paused", "paused"])))),
     ]
   }
 
