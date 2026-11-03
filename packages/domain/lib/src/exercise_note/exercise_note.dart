@@ -4,6 +4,7 @@ import '../exercise/exercise.dart';
 import '../lift_log/lift_log.dart';
 import '../lift_log/lift_window.dart';
 import '../schedule/month_plan.dart';
+import '../session/session_exercise.dart';
 import '../time/local_date.dart';
 
 /// Ghi chú của một bài trong một buổi (entity `exercise_note`, key
@@ -69,18 +70,24 @@ abstract final class ExerciseNoteRules {
   /// Bước 1 → 4 của 05 Bản 3 §6.6.4: buổi, cửa sổ ghi tạ (F26-R3), bài (bài
   /// đã rời thư viện chỉ sửa, xóa được ghi chú đã có), nhóm cơ của buổi.
   /// Không xét `logsWeight`: bài bụng có ghi chú (F26-R4, TD3-06).
+  ///
+  /// Bài thuộc buổi theo danh sách bài của buổi (05 Bản 5 TD5-09,
+  /// [LiftLogRules.inSession]); [removing] = xóa ghi chú: không xét bước này
+  /// (như [LiftLogRules.check]).
   static LiftError? check({
     required PlanDay? day,
     required Exercise? exercise,
     required DateTime now,
     bool exists = false,
+    Iterable<SessionExerciseRow> sessionRows = const [],
+    bool removing = false,
   }) {
     if (!LiftLogRules.isSession(day)) return LiftError.noSession;
     if (!LiftWindow.of(day, now).isOpen) return LiftError.windowClosed;
     if (exercise == null || (!exists && !exercise.active)) {
       return LiftError.notAllowedForExercise;
     }
-    if (!day!.sessionMuscles.contains(exercise.group)) {
+    if (!removing && !LiftLogRules.inSession(day!, exercise, sessionRows)) {
       return LiftError.exerciseNotInSession;
     }
     return null;

@@ -257,6 +257,62 @@ void main() {
       await pumpUntil(tester, done);
       await tester.pumpAndSettle(const Duration(seconds: 2));
       expect(done, findsOneWidget, reason: 'server nhận bỏ đánh dấu');
+
+      // 06 Bản 5 VS53-T05, J5-02 bước 3 (F28-AC1, F28-AC2): ··· bài 2 → S-74
+      // → Đổi bài → S-75 → "Máy dốc gắn bánh tạ" (lưng) đứng chỗ bài 2; ghi
+      // 20 → 25 kg cho bài thay; server thật nhận dòng thay rồi mức tạ (thứ
+      // tự outbox, TD5-09), không hoàn về.
+      const benchId = 'chest-mid-free-weight-flat-barbell-bench-press';
+      const plateId = 'back-back-mid-plate-loaded-row-machine';
+      const latsId = 'lats-machine-lat-pulldown';
+      Finder byKey(String k) => find.byKey(ValueKey(k));
+      Finder endIs(String id, String value) => find.byWidgetPredicate(
+        (w) =>
+            w is Text && w.key == ValueKey('lift-end-$id') && w.data == value,
+      );
+      await reveal(tester, byKey('exercise-$benchId'));
+      await tester.tap(byKey('exercise-$benchId'));
+      await pumpUntil(tester, byKey('action-replace'));
+      await tester.tap(byKey('action-replace'));
+      await pumpUntil(tester, byKey('pick-list'));
+      await reveal(tester, byKey('pick-$plateId'));
+      await tester.tap(byKey('pick-$plateId'));
+      await pumpUntil(tester, byKey('replaced-mark-$plateId'));
+      expect(byKey('lift-block-$benchId'), findsNothing);
+      await reveal(tester, byKey('lift-row-$plateId'));
+      await tester.tap(byKey('lift-row-$plateId'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('lift-unit-kg'));
+      await tester.pumpAndSettle();
+      await tester.enterText(byKey('field-lift-start'), '20');
+      await tester.enterText(byKey('field-lift-end'), '25');
+      await tester.pumpAndSettle();
+      await tester.tapAt(
+        tester.getTopLeft(find.byType(LiftLogSheet)) + const Offset(24, 24),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('lift-save'));
+      await pumpUntil(tester, endIs(plateId, '25'));
+      await tester.pumpAndSettle(const Duration(seconds: 2));
+      expect(endIs(plateId, '25'), findsOneWidget, reason: 'server nhận');
+      expect(byKey('replaced-mark-$plateId'), findsOneWidget);
+
+      // F28-AC4 (FC5-14): bài thay đã ghi → Đổi bài → S-78 → "Xóa và đổi
+      // bài" → S-75 → bài khác; bản ghi 20 → 25 không còn, server nhận.
+      await reveal(tester, byKey('exercise-$plateId'));
+      await tester.tap(byKey('exercise-$plateId'));
+      await pumpUntil(tester, byKey('action-replace'));
+      await tester.tap(byKey('action-replace'));
+      await pumpUntil(tester, find.text(S.recordsDeleteBody));
+      await tester.tap(byKey('records-delete-confirm'));
+      await pumpUntil(tester, byKey('pick-list'));
+      await reveal(tester, byKey('pick-$latsId'));
+      await tester.tap(byKey('pick-$latsId'));
+      await pumpUntil(tester, byKey('replaced-mark-$latsId'));
+      await tester.pumpAndSettle(const Duration(seconds: 2));
+      expect(byKey('lift-block-$plateId'), findsNothing);
+      expect(byKey('replaced-mark-$latsId'), findsOneWidget);
+
       await tester.tap(done);
       await pumpUntil(tester, find.text(S.doneConfirmBody));
       await tester.tap(find.byKey(const ValueKey('lock-confirm-save')));
@@ -264,6 +320,26 @@ void main() {
       await pumpUntilGone(tester, find.text(S.markedDone('Ngực')));
       await tester.pumpAndSettle(const Duration(seconds: 2));
       expect(done, findsNothing, reason: 'server nhận "Đã tập" lại');
+
+      // F28-AC5 (BR5-13): buổi "Đã tập" → S-74 chỉ Xem bài sáng.
+      await reveal(tester, byKey('exercise-$latsId'));
+      await tester.tap(byKey('exercise-$latsId'));
+      await pumpUntil(tester, byKey('action-replace'));
+      expect(
+        tester
+            .widget<Opacity>(
+              find
+                  .descendant(
+                    of: byKey('action-replace'),
+                    matching: find.byType(Opacity),
+                  )
+                  .first,
+            )
+            .opacity,
+        0.4,
+      );
+      await tester.tapAt(const Offset(195, 120));
+      await tester.pumpAndSettle();
 
       // VS-27, VS-36: "Xem bài tập" → S-63; buổi đã chốt vẫn ghi tạ đến hết
       // ngày (F21-E1). "Ghi" → S-64 lần ghi đầu: chọn nấc máy, nhập 7 và 8 →

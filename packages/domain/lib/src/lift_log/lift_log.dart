@@ -1,6 +1,7 @@
 import '../exercise/exercise.dart';
 import '../schedule/month_plan.dart';
 import '../session/session.dart';
+import '../session/session_exercise.dart';
 import '../time/local_date.dart';
 import 'lift_kg.dart';
 import 'lift_window.dart';
@@ -154,11 +155,19 @@ abstract final class LiftLogRules {
   /// lúc [now] (giờ trên iPhone), theo thứ tự 05 Bản 2 §6.6.2 bước 1 → 4.
   /// [exists] = buổi đã có bản ghi của bài này (sửa, xóa): bài đã rời thư
   /// viện vẫn sửa, xóa được (F21-E7).
+  ///
+  /// Bước 4 (bài thuộc buổi) theo danh sách bài của buổi (05 Bản 5 TD5-09):
+  /// [sessionRows] = các dòng `session_exercise` còn hiệu lực của ngày (bài
+  /// thay / thêm / bỏ qua). [removing] = xóa bản ghi (tombstone): không xét
+  /// bước 4 — xóa bản ghi của bài vừa bị đổi / bỏ qua / xóa khỏi buổi luôn
+  /// được, dù outbox gửi dòng `session_exercise` trước (FC5-14, TD5-10).
   static LiftError? check({
     required PlanDay? day,
     required Exercise? exercise,
     required DateTime now,
     bool exists = false,
+    Iterable<SessionExerciseRow> sessionRows = const [],
+    bool removing = false,
   }) {
     if (!isSession(day)) return LiftError.noSession;
     if (!LiftWindow.of(day, now).isOpen) return LiftError.windowClosed;
@@ -167,18 +176,39 @@ abstract final class LiftLogRules {
         (!exists && !exercise.active)) {
       return LiftError.notAllowedForExercise;
     }
-    if (!day!.sessionMuscles.contains(exercise.group)) {
+    if (!removing && !inSession(day!, exercise, sessionRows)) {
       return LiftError.exerciseNotInSession;
     }
     return null;
   }
+
+  /// Bài [exercise] thuộc buổi [day] (TD5-09): buổi theo lịch xét cả các
+  /// dòng [sessionRows]; buổi tập thêm chỉ xét nhóm cơ (F28-R9).
+  static bool inSession(
+    PlanDay day,
+    Exercise exercise,
+    Iterable<SessionExerciseRow> sessionRows,
+  ) => SessionExerciseRules.inSession(
+    exercise: exercise,
+    groups: day.sessionMuscles,
+    rows: day.isWorkout ? sessionRows : const [],
+  );
 
   static bool canLog({
     required PlanDay? day,
     required Exercise? exercise,
     required DateTime now,
     bool exists = false,
-  }) => check(day: day, exercise: exercise, now: now, exists: exists) == null;
+    Iterable<SessionExerciseRow> sessionRows = const [],
+  }) =>
+      check(
+        day: day,
+        exercise: exercise,
+        now: now,
+        exists: exists,
+        sessionRows: sessionRows,
+      ) ==
+      null;
 
   /// Buổi trước của bài (FR2-06, F21-E5): bản ghi gần nhất của [exerciseId]
   /// có ngày trước [date], bất kể trạng thái buổi đó.

@@ -341,7 +341,10 @@ final class ExerciseFeelHandler implements SyncEntityHandler, VersionedPull {
         code: ErrorCode.liftNotAllowedForExercise,
       );
     }
-    await requireInSession(s, userId, day!, exercise);
+    // Bỏ chọn (tombstone) không xét bài thuộc buổi (như `lift_log`, TD5-10).
+    if (m.op != SyncOp.delete) {
+      await requireInSession(s, userId, day!, exercise);
+    }
     final parameters = {
       'user': userId,
       'date': date.toKey(),

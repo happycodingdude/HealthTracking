@@ -5,11 +5,13 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/shell/app_tab.dart';
 import '../../../app/strings_vi.dart';
+import '../../../app/time_ticker.dart';
 import '../../../core/formatters.dart';
 import '../../../ui/components/components.dart';
 import '../../../ui/theme.dart';
 import '../../library/presentation/body_map.dart';
 import '../application/session_providers.dart';
+import 'exercise_actions_sheet.dart';
 import 'lift_log_sheet.dart';
 import 'session_screen.dart';
 
@@ -33,6 +35,15 @@ class SessionLogList extends ConsumerWidget {
     ref.watch(allLiftLogsProvider);
     if (session == null || exercises == null) return const SizedBox.shrink();
     final multi = exercises.groups.length > 1;
+    // ··· → S-74 chỉ ở buổi theo lịch hôm nay trên Hôm nay (04 Bản 5 S-10,
+    // UA5-01); buổi tập thêm hôm nay giữ ··· → S-67 (F28-R9); buổi ngày khác
+    // (S-63) không có ···.
+    final today = LocalDate.fromDateTime(ref.watch(nowProvider));
+    final more = tab != AppTab.today || date != today
+        ? LiftRowMore.none
+        : session.isExtra
+        ? LiftRowMore.exercise
+        : LiftRowMore.actions;
     return Column(
       key: const ValueKey('session-log-list'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -54,15 +65,24 @@ class SessionLogList extends ConsumerWidget {
               ),
             ),
           for (final item in g.items)
-            LiftRow(session: session, item: item, tab: tab),
+            LiftRow(session: session, item: item, tab: tab, more: more),
         ],
+        // Bài thêm nối cuối danh sách (A5-02).
+        for (final item in exercises.extras)
+          LiftRow(session: session, item: item, tab: tab, more: more),
       ],
     );
   }
 }
 
-/// Một bài trong danh sách (04 Bản 4 S-10): icon tròn (viền cam khi đã ghi
-/// hôm nay) · tên bài cam · icon ghi chú · "…" → S-67; hàng nhãn BUỔI TRƯỚC /
+/// Nút ··· cạnh tên bài: S-74 (buổi theo lịch hôm nay, Bản 5), S-67 (buổi
+/// tập thêm hôm nay, như Bản 4), không có (S-63, 04 Bản 5).
+enum LiftRowMore { actions, exercise, none }
+
+/// Một bài trong danh sách (04 Bản 4 S-10, 04 Bản 5 S-10 / S-63): icon tròn
+/// (viền cam khi đã ghi hôm nay) · [⇄ bài thay] tên bài cam · icon ghi chú ·
+/// "…" → S-74 / S-67 ([more]); bài thay có dòng mờ "thay {tên gốc}" dưới tên
+/// (04 Bản 5 §6.2, UD5-02); hàng nhãn BUỔI TRƯỚC /
 /// GẦN NHẤT · BẮT ĐẦU · KẾT THÚC (· ô tick trong cửa sổ ghi); hàng số: ô đầu
 /// mức buổi trước (mờ) hoặc ngày gần nhất, hai số trắng 600 khi đã ghi, mờ
 /// khi điền sẵn, "—" khi chưa có; ghi chú hôm nay (trắng 12) hoặc buổi trước
@@ -74,11 +94,13 @@ class LiftRow extends StatelessWidget {
     required this.session,
     required this.item,
     required this.tab,
+    this.more = LiftRowMore.exercise,
   });
 
   final SessionView session;
   final SessionExercise item;
   final AppTab tab;
+  final LiftRowMore more;
 
   @override
   Widget build(BuildContext context) {
@@ -106,6 +128,13 @@ class LiftRow extends StatelessWidget {
           ? todayExercisePath(e.id, session.date)
           : sessionExercisePath(tab, session.date, e.id),
     );
+    // Hàng tên bài: S-74 (Xem bài tốn thêm một chạm, UA5-01) hoặc S-67.
+    void openMore() => more == LiftRowMore.actions
+        ? openExerciseActions(context, date: session.date, entry: item)
+        : openExercise();
+    final replaced = item.item.role == SessionExerciseRole.replacement
+        ? item.item.replaces
+        : null;
 
     // Hàng số (chỉ bài có mức tạ).
     Widget? numbers;
@@ -295,12 +324,14 @@ class LiftRow extends StatelessWidget {
           Semantics(
             container: true,
             button: true,
-            label: e.nameVi,
+            label: replaced == null
+                ? e.nameVi
+                : '${e.nameVi}, ${S.replacementFor(replaced.nameVi)}',
             child: ExcludeSemantics(
               child: InkWell(
                 key: ValueKey('exercise-${e.id}'),
                 borderRadius: BorderRadius.circular(TokenRadius.row),
-                onTap: openExercise,
+                onTap: openMore,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: TokenSpace.s1),
                   child: Row(
@@ -308,17 +339,55 @@ class LiftRow extends StatelessWidget {
                       avatar,
                       const SizedBox(width: TokenSpace.s3),
                       Expanded(
-                        child: Text(e.nameVi, style: IronlyText.exerciseName),
-                      ),
-                      if (noteIcon != null) noteIcon,
-                      Padding(
-                        padding: const EdgeInsets.only(left: TokenSpace.s1),
-                        child: Icon(
-                          Icons.more_horiz,
-                          size: 18,
-                          color: t.textSecondary,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              children: [
+                                if (replaced != null) ...[
+                                  SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: Icon(
+                                      Icons.swap_horiz,
+                                      key: ValueKey('replaced-mark-${e.id}'),
+                                      size: 14,
+                                      color: t.textSecondary,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                ],
+                                Flexible(
+                                  child: Text(
+                                    e.nameVi,
+                                    style: IronlyText.exerciseName,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (replaced != null)
+                              Text(
+                                S.replacedFrom(replaced.nameVi),
+                                key: ValueKey('replaced-from-${e.id}'),
+                                style: IronlyText.caption.copyWith(
+                                  color: t.textPrefill,
+                                ),
+                              ),
+                          ],
                         ),
                       ),
+                      if (noteIcon != null) noteIcon,
+                      if (more != LiftRowMore.none)
+                        Padding(
+                          padding: const EdgeInsets.only(left: TokenSpace.s1),
+                          child: Icon(
+                            Icons.more_horiz,
+                            key: ValueKey('more-${e.id}'),
+                            size: 18,
+                            color: t.textSecondary,
+                          ),
+                        ),
                     ],
                   ),
                 ),

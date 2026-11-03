@@ -11,6 +11,7 @@ import '../../schedule/data/schedule_repository.dart';
 import '../data/exercise_note_repository.dart';
 import '../data/exercise_unit_repository.dart';
 import '../data/lift_log_repository.dart';
+import '../data/session_exercise_repository.dart';
 
 /// Việc làm sau khi mức tạ hoặc đơn vị của bài đổi (05 Bản 3 §6.4.1): cập nhật
 /// widget (VS-39) và thẻ màn hình khóa (VS-41). Mặc định không làm gì.
@@ -53,12 +54,14 @@ abstract base class _LiftWrite {
     required ExerciseRepository exercises,
     required OutboxWriter outbox,
     required Clock clock,
+    SessionExerciseRepository? sessionRows,
   }) : _db = db,
        _logs = logs,
        _schedule = schedule,
        _exercises = exercises,
        _outbox = outbox,
-       _clock = clock;
+       _clock = clock,
+       _sessionRows = sessionRows;
 
   final AppDatabase _db;
   final LiftLogRepository _logs;
@@ -67,17 +70,26 @@ abstract base class _LiftWrite {
   final OutboxWriter _outbox;
   final Clock _clock;
 
-  /// 05 Bản 2 §6.6.2 bước 1 → 4 với giờ hiện tại. Ném [LiftException].
+  /// Bài đổi / bỏ qua / thêm của buổi (05 Bản 5 TD5-09); null = chỉ xét nhóm
+  /// cơ như Bản 3.
+  final SessionExerciseRepository? _sessionRows;
+
+  /// 05 Bản 2 §6.6.2 bước 1 → 4 với giờ hiện tại; bước 4 theo danh sách bài
+  /// của buổi (TD5-09), xóa không xét bước 4 ([removing]). Ném
+  /// [LiftException].
   Future<void> _check(
     LocalDate date,
     String exerciseId, {
     required bool exists,
+    bool removing = false,
   }) async {
     final error = LiftLogRules.check(
       day: await _schedule.day(date),
       exercise: await _exercises.get(exerciseId),
       now: _clock.now(),
       exists: exists,
+      sessionRows: await _sessionRows?.day(date) ?? const [],
+      removing: removing,
     );
     if (error != null) throw LiftException(error);
   }
@@ -98,6 +110,7 @@ final class SaveLiftLog extends _LiftWrite {
     required super.exercises,
     required super.outbox,
     required super.clock,
+    super.sessionRows,
     required ExerciseUnitRepository units,
     LiftChangeHooks hooks = const NoLiftChangeHooks(),
   }) : _units = units,
@@ -176,12 +189,14 @@ final class SaveExerciseNote {
     required ExerciseRepository exercises,
     required OutboxWriter outbox,
     required Clock clock,
+    SessionExerciseRepository? sessionRows,
   }) : _db = db,
        _notes = notes,
        _schedule = schedule,
        _exercises = exercises,
        _outbox = outbox,
-       _clock = clock;
+       _clock = clock,
+       _sessionRows = sessionRows;
 
   final AppDatabase _db;
   final ExerciseNoteRepository _notes;
@@ -189,22 +204,25 @@ final class SaveExerciseNote {
   final ExerciseRepository _exercises;
   final OutboxWriter _outbox;
   final Clock _clock;
+  final SessionExerciseRepository? _sessionRows;
 
   static const _codec = ExerciseNoteCodec();
 
   Future<ExerciseNote?> call(LocalDate date, String exerciseId, String text) =>
       _db.transaction(() async {
         final existing = await _notes.get(date, exerciseId);
+        final content = ExerciseNoteRules.normalize(
+          ExerciseNoteRules.clip(text),
+        );
         final error = ExerciseNoteRules.check(
           day: await _schedule.day(date),
           exercise: await _exercises.get(exerciseId),
           now: _clock.now(),
           exists: existing != null,
+          sessionRows: await _sessionRows?.day(date) ?? const [],
+          removing: content.isEmpty,
         );
         if (error != null) throw LiftException(error);
-        final content = ExerciseNoteRules.normalize(
-          ExerciseNoteRules.clip(text),
-        );
         final key = ExerciseNote.keyOf(date, exerciseId);
         if (content.isEmpty) {
           if (existing == null) return null;
@@ -340,7 +358,7 @@ final class DeleteLiftLog extends _LiftWrite {
   /// Chỉ xóa mức tạ; ghi chú của bài trong buổi giữ nguyên (F26-R5).
   Future<void> call(LocalDate date, String exerciseId) async {
     await _db.transaction(() async {
-      await _check(date, exerciseId, exists: true);
+      await _check(date, exerciseId, exists: true, removing: true);
       await _logs.delete(date, exerciseId);
       await _outbox.enqueue(
         SyncEntities.liftLog,
@@ -361,6 +379,7 @@ final saveLiftLogProvider = Provider<SaveLiftLog>(
     exercises: ref.watch(exerciseRepositoryProvider),
     outbox: ref.watch(outboxWriterProvider),
     clock: ref.watch(clockProvider),
+    sessionRows: ref.watch(sessionExerciseRepositoryProvider),
     units: ref.watch(exerciseUnitRepositoryProvider),
     hooks: ref.watch(liftChangeHooksProvider),
   ),
@@ -374,6 +393,7 @@ final saveExerciseNoteProvider = Provider<SaveExerciseNote>(
     exercises: ref.watch(exerciseRepositoryProvider),
     outbox: ref.watch(outboxWriterProvider),
     clock: ref.watch(clockProvider),
+    sessionRows: ref.watch(sessionExerciseRepositoryProvider),
   ),
 );
 

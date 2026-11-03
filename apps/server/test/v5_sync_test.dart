@@ -354,6 +354,109 @@ void main() {
     });
   });
 
+  group('lift_log / exercise_note theo danh sách bài (TD5-09, TAC5-03 phần '
+      'thay)', () {
+    setUp(setUpSchedule);
+
+    SyncMutation unit(String id, DateTime at) => mutation(
+      SyncEntities.exerciseUnit,
+      id,
+      SyncOp.upsert,
+      at: at,
+      data: const ExerciseUnitCodec().encode(
+        ExerciseUnit(exerciseId: id, unit: LiftUnit.kg, changedOn: wed),
+      ),
+    );
+
+    SyncMutation lift(String id, DateTime at, {SyncOp op = SyncOp.upsert}) {
+      final log = LiftLog(
+        date: wed,
+        exerciseId: id,
+        startKgX10: 200,
+        endKgX10: 250,
+      );
+      return mutation(
+        SyncEntities.liftLog,
+        log.key,
+        op,
+        at: at,
+        data: op == SyncOp.delete ? null : const LiftLogCodec().encode(log),
+      );
+    }
+
+    SyncMutation note(String id, DateTime at, {SyncOp op = SyncOp.upsert}) {
+      final value = ExerciseNote(date: wed, exerciseId: id, text: 'Ghế nấc 3');
+      return mutation(
+        SyncEntities.exerciseNote,
+        value.key,
+        op,
+        at: at,
+        data: op == SyncOp.delete
+            ? null
+            : const ExerciseNoteCodec().encode(value),
+      );
+    }
+
+    test('đổi bài: session_exercise rồi lift_log bài thay (khác nhóm) cùng '
+        'batch → applied; lift_log / ghi chú bài gốc bị thay → '
+        'lift_exercise_not_in_session; bài ngoài buổi → '
+        'lift_exercise_not_in_session', () async {
+      final at = vn(4, 18, 30);
+      await setNow(at);
+      final results = await push([
+        sessionRow(replace('chest-press', 'back-lat'), at),
+        unit('chest-press', at),
+        lift('chest-press', at),
+        note('chest-press', at),
+        unit('back-lat', at),
+        lift('back-lat', at),
+        note('back-lat', at),
+        note('abs-plank', at),
+      ]);
+      expect(results.map((r) => r.code), [
+        null,
+        null,
+        null,
+        null,
+        null,
+        ErrorCode.liftExerciseNotInSession,
+        ErrorCode.liftExerciseNotInSession,
+        ErrorCode.liftExerciseNotInSession,
+      ]);
+    });
+
+    test('FC5-14 / TD5-10: bản ghi bài gốc đã có, rồi đổi bài — xóa bản ghi, '
+        'ghi chú bài gốc → applied dù dòng thay tới trước; hủy đổi rồi xóa '
+        'bản ghi bài thay → applied', () async {
+      final at = vn(4, 18, 30);
+      await setNow(at);
+      final first = await push([
+        unit('back-lat', at),
+        lift('back-lat', at),
+        note('back-lat', at),
+      ]);
+      expect(first.every((r) => r.status == PushStatus.applied), isTrue);
+      final later = at.add(const Duration(minutes: 5));
+      await setNow(later);
+      final swap = await push([
+        sessionRow(replace('chest-press', 'back-lat'), later),
+        lift('back-lat', later, op: SyncOp.delete),
+        note('back-lat', later, op: SyncOp.delete),
+        unit('chest-press', later),
+        lift('chest-press', later),
+      ]);
+      expect(swap.every((r) => r.status == PushStatus.applied), isTrue);
+      final back = later.add(const Duration(minutes: 5));
+      await setNow(back);
+      final undo = await push([
+        sessionRow(replace('chest-press', 'back-lat'), back, op: SyncOp.delete),
+        lift('chest-press', back, op: SyncOp.delete),
+        lift('back-lat', back),
+      ]);
+      expect(undo.every((r) => r.status == PushStatus.applied), isTrue);
+    });
+  });
+
   group('schedule_pause (05 Bản 5 §6.6.2, F31)', () {
     setUp(setUpSchedule);
     const a = '0b6f1c9e-3d4a-4f6b-9a1e-2c3d4e5f6a7b';

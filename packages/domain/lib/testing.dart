@@ -4,4 +4,5 @@ library;
 
 export 'src/testing/clock_v5.dart';
 export 'src/testing/legacy_done_days.dart';
+export 'src/testing/session_cases_v5.dart';
 export 'src/testing/test_credentials.dart';

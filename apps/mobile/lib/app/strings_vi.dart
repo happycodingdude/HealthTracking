@@ -304,6 +304,32 @@ abstract final class S {
   /// 04 Bản 5 S-24 khi sửa: "Xóa buổi thêm" đỏ.
   static const deleteExtraSession = 'Xóa buổi thêm';
 
+  // Thao tác với bài S-74, chọn bài S-75, hộp xóa bản ghi S-78 (04 Bản 5
+  // §6.4, §6.9; 03 Bản 5 F-28 → F-30, FC5-14).
+  static const actionViewExercise = 'Xem bài';
+  static const actionReplace = 'Đổi bài';
+  static const actionRestoreOriginal = 'Chọn lại bài gốc';
+  static const actionSkipToday = 'Bỏ qua hôm nay';
+  static const actionUnskip = 'Hủy bỏ qua';
+  static const actionRemoveExtra = 'Xóa bài thêm';
+  static const pickAddTitle = 'Thêm bài';
+  static const recordsDeleteBody =
+      'Bài này đã ghi mức tạ hôm nay. Mức tạ, ghi chú, mức thoải mái của bài '
+      'sẽ bị xóa.';
+  static const replaceConfirmTitle = 'Đổi bài?';
+  static const replaceConfirmAction = 'Xóa và đổi bài';
+  static const restoreConfirmTitle = 'Chọn lại bài gốc?';
+  static const restoreConfirmAction = 'Xóa và chọn lại';
+
+  /// 04 Bản 5 §6.2: dòng mờ dưới tên bài thay "thay {tên bài gốc}".
+  static String replacedFrom(String original) => 'thay $original';
+
+  /// 04 Bản 5 §6.9: thông báo nhanh "Đã đổi sang {tên bài}".
+  static String replacedTo(String name) => 'Đã đổi sang $name';
+
+  /// 04 Bản 5 §6.1, §6.9 (VoiceOver): "Bài thay cho {tên gốc}".
+  static String replacementFor(String original) => 'Bài thay cho $original';
+
   /// 04 Bản 4 S-21: nút "Xem buổi" → S-63.
   static const viewSession = 'Xem buổi';
 
@@ -1065,6 +1091,18 @@ abstract final class S {
     'unmarked': unmarked,
     'editExtraSession': editExtraSession,
     'deleteExtraSession': deleteExtraSession,
+    'actionViewExercise': actionViewExercise,
+    'actionReplace': actionReplace,
+    'actionRestoreOriginal': actionRestoreOriginal,
+    'actionSkipToday': actionSkipToday,
+    'actionUnskip': actionUnskip,
+    'actionRemoveExtra': actionRemoveExtra,
+    'pickAddTitle': pickAddTitle,
+    'recordsDeleteBody': recordsDeleteBody,
+    'replaceConfirmTitle': replaceConfirmTitle,
+    'replaceConfirmAction': replaceConfirmAction,
+    'restoreConfirmTitle': restoreConfirmTitle,
+    'restoreConfirmAction': restoreConfirmAction,
     'viewSession': viewSession,
     'delete': delete,
     'cancel': cancel,

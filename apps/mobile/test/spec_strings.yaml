@@ -203,6 +203,20 @@ changeToSkipped: "Đổi sang Không tập" # 04 Bản 5 S-21 hôm nay "Đổi s
 unmarked: "Chưa đánh dấu" # 04 Bản 5 S-23, UA5-04
 editExtraSession: "Sửa buổi thêm" # 04 Bản 5 S-21 hôm nay → S-24
 deleteExtraSession: "Xóa buổi thêm" # 04 Bản 5 S-24 khi sửa
+
+# 04 Bản 5 S-74, S-75, S-78, §6.9; 03 Bản 5 F-28 → F-30, FC5-14
+actionViewExercise: "Xem bài" # 04 Bản 5 S-74
+actionReplace: "Đổi bài" # 04 Bản 5 S-74; tiêu đề S-75 "Đổi bài"
+actionRestoreOriginal: "Chọn lại bài gốc" # 04 Bản 5 S-74
+actionSkipToday: "Bỏ qua hôm nay" # 04 Bản 5 S-74
+actionUnskip: "Hủy bỏ qua" # 04 Bản 5 S-74
+actionRemoveExtra: "Xóa bài thêm" # 04 Bản 5 S-74
+pickAddTitle: "Thêm bài" # 04 Bản 5 S-75 tiêu đề "Thêm bài"
+recordsDeleteBody: "Bài này đã ghi mức tạ hôm nay. Mức tạ, ghi chú, mức thoải mái của bài sẽ bị xóa." # 04 Bản 5 S-78, §6.9; 03 Bản 5 FC5-14
+replaceConfirmTitle: "Đổi bài?" # 04 Bản 5 S-78
+replaceConfirmAction: "Xóa và đổi bài" # 04 Bản 5 S-78
+restoreConfirmTitle: "Chọn lại bài gốc?" # 04 Bản 5 S-78
+restoreConfirmAction: "Xóa và chọn lại" # 04 Bản 5 S-78
 viewSession: "Xem buổi" # 04 Bản 4 S-21
 delete: "Xóa" # 04 §6.13.1 (hộp xác nhận: nút xóa chữ đỏ)
 cancel: "Hủy" # 04 S-20 (hộp xác nhận "Chia lại" · "Hủy")

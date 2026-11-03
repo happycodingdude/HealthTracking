@@ -94,44 +94,77 @@ final allExerciseNotesProvider = StreamProvider<List<ExerciseNote>>(
   (ref) => ref.watch(exerciseNoteRepositoryProvider).watchAll(),
 );
 
-/// Một bài trong buổi (05 Bản 3 §6.4.2 `sessionExercisesProvider`): bản ghi
-/// và ghi chú của buổi, buổi trước (FA3-01), ghi chú buổi trước (FA3-02),
-/// đơn vị hiện tại, trạng thái dòng (ED3-11) và biểu tượng ghi chú.
+/// Mọi mức thoải mái, cũ → mới (mức thoải mái hôm nay; FC5-14 xóa cùng bản
+/// ghi khi đổi bài).
+final allExerciseFeelsProvider = StreamProvider<List<ExerciseFeel>>(
+  (ref) => ref.watch(exerciseFeelRepositoryProvider).watchAll(),
+);
+
+/// Các dòng bài đổi / bỏ qua / thêm của buổi ngày [date] (05 Bản 5 TD5-03).
+final sessionRowsProvider =
+    StreamProvider.family<List<SessionExerciseRow>, LocalDate>(
+      (ref, date) =>
+          ref.watch(sessionExerciseRepositoryProvider).watchDay(date),
+    );
+
+/// Một bài trong buổi (05 Bản 3 §6.4.2, 05 Bản 5 §6.4.3
+/// `sessionExercisesProvider`): bài và vai trò trong buổi (gốc / thay / thêm,
+/// bỏ qua — [SessionItem]), bản ghi và ghi chú của buổi, buổi trước
+/// (FA3-01, theo bài đang đứng ở chỗ — F28-R3), ghi chú buổi trước (FA3-02),
+/// mức thoải mái hôm nay, đơn vị hiện tại, trạng thái dòng (ED3-11) và biểu
+/// tượng ghi chú.
 typedef SessionExercise = ({
   Exercise exercise,
+  SessionItem item,
   LiftLog? log,
   LiftLog? previous,
   ExerciseNote? note,
   ExerciseNote? previousNote,
+  ExerciseFeel? feel,
   LiftUnit? unit,
   LiftRowState state,
   NoteMark noteMark,
 });
 
-/// Một nhóm cơ của buổi và các bài của nhóm, danh sách phẳng (F20-R41).
+/// Một nhóm cơ của buổi và các bài của nhóm, danh sách phẳng (F20-R41); bài
+/// thay đứng trong nhóm của bài gốc (F28-E3).
 typedef SessionGroup = ({MuscleGroup group, List<SessionExercise> items});
 
-/// Bài của buổi.
+/// Bài của buổi theo danh sách bài của buổi (05 Bản 5 §6.4.1, ED5-03).
 final class SessionExercises {
-  const SessionExercises(this.groups);
+  const SessionExercises(this.groups, {this.extras = const []});
 
   final List<SessionGroup> groups;
 
-  Iterable<SessionExercise> get _all => [for (final g in groups) ...g.items];
+  /// Bài thêm, nối cuối danh sách theo thứ tự thêm (A5-02).
+  final List<SessionExercise> extras;
 
-  /// Số bài ghi mức tạ được (không tính bài bụng, 04 Bản 2 S-63).
-  int get total => _all.where((i) => i.exercise.logsWeight).length;
+  Iterable<SessionExercise> get all => [
+    for (final g in groups) ...g.items,
+    ...extras,
+  ];
 
-  /// Số bài đã có mức tạ trong buổi; bài chỉ có ghi chú không tính (UA3-01).
-  int get logged =>
-      _all.where((i) => i.exercise.logsWeight && i.log != null).length;
+  /// Có bản ghi hôm nay (mức tạ, ghi chú, mức thoải mái) — FC5-14, S-78.
+  static bool hasRecords(SessionExercise e) =>
+      e.log != null || e.note != null || e.feel != null;
+
+  /// m của "Đã ghi n / m" (FC5-05): bài có ghi mức tạ trong buổi, gồm bài
+  /// thay và bài thêm, trừ bài bỏ qua.
+  int get total =>
+      all.where((i) => i.exercise.logsWeight && !i.item.skipped).length;
+
+  /// n: số bài trong m đã có mức tạ; bài chỉ có ghi chú không tính (UA3-01).
+  int get logged => all
+      .where((i) => i.exercise.logsWeight && !i.item.skipped && i.log != null)
+      .length;
 }
 
-/// Bài của buổi ngày [date]: nhóm cơ theo thứ tự trong lịch (FA3-16), mỗi
-/// nhóm là danh sách phẳng theo thứ tự thư viện (F20-R41, F18-R43); bài đã
-/// rời thư viện chỉ hiện khi buổi có bản ghi của bài đó (F20-E1); bài bỏ ở
-/// Bản 3 đã bị xóa khỏi máy (F20-E41). Sửa riêng nhóm cơ hôm nay thì danh sách
-/// đổi theo ngay (F20-E2). Đọc từ Drift, không chờ mạng (UR2-10).
+/// Bài của buổi ngày [date]: danh sách bài của buổi ([SessionList.build]) —
+/// nhóm cơ theo thứ tự trong lịch (FA3-16), mỗi nhóm là danh sách phẳng theo
+/// thứ tự thư viện (F20-R41, F18-R43), bài thay đứng đúng chỗ bài gốc, bài
+/// thêm nối cuối; bài đã rời thư viện chỉ hiện khi buổi có bản ghi của bài
+/// đó (F20-E1). Sửa riêng nhóm cơ hôm nay thì danh sách đổi theo ngay
+/// (F20-E2). Đọc từ Drift, không chờ mạng (UR2-10).
 final sessionExercisesProvider = Provider.family<SessionExercises?, LocalDate>((
   ref,
   date,
@@ -140,12 +173,16 @@ final sessionExercisesProvider = Provider.family<SessionExercises?, LocalDate>((
   final library = ref.watch(allExercisesProvider).value;
   final logs = ref.watch(allLiftLogsProvider).value;
   final notes = ref.watch(allExerciseNotesProvider).value;
+  final feels = ref.watch(allExerciseFeelsProvider).value;
   final units = ref.watch(exerciseUnitsProvider).value;
+  final rows = ref.watch(sessionRowsProvider(date)).value;
   if (session == null ||
       library == null ||
       logs == null ||
       notes == null ||
-      units == null) {
+      feels == null ||
+      units == null ||
+      rows == null) {
     return null;
   }
   final dayLogs = {
@@ -156,7 +193,12 @@ final sessionExercisesProvider = Provider.family<SessionExercises?, LocalDate>((
     for (final n in notes)
       if (n.date == date) n.exerciseId: n,
   };
-  SessionExercise item(Exercise e) {
+  final dayFeels = {
+    for (final f in feels)
+      if (f.date == date) f.exerciseId: f,
+  };
+  SessionExercise entry(SessionItem it) {
+    final e = it.exercise;
     final log = dayLogs[e.id];
     final previous = LiftLogRules.previousSession(logs, e.id, date);
     final note = dayNotes[e.id];
@@ -168,10 +210,12 @@ final sessionExercisesProvider = Provider.family<SessionExercises?, LocalDate>((
     );
     return (
       exercise: e,
+      item: it,
       log: log,
       previous: previous,
       note: note,
       previousNote: previousNote,
+      feel: dayFeels[e.id],
       unit: units[e.id]?.unit,
       state: LiftRowRules.of(
         window: session.window,
@@ -187,15 +231,50 @@ final sessionExercisesProvider = Provider.family<SessionExercises?, LocalDate>((
     );
   }
 
-  return SessionExercises([
-    for (final group in session.muscles)
-      (
-        group: group,
-        items: [
-          for (final e in library)
-            if (e.group == group && (e.active || dayLogs.containsKey(e.id)))
-              item(e),
-        ],
-      ),
-  ]);
+  final items = SessionList.build(
+    library: library,
+    groups: session.muscles,
+    // Buổi tập thêm không có đổi / bỏ / thêm bài (F28-R9).
+    rows: session.isExtra ? const [] : rows,
+    loggedToday: dayLogs.keys.toSet(),
+  );
+  return SessionExercises(
+    [
+      for (final group in session.muscles)
+        (
+          group: group,
+          items: [
+            for (final it in items)
+              if (it.slotGroup == group) entry(it),
+          ],
+        ),
+    ],
+    extras: [
+      for (final it in items)
+        if (it.role == SessionExerciseRole.extra) entry(it),
+    ],
+  );
+});
+
+/// Buổi ngày [date] cho đổi / bỏ qua / thêm bài lúc này (05 Bản 5 §6.4.3
+/// `sessionActionsProvider`): buổi theo lịch hôm nay, còn trong ngày, chưa
+/// "Đã tập" (F28-R1, R7, R9; BR5-13). null khi được; ngược lại là lý do.
+final sessionActionsProvider = Provider.family<SessionEditError?, LocalDate>(
+  (ref, date) => SessionList.editError(
+    ref.watch(dayProvider(date)).value,
+    ref.watch(nowProvider),
+  ),
+);
+
+/// Bài chọn được ở S-75 cho buổi ngày [date] (05 Bản 5 §6.4.3
+/// `pickableExercisesProvider`, FC5-04): thư viện phẳng trừ bài trong buổi
+/// và bài gốc đang bị thay.
+final pickableExercisesProvider = Provider.family<List<Exercise>?, LocalDate>((
+  ref,
+  date,
+) {
+  final library = ref.watch(allExercisesProvider).value;
+  final exercises = ref.watch(sessionExercisesProvider(date));
+  if (library == null || exercises == null) return null;
+  return SessionList.pickable(library, [for (final e in exercises.all) e.item]);
 });

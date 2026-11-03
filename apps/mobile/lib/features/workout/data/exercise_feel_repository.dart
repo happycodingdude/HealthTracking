@@ -28,6 +28,16 @@ final class ExerciseFeelRepository {
           ))
           .go();
 
+  Future<ExerciseFeel?> get(LocalDate date, String exerciseId) async {
+    final r =
+        await (_db.select(_db.exerciseFeels)..where(
+              (f) =>
+                  f.date.equals(date.toKey()) & f.exerciseId.equals(exerciseId),
+            ))
+            .getSingleOrNull();
+    return r == null ? null : _feel(r);
+  }
+
   /// Mọi mức thoải mái, cũ → mới (mức thoải mái buổi trước, FC5-07).
   Stream<List<ExerciseFeel>> watchAll() =>
       (_db.select(_db.exerciseFeels)..orderBy([

@@ -45,6 +45,14 @@ final class LiftLogRepository {
           .watch()
           .map((rows) => [for (final r in rows) _log(r)]);
 
+  /// Bản ghi của buổi ngày [date] (đọc một lần, dùng được trong transaction).
+  Future<List<LiftLog>> day(LocalDate date) async => [
+    for (final r in await (_db.select(
+      _db.liftLogs,
+    )..where((l) => l.date.equals(date.toKey()))).get())
+      _log(r),
+  ];
+
   /// Số bài đã có mức tạ trong buổi ngày [date] (F05-R28).
   Future<int> countDay(LocalDate date) async {
     final count = _db.liftLogs.exerciseId.count();

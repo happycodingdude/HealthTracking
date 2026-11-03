@@ -61,6 +61,14 @@ final class ExerciseRepository {
           .watch()
           .map((rows) => [for (final r in rows) _toExercise(r)]);
 
+  /// Như [watchAll] nhưng đọc một lần (dùng được trong transaction).
+  Future<List<Exercise>> all() async => [
+    for (final r in await (_db.select(
+      _db.exercises,
+    )..orderBy([(x) => OrderingTerm.asc(x.sortOrder)])).get())
+      _toExercise(r),
+  ];
+
   /// Một bài, kể cả bài đã rời thư viện (F19-E2). null khi chưa có.
   Stream<Exercise?> watch(String id) =>
       (_db.select(_db.exercises)..where((x) => x.id.equals(id)))

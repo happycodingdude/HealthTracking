@@ -3,6 +3,7 @@ import 'package:domain/domain.dart';
 import 'package:postgres/postgres.dart';
 
 import 'schedule_handlers.dart';
+import 'session_v5_handlers.dart';
 import 'shared_handlers.dart';
 import 'sync_entity_handler.dart';
 
@@ -81,11 +82,17 @@ final class LiftLogHandler implements SyncEntityHandler {
         await deviceNow(s, userId, m.clientUpdatedAt) ?? m.clientUpdatedAt;
     final day = await sessionDay(s, userId, date);
     if (LiftLogRules.isSession(day)) requireDayOpen(date, now);
+    // Bước 4 theo danh sách bài của buổi (05 Bản 5 TD5-09); xóa bản ghi
+    // không xét bước này (TD5-10).
     final error = LiftLogRules.check(
       day: day,
       exercise: exercise,
       now: now,
       exists: existing != null && !existing.deleted,
+      sessionRows: day != null && day.isWorkout
+          ? await sessionRows(s, userId, date)
+          : const [],
+      removing: m.op == SyncOp.delete,
     );
     if (error != null) {
       throw SyncRejection('key', code: liftErrorCodes[error]!);

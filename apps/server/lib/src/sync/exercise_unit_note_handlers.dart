@@ -4,6 +4,7 @@ import 'package:postgres/postgres.dart';
 
 import 'lift_log_handler.dart';
 import 'schedule_handlers.dart';
+import 'session_v5_handlers.dart';
 import 'sync_entity_handler.dart';
 
 /// Entity `exercise_unit` (key `exerciseId`) = bảng `exercise_units` (05 Bản 3
@@ -192,11 +193,17 @@ final class ExerciseNoteHandler implements SyncEntityHandler {
         await deviceNow(s, userId, m.clientUpdatedAt) ?? m.clientUpdatedAt;
     final day = await sessionDay(s, userId, date);
     if (LiftLogRules.isSession(day)) requireDayOpen(date, now);
+    // Bài thuộc buổi theo danh sách bài của buổi (05 Bản 5 TD5-09); xóa ghi
+    // chú không xét bước này (TD5-10).
     final error = ExerciseNoteRules.check(
       day: day,
       exercise: await libraryExercise(s, exerciseId),
       now: now,
       exists: exists,
+      sessionRows: day != null && day.isWorkout
+          ? await sessionRows(s, userId, date)
+          : const [],
+      removing: m.op == SyncOp.delete,
     );
     if (error != null) {
       throw SyncRejection('key', code: liftErrorCodes[error]!);

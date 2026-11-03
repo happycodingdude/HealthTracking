@@ -33,6 +33,7 @@ export 'src/session/lift_row.dart';
 export 'src/session/schedule_state.dart';
 export 'src/session/session.dart';
 export 'src/session/session_exercise.dart';
+export 'src/session/session_list.dart';
 export 'src/time/clock.dart';
 export 'src/time/local_date.dart';
 export 'src/time/local_time.dart';
