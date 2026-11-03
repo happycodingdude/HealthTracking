@@ -16,7 +16,14 @@ import 'pick_exercise_screen.dart';
 import 'session_screen.dart';
 
 /// Thao tác chọn ở S-74.
-enum ExerciseAction { view, replace, restoreOriginal }
+enum ExerciseAction {
+  view,
+  replace,
+  restoreOriginal,
+  skip,
+  unskip,
+  removeExtra,
+}
 
 /// S-74 — Thao tác với bài (04 Bản 5 S-74, UA5-01): mở từ ··· của một bài
 /// trong buổi hôm nay. Đầu bảng ảnh vùng cơ tròn 44 + tên bài + "Nhóm · Vùng";
@@ -72,6 +79,55 @@ Future<void> openExerciseActions(
           item.id,
           item.original!.id,
         );
+      } on SessionEditException {
+        return;
+      }
+    case ExerciseAction.skip:
+      // F29-R3, FC5-14: bài đã có bản ghi hôm nay → S-78 "Bỏ qua bài?".
+      if (SessionExercises.hasRecords(entry)) {
+        final ok = await confirmDeleteRecords(
+          context,
+          title: S.skipConfirmTitle,
+          action: S.skipConfirmAction,
+          key: 'records-delete-skip',
+        );
+        if (!ok) return;
+      }
+      try {
+        await container.read(skipExerciseProvider)(
+          date,
+          item.id,
+          skipped: true,
+        );
+      } on SessionEditException {
+        return;
+      }
+      if (context.mounted) {
+        showToast(context, S.skippedExercise(entry.exercise.nameVi));
+      }
+    case ExerciseAction.unskip:
+      try {
+        await container.read(skipExerciseProvider)(
+          date,
+          item.id,
+          skipped: false,
+        );
+      } on SessionEditException {
+        return;
+      }
+    case ExerciseAction.removeExtra:
+      // F30-R5, FC5-14: bài thêm đã có bản ghi → S-78 "Xóa bài thêm?".
+      if (SessionExercises.hasRecords(entry)) {
+        final ok = await confirmDeleteRecords(
+          context,
+          title: S.removeExtraConfirmTitle,
+          action: S.removeExtraConfirmAction,
+          key: 'records-delete-remove-extra',
+        );
+        if (!ok) return;
+      }
+      try {
+        await container.read(removeExtraExerciseProvider)(date, item.id);
       } on SessionEditException {
         return;
       }
@@ -149,14 +205,21 @@ class ExerciseActionsSheet extends ConsumerWidget {
         key: const ValueKey('action-skip'),
         icon: Icons.remove,
         label: item.skipped ? S.actionUnskip : S.actionSkipToday,
-        onTap: null,
+        onTap: editable
+            ? () => pick(
+                item.skipped ? ExerciseAction.unskip : ExerciseAction.skip,
+              )
+            : null,
       ),
-      const _ActionRow(
-        key: ValueKey('action-remove-extra'),
+      // Luôn hiện; mờ với bài gốc / bài thay (04 Bản 5 S-74).
+      _ActionRow(
+        key: const ValueKey('action-remove-extra'),
         icon: Icons.delete_outline,
         label: S.actionRemoveExtra,
         danger: true,
-        onTap: null,
+        onTap: editable && isExtra
+            ? () => pick(ExerciseAction.removeExtra)
+            : null,
       ),
     ];
     return IronlySheet(

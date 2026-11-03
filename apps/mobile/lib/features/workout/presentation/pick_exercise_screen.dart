@@ -12,25 +12,27 @@ import '../../library/presentation/library_screen.dart';
 import '../application/session_item_edits.dart';
 import '../application/session_providers.dart';
 
-/// Đường dẫn S-75 "Đổi bài" cho chỗ của bài [slot] trong buổi hôm nay [date]
-/// (04 Bản 5 §6.3: S-74 → S-75 → về S-10).
-String pickExercisePath(LocalDate date, {required String slot}) =>
+/// Đường dẫn S-75 cho buổi hôm nay [date] (04 Bản 5 §6.3): có [slot] = "Đổi
+/// bài" cho chỗ của bài đó (S-74 → S-75 → về S-10); không có = "Thêm bài"
+/// ("+ Thêm bài" → S-75 → về S-10).
+String pickExercisePath(LocalDate date, {String? slot}) =>
     '${AppTab.today.path}/pick?date=${date.toKey()}'
-    '&slot=${Uri.encodeQueryComponent(slot)}';
+    '${slot == null ? '' : '&slot=${Uri.encodeQueryComponent(slot)}'}';
 
-/// S-75 — Chọn bài (04 Bản 5 S-75, màn con): tiêu đề "Đổi bài"; thanh viên 7
+/// S-75 — Chọn bài (04 Bản 5 S-75, màn con): tiêu đề "Đổi bài" / "Thêm bài"; thanh viên 7
 /// nhóm cơ cuộn ngang (như S-66; chạm viên → cuộn tới nhóm, không lọc); danh
 /// sách phẳng theo nhóm (tiêu đề nhóm in hoa, PD3-01) — ảnh vùng cơ tròn +
 /// tên bài + ›. Ẩn bài đang có trong buổi và bài gốc đang bị thay (FC5-04);
 /// nhóm không còn bài → không hiện. Chạm bài → về S-10 ngay, không hộp xác
-/// nhận, thông báo nhanh "Đã đổi sang {tên}". Trống: chỉ icon mờ, không câu.
+/// nhận, thông báo nhanh "Đã đổi sang {tên}" / "Đã thêm {tên}" (bài thêm nối
+/// cuối, F30-R3). Trống: chỉ icon mờ, không câu.
 class PickExerciseScreen extends ConsumerStatefulWidget {
-  const PickExerciseScreen({super.key, required this.date, required this.slot});
+  const PickExerciseScreen({super.key, required this.date, this.slot});
 
   final LocalDate date;
 
-  /// Bài đang đứng ở chỗ cần đổi (bài gốc hoặc bài thay).
-  final String slot;
+  /// Bài đang đứng ở chỗ cần đổi (bài gốc hoặc bài thay); null = thêm bài.
+  final String? slot;
 
   @override
   ConsumerState<PickExerciseScreen> createState() => _PickExerciseState();
@@ -44,8 +46,13 @@ class _PickExerciseState extends ConsumerState<PickExerciseScreen> {
   Future<void> _pick(Exercise e) async {
     if (_busy) return;
     _busy = true;
+    final slot = widget.slot;
     try {
-      await ref.read(replaceExerciseProvider)(widget.date, widget.slot, e.id);
+      if (slot == null) {
+        await ref.read(addExtraExerciseProvider)(widget.date, e.id);
+      } else {
+        await ref.read(replaceExerciseProvider)(widget.date, slot, e.id);
+      }
     } on SessionEditException {
       // Buổi vừa chốt hoặc đã sang ngày: về S-10, không đổi gì.
       if (mounted) context.pop();
@@ -54,7 +61,10 @@ class _PickExerciseState extends ConsumerState<PickExerciseScreen> {
       _busy = false;
     }
     if (!mounted) return;
-    showToast(context, S.replacedTo(e.nameVi));
+    showToast(
+      context,
+      slot == null ? S.addedExercise(e.nameVi) : S.replacedTo(e.nameVi),
+    );
     context.pop();
   }
 
@@ -82,7 +92,7 @@ class _PickExerciseState extends ConsumerState<PickExerciseScreen> {
     ];
     final selected = _chosen ?? (groups.isEmpty ? null : groups.first);
     return IronlySubPage(
-      title: S.actionReplace,
+      title: widget.slot == null ? S.pickAddTitle : S.actionReplace,
       listKey: const ValueKey('pick-list'),
       children: [
         SingleChildScrollView(
@@ -111,37 +121,45 @@ class _PickExerciseState extends ConsumerState<PickExerciseScreen> {
             padding: EdgeInsets.only(top: TokenSpace.s6),
             child: Center(child: CircleIcon(Icons.fitness_center)),
           ),
-        for (final (gi, g) in groups.indexed) ...[
-          // Nhóm đầu không tiêu đề (viên đang chọn đã cho biết nhóm — mock
-          // S-75); các nhóm sau có tiêu đề in hoa.
-          Padding(
-            key: _groupKeys[g],
-            padding: EdgeInsets.only(
-              top: gi == 0 ? 0 : TokenSpace.s5,
-              bottom: gi == 0 ? 0 : TokenSpace.s2,
-            ),
-            child: gi == 0
-                ? const SizedBox.shrink()
-                : Semantics(
-                    header: true,
-                    child: Text(
-                      Fmt.muscle(g).toUpperCase(),
-                      style: IronlyText.groupLabel,
-                    ),
-                  ),
-          ),
-          IronlyListCard(
-            children: [
-              for (final e in pickable!)
-                if (e.group == g)
-                  ExerciseRow(
-                    key: ValueKey('pick-${e.id}'),
-                    exercise: e,
-                    onTap: () => _pick(e),
-                  ),
+        // Mọi nhóm trong một khối dựng cùng lúc (≤ 28 bài): chạm viên của
+        // nhóm ở cuối danh sách vẫn cuộn tới được (danh sách dựng lười thì
+        // nhóm chưa dựng không có vị trí để cuộn).
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (final (gi, g) in groups.indexed) ...[
+              // Nhóm đầu không tiêu đề (viên đang chọn đã cho biết nhóm — mock
+              // S-75); các nhóm sau có tiêu đề in hoa.
+              Padding(
+                key: _groupKeys[g],
+                padding: EdgeInsets.only(
+                  top: gi == 0 ? 0 : TokenSpace.s5,
+                  bottom: gi == 0 ? 0 : TokenSpace.s2,
+                ),
+                child: gi == 0
+                    ? const SizedBox.shrink()
+                    : Semantics(
+                        header: true,
+                        child: Text(
+                          Fmt.muscle(g).toUpperCase(),
+                          style: IronlyText.groupLabel,
+                        ),
+                      ),
+              ),
+              IronlyListCard(
+                children: [
+                  for (final e in pickable!)
+                    if (e.group == g)
+                      ExerciseRow(
+                        key: ValueKey('pick-${e.id}'),
+                        exercise: e,
+                        onTap: () => _pick(e),
+                      ),
+                ],
+              ),
             ],
-          ),
-        ],
+          ],
+        ),
       ],
     );
   }

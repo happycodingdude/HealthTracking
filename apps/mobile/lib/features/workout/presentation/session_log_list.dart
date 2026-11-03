@@ -13,6 +13,7 @@ import '../../library/presentation/body_map.dart';
 import '../application/session_providers.dart';
 import 'exercise_actions_sheet.dart';
 import 'lift_log_sheet.dart';
+import 'pick_exercise_screen.dart';
 import 'session_screen.dart';
 
 /// Danh sách bài của buổi ngày [date] với hàng số mức tạ ngay trong danh sách
@@ -70,6 +71,17 @@ class SessionLogList extends ConsumerWidget {
         // Bài thêm nối cuối danh sách (A5-02).
         for (final item in exercises.extras)
           LiftRow(session: session, item: item, tab: tab, more: more),
+        // "+ Thêm bài" (04 Bản 5 S-10, UD5-05): chỉ buổi theo lịch hôm nay
+        // trên Hôm nay (không có ở ngày nghỉ, Buổi tập thêm, S-63); mờ khi
+        // buổi "Đã tập" (BR5-13, F30-R7).
+        if (more == LiftRowMore.actions)
+          AddRow(
+            key: const ValueKey('add-exercise'),
+            label: S.addExerciseRow,
+            onTap: ref.watch(sessionActionsProvider(date)) == null
+                ? () => context.push(pickExercisePath(date))
+                : null,
+          ),
       ],
     );
   }
@@ -118,7 +130,14 @@ class LiftRow extends StatelessWidget {
     final prev = item.previous;
     final log = item.log;
     final loggedThisSession = log != null;
-    final canOpenSheet = open && (e.active || log != null);
+    // Bài bỏ qua hôm nay (F-29, 04 Bản 5 §6.2): không hàng số, không ghi
+    // chú, không mở bảng ghi tạ (F21-R63).
+    final skippedItem = item.item.skipped;
+    final isExtraItem = item.item.role == SessionExerciseRole.extra;
+    // Nhãn VoiceOver của dấu bài thêm / bài bỏ qua (04 Bản 5 §6.9).
+    const extraLabel = S.extraMark;
+    const skippedLabel = S.skippedMark;
+    final canOpenSheet = open && (e.active || log != null) && !skippedItem;
     final today = session.date == LocalDate.fromDateTime(DateTime.now());
 
     void openSheet() =>
@@ -139,7 +158,7 @@ class LiftRow extends StatelessWidget {
     // Hàng số (chỉ bài có mức tạ).
     Widget? numbers;
     String? numbersSemantics;
-    if (e.logsWeight) {
+    if (e.logsWeight && !skippedItem) {
       final firstLabel = future ? S.liftLatestLabel : S.liftPreviousLabel;
       final String first;
       final String start;
@@ -254,7 +273,7 @@ class LiftRow extends StatelessWidget {
     Widget? noteLine;
     final note = item.note;
     final previousNote = item.previousNote;
-    if (note != null || previousNote != null) {
+    if (!skippedItem && (note != null || previousNote != null)) {
       final isToday = note != null;
       noteLine = Material(
         color: t.surface,
@@ -281,7 +300,9 @@ class LiftRow extends StatelessWidget {
       );
     }
 
-    final noteIcon = item.noteMark != NoteMark.none || (!e.logsWeight && open)
+    final noteIcon =
+        !skippedItem &&
+            (item.noteMark != NoteMark.none || (!e.logsWeight && open))
         ? Semantics(
             container: true,
             button: canOpenSheet,
@@ -306,12 +327,16 @@ class LiftRow extends StatelessWidget {
           )
         : null;
 
-    final avatar = ExerciseAvatar(
-      id: e.id,
-      ring: loggedThisSession && open,
-      dim: !e.active,
-      child: ExcludeSemantics(
-        child: BodyMap(region: e.region, size: BodyMap.avatar, bare: true),
+    final avatar = Opacity(
+      // Bài bỏ qua: icon mờ 45 % (04 Bản 5 §6.2).
+      opacity: skippedItem ? 0.45 : 1,
+      child: ExerciseAvatar(
+        id: e.id,
+        ring: loggedThisSession && open && !skippedItem,
+        dim: !e.active,
+        child: ExcludeSemantics(
+          child: BodyMap(region: e.region, size: BodyMap.avatar, bare: true),
+        ),
       ),
     );
 
@@ -324,9 +349,12 @@ class LiftRow extends StatelessWidget {
           Semantics(
             container: true,
             button: true,
-            label: replaced == null
-                ? e.nameVi
-                : '${e.nameVi}, ${S.replacementFor(replaced.nameVi)}',
+            label: [
+              e.nameVi,
+              if (replaced != null) S.replacementFor(replaced.nameVi),
+              if (isExtraItem) extraLabel,
+              if (skippedItem) skippedLabel,
+            ].join(', '),
             child: ExcludeSemantics(
               child: InkWell(
                 key: ValueKey('exercise-${e.id}'),
@@ -358,10 +386,31 @@ class LiftRow extends StatelessWidget {
                                   ),
                                   const SizedBox(width: 6),
                                 ],
+                                if (isExtraItem) ...[
+                                  SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: Icon(
+                                      Icons.add,
+                                      key: ValueKey('extra-mark-${e.id}'),
+                                      size: 14,
+                                      color: t.accent,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                ],
                                 Flexible(
                                   child: Text(
                                     e.nameVi,
-                                    style: IronlyText.exerciseName,
+                                    key: ValueKey('exercise-name-${e.id}'),
+                                    style: skippedItem
+                                        ? IronlyText.exerciseName.copyWith(
+                                            color: t.textSecondary,
+                                            decoration:
+                                                TextDecoration.lineThrough,
+                                            decorationColor: t.textSecondary,
+                                          )
+                                        : IronlyText.exerciseName,
                                   ),
                                 ),
                               ],
@@ -378,6 +427,18 @@ class LiftRow extends StatelessWidget {
                         ),
                       ),
                       if (noteIcon != null) noteIcon,
+                      // Bài bỏ qua: vòng gạch ngang ở chỗ ô tick (cùng dấu
+                      // "Không tập", 04 Bản 5 §6.2).
+                      if (skippedItem)
+                        Padding(
+                          padding: const EdgeInsets.only(left: TokenSpace.s2),
+                          child: StatusGlyph(
+                            GlyphStatus.skipped,
+                            key: ValueKey('skipped-mark-${e.id}'),
+                            label: S.skippedMark,
+                            size: 22,
+                          ),
+                        ),
                       if (more != LiftRowMore.none)
                         Padding(
                           padding: const EdgeInsets.only(left: TokenSpace.s1),

@@ -12,6 +12,7 @@ import 'package:mobile/app/shell/app_tab.dart';
 import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/features/library/data/video_player_gateway.dart';
 import 'package:mobile/features/workout/application/session_item_edits.dart';
+import 'package:mobile/features/workout/data/exercise_note_repository.dart';
 import 'package:mobile/features/workout/data/exercise_unit_repository.dart';
 import 'package:mobile/features/workout/data/lift_log_repository.dart';
 import 'package:mobile/features/workout/presentation/pick_exercise_screen.dart';
@@ -39,10 +40,21 @@ void main() {
     (e) => e.id == 'back-back-mid-plate-loaded-row-machine',
   );
 
-  Future<AppDatabase> seeded() async {
+  Exercise plank() => exerciseOf(library, MuscleRegion.absMid);
+
+  // Mock s10-h4: buổi Ngực 18:00 thứ 2 (một nhóm).
+  final chestOnly = WeeklyTemplate({
+    1: TemplateDay(
+      enabled: true,
+      time: LocalTime(18, 0),
+      muscles: const [MuscleGroup.chest],
+    ),
+  });
+
+  Future<AppDatabase> seeded({WeeklyTemplate? template}) async {
     final db = AppDatabase(NativeDatabase.memory());
     addTearDown(db.close);
-    await seedSetUp(db);
+    await seedSetUp(db, template: template);
     library = await seedLibrary(db, realLibraryV3());
     final c = chest();
     final units = ExerciseUnitRepository(db);
@@ -134,6 +146,26 @@ void main() {
     return c;
   }
 
+  /// Buổi Ngực có đủ 5 loại dòng (mock s10-h4): bài 1 đã ghi 40 → 45, bài 2
+  /// đổi sang "Máy dốc gắn bánh tạ", bài 3 bỏ qua, bài 4 chưa ghi (buổi trước
+  /// 22,5 → 25), Plank thêm cuối có ghi chú.
+  Future<ProviderContainer> fiveRows(
+    WidgetTester tester,
+    GoldenVariant v,
+  ) async {
+    final db = await seeded(template: chestOnly);
+    final c = await pump(tester, v, db, DateTime(2026, 10, 12, 18, 12));
+    final ch = chest();
+    await c.read(replaceExerciseProvider)(mon, ch[1].id, backPlate().id);
+    await c.read(skipExerciseProvider)(mon, ch[2].id, skipped: true);
+    await c.read(addExtraExerciseProvider)(mon, plank().id);
+    await ExerciseNoteRepository(
+      db,
+    ).put(ExerciseNote(date: mon, exerciseId: plank().id, text: '60 giây'));
+    await tester.pumpAndSettle();
+    return c;
+  }
+
   for (final v in GoldenVariant.all) {
     testWidgets('S-10 H4 Bản 5: bài đã ghi, bài thay (⇄ + "thay …", "—"), bài '
         'gốc buổi trước mờ ${v.name}', (tester) async {
@@ -173,6 +205,66 @@ void main() {
       await tapKey(tester, 'exercise-${chest()[0].id}');
       await tapKey(tester, 'action-replace');
       await snap('s78_replace_${v.name}');
+    });
+
+    // 06 Bản 5 VS54-T05: S-10 H4 đủ 5 loại dòng, S-74 bài thêm / bài bỏ
+    // qua, S-75 "Thêm bài", S-78 "Bỏ qua bài?" / "Xóa bài thêm?", S-79.
+    testWidgets('S-10 H4 Bản 5 (mock s10-h4): bài đã ghi, bài thay, bài bỏ '
+        'qua, bài chưa ghi, bài thêm Plank có ghi chú, "+ Thêm bài" '
+        '${v.name}', (tester) async {
+      final c = await fiveRows(tester, v);
+      expect(c, isNotNull);
+      await snap('s10_items_${v.name}');
+    });
+
+    testWidgets('S-74 bài thêm: không "Đổi bài", "Xóa bài thêm" đỏ ${v.name}', (
+      tester,
+    ) async {
+      await fiveRows(tester, v);
+      await tapKey(tester, 'exercise-${plank().id}');
+      await snap('s74_extra_${v.name}');
+    });
+
+    testWidgets('S-74 bài bỏ qua: "Hủy bỏ qua" ${v.name}', (tester) async {
+      await fiveRows(tester, v);
+      await tapKey(tester, 'exercise-${chest()[2].id}');
+      await snap('s74_skipped_${v.name}');
+    });
+
+    testWidgets('S-75 "Thêm bài": ẩn bài trong buổi ${v.name}', (tester) async {
+      final db = await seeded();
+      final c = await pump(tester, v, db, DateTime(2026, 10, 12, 18, 30));
+      await go(tester, c, pickExercisePath(mon));
+      await snap('s75_add_${v.name}');
+    });
+
+    testWidgets('S-78 "Bỏ qua bài?" — bài đã ghi ${v.name}', (tester) async {
+      final db = await seeded();
+      await pump(tester, v, db, DateTime(2026, 10, 12, 18, 30));
+      await tapKey(tester, 'exercise-${chest()[0].id}');
+      await tapKey(tester, 'action-skip');
+      await snap('s78_skip_${v.name}');
+    });
+
+    testWidgets('S-78 "Xóa bài thêm?" — bài thêm đã ghi ghi chú ${v.name}', (
+      tester,
+    ) async {
+      await fiveRows(tester, v);
+      await tapKey(tester, 'exercise-${plank().id}');
+      await tapKey(tester, 'action-remove-extra');
+      await snap('s78_remove_extra_${v.name}');
+    });
+
+    testWidgets('S-79: mọi bài đã bỏ qua → hộp "Đã tập Ngực?" câu mới '
+        '${v.name}', (tester) async {
+      final db = await seeded(template: chestOnly);
+      final c = await pump(tester, v, db, DateTime(2026, 10, 12, 19, 5));
+      for (final e in chest()) {
+        await c.read(skipExerciseProvider)(mon, e.id, skipped: true);
+      }
+      await tester.pumpAndSettle();
+      await tapKey(tester, 'today-mark-done');
+      await snap('s79_${v.name}');
     });
 
     testWidgets('S-63 buổi đã qua: bài thay ⇄ + tên gốc, không ··· ${v.name}', (

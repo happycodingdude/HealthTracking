@@ -320,6 +320,26 @@ abstract final class S {
   static const replaceConfirmAction = 'Xóa và đổi bài';
   static const restoreConfirmTitle = 'Chọn lại bài gốc?';
   static const restoreConfirmAction = 'Xóa và chọn lại';
+  static const skipConfirmTitle = 'Bỏ qua bài?';
+  static const skipConfirmAction = 'Xóa và bỏ qua';
+  static const removeExtraConfirmTitle = 'Xóa bài thêm?';
+  static const removeExtraConfirmAction = 'Xóa bài';
+
+  /// 04 Bản 5 S-79, §6.9 (FC5-03): hộp "Đã tập" khi mọi bài đã bỏ qua.
+  static const allSkippedBody = 'Mọi bài đã bỏ qua. Buổi sẽ ghi là Không tập.';
+
+  /// 04 Bản 5 §6.1 `AddRow`, UD5-05: dòng viền đứt cuối danh sách bài.
+  static const addExerciseRow = '+ Thêm bài';
+
+  /// 04 Bản 5 §6.9 (VoiceOver): dấu bài thêm, dấu bài bỏ qua.
+  static const extraMark = 'Bài thêm';
+  static const skippedMark = 'Đã bỏ qua';
+
+  /// 04 Bản 5 §6.9: thông báo nhanh "Đã thêm {tên bài}".
+  static String addedExercise(String name) => 'Đã thêm $name';
+
+  /// 04 Bản 5 §6.9: thông báo nhanh "Đã bỏ qua {tên bài}".
+  static String skippedExercise(String name) => 'Đã bỏ qua $name';
 
   /// 04 Bản 5 §6.2: dòng mờ dưới tên bài thay "thay {tên bài gốc}".
   static String replacedFrom(String original) => 'thay $original';
@@ -1103,6 +1123,14 @@ abstract final class S {
     'replaceConfirmAction': replaceConfirmAction,
     'restoreConfirmTitle': restoreConfirmTitle,
     'restoreConfirmAction': restoreConfirmAction,
+    'skipConfirmTitle': skipConfirmTitle,
+    'skipConfirmAction': skipConfirmAction,
+    'removeExtraConfirmTitle': removeExtraConfirmTitle,
+    'removeExtraConfirmAction': removeExtraConfirmAction,
+    'allSkippedBody': allSkippedBody,
+    'addExerciseRow': addExerciseRow,
+    'extraMark': extraMark,
+    'skippedMark': skippedMark,
     'viewSession': viewSession,
     'delete': delete,
     'cancel': cancel,

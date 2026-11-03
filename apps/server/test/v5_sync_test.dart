@@ -425,6 +425,49 @@ void main() {
       ]);
     });
 
+    test(
+      'TAC5-03 phần bỏ qua / thêm (VS-54): lift_log bài bỏ qua → '
+      'lift_exercise_not_in_session; hủy bỏ qua → ghi được; bài thêm (khác '
+      'nhóm) → applied; bài thêm trùng bài gốc → validation_failed',
+      () async {
+        final at = vn(4, 18, 30);
+        await setNow(at);
+        final skip = SessionExerciseRow(
+          date: wed,
+          exerciseId: 'back-lat',
+          role: SessionExerciseRole.original,
+          skipped: true,
+        );
+        final results = await push([
+          sessionRow(skip, at),
+          unit('back-lat', at),
+          lift('back-lat', at),
+          note('back-lat', at),
+          sessionRow(extra('chest-press'), at),
+          unit('chest-press', at),
+          lift('chest-press', at),
+          sessionRow(extra('back-row'), at),
+        ]);
+        expect(results.map((r) => (r.code, r.field)), [
+          (null, null),
+          (null, null),
+          (ErrorCode.liftExerciseNotInSession, 'key'),
+          (ErrorCode.liftExerciseNotInSession, 'key'),
+          (null, null),
+          (null, null),
+          (null, null),
+          (ErrorCode.validationFailed, 'exerciseId'),
+        ]);
+        final later = at.add(const Duration(minutes: 2));
+        await setNow(later);
+        final unskip = await push([
+          sessionRow(skip, later, op: SyncOp.delete),
+          lift('back-lat', later),
+        ]);
+        expect(unskip.every((r) => r.status == PushStatus.applied), isTrue);
+      },
+    );
+
     test('FC5-14 / TD5-10: bản ghi bài gốc đã có, rồi đổi bài — xóa bản ghi, '
         'ghi chú bài gốc → applied dù dòng thay tới trước; hủy đổi rồi xóa '
         'bản ghi bài thay → applied', () async {

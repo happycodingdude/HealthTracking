@@ -23,6 +23,10 @@ abstract interface class LiftChangeHooks {
     required bool deleted,
   });
   Future<void> unitChanged(String exerciseId);
+
+  /// Danh sách bài của buổi ngày [date] đổi (đổi bài, bỏ qua, thêm, xóa bài
+  /// thêm — 05 Bản 5 §6.4.4): "Kế tiếp" trên thẻ tính lại.
+  Future<void> sessionItemsChanged(LocalDate date);
 }
 
 final class NoLiftChangeHooks implements LiftChangeHooks {
@@ -37,6 +41,9 @@ final class NoLiftChangeHooks implements LiftChangeHooks {
 
   @override
   Future<void> unitChanged(String exerciseId) async {}
+
+  @override
+  Future<void> sessionItemsChanged(LocalDate date) async {}
 }
 
 final liftChangeHooksProvider = Provider<LiftChangeHooks>(

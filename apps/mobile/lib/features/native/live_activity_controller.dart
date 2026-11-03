@@ -18,6 +18,7 @@ import '../today/application/mark_session.dart';
 import '../workout/application/lift_log_edits.dart';
 import '../workout/data/exercise_unit_repository.dart';
 import '../workout/data/lift_log_repository.dart';
+import '../workout/data/session_exercise_repository.dart';
 import 'native_bridge.dart';
 
 /// Token thẻ đã gửi lên server lần gần nhất (TA3-12: chỉ gửi khi đổi hoặc
@@ -169,6 +170,7 @@ final class LiveActivityController
     required ExerciseRepository exercises,
     required LiftLogRepository liftLogs,
     required ExerciseUnitRepository units,
+    required SessionExerciseRepository sessionRows,
     required String? Function() signedInUser,
     required ApnsEnvironment environment,
     required String appVersion,
@@ -181,6 +183,7 @@ final class LiveActivityController
        _exercises = exercises,
        _liftLogs = liftLogs,
        _units = units,
+       _sessionRows = sessionRows,
        _signedInUser = signedInUser,
        _environment = environment,
        _appVersion = appVersion,
@@ -194,6 +197,7 @@ final class LiveActivityController
   final ExerciseRepository _exercises;
   final LiftLogRepository _liftLogs;
   final ExerciseUnitRepository _units;
+  final SessionExerciseRepository _sessionRows;
   final String? Function() _signedInUser;
   final ApnsEnvironment _environment;
   final String _appVersion;
@@ -308,6 +312,13 @@ final class LiveActivityController
   Future<void> unitChanged(String exerciseId) =>
       _guard('live_activity_update', () => _update(_today));
 
+  /// Đổi / bỏ qua / thêm / xóa bài (05 Bản 5 §6.4.4): tính lại "Kế tiếp".
+  @override
+  Future<void> sessionItemsChanged(LocalDate date) =>
+      _guard('live_activity_update', () async {
+        if (date == _today) await _update(date);
+      });
+
   /// "Đã tập" / "Không tập": tắt ngay thẻ của ngày đó (F25-R3).
   @override
   Future<void> sessionMarked(LocalDate date) =>
@@ -364,6 +375,8 @@ final class LiveActivityController
       today: todayLogs,
       previous: previous,
       units: await _units.watchAll().first,
+      // Danh sách bài của buổi (Bản 5, F25-R65): bài thay, bài thêm, bỏ qua.
+      rows: await _sessionRows.day(date),
     );
   }
 
@@ -396,6 +409,7 @@ final liveActivityControllerProvider = Provider<LiveActivityController>((ref) {
     exercises: ref.watch(exerciseRepositoryProvider),
     liftLogs: ref.watch(liftLogRepositoryProvider),
     units: ref.watch(exerciseUnitRepositoryProvider),
+    sessionRows: ref.watch(sessionExerciseRepositoryProvider),
     signedInUser: () {
       final auth = ref.read(authControllerProvider);
       return auth.status == AuthStatus.signedIn ? auth.userId : null;

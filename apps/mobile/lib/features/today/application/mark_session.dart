@@ -7,6 +7,7 @@ import '../../../data/db/app_database.dart';
 import '../../../data/sync/outbox_writer.dart';
 import '../../../data/sync/sync_providers.dart';
 import '../../schedule/data/schedule_repository.dart';
+import '../../workout/application/session_item_edits.dart';
 import '../../workout/data/lift_log_repository.dart';
 
 /// Chưa xác nhận hộp chốt buổi S-65: chưa lưu gì (F05-V22, 06 Bản 2 ED2-04).
@@ -87,15 +88,26 @@ final class MarkSessionDone extends _DayWrite {
     required super.outbox,
     required super.clock,
     SessionMarkHooks hooks = const NoSessionMarkHooks(),
-  }) : _hooks = hooks;
+    Future<List<SessionItem>> Function(LocalDate date)? sessionItems,
+  }) : _hooks = hooks,
+       _sessionItems = sessionItems;
 
   final SessionMarkHooks _hooks;
 
+  /// Danh sách bài của buổi (FC5-03): mọi bài bỏ qua → lưu "Không tập".
+  final Future<List<SessionItem>> Function(LocalDate date)? _sessionItems;
+
+  /// FC5-03, F29-R5: bỏ qua tất cả bài rồi "Đã tập" (hộp S-79) → buổi lưu
+  /// **"Không tập"**; còn lại lưu "Đã tập".
   Future<PlanDay> call(LocalDate date, {required bool confirmed}) async {
     if (!confirmed) throw const NotConfirmedException();
+    final items = await _sessionItems?.call(date);
+    final allSkipped = items != null && SessionList.allSkipped(items);
     return _write(date, (day, now) {
       if (day == null) throw const MarkException(MarkError.notWorkout);
-      return SessionRules.markDone(day, now: now);
+      return allSkipped
+          ? SessionRules.markSkipped(day, now: now)
+          : SessionRules.markDone(day, now: now);
     }, endsLiveActivity: _hooks);
   }
 }
@@ -201,6 +213,7 @@ final markSessionDoneProvider = Provider<MarkSessionDone>(
     outbox: ref.watch(outboxWriterProvider),
     clock: ref.watch(clockProvider),
     hooks: ref.watch(sessionMarkHooksProvider),
+    sessionItems: ref.watch(sessionItemsReaderProvider).call,
   ),
 );
 

@@ -8,6 +8,7 @@ import '../../../core/formatters.dart';
 import '../../../ui/components/components.dart';
 import '../../../ui/theme.dart';
 import '../../today/application/mark_session.dart';
+import '../../workout/application/session_item_edits.dart';
 
 /// Từ mức phóng chữ này trở lên, hai nút xếp dọc (UX-AC18).
 const _stackedScale = 1.6;
@@ -65,9 +66,16 @@ abstract final class SessionMarking {
     final host = _stable(context);
     final container = ProviderScope.containerOf(host, listen: false);
     final muscles = Fmt.muscles(day.muscles);
+    // FC5-03 (S-79): mọi bài đã bỏ qua → cùng khung S-65, câu "Mọi bài đã bỏ
+    // qua. Buổi sẽ ghi là Không tập."; Lưu → buổi "Không tập".
+    final allSkipped = SessionList.allSkipped(
+      await container.read(sessionItemsReaderProvider)(day.date),
+    );
+    if (!context.mounted) return;
     final confirmed = await confirmDone(
       context,
       title: S.doneConfirmTitle(muscles),
+      body: allSkipped ? S.allSkippedBody : S.doneConfirmBody,
     );
     if (!confirmed) return;
     onConfirmed?.call();
@@ -83,7 +91,10 @@ abstract final class SessionMarking {
           .report(e, st, reason: 'mark_done');
       return;
     }
-    if (host.mounted) showToast(host, S.markedDone(muscles));
+    if (!host.mounted) return;
+    // S-79: không có "Đổi sang Đã tập" (sẽ lại về "Không tập" khi mọi bài
+    // vẫn bỏ qua).
+    showToast(host, allSkipped ? S.markedSkipped : S.markedDone(muscles));
   }
 
   /// "Không tập" cho buổi [day] (từ đầu ngày, kể cả đổi từ "Đã tập" —

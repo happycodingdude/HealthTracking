@@ -279,4 +279,171 @@ void main() {
       );
     },
   );
+
+  group('06 Bản 5 VS54-T01: bỏ qua, thêm bài, bài kế tiếp, đếm n / m, sơ đồ '
+      'cơ', () {
+    const c1 = SessionCasesV5.chest1;
+    const c2 = SessionCasesV5.chest2;
+    const c3 = SessionCasesV5.chest3;
+    const c4 = SessionCasesV5.chest4;
+    const plank = SessionCasesV5.plank;
+    const leg = SessionCasesV5.legPress;
+    const back = SessionCasesV5.backPlate;
+    LiftLog log(String id) => LiftLog(
+      date: SessionCasesV5.date,
+      exerciseId: id,
+      startKgX10: 400,
+      endKgX10: 450,
+    );
+
+    test('F20-AC61, FC5-05: đổi bài 2, bỏ qua bài 3, thêm Plank → 5 dòng, '
+        '"Đã ghi 0 / 3"', () {
+      final items = build([
+        SessionCasesV5.replace(back, c2),
+        SessionCasesV5.skip(c3),
+        SessionCasesV5.extra(plank, 0),
+      ]);
+      expect(
+        [for (final i in items) (i.id, i.role, i.skipped)],
+        [
+          (c1, SessionExerciseRole.original, false),
+          (back, SessionExerciseRole.replacement, false),
+          (c3, SessionExerciseRole.original, true),
+          (c4, SessionExerciseRole.original, false),
+          (plank, SessionExerciseRole.extra, false),
+        ],
+      );
+      expect(SessionList.loggedCount(items, const {}), (logged: 0, total: 3));
+      expect(SessionList.loggedCount(items, {c1, back}), (logged: 2, total: 3));
+    });
+
+    test('F29-AC1: bỏ qua bài 4 → "Đã ghi 0 / 3"', () {
+      final items = build([SessionCasesV5.skip(c4)]);
+      expect(SessionList.loggedCount(items, const {}), (logged: 0, total: 3));
+    });
+
+    test('F29-E1: bỏ qua 3 / 4 bài, ghi 1 bài → "Đã ghi 1 / 1"', () {
+      final items = build([
+        SessionCasesV5.skip(c2),
+        SessionCasesV5.skip(c3),
+        SessionCasesV5.skip(c4),
+      ]);
+      expect(SessionList.loggedCount(items, {c1}), (logged: 1, total: 1));
+      expect(SessionList.allSkipped(items), isFalse);
+    });
+
+    test('F29-E2, F29-E4, FC5-03: bỏ qua tất cả bài (kể cả bài thêm) → '
+        'allSkipped; còn một bài không bỏ qua → không', () {
+      final all = build([
+        for (final id in [c1, c2, c3, c4]) SessionCasesV5.skip(id),
+        SessionCasesV5.extra(plank, 0).withSkipped(true),
+      ]);
+      expect(SessionList.allSkipped(all), isTrue);
+      final one = build([
+        for (final id in [c1, c2, c3, c4]) SessionCasesV5.skip(id),
+        SessionCasesV5.extra(plank, 0),
+      ]);
+      expect(SessionList.allSkipped(one), isFalse);
+      expect(SessionList.allSkipped(const []), isFalse);
+      // F29-E4: buổi Bụng chỉ một bài, bỏ qua → bỏ qua tất cả.
+      final abs = build(
+        [SessionCasesV5.skip(plank)],
+        groups: const [MuscleGroup.abs],
+      );
+      expect(SessionList.allSkipped(abs), isTrue);
+    });
+
+    test('F25-AC65, F25-R65: bỏ qua bài 1 → kế tiếp là bài 2; bỏ bài bụng, '
+        'bài đã ghi; gồm bài thay, bài thêm', () {
+      expect(
+        SessionList.nextExercise(
+          build([SessionCasesV5.skip(c1)]),
+          const {},
+        )?.id,
+        c2,
+      );
+      final items = build([
+        SessionCasesV5.replace(back, c2),
+        SessionCasesV5.skip(c3),
+        SessionCasesV5.skip(c4),
+        SessionCasesV5.extra(plank, 0),
+        SessionCasesV5.extra(leg, 1),
+      ]);
+      expect(SessionList.nextExercise(items, {c1})?.id, back);
+      expect(SessionList.nextExercise(items, {c1, back})?.id, leg);
+      expect(SessionList.nextExercise(items, {c1, back, leg}), isNull);
+    });
+
+    test('F30-E2: thêm 6 bài → bài kế tiếp vẫn theo thứ tự danh sách', () {
+      final items = build([
+        SessionCasesV5.extra(leg, 0),
+        SessionCasesV5.extra(back, 1),
+        SessionCasesV5.extra(SessionCasesV5.back1, 2),
+      ]);
+      expect(SessionList.nextExercise(items, {c1, c2, c3, c4})?.id, leg);
+      expect(SessionList.nextExercise(items, {c1, c2, c3, c4, leg})?.id, back);
+    });
+
+    test('F25-R65: bài vừa ghi có thể là bài thêm; bản ghi của bài không còn '
+        'trong buổi không tính', () {
+      final items = build([SessionCasesV5.extra(leg, 0)]);
+      expect(
+        SessionList.lastLogged(items, [log(c1), log(leg)])?.exerciseId,
+        leg,
+      );
+      expect(
+        SessionList.lastLogged(build(const []), [
+          log(c1),
+          log(leg),
+        ])?.exerciseId,
+        c1,
+      );
+      expect(SessionList.lastLogged(items, const []), isNull);
+    });
+
+    test('FC5-06, F28-E1: sơ đồ cơ tô theo bài có bản ghi (gồm bài thay khác '
+        'nhóm); bài bụng tô khi có ghi chú / mức thoải mái; bài bỏ qua không '
+        'tô', () {
+      final items = build([
+        SessionCasesV5.replace(back, c2),
+        SessionCasesV5.skip(c3),
+        SessionCasesV5.extra(plank, 0),
+      ]);
+      expect(SessionList.activeRegions(items, loggedToday: {c1, back, c3}), {
+        MuscleRegion.chestMid,
+        MuscleRegion.backMid,
+      });
+      expect(
+        SessionList.activeRegions(
+          items,
+          loggedToday: const {},
+          notedToday: {plank},
+        ),
+        {MuscleRegion.absMid},
+      );
+      expect(
+        SessionList.activeRegions(
+          items,
+          loggedToday: const {},
+          feltToday: {plank},
+        ),
+        {MuscleRegion.absMid},
+      );
+    });
+
+    test('F30-E3: thêm bài rồi bỏ qua chính bài đó → vẫn nằm cuối, đánh dấu '
+        'bỏ qua; F30-AC3: S-75 không có bài của buổi, bài đã thêm', () {
+      final items = build([
+        SessionCasesV5.extra(plank, 0).withSkipped(true),
+        SessionCasesV5.extra(leg, 1),
+      ]);
+      expect(items[4].id, plank);
+      expect(items[4].skipped, isTrue);
+      expect(items.last.id, leg);
+      final pick = {for (final e in SessionList.pickable(library, items)) e.id};
+      expect(pick, isNot(contains(plank)));
+      expect(pick, isNot(contains(leg)));
+      expect(pick.intersection({c1, c2, c3, c4}), isEmpty);
+    });
+  });
 }

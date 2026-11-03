@@ -217,6 +217,14 @@ replaceConfirmTitle: "Đổi bài?" # 04 Bản 5 S-78
 replaceConfirmAction: "Xóa và đổi bài" # 04 Bản 5 S-78
 restoreConfirmTitle: "Chọn lại bài gốc?" # 04 Bản 5 S-78
 restoreConfirmAction: "Xóa và chọn lại" # 04 Bản 5 S-78
+skipConfirmTitle: "Bỏ qua bài?" # 04 Bản 5 S-78
+skipConfirmAction: "Xóa và bỏ qua" # 04 Bản 5 S-78
+removeExtraConfirmTitle: "Xóa bài thêm?" # 04 Bản 5 S-78
+removeExtraConfirmAction: "Xóa bài" # 04 Bản 5 S-78
+allSkippedBody: "Mọi bài đã bỏ qua. Buổi sẽ ghi là Không tập." # 04 Bản 5 S-79, §6.9; 03 Bản 5 FC5-03
+addExerciseRow: "+ Thêm bài" # 04 Bản 5 §6.1 AddRow, UD5-05, mock S-10 H4
+extraMark: "Bài thêm" # 04 Bản 5 §6.1, §6.9 (VoiceOver)
+skippedMark: "Đã bỏ qua" # 04 Bản 5 §6.9 (VoiceOver)
 viewSession: "Xem buổi" # 04 Bản 4 S-21
 delete: "Xóa" # 04 §6.13.1 (hộp xác nhận: nút xóa chữ đỏ)
 cancel: "Hủy" # 04 S-20 (hộp xác nhận "Chia lại" · "Hủy")
@@ -462,6 +470,8 @@ chartEnd: "Kết thúc" # 04 Bản 4 S-69 chú giải
 # làm nhãn VoiceOver, hoặc chỉ dùng trong Swift của widget / thẻ). Test
 # semantics_only_test: không được dùng trong `Text(`.
 semanticsOnly:
+  - extraMark
+  - skippedMark
   - welcomeTagline
   - welcomeFootnote
   - registerSubtitle

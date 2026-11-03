@@ -313,6 +313,41 @@ void main() {
       expect(byKey('lift-block-$plateId'), findsNothing);
       expect(byKey('replaced-mark-$latsId'), findsOneWidget);
 
+      // 06 Bản 5 VS54-T05, J5-02 bước 5 → 6 (F29-AC1, F30-AC1, F20-AC61):
+      // bỏ qua bài 4 → gạch ngang, không hàng số; "+ Thêm bài" → S-75 "Thêm
+      // bài" → Plank nối cuối có "+"; server thật nhận dòng bỏ qua và dòng
+      // bài thêm (không hoàn về), lịch tuần không đổi.
+      const declineId = 'chest-chest-lower-decline-plate-loaded-press';
+      const plankId = 'abs-mid-bodyweight-forearm-plank';
+      await reveal(tester, byKey('exercise-$declineId'));
+      await tester.tap(byKey('exercise-$declineId'));
+      await pumpUntil(tester, byKey('action-skip'));
+      await tester.tap(byKey('action-skip'));
+      await pumpUntil(tester, byKey('skipped-mark-$declineId'));
+      expect(byKey('lift-row-$declineId'), findsNothing);
+      await reveal(tester, byKey('add-exercise'));
+      await tester.tap(byKey('add-exercise'));
+      await pumpUntil(tester, byKey('pick-list'));
+      expect(find.text(S.pickAddTitle), findsWidgets);
+      // Viên "Bụng" (thanh viên cuộn ngang) cuộn danh sách tới nhóm (S-75),
+      // rồi chạm Plank.
+      await tester.ensureVisible(byKey('pick-group-abs'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('pick-group-abs'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(byKey('pick-$plankId'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('pick-$plankId'));
+      await pumpUntil(tester, byKey('extra-mark-$plankId'));
+      await tester.pumpAndSettle(const Duration(seconds: 2));
+      expect(byKey('skipped-mark-$declineId'), findsOneWidget);
+      expect(
+        byKey('extra-mark-$plankId'),
+        findsOneWidget,
+        reason: 'server nhận',
+      );
+
+      // J5-02 bước 7: "Đã tập" (còn bài không bỏ qua → hộp S-65 thường).
       await tester.tap(done);
       await pumpUntil(tester, find.text(S.doneConfirmBody));
       await tester.tap(find.byKey(const ValueKey('lock-confirm-save')));

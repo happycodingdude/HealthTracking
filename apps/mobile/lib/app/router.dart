@@ -226,7 +226,8 @@ final routerProvider = Provider<GoRouter>((ref) {
                     // S-67 mở từ danh sách bài của buổi hôm nay ở Hôm nay
                     // (05 Bản 4 TD4-05).
                     // S-75 "Đổi bài" mở từ S-74 của một bài trong buổi hôm
-                    // nay (04 Bản 5 §6.3), chọn xong về S-10.
+                    // nay, "Thêm bài" từ "+ Thêm bài" (04 Bản 5 §6.3), chọn
+                    // xong về S-10.
                     if (tab == AppTab.today)
                       GoRoute(
                         path: 'pick',
@@ -234,7 +235,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                           date: LocalDate.parse(
                             state.uri.queryParameters['date']!,
                           ),
-                          slot: state.uri.queryParameters['slot']!,
+                          slot: state.uri.queryParameters['slot'],
                         ),
                       ),
                     if (tab == AppTab.today)

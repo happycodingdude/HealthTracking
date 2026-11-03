@@ -239,4 +239,10 @@ void main() {
     expect(S.activityPrevious('40 → 45 kg'), 'Buổi trước: 40 → 45 kg');
     expect(S.activityNextLift('40 → 45 kg'), 'Kế tiếp: 40 → 45 kg');
   });
+
+  test('04 Bản 5 §6.9: thông báo nhanh có tham số (VS-53, VS-54)', () {
+    expect(S.replacedTo('Plank'), 'Đã đổi sang Plank');
+    expect(S.addedExercise('Plank'), 'Đã thêm Plank');
+    expect(S.skippedExercise('Plank'), 'Đã bỏ qua Plank');
+  });
 }

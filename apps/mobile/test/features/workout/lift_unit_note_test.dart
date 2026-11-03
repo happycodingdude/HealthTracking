@@ -314,4 +314,7 @@ final class _RecordingHooks implements LiftChangeHooks {
 
   @override
   Future<void> unitChanged(String exerciseId) async => units.add(exerciseId);
+
+  @override
+  Future<void> sessionItemsChanged(LocalDate date) async {}
 }

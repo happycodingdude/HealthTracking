@@ -310,12 +310,32 @@ final class LiveActivityScheduler {
           changedOn: LocalDate.parse(r[2]! as String),
         ),
     };
+    // Bài đổi / bỏ qua / thêm của buổi (05 Bản 5 §6.4.1, F25-R65): "Kế tiếp"
+    // theo danh sách bài của buổi, không gửi bài bỏ qua.
+    final rows = [
+      for (final r in await _pool.execute(
+        Sql.named('''
+          SELECT exercise_id, role, replaces_exercise_id, position, skipped
+          FROM session_exercises
+          WHERE user_id = @user AND date = @date::date AND NOT deleted'''),
+        parameters: params,
+      ))
+        SessionExerciseRow(
+          date: day.date,
+          exerciseId: r[0]! as String,
+          role: SessionExerciseRole.tryParse(r[1]! as String)!,
+          replacesExerciseId: r[2] as String?,
+          position: r[3]! as int,
+          skipped: r[4]! as bool,
+        ),
+    ];
     return LiveActivityContent.of(
       groups: day.sessionMuscles,
       library: library,
       today: today,
       previous: previous,
       units: units,
+      rows: day.isWorkout ? rows : const [],
     );
   }
 

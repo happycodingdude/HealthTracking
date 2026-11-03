@@ -403,4 +403,34 @@ void main() {
     await runAt(DateTime.utc(2026, 10, 12, 11));
     expect(apns.sent, isEmpty);
   });
+
+  test(
+    '06 Bản 5 VS54-T02, F25-AC65: bài 1 bỏ qua hôm nay → start gửi "Kế '
+    'tiếp" là bài 2 (danh sách bài của buổi, không gửi bài bỏ qua)',
+    () async {
+      await setUpSchedule();
+      await putToken();
+      final ids = [
+        for (final r in await app.tdb.pool.execute(
+          "SELECT id FROM exercises WHERE muscle_group = 'chest' AND active "
+          'ORDER BY sort_order LIMIT 2',
+        ))
+          r[0]! as String,
+      ];
+      await app.tdb.pool.execute(
+        Sql.named('''
+        INSERT INTO session_exercises (user_id, date, exercise_id, role,
+                                       position, skipped, client_updated_at,
+                                       server_version)
+        SELECT id, '2026-10-12', @first, 'original', 0, true, now(),
+               nextval('sync_version_seq') FROM users'''),
+        parameters: {'first': ids.first},
+      );
+      await runAt(DateTime.utc(2026, 10, 12, 11));
+      final state =
+          (apns.sent.single.payload['aps']! as Map)['content-state']! as Map;
+      expect((state['next']! as Map)['name'], 'Bài ${ids[1]}');
+      expect(state['allLogged'], isFalse);
+    },
+  );
 }

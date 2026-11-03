@@ -57,6 +57,17 @@ final class SessionExerciseRow {
 
   String get key => keyOf(date, exerciseId);
 
+  /// Cùng dòng, đổi trạng thái bỏ qua (F-29: bỏ qua / hủy bỏ qua bài thay,
+  /// bài thêm giữ vai trò và chỗ).
+  SessionExerciseRow withSkipped(bool value) => SessionExerciseRow(
+    date: date,
+    exerciseId: exerciseId,
+    role: role,
+    replacesExerciseId: replacesExerciseId,
+    position: position,
+    skipped: value,
+  );
+
   /// Cùng dạng key với `lift_log`.
   static String keyOf(LocalDate date, String exerciseId) =>
       LiftLog.keyOf(date, exerciseId);

@@ -12,6 +12,7 @@ import 'package:mobile/features/native/live_activity_controller.dart';
 import 'package:mobile/features/native/native_bridge.dart';
 import 'package:mobile/features/today/application/mark_session.dart';
 import 'package:mobile/features/workout/application/lift_log_edits.dart';
+import 'package:mobile/features/workout/application/session_item_edits.dart';
 import 'package:mobile/features/workout/data/exercise_unit_repository.dart';
 import 'package:mobile/features/workout/data/lift_log_repository.dart';
 
@@ -185,6 +186,36 @@ void main() {
         'name': 'Máy ép ngực',
         'lift': '40 → 47,5 nấc',
       });
+    },
+  );
+
+  test(
+    '06 Bản 5 VS54-T03, F25-AC65, F25-R65: bỏ qua bài 1 → "Kế tiếp" là '
+    'bài 2 ngay; thêm bài / đổi bài → thẻ cập nhật theo danh sách mới',
+    () async {
+      await setUpPhone();
+      native.startActivity('today', monday);
+      await container.read(skipExerciseProvider)(
+        monday,
+        pecDeck,
+        skipped: true,
+      );
+      expect(
+        (content('today')!['next']! as Map)['name'],
+        'Nằm ghế ngang đẩy thanh tạ',
+      );
+      await container.read(skipExerciseProvider)(
+        monday,
+        pecDeck,
+        skipped: false,
+      );
+      expect((content('today')!['next']! as Map)['name'], 'Máy ép ngực');
+      await container.read(replaceExerciseProvider)(
+        monday,
+        pecDeck,
+        'lats-machine-lat-pulldown',
+      );
+      expect((content('today')!['next']! as Map)['name'], isNot('Máy ép ngực'));
     },
   );
 

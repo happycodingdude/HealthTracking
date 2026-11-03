@@ -1,5 +1,7 @@
 import '../day_lock.dart';
 import '../exercise/exercise.dart';
+import '../exercise/muscle_region.dart';
+import '../lift_log/lift_log.dart';
 import '../schedule/month_plan.dart';
 import '../schedule/weekly_template.dart';
 import '../time/local_date.dart';
@@ -182,6 +184,80 @@ abstract final class SessionList {
     }
     return items;
   }
+
+  /// Bài kế tiếp (03 Bản 5 §6.1, F25-R65, 05 Bản 5 §6.4.1 `nextExercise`):
+  /// bài đầu tiên trong danh sách [items] **có ghi tạ, chưa bỏ qua, chưa có
+  /// bản ghi hôm nay** ([loggedToday]); gồm bài thay, bài thêm; bỏ qua bài
+  /// bụng và bài bỏ qua (FC5-05). null = hết bài để ghi.
+  static SessionItem? nextExercise(
+    Iterable<SessionItem> items,
+    Set<String> loggedToday,
+  ) {
+    for (final it in items) {
+      if (it.exercise.logsWeight &&
+          !it.skipped &&
+          !loggedToday.contains(it.id)) {
+        return it;
+      }
+    }
+    return null;
+  }
+
+  /// Bài vừa ghi (F25-R4, F25-R65): bản ghi cuối cùng trong [todayInSaveOrder]
+  /// (bản ghi hôm nay theo thứ tự lưu, cũ → mới) của một bài đang có trong
+  /// danh sách [items] và không bỏ qua — có thể là bài thay / bài thêm.
+  static LiftLog? lastLogged(
+    Iterable<SessionItem> items,
+    List<LiftLog> todayInSaveOrder,
+  ) {
+    final live = {
+      for (final it in items)
+        if (!it.skipped) it.id,
+    };
+    for (final l in todayInSaveOrder.reversed) {
+      if (live.contains(l.exerciseId)) return l;
+    }
+    return null;
+  }
+
+  /// "Đã ghi n / m" (FC5-05, F20-R64): m = số bài có ghi tạ trong buổi, gồm
+  /// bài thay và bài thêm, **trừ** bài bỏ qua; n = số bài trong m đã có bản
+  /// ghi mức tạ hôm nay ([loggedToday]). Bài chỉ có ghi chú không tính.
+  static ({int logged, int total}) loggedCount(
+    Iterable<SessionItem> items,
+    Set<String> loggedToday,
+  ) {
+    var total = 0, logged = 0;
+    for (final it in items) {
+      if (!it.exercise.logsWeight || it.skipped) continue;
+      total++;
+      if (loggedToday.contains(it.id)) logged++;
+    }
+    return (logged: logged, total: total);
+  }
+
+  /// Sơ đồ cơ của buổi (FC5-06, A5-04, 05 Bản 5 §6.4.1 `activeRegions`): vùng
+  /// cơ của mọi bài **có bản ghi mức tạ** hôm nay ([loggedToday]); bài bụng
+  /// (không ghi tạ) tô khi có ghi chú ([notedToday]) hoặc mức thoải mái
+  /// ([feltToday]). Bài bỏ qua không tô. Nhóm cơ của buổi vẫn theo lịch.
+  static Set<MuscleRegion> activeRegions(
+    Iterable<SessionItem> items, {
+    required Set<String> loggedToday,
+    Set<String> notedToday = const {},
+    Set<String> feltToday = const {},
+  }) => {
+    for (final it in items)
+      if (!it.skipped &&
+          (it.exercise.logsWeight
+              ? loggedToday.contains(it.id)
+              : notedToday.contains(it.id) || feltToday.contains(it.id)))
+        it.exercise.region,
+  };
+
+  /// Mọi bài của buổi đều bỏ qua (FC5-03, F29-R5): bấm "Đã tập" thì hộp S-79
+  /// và buổi lưu "Không tập". Danh sách trống → false.
+  static bool allSkipped(Iterable<SessionItem> items) =>
+      items.isNotEmpty && items.every((it) => it.skipped);
 
   /// Bài chọn được ở S-75 (F28-R2, F30-R2, FC5-04): bài còn trong thư viện,
   /// bất kỳ nhóm cơ, trừ bài đang có trong buổi (gốc chưa bị thay, thay,

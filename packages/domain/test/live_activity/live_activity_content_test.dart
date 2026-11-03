@@ -60,12 +60,14 @@ void main() {
   LiveActivityContent content(
     List<LiftLog> todayLogs, {
     List<MuscleGroup> groups = const [MuscleGroup.chest, MuscleGroup.triceps],
+    List<SessionExerciseRow> rows = const [],
   }) => LiveActivityContent.of(
     groups: groups,
     library: library,
     today: todayLogs,
     previous: previous,
     units: units,
+    rows: rows,
   );
 
   test('F25-AC1: lúc bật thẻ → "Chưa ghi bài nào", kế tiếp Máy ép ngực, buổi '
@@ -143,5 +145,80 @@ void main() {
       ]),
       'Ngực + Tay sau',
     );
+  });
+
+  group('06 Bản 5 VS54-T01, F25-R65: danh sách bài của buổi', () {
+    SessionExerciseRow skip(Exercise e) => SessionExerciseRow(
+      date: today,
+      exerciseId: e.id,
+      role: SessionExerciseRole.original,
+      skipped: true,
+    );
+
+    test('F25-AC65: bỏ qua bài 1 → "Kế tiếp" là bài 2', () {
+      expect(
+        content(const [], rows: [skip(pecDeck)]).next?.name,
+        'Nằm ghế ngang đẩy thanh tạ',
+      );
+    });
+
+    test('bài thay đứng chỗ bài gốc là "Kế tiếp", là "Vừa ghi" khi đã ghi; '
+        'bài thêm nối cuối là "Kế tiếp" khi bài gốc đã ghi hết', () {
+      final swap = SessionExerciseRow(
+        date: today,
+        exerciseId: pushdown.id,
+        role: SessionExerciseRole.replacement,
+        replacesExerciseId: pecDeck.id,
+      );
+      const chest = [MuscleGroup.chest];
+      expect(content(const [], groups: chest, rows: [swap]).next, (
+        name: 'Kéo cáp tay sau',
+        prev: null,
+      ));
+      final logged = content(
+        [log(pushdown, 200, 250)],
+        groups: chest,
+        rows: [swap],
+      );
+      expect(logged.lastLogged, (name: 'Kéo cáp tay sau', lift: '20 → 25 kg'));
+      expect(logged.next?.name, 'Nằm ghế ngang đẩy thanh tạ');
+      final extra = content(
+        [log(pecDeck, 400, 450), log(bench, 500, 550), log(incline, 80, 100)],
+        groups: chest,
+        rows: [
+          SessionExerciseRow(
+            date: today,
+            exerciseId: pushdown.id,
+            role: SessionExerciseRole.extra,
+          ),
+        ],
+      );
+      expect(extra.next, (name: 'Kéo cáp tay sau', prev: null));
+      expect(extra.allLogged, isFalse);
+    });
+
+    test('bỏ qua mọi bài có ghi tạ → allLogged; buổi Bụng có bài thêm ghi '
+        'tạ → không absOnly, "Kế tiếp" là bài thêm', () {
+      final c = content(
+        const [],
+        groups: const [MuscleGroup.chest],
+        rows: [skip(pecDeck), skip(bench), skip(incline)],
+      );
+      expect(c.next, isNull);
+      expect(c.allLogged, isTrue);
+      final abs = content(
+        const [],
+        groups: const [MuscleGroup.abs],
+        rows: [
+          SessionExerciseRow(
+            date: today,
+            exerciseId: bench.id,
+            role: SessionExerciseRole.extra,
+          ),
+        ],
+      );
+      expect(abs.absOnly, isFalse);
+      expect(abs.next?.name, 'Nằm ghế ngang đẩy thanh tạ');
+    });
   });
 }
