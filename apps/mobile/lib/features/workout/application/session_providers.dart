@@ -111,8 +111,8 @@ final sessionRowsProvider =
 /// `sessionExercisesProvider`): bài và vai trò trong buổi (gốc / thay / thêm,
 /// bỏ qua — [SessionItem]), bản ghi và ghi chú của buổi, buổi trước
 /// (FA3-01, theo bài đang đứng ở chỗ — F28-R3), ghi chú buổi trước (FA3-02),
-/// mức thoải mái hôm nay, đơn vị hiện tại, trạng thái dòng (ED3-11) và biểu
-/// tượng ghi chú.
+/// mức thoải mái hôm nay và buổi trước (FC5-07, F20-R62), đơn vị hiện tại,
+/// trạng thái dòng (ED3-11) và biểu tượng ghi chú.
 typedef SessionExercise = ({
   Exercise exercise,
   SessionItem item,
@@ -121,6 +121,7 @@ typedef SessionExercise = ({
   ExerciseNote? note,
   ExerciseNote? previousNote,
   ExerciseFeel? feel,
+  ExerciseFeel? previousFeel,
   LiftUnit? unit,
   LiftRowState state,
   NoteMark noteMark,
@@ -216,6 +217,12 @@ final sessionExercisesProvider = Provider.family<SessionExercises?, LocalDate>((
       note: note,
       previousNote: previousNote,
       feel: dayFeels[e.id],
+      previousFeel: FeelRules.previous(
+        feels: feels,
+        logs: logs,
+        exercise: e,
+        date: date,
+      ),
       unit: units[e.id]?.unit,
       state: LiftRowRules.of(
         window: session.window,

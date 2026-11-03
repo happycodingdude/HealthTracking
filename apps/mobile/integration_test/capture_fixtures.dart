@@ -11,9 +11,11 @@ import 'package:mobile/features/library/data/exercise_repository.dart';
 import 'package:mobile/features/me/data/profile_repository.dart';
 import 'package:mobile/features/menu/data/menu_repository.dart';
 import 'package:mobile/features/weight/data/weight_repository.dart';
+import 'package:mobile/features/workout/data/exercise_feel_repository.dart';
 import 'package:mobile/features/workout/data/exercise_note_repository.dart';
 import 'package:mobile/features/workout/data/exercise_unit_repository.dart';
 import 'package:mobile/features/workout/data/lift_log_repository.dart';
+import 'package:mobile/features/workout/data/session_exercise_repository.dart';
 
 import '../test/support/menu_fixture.dart';
 import '../test/support/schedule_fixture.dart';
@@ -177,4 +179,97 @@ Future<void> seedMeCapture(AppDatabase db, Clock clock) async {
     db,
     clock,
   ).enqueue('weight', '2026-10-26', SyncOp.upsert, {'kgX10': 724});
+}
+
+/// Thư viện của mock Bản 5 (s10-h4, s64, s74, s75, s63): buổi Ngực 4 bài.
+List<Exercise> captureLibraryV5() => [
+  _ex('chest-1', MuscleRegion.chestMid, 'Máy ép ngực', 1),
+  _ex('chest-2', MuscleRegion.chestMid, 'Nằm ghế phẳng đẩy thanh đòn', 2),
+  _ex('chest-3', MuscleRegion.chestUpper, 'Ngồi ghế dốc lên với tạ đơn', 3),
+  _ex('chest-4', MuscleRegion.chestLower, 'Nằm ghế dốc xuống đẩy tạ đơn', 4),
+  _ex('back-1', MuscleRegion.lats, 'Kéo xô rộng tay', 1),
+  _ex('back-2', MuscleRegion.backMid, 'Ngồi kéo cáp về bụng', 2),
+  _ex('back-3', MuscleRegion.backMid, 'Máy dốc gắn bánh tạ', 3),
+  _ex('shoulders-1', MuscleRegion.deltSide, 'Bay vai ngang với cáp', 1),
+  _ex('biceps-1', MuscleRegion.biceps, 'Cuốn tạ đơn', 1),
+  _ex('triceps-1', MuscleRegion.tricepsLong, 'Kéo cáp qua đầu', 1),
+  _ex('abs-1', MuscleRegion.absMid, 'Plank', 1),
+  _ex('legs-1', MuscleRegion.quads, 'Nằm máy đạp chân', 1),
+];
+
+/// Buổi Ngực thứ 2 26/10/2026 18:00 có đủ 5 loại dòng (mock s10-h4, 06 Bản 5
+/// VS-55 bộ ảnh M24): bài 1 đã ghi 40 → 45 · Vừa + ghi chú; bài 2 đổi sang
+/// "Máy dốc gắn bánh tạ"; bài 3 bỏ qua; bài 4 buổi trước 22,5 → 25 ·
+/// Thoải mái (ghi chú buổi trước); Plank thêm cuối (ghi chú buổi trước).
+/// [rows] = false: chưa đổi / bỏ / thêm bài.
+Future<List<Exercise>> seedCaptureV5(AppDatabase db, {bool rows = true}) async {
+  await seedSetUp(db, template: captureTemplate);
+  final library = captureLibraryV5();
+  final repo = ExerciseRepository(db);
+  for (final e in library) {
+    await repo.put(e);
+  }
+  final units = ExerciseUnitRepository(db);
+  final logs = LiftLogRepository(db);
+  final notes = ExerciseNoteRepository(db);
+  final feels = ExerciseFeelRepository(db);
+  final prev = LocalDate(2026, 10, 19);
+  final day = captureMonday;
+  for (final (id, s, e) in [('chest-1', 400, 450), ('chest-4', 225, 250)]) {
+    await units.put(
+      ExerciseUnit(exerciseId: id, unit: LiftUnit.kg, changedOn: prev),
+    );
+    await logs.put(
+      LiftLog(date: prev, exerciseId: id, startKgX10: s, endKgX10: e),
+    );
+  }
+  await feels.put(
+    ExerciseFeel(date: prev, exerciseId: 'chest-4', feel: Feel.easy),
+  );
+  await notes.put(
+    ExerciseNote(date: prev, exerciseId: 'chest-4', text: 'tay trái hơi yếu'),
+  );
+  await notes.put(
+    ExerciseNote(date: prev, exerciseId: 'abs-1', text: '60 giây'),
+  );
+  await logs.put(
+    LiftLog(date: day, exerciseId: 'chest-1', startKgX10: 400, endKgX10: 450),
+  );
+  await feels.put(
+    ExerciseFeel(date: day, exerciseId: 'chest-1', feel: Feel.medium),
+  );
+  await notes.put(
+    ExerciseNote(date: day, exerciseId: 'chest-1', text: 'Ghế nấc 3, vai ổn'),
+  );
+  if (rows) {
+    final session = SessionExerciseRepository(db);
+    await session.put(
+      SessionExerciseRow(
+        date: day,
+        exerciseId: 'back-3',
+        role: SessionExerciseRole.replacement,
+        replacesExerciseId: 'chest-2',
+        position: 1,
+      ),
+    );
+    await session.put(
+      SessionExerciseRow(
+        date: day,
+        exerciseId: 'chest-3',
+        role: SessionExerciseRole.original,
+        position: 2,
+        skipped: true,
+      ),
+    );
+    await session.put(
+      SessionExerciseRow(
+        date: day,
+        exerciseId: 'abs-1',
+        role: SessionExerciseRole.extra,
+        position: 4,
+      ),
+    );
+  }
+  await MenuRepository(db).put(day, readyMenu(targetKcal: 1850));
+  return library;
 }

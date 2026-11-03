@@ -27,13 +27,19 @@ Future<void> showLiftLogSheet(
   final logs = container.read(allLiftLogsProvider).value ?? const <LiftLog>[];
   final notes =
       container.read(allExerciseNotesProvider).value ?? const <ExerciseNote>[];
+  final feels =
+      container.read(allExerciseFeelsProvider).value ?? const <ExerciseFeel>[];
   LiftLog? existing;
   ExerciseNote? note;
+  ExerciseFeel? feel;
   for (final l in logs) {
     if (l.date == date && l.exerciseId == exercise.id) existing = l;
   }
   for (final n in notes) {
     if (n.date == date && n.exerciseId == exercise.id) note = n;
+  }
+  for (final f in feels) {
+    if (f.date == date && f.exerciseId == exercise.id) feel = f;
   }
   final args = (
     date: date,
@@ -44,6 +50,13 @@ Future<void> showLiftLogSheet(
     note: note,
     previousNote: ExerciseNoteRules.previous(
       notes: notes,
+      logs: logs,
+      exercise: exercise,
+      date: date,
+    ),
+    feel: feel,
+    previousFeel: FeelRules.previous(
+      feels: feels,
       logs: logs,
       exercise: exercise,
       date: date,
@@ -66,6 +79,12 @@ Future<void> showLiftLogSheet(
 /// dẫn, không dòng "Buổi trước … → …". Câu lỗi giữ nguyên, đỏ dưới ô. Quy tắc
 /// như Bản 3 (F21, F26): Lưu một lần cho mức tạ và ghi chú; sau 00:00 → hộp
 /// "đã khóa"; đóng khi có thay đổi chưa lưu → hỏi.
+///
+/// Bản 5 (04 Bản 5 S-64, UA5-02): nhãn "Kết thúc" kèm dấu ba vạch xám = mức
+/// thoải mái buổi trước (F33-R7, không điền sẵn); dưới hai khối số thanh
+/// chọn Thoải mái | Vừa | Mệt (chạm lại để bỏ chọn); một nút Lưu cho mức tạ,
+/// ghi chú, mức thoải mái (F21-R61, độc lập — F33-R3). Bài bụng: chỉ thanh
+/// chọn + ghi chú.
 class LiftLogSheet extends ConsumerStatefulWidget {
   const LiftLogSheet({super.key, required this.args, required this.host});
 
@@ -131,30 +150,30 @@ class _LiftLogSheetState extends ConsumerState<LiftLogSheet> {
     final draft = ref.read(liftLogDraftProvider(widget.args));
     final args = widget.args;
     final id = args.exercise.id;
-    // Hai ô trống, ghi chú không đổi: đóng, không lưu gì.
-    if ((draft.noteOnly || draft.bothEmpty) && !draft.noteChanged) {
+    // Hai ô trống, ghi chú và mức thoải mái không đổi: đóng, không lưu gì.
+    if ((draft.noteOnly || draft.bothEmpty) &&
+        !draft.noteChanged &&
+        !draft.feelChanged) {
       Navigator.of(context).pop();
       return;
     }
     await _run(() async {
-      if (draft.noteOnly) {
-        await ref
-            .read(saveExerciseNoteProvider)
-            .call(args.date, id, draft.note);
-        return S.noteSaved;
-      }
       final saved = await ref
           .read(saveLiftEntryProvider)
           .call(
             args.date,
             id,
-            start: draft.start,
-            end: draft.end,
+            start: draft.noteOnly ? '' : draft.start,
+            end: draft.noteOnly ? '' : draft.end,
             unit: draft.unit,
             note: draft.noteChanged ? draft.note : null,
+            feel: draft.feelChanged ? (value: draft.feel) : null,
           );
       final log = saved.log;
-      if (log == null) return S.noteSaved;
+      if (log == null) {
+        // Chỉ mức thoải mái: không có câu thông báo nhanh (04 Bản 5 §6.9).
+        return draft.noteChanged ? S.noteSaved : null;
+      }
       return S.liftSaved(
         Fmt.kgNumber(log.startKgX10),
         Fmt.kgNumber(log.endKgX10),
@@ -191,7 +210,7 @@ class _LiftLogSheetState extends ConsumerState<LiftLogSheet> {
 
   /// Ghi; xong thì đóng bảng và báo câu của [action]. Ngoài cửa sổ (đã qua
   /// 00:00): hộp "đã khóa" → "Đã hiểu" → đóng bảng.
-  Future<void> _run(Future<String> Function() action) async {
+  Future<void> _run(Future<String?> Function() action) async {
     setState(() => _busy = true);
     final host = widget.host;
     final reporter = ref.read(errorReporterProvider);
@@ -240,9 +259,17 @@ class _LiftLogSheetState extends ConsumerState<LiftLogSheet> {
     final unit = draft.unit;
     final unitError = error == LiftInputError.unitMissing;
 
+    final previousFeel = args.previousFeel?.feel;
     Widget field(LiftField f) => _StepperField(
       key: ValueKey('lift-box-${f.name}'),
       field: f,
+      labelTrailing: f == LiftField.end && previousFeel != null
+          ? FeelGlyph(
+              previousFeel,
+              key: const ValueKey('lift-previous-feel'),
+              previous: true,
+            )
+          : null,
       unit: unit,
       controller: _controllers[f]!,
       focusNode: _focus[f]!,
@@ -306,8 +333,18 @@ class _LiftLogSheetState extends ConsumerState<LiftLogSheet> {
               const SizedBox(height: TokenSpace.s3),
               _WarningBox(w, u),
             ],
-            const SizedBox(height: TokenSpace.s3),
+            const SizedBox(height: _feelGap),
           ],
+          SegmentBar<Feel>(
+            key: const ValueKey('lift-feel-bar'),
+            items: Feel.values,
+            selected: draft.feel,
+            style: SegmentStyle.accent,
+            label: FeelGlyph.nameOf,
+            keyOf: (f) => ValueKey('lift-feel-${f.wire}'),
+            onSelected: _draft.tapFeel,
+          ),
+          const SizedBox(height: _feelGap),
           _NoteBox(
             controller: _note,
             onChanged: _editNote,
@@ -318,6 +355,9 @@ class _LiftLogSheetState extends ConsumerState<LiftLogSheet> {
     );
   }
 }
+
+/// Thanh chọn mức thoải mái cách khối số và ô ghi chú 14 (04 Bản 5 S-64).
+const _feelGap = 14.0;
 
 class _ErrorText extends StatelessWidget {
   const _ErrorText(this.text);
@@ -350,9 +390,13 @@ class _StepperField extends StatelessWidget {
     required this.gray,
     required this.onStep,
     required this.onChanged,
+    this.labelTrailing,
   });
 
   final LiftField field;
+
+  /// Sau nhãn (cách 6): dấu mức thoải mái buổi trước cạnh "Kết thúc".
+  final Widget? labelTrailing;
   final LiftUnit? unit;
   final TextEditingController controller;
   final FocusNode focusNode;
@@ -370,7 +414,19 @@ class _StepperField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: IronlyText.caption),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(label, style: IronlyText.caption),
+            if (labelTrailing != null) ...[
+              const SizedBox(width: 6),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: labelTrailing,
+              ),
+            ],
+          ],
+        ),
         const SizedBox(height: 6),
         Row(
           children: [

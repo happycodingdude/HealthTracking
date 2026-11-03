@@ -100,6 +100,11 @@ enum LiftRowMore { actions, exercise, none }
 /// khi điền sẵn, "—" khi chưa có; ghi chú hôm nay (trắng 12) hoặc buổi trước
 /// (mờ 11) ngay dưới hàng. Chạm hàng số → S-64 khi ghi được. Bài bụng: không
 /// hàng số, chỉ ghi chú.
+///
+/// Mức thoải mái (04 Bản 5 §6.2, F20-R62, F33-R5): dấu ba vạch cam ngay sau
+/// tên (cách 6) khi buổi này đã chọn mức (S-10 và S-63 ngày đã qua); chưa ghi
+/// mức tạ của buổi này thì dấu ba vạch xám ngay sau số ở ô BUỔI TRƯỚC /
+/// GẦN NHẤT = mức thoải mái buổi trước (FC5-07), trống thì không dấu.
 class LiftRow extends StatelessWidget {
   const LiftRow({
     super.key,
@@ -154,10 +159,14 @@ class LiftRow extends StatelessWidget {
     final replaced = item.item.role == SessionExerciseRole.replacement
         ? item.item.replaces
         : null;
+    // Mức thoải mái của buổi này: dấu cam sau tên (04 Bản 5 §6.2); bài bỏ
+    // qua không có (F33-R4).
+    final todayFeel = skippedItem ? null : item.feel?.feel;
 
     // Hàng số (chỉ bài có mức tạ).
     Widget? numbers;
     String? numbersSemantics;
+    Widget? previousFeelGlyph;
     if (e.logsWeight && !skippedItem) {
       final firstLabel = future ? S.liftLatestLabel : S.liftPreviousLabel;
       final String first;
@@ -166,6 +175,17 @@ class LiftRow extends StatelessWidget {
       final bool strong;
       final stepsSuffix = unit == LiftUnit.steps ? ' ${S.unitSteps}' : '';
       String n(int x10) => Fmt.kgNumber(x10);
+      // Dấu mức thoải mái buổi trước sau số ô đầu (chưa ghi buổi này).
+      final prevFeel = log == null && prev != null
+          ? item.previousFeel?.feel
+          : null;
+      if (prevFeel != null) {
+        previousFeelGlyph = FeelGlyph(
+          prevFeel,
+          key: ValueKey('feel-previous-${e.id}'),
+          previous: true,
+        );
+      }
       if (future) {
         first = prev == null ? '—' : Fmt.dayMonth(prev.date);
         start = prev == null ? '—' : n(prev.startKgX10);
@@ -211,7 +231,9 @@ class LiftRow extends StatelessWidget {
             )
           : null;
       numbersSemantics =
-          '$firstLabel $first, ${S.liftStart} $start, ${S.liftEnd} $end '
+          '$firstLabel $first'
+          '${prevFeel == null ? '' : ' ${FeelGlyph.labelOf(prevFeel, previous: true)}'}'
+          ', ${S.liftStart} $start, ${S.liftEnd} $end '
           '${Fmt.liftUnit(unit)}'
           '${loggedThisSession ? ', ${S.statLogged}' : ''}';
       numbers = Column(
@@ -244,10 +266,23 @@ class LiftRow extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.all(TokenSize.rowPadding),
                 child: _Cells(
-                  first: Text(
-                    first,
-                    key: ValueKey('lift-prev-${e.id}'),
-                    style: IronlyText.liftPrefill,
+                  first: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        first,
+                        key: ValueKey('lift-prev-${e.id}'),
+                        style: IronlyText.liftPrefill,
+                      ),
+                      if (previousFeelGlyph != null) ...[
+                        const SizedBox(width: 6),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 3),
+                          child: previousFeelGlyph,
+                        ),
+                      ],
+                    ],
                   ),
                   start: Text(
                     start,
@@ -332,7 +367,12 @@ class LiftRow extends StatelessWidget {
       opacity: skippedItem ? 0.45 : 1,
       child: ExerciseAvatar(
         id: e.id,
-        ring: loggedThisSession && open && !skippedItem,
+        // Viền cam khi buổi này đã ghi: trong cửa sổ (S-10) và buổi đã qua
+        // (S-63 Bản 5 "đủ loại dòng như S-10 H4", mock s63).
+        ring:
+            loggedThisSession &&
+            !skippedItem &&
+            (open || window is LiftWindowClosed),
         dim: !e.active,
         child: ExcludeSemantics(
           child: BodyMap(region: e.region, size: BodyMap.avatar, bare: true),
@@ -354,6 +394,7 @@ class LiftRow extends StatelessWidget {
               if (replaced != null) S.replacementFor(replaced.nameVi),
               if (isExtraItem) extraLabel,
               if (skippedItem) skippedLabel,
+              if (todayFeel != null) FeelGlyph.labelOf(todayFeel),
             ].join(', '),
             child: ExcludeSemantics(
               child: InkWell(
@@ -413,6 +454,13 @@ class LiftRow extends StatelessWidget {
                                         : IronlyText.exerciseName,
                                   ),
                                 ),
+                                if (todayFeel != null) ...[
+                                  const SizedBox(width: 6),
+                                  FeelGlyph(
+                                    todayFeel,
+                                    key: ValueKey('feel-today-${e.id}'),
+                                  ),
+                                ],
                               ],
                             ),
                             if (replaced != null)

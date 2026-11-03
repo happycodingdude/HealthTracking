@@ -5,6 +5,7 @@ export 'add_row.dart';
 export 'dumbbell_icon.dart';
 export 'empty_action.dart';
 export 'exercise_avatar.dart';
+export 'feel_glyph.dart';
 export 'ironly_banner.dart';
 export 'ironly_button.dart';
 export 'ironly_card.dart';

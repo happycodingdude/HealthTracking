@@ -12,6 +12,7 @@ import 'package:mobile/app/shell/app_tab.dart';
 import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/features/library/data/video_player_gateway.dart';
 import 'package:mobile/features/workout/application/session_item_edits.dart';
+import 'package:mobile/features/workout/data/exercise_feel_repository.dart';
 import 'package:mobile/features/workout/data/exercise_note_repository.dart';
 import 'package:mobile/features/workout/data/exercise_unit_repository.dart';
 import 'package:mobile/features/workout/data/lift_log_repository.dart';
@@ -27,10 +28,15 @@ import '../../support/schedule_fixture.dart';
 /// bài thay, S-74 (bài gốc, bài thay), S-75 "Đổi bài", S-78 "Đổi bài?", S-63
 /// buổi đã qua có bài thay — theme tối × 2 cỡ chữ. Buổi Ngực + Tay sau thứ 2
 /// 12/10 18:00; "Nằm ghế ngang đẩy thanh tạ" đổi sang "Máy dốc gắn bánh tạ".
+///
+/// VS55-T05: S-64 có mức thoải mái (kg, nấc máy, bài bụng), S-10 dòng có dấu
+/// ba vạch (cam hôm nay, xám buổi trước — mock s10-h4), S-63 buổi đã qua có
+/// dấu ba vạch cam (mock s63).
 void main() {
   final mon = LocalDate(2026, 10, 12);
   final prevMon = LocalDate(2026, 10, 5);
   late List<Exercise> library;
+  late AppDatabase lastDb;
 
   List<Exercise> chest() => [
     for (final e in library)
@@ -54,6 +60,7 @@ void main() {
   Future<AppDatabase> seeded({WeeklyTemplate? template}) async {
     final db = AppDatabase(NativeDatabase.memory());
     addTearDown(db.close);
+    lastDb = db;
     await seedSetUp(db, template: template);
     library = await seedLibrary(db, realLibraryV3());
     final c = chest();
@@ -146,9 +153,9 @@ void main() {
     return c;
   }
 
-  /// Buổi Ngực có đủ 5 loại dòng (mock s10-h4): bài 1 đã ghi 40 → 45, bài 2
-  /// đổi sang "Máy dốc gắn bánh tạ", bài 3 bỏ qua, bài 4 chưa ghi (buổi trước
-  /// 22,5 → 25), Plank thêm cuối có ghi chú.
+  /// Buổi Ngực có đủ 5 loại dòng (mock s10-h4): bài 1 đã ghi 40 → 45 · Vừa,
+  /// bài 2 đổi sang "Máy dốc gắn bánh tạ", bài 3 bỏ qua, bài 4 chưa ghi (buổi
+  /// trước 22,5 → 25 · Thoải mái), Plank thêm cuối có ghi chú.
   Future<ProviderContainer> fiveRows(
     WidgetTester tester,
     GoldenVariant v,
@@ -162,6 +169,13 @@ void main() {
     await ExerciseNoteRepository(
       db,
     ).put(ExerciseNote(date: mon, exerciseId: plank().id, text: '60 giây'));
+    final feels = ExerciseFeelRepository(db);
+    await feels.put(
+      ExerciseFeel(date: mon, exerciseId: ch[0].id, feel: Feel.medium),
+    );
+    await feels.put(
+      ExerciseFeel(date: prevMon, exerciseId: ch[3].id, feel: Feel.easy),
+    );
     await tester.pumpAndSettle();
     return c;
   }
@@ -273,6 +287,104 @@ void main() {
       final c = await replaced(tester, v, DateTime(2026, 10, 13, 9, 40));
       await go(tester, c, sessionPath(AppTab.today, mon));
       await snap('s63_replacement_${v.name}');
+    });
+
+    testWidgets('S-78 "Chọn lại bài gốc?" — bài thay đã ghi ${v.name}', (
+      tester,
+    ) async {
+      await replaced(tester, v, DateTime(2026, 10, 12, 18, 30));
+      await LiftLogRepository(lastDb).put(
+        LiftLog(
+          date: mon,
+          exerciseId: backPlate().id,
+          startKgX10: 200,
+          endKgX10: 250,
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tapKey(tester, 'exercise-${backPlate().id}');
+      await tapKey(tester, 'action-restore');
+      await snap('s78_restore_${v.name}');
+    });
+
+    // 06 Bản 5 VS55-T05: S-64 × 3 (kg / nấc máy / bài bụng), S-63 có dấu.
+    testWidgets('S-64 kg (mock s64): Kết thúc + 1 vạch xám (buổi trước Thoải '
+        'mái), +2,5, chọn Vừa ${v.name}', (tester) async {
+      await fiveRows(tester, v);
+      await tapKey(tester, 'lift-row-${chest()[3].id}');
+      await tapKey(tester, 'lift-end-plus');
+      await tapKey(tester, 'lift-feel-medium');
+      await snap('s64_feel_${v.name}');
+    });
+
+    testWidgets('S-64 nấc máy: buổi trước 8 → 10 nấc · Mệt (3 vạch xám), '
+        'thanh chọn trống ${v.name}', (tester) async {
+      final db = await seeded();
+      final flat = chest()[1];
+      await ExerciseUnitRepository(db).put(
+        ExerciseUnit(
+          exerciseId: flat.id,
+          unit: LiftUnit.steps,
+          changedOn: prevMon,
+        ),
+      );
+      await LiftLogRepository(db).put(
+        LiftLog(
+          date: prevMon,
+          exerciseId: flat.id,
+          startKgX10: 80,
+          endKgX10: 100,
+        ),
+      );
+      await ExerciseFeelRepository(
+        db,
+      ).put(ExerciseFeel(date: prevMon, exerciseId: flat.id, feel: Feel.hard));
+      await pump(tester, v, db, DateTime(2026, 10, 12, 18, 30));
+      await tapKey(tester, 'lift-row-${flat.id}');
+      await snap('s64_feel_steps_${v.name}');
+    });
+
+    testWidgets('S-64 bài bụng (Plank thêm): chỉ thanh ba mức + ghi chú, chọn '
+        'Mệt ${v.name}', (tester) async {
+      await fiveRows(tester, v);
+      await tapKey(tester, 'note-line-${plank().id}');
+      await tapKey(tester, 'lift-feel-hard');
+      await snap('s64_feel_abs_${v.name}');
+    });
+
+    testWidgets('S-63 buổi đã qua (mock s63): dấu ba vạch cam của buổi đó '
+        'sau tên, viền cam bài đã ghi ${v.name}', (tester) async {
+      await fiveRows(tester, v);
+      final db = lastDb;
+      final ch = chest();
+      final logs = LiftLogRepository(db);
+      await logs.put(
+        LiftLog(
+          date: mon,
+          exerciseId: backPlate().id,
+          startKgX10: 200,
+          endKgX10: 250,
+        ),
+      );
+      await logs.put(
+        LiftLog(
+          date: mon,
+          exerciseId: ch[3].id,
+          startKgX10: 225,
+          endKgX10: 275,
+        ),
+      );
+      final feels = ExerciseFeelRepository(db);
+      for (final (id, f) in [
+        (backPlate().id, Feel.medium),
+        (ch[3].id, Feel.medium),
+        (plank().id, Feel.hard),
+      ]) {
+        await feels.put(ExerciseFeel(date: mon, exerciseId: id, feel: f));
+      }
+      final c = await pump(tester, v, db, DateTime(2026, 10, 13, 9, 40));
+      await go(tester, c, sessionPath(AppTab.today, mon));
+      await snap('s63_feel_${v.name}');
     });
   }
 }

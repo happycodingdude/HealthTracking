@@ -291,11 +291,22 @@ void main() {
         tester.getTopLeft(find.byType(LiftLogSheet)) + const Offset(24, 24),
       );
       await tester.pumpAndSettle();
+      // 06 Bản 5 VS55-T05, J5-02 bước 3 (F33-AC1, F33-E4, F21-R61): chọn
+      // "Thoải mái" cùng lần Lưu; mức thoải mái thuộc bài thay.
+      await tester.ensureVisible(byKey('lift-feel-easy'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('lift-feel-easy'));
+      await tester.pumpAndSettle();
       await tester.tap(byKey('lift-save'));
       await pumpUntil(tester, endIs(plateId, '25'));
       await tester.pumpAndSettle(const Duration(seconds: 2));
       expect(endIs(plateId, '25'), findsOneWidget, reason: 'server nhận');
       expect(byKey('replaced-mark-$plateId'), findsOneWidget);
+      expect(
+        byKey('feel-today-$plateId'),
+        findsOneWidget,
+        reason: 'server nhận',
+      );
 
       // F28-AC4 (FC5-14): bài thay đã ghi → Đổi bài → S-78 → "Xóa và đổi
       // bài" → S-75 → bài khác; bản ghi 20 → 25 không còn, server nhận.
@@ -346,6 +357,27 @@ void main() {
         findsOneWidget,
         reason: 'server nhận',
       );
+
+      // 06 Bản 5 VS55-T05, J5-02 bước 6 (F33-E5, FC5-05): Plank (bụng) →
+      // S-64 chỉ thanh ba mức + ghi chú; "Mệt" + "60 giây" → server thật nhận
+      // cả hai (exercise_feel không xét bài có mức tạ), không hoàn về.
+      await reveal(tester, byKey('note-mark-$plankId-none'));
+      await tester.tap(byKey('note-mark-$plankId-none'));
+      await pumpUntil(tester, byKey('lift-feel-bar'));
+      expect(byKey('lift-box-start'), findsNothing);
+      await tester.tap(byKey('lift-feel-hard'));
+      await tester.pumpAndSettle();
+      await tester.enterText(byKey('note-input'), '60 giây');
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('lift-save'));
+      await pumpUntil(tester, byKey('feel-today-$plankId'));
+      await tester.pumpAndSettle(const Duration(seconds: 2));
+      expect(
+        byKey('feel-today-$plankId'),
+        findsOneWidget,
+        reason: 'server nhận',
+      );
+      expect(find.text('60 giây'), findsOneWidget);
 
       // J5-02 bước 7: "Đã tập" (còn bài không bỏ qua → hộp S-65 thường).
       await tester.tap(done);

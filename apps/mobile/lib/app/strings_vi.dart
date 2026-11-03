@@ -335,6 +335,15 @@ abstract final class S {
   static const extraMark = 'Bài thêm';
   static const skippedMark = 'Đã bỏ qua';
 
+  /// 04 Bản 5 S-64, §6.1 `FeelGlyph`, §6.9: ba mức thoải mái của set cuối
+  /// (F33-R1) — chữ của thanh chọn và nhãn VoiceOver của dấu ba vạch.
+  static const feelEasy = 'Thoải mái';
+  static const feelMedium = 'Vừa';
+  static const feelHard = 'Mệt';
+
+  /// 04 Bản 5 §6.1, §6.9 (VoiceOver): dấu ba vạch xám = mức buổi trước.
+  static String feelPrevious(String feel) => '$feel, buổi trước';
+
   /// 04 Bản 5 §6.9: thông báo nhanh "Đã thêm {tên bài}".
   static String addedExercise(String name) => 'Đã thêm $name';
 
@@ -1131,6 +1140,9 @@ abstract final class S {
     'addExerciseRow': addExerciseRow,
     'extraMark': extraMark,
     'skippedMark': skippedMark,
+    'feelEasy': feelEasy,
+    'feelMedium': feelMedium,
+    'feelHard': feelHard,
     'viewSession': viewSession,
     'delete': delete,
     'cancel': cancel,

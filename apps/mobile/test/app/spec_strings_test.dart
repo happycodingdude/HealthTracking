@@ -245,4 +245,9 @@ void main() {
     expect(S.addedExercise('Plank'), 'Đã thêm Plank');
     expect(S.skippedExercise('Plank'), 'Đã bỏ qua Plank');
   });
+
+  test('04 Bản 5 §6.1, §6.9: nhãn VoiceOver dấu mức thoải mái buổi trước '
+      '(VS-55)', () {
+    expect(S.feelPrevious(S.feelEasy), 'Thoải mái, buổi trước');
+  });
 }

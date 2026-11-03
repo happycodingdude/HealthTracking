@@ -15,6 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:mobile/app/app.dart';
 import 'package:mobile/app/router.dart';
+import 'package:mobile/app/shell/app_tab.dart';
 import 'package:mobile/app/strings_vi.dart';
 import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/dev/review_matrix.dart';
@@ -27,9 +28,16 @@ import 'package:mobile/features/menu/data/menu_repository.dart';
 import 'package:mobile/features/onboarding/application/setup_state.dart';
 import 'package:mobile/features/onboarding/data/onboarding_draft_repository.dart';
 import 'package:mobile/features/weight/data/weight_repository.dart';
+import 'package:mobile/features/workout/data/exercise_feel_repository.dart';
+import 'package:mobile/features/workout/data/exercise_note_repository.dart';
+import 'package:mobile/features/workout/data/exercise_unit_repository.dart';
+import 'package:mobile/features/workout/data/lift_log_repository.dart';
+import 'package:mobile/features/workout/data/session_exercise_repository.dart';
+import 'package:mobile/features/workout/presentation/pick_exercise_screen.dart';
 import 'package:mobile/features/workout/presentation/session_screen.dart';
 import 'package:mobile/ui/components/ironly_tab_bar.dart';
 import 'package:mobile/ui/gallery.dart';
+import 'package:mobile/ui/keys.dart';
 import 'package:mobile/ui/theme.dart';
 
 import '../test/support/app_harness.dart';
@@ -814,6 +822,221 @@ void main() {
         await tapKey(tester, 'month-cell-2026-10-08');
         await tapKey(tester, 'day-edit-extra');
         await shot(tester, 'm23_s24_edit');
+      });
+    }
+    if (milestone == Milestone.m24) {
+      // 06 Bản 5 VS-53 → VS-55: buổi Ngực thứ 2 26/10/2026 18:00 theo mock
+      // s10-h4 (seedCaptureV5), 18:12.
+      final mon = captureMonday;
+      final at1812 = DateTime(2026, 10, 26, 18, 12);
+
+      Future<ProviderContainer> pumpAt(
+        WidgetTester tester,
+        AppDatabase db,
+        DateTime now,
+      ) async {
+        final container = ProviderContainer(
+          retry: (_, _) => null,
+          overrides: appOverrides(db: db, clock: FixedClock(now)),
+        );
+        addTearDown(container.dispose);
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const IronlyApp(),
+          ),
+        );
+        await tester.pumpAndSettle();
+        return container;
+      }
+
+      Future<void> tapKey(WidgetTester tester, String key) async {
+        final f = find.byKey(ValueKey(key));
+        await tester.ensureVisible(f);
+        await tester.pumpAndSettle();
+        await tester.tap(f);
+        await tester.pumpAndSettle();
+      }
+
+      Future<AppDatabase> seeded({bool rows = true}) async {
+        final db = AppDatabase(NativeDatabase.memory());
+        addTearDown(db.close);
+        await seedCaptureV5(db, rows: rows);
+        return db;
+      }
+
+      testWidgets('M24: S-10 H4 đủ 5 loại dòng, S-74 × 3', (tester) async {
+        final db = await seeded();
+        await pumpAt(tester, db, at1812);
+        await shot(tester, 'm24_s10_h4');
+        await tapKey(tester, 'exercise-chest-4');
+        await shot(tester, 'm24_s74_original');
+        await tester.tapAt(const Offset(195, 120));
+        await tester.pumpAndSettle();
+        await tapKey(tester, 'exercise-back-3');
+        await shot(tester, 'm24_s74_replacement');
+        await tester.tapAt(const Offset(195, 120));
+        await tester.pumpAndSettle();
+        await tapKey(tester, 'exercise-abs-1');
+        await shot(tester, 'm24_s74_extra');
+      });
+
+      testWidgets('M24: S-75 "Đổi bài", "Thêm bài"', (tester) async {
+        final db = await seeded(rows: false);
+        final c = await pumpAt(tester, db, at1812);
+        c.read(routerProvider).go(pickExercisePath(mon, slot: 'chest-2'));
+        await tester.pumpAndSettle();
+        await shot(tester, 'm24_s75_replace');
+        c.read(routerProvider).go(pickExercisePath(mon));
+        await tester.pumpAndSettle();
+        await shot(tester, 'm24_s75_add');
+      });
+
+      testWidgets('M24: S-64 kg (mock s64), nấc máy, bài bụng', (tester) async {
+        final db = await seeded();
+        await pumpAt(tester, db, at1812);
+        await tapKey(tester, 'lift-row-chest-4');
+        await tapKey(tester, 'lift-end-plus');
+        await tapKey(tester, 'lift-feel-medium');
+        await shot(tester, 'm24_s64_kg');
+        await tester.tapAt(const Offset(20, 20));
+        await tester.pumpAndSettle();
+        await tapKey(tester, 'discard-confirm');
+        await tapKey(tester, 'lift-row-back-3');
+        await tapKey(tester, 'lift-unit-steps');
+        await tapKey(tester, 'lift-end-plus');
+        await tapKey(tester, 'lift-feel-hard');
+        await shot(tester, 'm24_s64_steps');
+        await tester.tapAt(const Offset(20, 20));
+        await tester.pumpAndSettle();
+        await tapKey(tester, 'discard-confirm');
+        await tapKey(tester, 'note-line-abs-1');
+        await tapKey(tester, 'lift-feel-hard');
+        await shot(tester, 'm24_s64_abs');
+      });
+
+      testWidgets('M24: S-78 × 4', (tester) async {
+        final db = await seeded();
+        await LiftLogRepository(db).put(
+          LiftLog(
+            date: mon,
+            exerciseId: 'back-3',
+            startKgX10: 200,
+            endKgX10: 250,
+          ),
+        );
+        await ExerciseNoteRepository(
+          db,
+        ).put(ExerciseNote(date: mon, exerciseId: 'abs-1', text: '60 giây'));
+        await pumpAt(tester, db, at1812);
+        Future<void> close() async {
+          await tester.tap(find.byKey(K.dialogSecondary));
+          await tester.pumpAndSettle();
+        }
+
+        await tapKey(tester, 'exercise-chest-1');
+        await tapKey(tester, 'action-replace');
+        await shot(tester, 'm24_s78_replace');
+        await close();
+        await tapKey(tester, 'exercise-back-3');
+        await tapKey(tester, 'action-restore');
+        await shot(tester, 'm24_s78_restore');
+        await close();
+        await tapKey(tester, 'exercise-chest-1');
+        await tapKey(tester, 'action-skip');
+        await shot(tester, 'm24_s78_skip');
+        await close();
+        await tapKey(tester, 'exercise-abs-1');
+        await tapKey(tester, 'action-remove-extra');
+        await shot(tester, 'm24_s78_remove_extra');
+      });
+
+      testWidgets('M24: S-79 mọi bài đã bỏ qua', (tester) async {
+        final db = await seeded(rows: false);
+        final session = SessionExerciseRepository(db);
+        for (final (i, id) in const [
+          'chest-1',
+          'chest-2',
+          'chest-3',
+          'chest-4',
+        ].indexed) {
+          await session.put(
+            SessionExerciseRow(
+              date: mon,
+              exerciseId: id,
+              role: SessionExerciseRole.original,
+              position: i,
+              skipped: true,
+            ),
+          );
+        }
+        await pumpAt(tester, db, at1812);
+        await tapKey(tester, 'today-mark-done');
+        await shot(tester, 'm24_s79');
+      });
+
+      testWidgets('M24: S-63 buổi đã qua (mock s63), buổi chưa đến', (
+        tester,
+      ) async {
+        final db = await seeded();
+        final logs = LiftLogRepository(db);
+        await logs.put(
+          LiftLog(
+            date: mon,
+            exerciseId: 'back-3',
+            startKgX10: 200,
+            endKgX10: 250,
+          ),
+        );
+        await logs.put(
+          LiftLog(
+            date: mon,
+            exerciseId: 'chest-4',
+            startKgX10: 225,
+            endKgX10: 275,
+          ),
+        );
+        final feels = ExerciseFeelRepository(db);
+        for (final (id, f) in [
+          ('back-3', Feel.medium),
+          ('chest-4', Feel.medium),
+          ('abs-1', Feel.hard),
+        ]) {
+          await feels.put(ExerciseFeel(date: mon, exerciseId: id, feel: f));
+        }
+        await ExerciseNoteRepository(
+          db,
+        ).put(ExerciseNote(date: mon, exerciseId: 'abs-1', text: '60 giây'));
+        await seedMark(db, mon, DayMark.done);
+        // Buổi chưa đến thứ 5 29/10 (Vai): GẦN NHẤT 22/10 · Mệt (dấu xám).
+        final thu = LocalDate(2026, 10, 22);
+        await ExerciseUnitRepository(db).put(
+          ExerciseUnit(
+            exerciseId: 'shoulders-1',
+            unit: LiftUnit.kg,
+            changedOn: thu,
+          ),
+        );
+        await logs.put(
+          LiftLog(
+            date: thu,
+            exerciseId: 'shoulders-1',
+            startKgX10: 100,
+            endKgX10: 125,
+          ),
+        );
+        await feels.put(
+          ExerciseFeel(date: thu, exerciseId: 'shoulders-1', feel: Feel.hard),
+        );
+        final c = await pumpAt(tester, db, DateTime(2026, 10, 27, 9, 40));
+        c.read(routerProvider).go(sessionPath(AppTab.today, mon));
+        await tester.pumpAndSettle();
+        await shot(tester, 'm24_s63_past');
+        c
+            .read(routerProvider)
+            .go(sessionPath(AppTab.today, LocalDate(2026, 10, 29)));
+        await tester.pumpAndSettle();
+        await shot(tester, 'm24_s63_upcoming');
       });
     }
   });

@@ -1,4 +1,8 @@
+import '../exercise/exercise.dart';
+import '../exercise_note/exercise_note.dart';
 import '../lift_log/lift_log.dart';
+import '../schedule/month_plan.dart';
+import '../session/session_exercise.dart';
 import '../time/local_date.dart';
 
 /// Mức thoải mái của set cuối, ở mức tạ kết thúc (03 Bản 5 §6.1, F-33):
@@ -56,4 +60,55 @@ final class ExerciseFeel {
 
   @override
   String toString() => 'ExerciseFeel($key, ${feel.wire})';
+}
+
+/// Quy tắc mức thoải mái (F-33, 05 Bản 5 §6.6.2). App và server cùng dùng
+/// (AP-10).
+abstract final class FeelRules {
+  /// Bước kiểm tra như ghi chú (F33-R3, R4; 05 Bản 5 §6.6.2): buổi, cửa sổ
+  /// ghi tạ ([LiftWindow], gồm mở sớm khi tới gym — FD5-01), bài, bài thuộc
+  /// buổi theo TD5-09. Không xét `logsWeight` (bài bụng chọn được, FC5-05).
+  /// [removing] = bỏ chọn: không xét bài thuộc buổi (TD5-10).
+  static LiftError? check({
+    required PlanDay? day,
+    required Exercise? exercise,
+    required DateTime now,
+    bool exists = false,
+    Iterable<SessionExerciseRow> sessionRows = const [],
+    bool removing = false,
+  }) => ExerciseNoteRules.check(
+    day: day,
+    exercise: exercise,
+    now: now,
+    exists: exists,
+    sessionRows: sessionRows,
+    removing: removing,
+  );
+
+  /// Mức thoải mái buổi trước (FC5-07, F33-R5): bài có ghi mức tạ → mức
+  /// thoải mái của đúng "buổi trước" theo mức tạ (FA3-01, buổi gần nhất có
+  /// bản ghi mức tạ trước [date]), có thể không có (F33-E2: không lấy buổi
+  /// xa hơn); bài bụng → mức thoải mái gần nhất trước [date]. Cùng cách lấy
+  /// với ghi chú mờ ([ExerciseNoteRules.previous]).
+  static ExerciseFeel? previous({
+    required Iterable<ExerciseFeel> feels,
+    required Iterable<LiftLog> logs,
+    required Exercise exercise,
+    required LocalDate date,
+  }) {
+    if (exercise.logsWeight) {
+      final previous = LiftLogRules.previousSession(logs, exercise.id, date);
+      if (previous == null) return null;
+      for (final f in feels) {
+        if (f.exerciseId == exercise.id && f.date == previous.date) return f;
+      }
+      return null;
+    }
+    ExerciseFeel? best;
+    for (final f in feels) {
+      if (f.exerciseId != exercise.id || !f.date.isBefore(date)) continue;
+      if (best == null || f.date.isAfter(best.date)) best = f;
+    }
+    return best;
+  }
 }

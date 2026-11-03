@@ -7,7 +7,8 @@ enum LiftField { start, end }
 /// Mở S-64 cho bài [exercise] trong buổi ngày [date]: [existing] = bản ghi
 /// của buổi (chế độ sửa), [previous] = buổi trước của bài (FA3-01), [unit] =
 /// đơn vị hiện tại của bài, null khi chưa từng ghi (F21-R41); [note] = ghi
-/// chú của buổi, [previousNote] = ghi chú buổi trước (FA3-02).
+/// chú của buổi, [previousNote] = ghi chú buổi trước (FA3-02); [feel] = mức
+/// thoải mái của buổi, [previousFeel] = mức thoải mái buổi trước (FC5-07).
 typedef LiftDraftArgs = ({
   LocalDate date,
   Exercise exercise,
@@ -16,11 +17,14 @@ typedef LiftDraftArgs = ({
   LiftUnit? unit,
   ExerciseNote? note,
   ExerciseNote? previousNote,
+  ExerciseFeel? feel,
+  ExerciseFeel? previousFeel,
 });
 
 /// Bảng ghi tạ S-64 (04 Bản 3 §6.6, 05 Bản 3 §6.4.2 `liftLogDraftProvider`):
 /// hai ô (điền sẵn xám / đã sửa), đơn vị, lỗi sau khi bấm Lưu, cảnh báo
-/// F21-R45 (chỉ khi ô Kết thúc đã sửa, FA3-07), ghi chú, [isDirty] (ED3-12).
+/// F21-R45 (chỉ khi ô Kết thúc đã sửa, FA3-07), ghi chú, mức thoải mái
+/// (04 Bản 5 S-64, F21-R61: không điền sẵn — F33-R7), [isDirty] (ED3-12).
 final class LiftDraft {
   const LiftDraft({
     required this.args,
@@ -28,6 +32,7 @@ final class LiftDraft {
     required this.start,
     required this.end,
     required this.note,
+    this.feel,
     this.startEdited = false,
     this.endEdited = false,
     this.stepped = false,
@@ -46,6 +51,7 @@ final class LiftDraft {
       start: text(startX10),
       end: text(endX10),
       note: args.note?.text ?? '',
+      feel: args.feel?.feel,
     );
   }
 
@@ -59,6 +65,10 @@ final class LiftDraft {
   final String start;
   final String end;
   final String note;
+
+  /// Mức thoải mái đang chọn; null = trống (F33-R1). Mở bảng: mức của buổi
+  /// nếu đã chọn, không điền sẵn mức buổi trước (F33-R7).
+  final Feel? feel;
 
   /// Ô đã được Bạn sửa (gõ hoặc bấm ±bước): số chuyển màu thường (UA3-06).
   final bool startEdited;
@@ -96,13 +106,18 @@ final class LiftDraft {
       ExerciseNoteRules.normalize(note) !=
       ExerciseNoteRules.normalize(args.note?.text ?? '');
 
-  /// UA3-03, ED3-12: số khác lúc mở, ghi chú khác lúc mở, hoặc đã bấm ±bước.
+  /// Mức thoải mái khác lúc mở bảng (F33-R1: chọn, đổi, bỏ chọn).
+  bool get feelChanged => feel != args.feel?.feel;
+
+  /// UA3-03, ED3-12: số khác lúc mở, ghi chú khác lúc mở, mức thoải mái khác
+  /// lúc mở (04 Bản 5 S-64), hoặc đã bấm ±bước.
   bool get isDirty {
     final initial = LiftDraft.open(args);
     return stepped ||
         start != initial.start ||
         end != initial.end ||
-        note != initial.note;
+        note != initial.note ||
+        feelChanged;
   }
 
   /// F21-R45: so mức kết thúc với buổi trước khi ô Kết thúc có số hợp lệ và
@@ -125,6 +140,7 @@ final class LiftDraft {
     String? start,
     String? end,
     String? note,
+    ({Feel? value})? feel,
     bool? startEdited,
     bool? endEdited,
     bool? stepped,
@@ -134,6 +150,7 @@ final class LiftDraft {
     start: start ?? this.start,
     end: end ?? this.end,
     note: note ?? this.note,
+    feel: feel == null ? this.feel : feel.value,
     startEdited: startEdited ?? this.startEdited,
     endEdited: endEdited ?? this.endEdited,
     stepped: stepped ?? this.stepped,
@@ -180,6 +197,10 @@ final class LiftDraft {
   /// F26-V1, E1: không quá 200 ký tự.
   LiftDraft editNote(String text) => _copy(note: ExerciseNoteRules.clip(text));
 
+  /// Thanh Thoải mái | Vừa | Mệt (04 Bản 5 S-64): chạm mục → chọn; chạm lại
+  /// mục đang chọn → bỏ chọn (F33-R1).
+  LiftDraft tapFeel(Feel f) => _copy(feel: (value: feel == f ? null : f));
+
   /// Kiểm tra khi bấm Lưu (F21-V41 → V45). Hai ô trống thì chỉ lưu ghi chú
   /// (F21-R49) nên không kiểm số; riêng lần ghi đầu chưa chọn đơn vị và chưa
   /// có gì để lưu → báo chọn đơn vị (F21-AC43, UX-AC49).
@@ -188,7 +209,7 @@ final class LiftDraft {
     if (noteOnly) {
       input = null;
     } else if (bothEmpty) {
-      input = choosingUnit && unit == null && !noteChanged
+      input = choosingUnit && unit == null && !noteChanged && !feelChanged
           ? LiftInput.of('', '', null)
           : null;
     } else {
@@ -200,6 +221,7 @@ final class LiftDraft {
       start: start,
       end: end,
       note: note,
+      feel: feel,
       startEdited: startEdited,
       endEdited: endEdited,
       stepped: stepped,
@@ -226,6 +248,8 @@ class LiftLogDraft extends Notifier<LiftDraft> {
   void chooseUnit(LiftUnit unit) => state = state.chooseUnit(unit);
 
   void editNote(String text) => state = state.editNote(text);
+
+  void tapFeel(Feel f) => state = state.tapFeel(f);
 
   /// Kiểm tra F21-V41 → V45 khi bấm Lưu; true = lưu được.
   bool check() {

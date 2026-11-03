@@ -8,6 +8,7 @@ import '../../../data/sync/outbox_writer.dart';
 import '../../../data/sync/sync_providers.dart';
 import '../../library/data/exercise_repository.dart';
 import '../../schedule/data/schedule_repository.dart';
+import '../data/exercise_feel_repository.dart';
 import '../data/exercise_note_repository.dart';
 import '../data/exercise_unit_repository.dart';
 import '../data/lift_log_repository.dart';
@@ -259,37 +260,118 @@ final class SaveExerciseNote {
       });
 }
 
-/// Một lần bấm Lưu ở bảng ghi tạ (F21-R49, FD3-01 = A): mức tạ và ghi chú
-/// độc lập, ghi trong cùng một transaction. Hai ô tạ trống → chỉ lưu ghi chú,
-/// không báo F21-V42; có số → kiểm F21-V41 → V45 như thường. [note] = null:
-/// không đụng tới ghi chú. Lỗi bất kỳ → không lưu gì.
+/// Lưu mức thoải mái của set cuối (F-33, 05 Bản 5 §6.4.2 `SaveExerciseFeel`):
+/// [feel] = null là bỏ chọn (tombstone qua outbox, TD5-04). Cùng cửa sổ ghi
+/// tạ ([FeelRules.check], gồm mở sớm khi tới gym); độc lập với mức tạ và ghi
+/// chú (F33-R3); bài bụng chọn được (FC5-05). Không cần mạng (F33-R8). Ném
+/// [LiftException]. Trả mức đã lưu, null khi đã bỏ chọn hoặc không có gì.
+final class SaveExerciseFeel {
+  SaveExerciseFeel({
+    required AppDatabase db,
+    required ExerciseFeelRepository feels,
+    required ScheduleRepository schedule,
+    required ExerciseRepository exercises,
+    required OutboxWriter outbox,
+    required Clock clock,
+    SessionExerciseRepository? sessionRows,
+  }) : _db = db,
+       _feels = feels,
+       _schedule = schedule,
+       _exercises = exercises,
+       _outbox = outbox,
+       _clock = clock,
+       _sessionRows = sessionRows;
+
+  final AppDatabase _db;
+  final ExerciseFeelRepository _feels;
+  final ScheduleRepository _schedule;
+  final ExerciseRepository _exercises;
+  final OutboxWriter _outbox;
+  final Clock _clock;
+  final SessionExerciseRepository? _sessionRows;
+
+  static const _codec = ExerciseFeelCodec();
+
+  Future<ExerciseFeel?> call(LocalDate date, String exerciseId, Feel? feel) =>
+      _db.transaction(() async {
+        final existing = await _feels.get(date, exerciseId);
+        if (existing?.feel == feel) return existing;
+        final error = FeelRules.check(
+          day: await _schedule.day(date),
+          exercise: await _exercises.get(exerciseId),
+          now: _clock.now(),
+          exists: existing != null,
+          sessionRows: await _sessionRows?.day(date) ?? const [],
+          removing: feel == null,
+        );
+        if (error != null) throw LiftException(error);
+        final key = ExerciseFeel.keyOf(date, exerciseId);
+        if (feel == null) {
+          await _feels.delete(date, exerciseId);
+          await _outbox.enqueue(
+            SyncEntities.exerciseFeel,
+            key,
+            SyncOp.delete,
+            null,
+          );
+          return null;
+        }
+        final value = ExerciseFeel(
+          date: date,
+          exerciseId: exerciseId,
+          feel: feel,
+        );
+        await _feels.put(value);
+        await _outbox.enqueue(
+          SyncEntities.exerciseFeel,
+          key,
+          SyncOp.upsert,
+          _codec.encode(value),
+        );
+        return value;
+      });
+}
+
+/// Một lần bấm Lưu ở bảng ghi tạ (F21-R49, FD3-01 = A, 04 Bản 5 S-64,
+/// F21-R61): mức tạ, ghi chú và mức thoải mái độc lập, ghi trong cùng một
+/// transaction. Hai ô tạ trống → chỉ lưu ghi chú / mức thoải mái, không báo
+/// F21-V42; có số → kiểm F21-V41 → V45 như thường. [note] = null: không đụng
+/// tới ghi chú; [feel] = null: không đụng tới mức thoải mái (`(value: null)`
+/// = bỏ chọn). Lỗi bất kỳ → không lưu gì.
 final class SaveLiftEntry {
   SaveLiftEntry({
     required AppDatabase db,
     required SaveLiftLog lift,
     required SaveExerciseNote note,
+    SaveExerciseFeel? feel,
   }) : _db = db,
        _lift = lift,
-       _note = note;
+       _note = note,
+       _feel = feel;
 
   final AppDatabase _db;
   final SaveLiftLog _lift;
   final SaveExerciseNote _note;
+  final SaveExerciseFeel? _feel;
 
-  Future<({LiftLog? log, ExerciseNote? note})> call(
+  Future<({LiftLog? log, ExerciseNote? note, ExerciseFeel? feel})> call(
     LocalDate date,
     String exerciseId, {
     required String start,
     required String end,
     LiftUnit? unit,
     String? note,
+    ({Feel? value})? feel,
   }) => _db.transaction(() async {
     final onlyNote = start.trim().isEmpty && end.trim().isEmpty;
     final log = onlyNote
         ? null
         : await _lift(date, exerciseId, start: start, end: end, unit: unit);
     final saved = note == null ? null : await _note(date, exerciseId, note);
-    return (log: log, note: saved);
+    final savedFeel = feel == null || _feel == null
+        ? null
+        : await _feel(date, exerciseId, feel.value);
+    return (log: log, note: saved, feel: savedFeel);
   });
 }
 
@@ -404,11 +486,24 @@ final saveExerciseNoteProvider = Provider<SaveExerciseNote>(
   ),
 );
 
+final saveExerciseFeelProvider = Provider<SaveExerciseFeel>(
+  (ref) => SaveExerciseFeel(
+    db: ref.watch(databaseProvider),
+    feels: ref.watch(exerciseFeelRepositoryProvider),
+    schedule: ref.watch(scheduleRepositoryProvider),
+    exercises: ref.watch(exerciseRepositoryProvider),
+    outbox: ref.watch(outboxWriterProvider),
+    clock: ref.watch(clockProvider),
+    sessionRows: ref.watch(sessionExerciseRepositoryProvider),
+  ),
+);
+
 final saveLiftEntryProvider = Provider<SaveLiftEntry>(
   (ref) => SaveLiftEntry(
     db: ref.watch(databaseProvider),
     lift: ref.watch(saveLiftLogProvider),
     note: ref.watch(saveExerciseNoteProvider),
+    feel: ref.watch(saveExerciseFeelProvider),
   ),
 );
 

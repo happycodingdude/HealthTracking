@@ -352,6 +352,48 @@ void main() {
         null,
       ]);
     });
+
+    test('F33-V1: giá trị ngoài 3 mức → validation_failed; bỏ chọn '
+        '(delete) → applied, kể cả bài vừa bỏ qua (TD5-10); bài bỏ qua → '
+        'lift_exercise_not_in_session (F33-R4)', () async {
+      final at = vn(4, 18, 30);
+      await setNow(at);
+      final bad = mutation(
+        SyncEntities.exerciseFeel,
+        ExerciseFeel.keyOf(wed, 'back-row'),
+        SyncOp.upsert,
+        at: at,
+        data: {'date': wed.toKey(), 'exerciseId': 'back-row', 'feel': 'tired'},
+      );
+      final results = await push([
+        bad,
+        feel('back-row', Feel.hard, at),
+        mutation(
+          SyncEntities.exerciseFeel,
+          ExerciseFeel.keyOf(wed, 'back-row'),
+          SyncOp.delete,
+          at: vn(4, 18, 31),
+        ),
+        sessionRow(
+          SessionExerciseRow(
+            date: wed,
+            exerciseId: 'back-lat',
+            role: SessionExerciseRole.original,
+            skipped: true,
+          ),
+          vn(4, 18, 32),
+        ),
+        feel('back-lat', Feel.easy, vn(4, 18, 33)),
+      ]);
+      expect(results.map((r) => r.code), [
+        ErrorCode.validationFailed,
+        null,
+        null,
+        null,
+        ErrorCode.liftExerciseNotInSession,
+      ]);
+      expect(results[2].status, PushStatus.applied);
+    });
   });
 
   group('lift_log / exercise_note theo danh sách bài (TD5-09, TAC5-03 phần '
