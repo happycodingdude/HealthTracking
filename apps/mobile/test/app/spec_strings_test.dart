@@ -250,4 +250,11 @@ void main() {
       '(VS-55)', () {
     expect(S.feelPrevious(S.feelEasy), 'Thoải mái, buổi trước');
   });
+
+  test('04 Bản 5 §6.2, §6.9, S-76: câu tạm dừng có tham số (VS-56)', () {
+    expect(S.pausedUntil('09/11'), 'Đã tạm dừng đến 09/11');
+    expect(S.pausingUntil('CN 09/11'), 'Đang tạm dừng đến CN 09/11');
+    expect(S.todayDayMonth('03/11'), 'Hôm nay, 03/11');
+    expect(S.pausedSession('Lưng'), 'Lưng, Tạm dừng');
+  });
 }

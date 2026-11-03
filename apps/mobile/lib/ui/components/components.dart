@@ -2,6 +2,7 @@
 library;
 
 export 'add_row.dart';
+export 'date_field.dart';
 export 'dumbbell_icon.dart';
 export 'empty_action.dart';
 export 'exercise_avatar.dart';
@@ -18,6 +19,8 @@ export 'ironly_text_field.dart';
 export 'ironly_toast.dart';
 export 'month_grid.dart';
 export 'number_field.dart';
+export 'pause_banner.dart';
+export 'pause_glyph.dart';
 export 'progress_dots.dart';
 export 'segment_bar.dart';
 export 'skeleton_box.dart';

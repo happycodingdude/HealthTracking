@@ -61,14 +61,26 @@ class RestCard extends StatelessWidget {
           ),
         ),
         if (next != null)
-          Text(
-            S.nextSessionShort(
-              Fmt.weekday(next.date),
-              Fmt.musclesTitle(next.muscles),
-              Fmt.time(next.time!),
-            ),
-            key: const ValueKey('next-session'),
-            style: IronlyText.body,
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: Text(
+                  S.nextSessionShort(
+                    Fmt.weekday(next.date),
+                    Fmt.musclesTitle(next.muscles),
+                    Fmt.time(next.time!),
+                  ),
+                  key: const ValueKey('next-session'),
+                  style: IronlyText.body,
+                ),
+              ),
+              // Buổi tới cũng trong khoảng tạm dừng (04 Bản 5 S-10 H8).
+              if (state.nextPaused) ...[
+                const SizedBox(width: TokenSpace.s2),
+                const PauseGlyph(key: ValueKey('next-session-paused')),
+              ],
+            ],
           ),
       ],
     );
@@ -127,6 +139,7 @@ class WeekCard extends StatelessWidget {
         SessionState.upcoming => (GlyphStatus.upcoming, S.statusUpcoming),
         SessionState.skipped => (GlyphStatus.skipped, S.sessionSkipped),
         SessionState.autoSkipped => (GlyphStatus.skipped, S.statusAutoSkipped),
+        SessionState.paused => (GlyphStatus.paused, S.statusPaused),
       };
     }
     if (d.extra != null) return (GlyphStatus.extra, S.extraSession);

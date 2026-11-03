@@ -1,3 +1,4 @@
+import '../pause/schedule_pause.dart';
 import '../schedule/month_plan.dart';
 import '../schedule/weekly_template.dart';
 import '../time/local_date.dart';
@@ -66,11 +67,13 @@ abstract final class ReminderPlanner {
   ///   [template] (đúng với những gì F03-R6 sẽ tạo, TAC-09).
   /// - Chỉ nhắc buổi theo lịch (F04-R4), gồm cả ngày sửa riêng (F04-R7).
   /// - Chưa có lịch tuần (Chưa có lịch, 05 Bản 2 TD2-09) → rỗng (F04-R22).
+  /// - Không nhắc buổi trong khoảng tạm dừng [pauses] (F04-R61, F31-R4).
   static List<Reminder> plan({
     required List<PlanDay> currentMonth,
     required List<PlanDay>? nextMonth,
     required WeeklyTemplate? template,
     required DateTime now,
+    Iterable<SchedulePause> pauses = const [],
   }) {
     if (template == null) return const [];
     final today = LocalDate.fromDateTime(now);
@@ -80,6 +83,7 @@ abstract final class ReminderPlanner {
     final reminders = <Reminder>[];
     for (final d in [...currentMonth, ...following]) {
       if (!d.isWorkout || d.mark != null || d.date.isBefore(today)) continue;
+      if (PauseRules.isPaused(d.date, pauses)) continue;
       final at = d.date.atTime(d.time!).subtract(lead);
       if (!at.isAfter(now)) continue;
       reminders.add(

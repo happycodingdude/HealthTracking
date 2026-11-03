@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../keys.dart';
 import '../theme.dart';
+import 'pause_glyph.dart';
 
 /// Trạng thái nghiệp vụ thể hiện bằng dấu hiệu, không bằng chữ (03 Bản 4
 /// §6.4, 04 Bản 4 §6.2). Hai trạng thái khác nhau không dùng chung dấu.
@@ -29,6 +30,9 @@ enum GlyphStatus {
 
   /// Nút chốt buổi ở góc trên Hôm nay: ô vuông 22 viền cam, dấu tích rỗng.
   markDone,
+
+  /// Buổi tạm dừng (04 Bản 5 §6.2, UD5-03): vòng thẻ nổi, hai vạch chữ phụ.
+  paused,
 }
 
 /// Dấu hiệu trạng thái. [label] bắt buộc: VoiceOver đọc đúng câu chữ cũ
@@ -76,6 +80,14 @@ class StatusGlyph extends StatelessWidget {
         border: t.accent,
         borderWidth: TokenSize.fieldStroke,
         child: Icon(Icons.add, size: iconSize, color: t.accent),
+      ),
+      GlyphStatus.paused => _circle(
+        fill: t.surfaceRaised,
+        child: PauseGlyph(
+          barWidth: size * 0.1,
+          barHeight: size * 0.42,
+          label: null,
+        ),
       ),
       GlyphStatus.locked => SizedBox.square(
         dimension: size,

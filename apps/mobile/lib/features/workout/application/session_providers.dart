@@ -26,12 +26,17 @@ enum LiftReadOnly {
 /// Một buổi tập (05 Bản 2 §6.4.2 `sessionProvider`): nhóm cơ của buổi, trạng
 /// thái đánh dấu, cửa sổ ghi tạ, đã chốt hay chưa.
 final class SessionView {
-  SessionView(this.day, DateTime now)
-    : status = SessionStatus.derive(day, now),
+  SessionView(this.day, DateTime now, {this.paused = false})
+    : status = SessionStatus.derive(day, now, paused: paused),
       window = LiftWindow.of(day, now),
+      _now = now,
       _today = LocalDate.fromDateTime(now);
 
   final PlanDay day;
+
+  /// Ngày nằm trong khoảng tạm dừng (03 Bản 5 F-31, FC5-09).
+  final bool paused;
+  final DateTime _now;
 
   /// null với buổi tập thêm.
   final SessionStatus? status;
@@ -52,8 +57,14 @@ final class SessionView {
   bool get canLog => window.isOpen;
 
   /// Nút "Đã tập" ở thanh đáy S-63 (UA2-09): buổi theo lịch đang "Chờ đánh
-  /// dấu" (đã đến giờ).
-  bool get canMarkDone => status?.state == SessionState.awaitingMark;
+  /// dấu" (đã đến giờ). Buổi Tạm dừng hôm nay cũng chốt được từ giờ tập
+  /// (F31-R5, 04 Bản 5 H7).
+  bool get canMarkDone => switch (status?.state) {
+    SessionState.awaitingMark => true,
+    SessionState.paused =>
+      date == _today && SessionRules.canMarkDone(day, _now),
+    _ => false,
+  };
 
   /// Dòng trạng thái đầu S-63; null khi đang trong cửa sổ ghi tạ.
   LiftReadOnly? get readOnly => switch (window) {
@@ -71,7 +82,11 @@ final class SessionView {
 final sessionProvider = Provider.family<SessionView?, LocalDate>((ref, date) {
   final day = ref.watch(dayProvider(date)).value;
   if (!LiftLogRules.isSession(day)) return null;
-  return SessionView(day!, ref.watch(nowProvider));
+  return SessionView(
+    day!,
+    ref.watch(nowProvider),
+    paused: ref.watch(pausedProvider(date)),
+  );
 });
 
 /// Bản ghi mức tạ của buổi ngày [date].

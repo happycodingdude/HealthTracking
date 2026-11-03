@@ -8,6 +8,7 @@ import '../../../app/time_ticker.dart';
 import '../../../core/formatters.dart';
 import '../../../ui/components/components.dart';
 import '../../../ui/theme.dart';
+import '../../schedule/application/schedule_providers.dart';
 import '../../schedule/presentation/day_line.dart';
 import '../../schedule/presentation/day_sheet.dart';
 import '../application/progress_view.dart';
@@ -39,6 +40,7 @@ class _WeekProgressScreenState extends ConsumerState<WeekProgressScreen> {
     final t = context.tokens;
     final weeks = ref.watch(progressWeeksProvider);
     final progress = ref.watch(weekProgressProvider(_week));
+    final pauses = ref.watch(pausesProvider).value ?? const <SchedulePause>[];
     final now = ref.watch(nowProvider);
     final today = LocalDate.fromDateTime(now);
     final hasPrevious = weeks.isNotEmpty && weeks.first.start < _week.start;
@@ -124,6 +126,7 @@ class _WeekProgressScreenState extends ConsumerState<WeekProgressScreen> {
                     day: d.day,
                     now: now,
                     compact: true,
+                    paused: PauseRules.isPaused(d.date, pauses),
                     onTap: () => showDaySheet(context, d.date),
                   ),
             ],
@@ -150,26 +153,40 @@ class _Summary extends StatelessWidget {
       key: const ValueKey('progress-summary'),
       child: Column(
         children: [
-          Semantics(
-            container: true,
-            label: S.progressLine(p.done, p.planned),
-            child: ExcludeSemantics(
-              child: Text.rich(
-                TextSpan(
-                  children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Semantics(
+                container: true,
+                label: S.progressLine(p.done, p.planned),
+                child: ExcludeSemantics(
+                  child: Text.rich(
                     TextSpan(
-                      text: '${p.done}',
-                      style: IronlyText.numberXL.copyWith(color: t.accent),
+                      children: [
+                        TextSpan(
+                          text: '${p.done}',
+                          style: IronlyText.numberXL.copyWith(color: t.accent),
+                        ),
+                        TextSpan(
+                          text: '/${p.planned}',
+                          style: IronlyText.number.copyWith(
+                            color: t.textSecondary,
+                          ),
+                        ),
+                      ],
                     ),
-                    TextSpan(
-                      text: '/${p.planned}',
-                      style: IronlyText.number.copyWith(color: t.textSecondary),
-                    ),
-                  ],
+                    key: const ValueKey('progress-ratio'),
+                  ),
                 ),
-                key: const ValueKey('progress-ratio'),
               ),
-            ),
+              // Tuần tạm dừng toàn bộ (m = 0): hai vạch cạnh số (F06-R62,
+              // 04 Bản 5 S-25).
+              if (p.planned == 0 && p.paused > 0) ...[
+                const SizedBox(width: TokenSpace.s3),
+                const PauseGlyph(key: ValueKey('progress-paused')),
+              ],
+            ],
           ),
           if (p.extra > 0)
             Semantics(

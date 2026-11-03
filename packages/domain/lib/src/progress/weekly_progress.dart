@@ -1,3 +1,4 @@
+import '../pause/schedule_pause.dart';
 import '../schedule/month_plan.dart';
 import '../schedule/weekly_template.dart';
 import '../session/session.dart';
@@ -35,7 +36,16 @@ final class WeeklyProgress {
   int get done => days.where((d) => d.status?.counts ?? false).length;
 
   /// F06-R1, F06-R4: Y = số buổi theo lịch, kể cả "Sắp tới", "Chờ đánh dấu".
-  int get planned => days.where((d) => d.status != null).length;
+  /// Bản 5 (F06-R61, TD5-11): trừ buổi Tạm dừng (chưa "Đã tập"); buổi trong
+  /// khoảng tạm dừng đã "Đã tập" / "Không tập" vẫn tính.
+  int get planned => days
+      .where((d) => d.status != null && d.status!.state != SessionState.paused)
+      .length;
+
+  /// Số buổi Tạm dừng của tuần (F06-R62: Y = 0 vì tạm dừng toàn bộ → hiện như
+  /// tuần không có buổi, kèm dấu tạm dừng).
+  int get paused =>
+      days.where((d) => d.status?.state == SessionState.paused).length;
 
   /// F06-R3, F05-R12: Z = số buổi tập thêm, không tính vào X, Y.
   int get extra => days.where((d) => d.extra != null).length;
@@ -45,13 +55,16 @@ final class WeeklyProgress {
   /// [days] là các bản ghi ngày đã có. Mỗi ngày lấy từ lịch tháng chứa nó
   /// (F06-E4); ngày thuộc tháng sau chưa có lịch (chưa tới ngày 1, F03-R6)
   /// thì suy ra từ [template], đúng với những gì sẽ được tạo. Ngày trước
-  /// ngày thiết lập không có lịch nên không được tính (F06-E2).
+  /// ngày thiết lập không có lịch nên không được tính (F06-E2). [pauses] =
+  /// các khoảng tạm dừng (TD5-11): buổi chưa đánh dấu trong khoảng là Tạm
+  /// dừng, không vào Y.
   static WeeklyProgress compute(
     ProgressWeek week, {
     required List<PlanDay> days,
     required Set<YearMonth> planned,
     required WeeklyTemplate? template,
     required DateTime now,
+    Iterable<SchedulePause> pauses = const [],
   }) {
     final byDate = {for (final d in days) d.date: d};
     final last = planned.isEmpty
@@ -68,7 +81,15 @@ final class WeeklyProgress {
     return WeeklyProgress._(week, [
       for (final date in week.days)
         if (dayOf(date) case final d?)
-          ProgressDay(date, d, SessionStatus.derive(d, now))
+          ProgressDay(
+            date,
+            d,
+            SessionStatus.derive(
+              d,
+              now,
+              paused: PauseRules.isPaused(date, pauses),
+            ),
+          )
         else
           ProgressDay(date, null, null),
     ]);

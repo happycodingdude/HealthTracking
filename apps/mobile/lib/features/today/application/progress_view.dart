@@ -20,6 +20,8 @@ final weekProgressProvider = Provider.family<WeeklyProgress?, ProgressWeek>((
     planned: {for (final p in plans) p.month},
     template: ref.watch(weeklyTemplateProvider).value,
     now: ref.watch(nowProvider),
+    // Tổng trừ buổi tạm dừng (F06-R61, TD5-11).
+    pauses: ref.watch(pausesProvider).value ?? const [],
   );
 });
 

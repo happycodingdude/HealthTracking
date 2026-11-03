@@ -22,6 +22,12 @@ enum SessionState {
   /// "cuối thứ 7" của Bản 2). App suy ra khi đọc; server ghi `skipped_auto`
   /// (`DayCloser`, TA5-05) — hai cách cho cùng kết quả.
   autoSkipped,
+
+  /// Buổi theo lịch rơi vào khoảng tạm dừng, chưa đánh dấu (03 Bản 5 §6.1
+  /// "Buổi tạm dừng", FC5-09, F31-R3): không tính bỏ buổi, không thành "Không
+  /// tập (tự động)" khi hết ngày, không vào tổng tiến độ tuần (F06-R61). Hôm
+  /// nay vẫn ghi tạ, "Đã tập" / "Không tập" được như thường (F31-R5).
+  paused,
 }
 
 /// Trạng thái kèm cờ "Đã khóa": ngày đã qua (hết ngày, FC5-01) — mọi trạng
@@ -39,12 +45,20 @@ final class SessionStatus {
   /// Suy ra trạng thái lúc [now] (giờ trên iPhone). null với ngày nghỉ.
   /// Đây là `DayState.effective` của 06 Bản 5 VS52-T02: ngày đã qua chưa
   /// đánh dấu → [SessionState.autoSkipped] ngay, không chờ cuối tuần (TA5-05).
-  static SessionStatus? derive(PlanDay day, DateTime now) {
+  /// [paused] = ngày nằm trong khoảng tạm dừng (`PauseRules.isPaused`): buổi
+  /// chưa đánh dấu là [SessionState.paused] (lớp phủ, FC5-09); buổi đã đánh
+  /// dấu giữ trạng thái của nó (F31-R5).
+  static SessionStatus? derive(
+    PlanDay day,
+    DateTime now, {
+    bool paused = false,
+  }) {
     if (!day.isWorkout) return null;
     final open = DayLock.isOpen(day.date, now);
     final state = switch (day.mark) {
       DayMark.done => SessionState.done,
       DayMark.skipped => SessionState.skipped,
+      null when paused => SessionState.paused,
       null when !open => SessionState.autoSkipped,
       null when now.isBefore(SessionRules.opensAt(day)) =>
         SessionState.upcoming,

@@ -83,8 +83,93 @@ enum PauseError {
   overlap,
 }
 
+final class PauseException implements Exception {
+  const PauseException(this.error);
+
+  final PauseError error;
+
+  @override
+  String toString() => 'PauseException(${error.name})';
+}
+
 /// Quy tắc khoảng tạm dừng (F-31). App và server cùng dùng (AP-4).
 abstract final class PauseRules {
+  /// [date] nằm trong một khoảng tạm dừng (FC5-09: lớp phủ lên lịch, tính lúc
+  /// đọc — không ghi vào `days`).
+  static bool isPaused(LocalDate date, Iterable<SchedulePause> pauses) =>
+      pauses.any((p) => p.covers(date));
+
+  /// Khoảng còn hiệu lực lúc [today]: đang tạm dừng hoặc đặt trước (F31-R1,
+  /// tối đa một). null = chưa có.
+  static SchedulePause? active(
+    Iterable<SchedulePause> pauses,
+    LocalDate today,
+  ) {
+    SchedulePause? found;
+    for (final p in pauses) {
+      if (!p.activeOn(today)) continue;
+      if (found == null || p.startDate.isBefore(found.startDate)) found = p;
+    }
+    return found;
+  }
+
+  /// Đặt khoảng mới [start] → [end] (F31-R1, R2, V1, V2). Ném
+  /// [PauseException].
+  static SchedulePause start({
+    required String id,
+    required LocalDate start,
+    required LocalDate end,
+    required Iterable<SchedulePause> others,
+    required LocalDate today,
+  }) {
+    final after = SchedulePause(id: id, startDate: start, endDate: end);
+    final error = check(
+      before: null,
+      after: after,
+      others: others,
+      today: today,
+    );
+    if (error != null) throw PauseException(error);
+    return after;
+  }
+
+  /// Sửa ngày kết thúc (F31-R9, V2, V3): B mới ≥ hôm nay và ≥ A. Rút B thì
+  /// các ngày bị bỏ (tương lai) về bình thường; kéo B thì thêm ngày. Ném
+  /// [PauseException].
+  static SchedulePause updateEnd(
+    SchedulePause pause,
+    LocalDate end, {
+    required Iterable<SchedulePause> others,
+    required LocalDate today,
+  }) {
+    final after = SchedulePause(
+      id: pause.id,
+      startDate: pause.startDate,
+      endDate: end,
+    );
+    final error = check(
+      before: pause,
+      after: after,
+      others: others,
+      today: today,
+    );
+    if (error != null) throw PauseException(error);
+    return after;
+  }
+
+  /// Kết thúc sớm (F31-R8, FC5-08): khoảng kết thúc hôm qua, hôm nay chạy lại
+  /// bình thường. Khoảng chưa qua ngày nào (hôm nay là ngày A, hoặc khoảng đặt
+  /// trước) → trả null = xóa khoảng (tombstone).
+  static SchedulePause? endEarly(SchedulePause pause, LocalDate today) {
+    if (!pause.startDate.isBefore(today)) return null;
+    return SchedulePause(
+      id: pause.id,
+      startDate: pause.startDate,
+      endDate: pause.endDate,
+      endedOn: today.addDays(-1),
+    );
+  }
+
   /// Kiểm tra ghi [after] (bản trên máy / server trước đó: [before]) khi các
   /// khoảng khác còn đó là [others], hôm nay là [today] (giờ iPhone).
   static PauseError? check({

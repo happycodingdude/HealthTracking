@@ -91,6 +91,8 @@ class SessionScreen extends ConsumerWidget {
               S.statusAwaiting,
             ),
             SessionState.upcoming => (GlyphStatus.locked, S.readOnlyFuture),
+            // Ngày tạm dừng (đã qua: chỉ xem, 04 Bản 5 S-21, F31-R11).
+            SessionState.paused => (GlyphStatus.paused, S.statusPaused),
           };
     final showLogged = !future && exercises != null && exercises.total > 0;
 

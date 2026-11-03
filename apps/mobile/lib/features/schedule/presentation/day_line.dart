@@ -18,6 +18,7 @@ class DayLine extends StatelessWidget {
     required this.now,
     this.compact = false,
     this.onTap,
+    this.paused = false,
   });
 
   final LocalDate date;
@@ -30,10 +31,17 @@ class DayLine extends StatelessWidget {
   final bool compact;
   final VoidCallback? onTap;
 
+  /// Ngày nằm trong khoảng tạm dừng (04 Bản 5 S-20, S-25: dấu hai vạch).
+  final bool paused;
+
   /// Dấu hiệu và nhãn VoiceOver của buổi / ngày.
-  static (GlyphStatus, String)? glyphOf(PlanDay? d, DateTime now) {
+  static (GlyphStatus, String)? glyphOf(
+    PlanDay? d,
+    DateTime now, {
+    bool paused = false,
+  }) {
     if (d == null) return null;
-    final status = SessionStatus.derive(d, now);
+    final status = SessionStatus.derive(d, now, paused: paused);
     if (status != null) {
       final (g, label) = switch (status.state) {
         SessionState.done => (GlyphStatus.done, S.sessionDone),
@@ -41,6 +49,7 @@ class DayLine extends StatelessWidget {
         SessionState.upcoming => (GlyphStatus.upcoming, S.statusUpcoming),
         SessionState.skipped => (GlyphStatus.skipped, S.sessionSkipped),
         SessionState.autoSkipped => (GlyphStatus.skipped, S.statusAutoSkipped),
+        SessionState.paused => (GlyphStatus.paused, S.statusPaused),
       };
       // Ngày đã qua không còn nhãn "Đã khóa" (UR5-05).
       return (g, label);
@@ -54,7 +63,7 @@ class DayLine extends StatelessWidget {
     final t = context.tokens;
     final d = day;
     final extra = d?.extraMuscles;
-    final glyph = glyphOf(d, now);
+    final glyph = glyphOf(d, now, paused: paused);
     final workout = d != null && d.isWorkout;
     final Widget title = workout
         ? Text(

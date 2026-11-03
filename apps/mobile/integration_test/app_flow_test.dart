@@ -468,6 +468,33 @@ void main() {
         ),
         findsOneWidget,
       );
+
+      // 06 Bản 5 VS56-T05, J5-03 (F31-AC1, F31-AC6, F31-R8): tab Tập luyện →
+      // nút hai vạch → S-76 → "Tạm dừng" hôm nay → banner "Đến …"; server
+      // nhận khoảng (không hoàn về). Đang có khoảng → S-76 "Đang tạm dừng",
+      // không có nút tạo khoảng → "Kết thúc tạm dừng" → hộp → kết thúc vào
+      // ngày bắt đầu = xóa khoảng, server nhận (banner không quay lại).
+      await tester.tap(find.byKey(const ValueKey('tab-schedule')));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('open-pause'));
+      await pumpUntil(tester, byKey('pause-sheet'));
+      expect(
+        find.text(S.todayDayMonth(Fmt.dayMonth(testDay))),
+        findsNWidgets(2),
+      );
+      await tester.tap(byKey('pause-submit'));
+      await pumpUntil(tester, byKey('pause-banner'));
+      await tester.pumpAndSettle(const Duration(seconds: 2));
+      expect(byKey('pause-banner'), findsOneWidget, reason: 'server nhận');
+      await tester.tap(byKey('open-pause'));
+      await pumpUntil(tester, byKey('pause-sheet-active'));
+      expect(byKey('pause-submit'), findsNothing);
+      await tester.tap(byKey('pause-end'));
+      await pumpUntil(tester, byKey('confirm-end-pause'));
+      await tester.tap(byKey('confirm-end-pause'));
+      await pumpUntilGone(tester, byKey('pause-banner'));
+      await tester.pumpAndSettle(const Duration(seconds: 2));
+      expect(byKey('pause-banner'), findsNothing, reason: 'server nhận xóa');
     },
   );
 

@@ -7,6 +7,7 @@ import '../../../app/strings_vi.dart';
 import '../../../core/formatters.dart';
 import '../../../ui/components/components.dart';
 import '../../../ui/theme.dart';
+import '../../schedule/presentation/pause_sheet.dart';
 import '../../schedule/presentation/session_marking.dart';
 import '../../schedule/presentation/session_status_sheet.dart';
 import '../../workout/application/session_providers.dart';
@@ -29,6 +30,14 @@ class TodayScreen extends ConsumerWidget {
     }
     final hasSession =
         state.kind != TodayKind.noSchedule && state.kind != TodayKind.rest;
+    // Banner tạm dừng dưới tiêu đề (04 Bản 5 S-10 H7, H8).
+    final pause = state.pause;
+    final banner = pause == null
+        ? null
+        : PauseBanner(
+            until: Fmt.shortWeekdayDate(pause.lastDay),
+            onEnd: () => confirmEndPause(context, ref, pause),
+          );
     return IronlyTabPage(
       tab: AppTab.today,
       title: S.tabToday,
@@ -36,10 +45,22 @@ class TodayScreen extends ConsumerWidget {
       trailing: _Trailing(state: state),
       // Ngày có buổi: hàng tiêu đề (dấu chốt buổi) + hàng số liệu neo trên
       // cùng, danh sách bài cuộn bên dưới.
-      pinned: hasSession ? SessionStats(state: state) : null,
+      pinned: hasSession
+          ? (banner == null
+                ? SessionStats(state: state)
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      banner,
+                      const SizedBox(height: TokenSpace.s4),
+                      SessionStats(state: state),
+                    ],
+                  ))
+          : null,
       children: switch (state.kind) {
         TodayKind.noSchedule => const [NoScheduleCard(), CardGap(), MenuCard()],
         TodayKind.rest => [
+          if (banner != null) ...[banner, const CardGap()],
           RestCard(state: state),
           const CardGap(),
           WeekCard(progress: state.progress, today: state.today),
@@ -70,6 +91,16 @@ class _Trailing extends StatelessWidget {
       style: IronlyText.caption,
     );
     final day = state.day;
+    // H7 (04 Bản 5 S-10): vòng hai vạch thay ô tick; chạm → S-65 từ giờ tập.
+    if (state.pausedScheduled) {
+      final canMark = state.session?.canMarkDone ?? false;
+      return StatusGlyph(
+        GlyphStatus.paused,
+        key: ValueKey(canMark ? 'today-mark-done' : 'today-status'),
+        label: S.statusPaused,
+        onTap: canMark ? () => SessionMarking.done(context, day!) : null,
+      );
+    }
     return switch (state.kind) {
       TodayKind.noSchedule || TodayKind.rest => date,
       TodayKind.notStarted => Semantics(

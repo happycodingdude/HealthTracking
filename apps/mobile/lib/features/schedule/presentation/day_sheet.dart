@@ -135,7 +135,12 @@ class _DaySheetState extends ConsumerState<DaySheet> {
     if (!async.hasValue) return const SizedBox(height: 120);
     final day = async.value;
     final situation = OverrideRules.situation(_date, day, now);
-    final glyph = DayLine.glyphOf(day, now);
+    // Trong khoảng tạm dừng: dấu hai vạch cạnh tiêu đề (04 Bản 5 S-21).
+    final glyph = DayLine.glyphOf(
+      day,
+      now,
+      paused: ref.watch(pausedProvider(_date)),
+    );
 
     return UnsavedChangesGuard(
       dirty: _mode != _Mode.actions && _changed,

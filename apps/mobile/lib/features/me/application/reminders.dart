@@ -9,6 +9,7 @@ import '../../../data/db/app_database.dart';
 import '../../../data/notifications/notification_gateway.dart';
 import '../../../data/sync/outbox_writer.dart';
 import '../../../data/sync/sync_providers.dart';
+import '../../schedule/data/schedule_pause_repository.dart';
 import '../../schedule/data/schedule_repository.dart';
 import '../data/profile_repository.dart';
 
@@ -37,15 +38,20 @@ final class ReminderScheduler {
     required ProfileRepository profiles,
     required ScheduleRepository schedule,
     required Clock clock,
+    SchedulePauseRepository? pauses,
   }) : _gateway = gateway,
        _profiles = profiles,
        _schedule = schedule,
-       _clock = clock;
+       _clock = clock,
+       _pauses = pauses;
 
   final NotificationGateway _gateway;
   final ProfileRepository _profiles;
   final ScheduleRepository _schedule;
   final Clock _clock;
+
+  /// Khoảng tạm dừng: không nhắc buổi trong khoảng (F04-R61).
+  final SchedulePauseRepository? _pauses;
 
   /// Các nhắc sẽ hẹn nếu công tắc bật (dùng cả cho ví dụ ở S-06).
   Future<List<Reminder>> upcoming() async {
@@ -57,6 +63,7 @@ final class ReminderScheduler {
       nextMonth: hasNext ? await _schedule.monthDays(month.next) : null,
       template: await _schedule.template(),
       now: now,
+      pauses: await _pauses?.all() ?? const [],
     );
   }
 
@@ -87,6 +94,7 @@ final reminderSchedulerProvider = Provider<ReminderScheduler>(
     profiles: ref.watch(profileRepositoryProvider),
     schedule: ref.watch(scheduleRepositoryProvider),
     clock: ref.watch(clockProvider),
+    pauses: ref.watch(schedulePauseRepositoryProvider),
   ),
 );
 

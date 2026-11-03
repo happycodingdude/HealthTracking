@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../keys.dart';
 import '../theme.dart';
+import 'add_row.dart';
+import 'pause_glyph.dart';
 import 'status_glyph.dart';
 
 /// Loại ô ngày trên lịch tháng (04 Bản 4 S-20).
@@ -20,6 +22,10 @@ enum MonthCellKind {
 
   /// Trong suốt + số rất mờ = nghỉ.
   rest,
+
+  /// Buổi tạm dừng (04 Bản 5 §6.2, UD5-03): nền trong suốt, viền 1,5 đứt
+  /// chữ phụ, số chữ phụ 600, hai vạch 2 × 6 dưới số.
+  paused,
 }
 
 typedef MonthCell = ({
@@ -132,7 +138,9 @@ class _Cell extends StatelessWidget {
       MonthCellKind.skipped => (t.surfaceRaised, null, t.textSecondary),
       MonthCellKind.today => (null, t.accent, t.accent),
       MonthCellKind.rest => (null, null, t.textFaint),
+      MonthCellKind.paused => (null, null, t.textSecondary),
     };
+    final paused = cell.kind == MonthCellKind.paused;
     return Semantics(
       button: true,
       label: cell.semantics,
@@ -144,55 +152,74 @@ class _Cell extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 3),
             child: AspectRatio(
               aspectRatio: 1,
-              child: Container(
-                key: K.monthCell(cell.dateKey),
-                decoration: BoxDecoration(
-                  color: fill,
-                  borderRadius: BorderRadius.circular(TokenRadius.calendarCell),
-                  border: border == null
-                      ? null
-                      : Border.all(color: border, width: TokenSize.fieldStroke),
-                ),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        '${cell.day}',
-                        style: IronlyText.body.copyWith(
-                          color: text,
-                          fontWeight: cell.kind == MonthCellKind.rest
-                              ? FontWeight.w400
-                              : FontWeight.w600,
-                          fontFeatures: const [FontFeature.tabularFigures()],
-                        ),
-                      ),
+              child: CustomPaint(
+                foregroundPainter: paused
+                    ? DashedBorderPainter(
+                        color: t.textSecondary,
+                        radius: TokenRadius.calendarCell,
+                        width: TokenSize.fieldStroke,
+                      )
+                    : null,
+                child: Container(
+                  key: K.monthCell(cell.dateKey),
+                  decoration: BoxDecoration(
+                    color: fill,
+                    borderRadius: BorderRadius.circular(
+                      TokenRadius.calendarCell,
                     ),
-                    if (cell.extra)
-                      Positioned(
-                        top: 1,
-                        right: 3,
-                        child: Semantics(
-                          label: extraLabel,
-                          child: Text(
-                            '+',
-                            style: IronlyText.caption.copyWith(
-                              color: cell.kind == MonthCellKind.done
-                                  ? t.onAccent
-                                  : t.accent,
-                              fontWeight: FontWeight.w600,
-                              height: 1,
-                            ),
+                    border: border == null
+                        ? null
+                        : Border.all(
+                            color: border,
+                            width: TokenSize.fieldStroke,
+                          ),
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          '${cell.day}',
+                          style: IronlyText.body.copyWith(
+                            color: text,
+                            fontWeight: cell.kind == MonthCellKind.rest
+                                ? FontWeight.w400
+                                : FontWeight.w600,
+                            fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                         ),
                       ),
-                    if (cell.overridden)
-                      Positioned(
-                        bottom: 3,
-                        child: OverrideDot(label: overriddenLabel ?? ''),
-                      ),
-                  ],
+                      if (cell.extra)
+                        Positioned(
+                          top: 1,
+                          right: 3,
+                          child: Semantics(
+                            label: extraLabel,
+                            child: Text(
+                              '+',
+                              style: IronlyText.caption.copyWith(
+                                color: cell.kind == MonthCellKind.done
+                                    ? t.onAccent
+                                    : t.accent,
+                                fontWeight: FontWeight.w600,
+                                height: 1,
+                              ),
+                            ),
+                          ),
+                        ),
+                      if (paused)
+                        const Positioned(
+                          bottom: 4,
+                          child: PauseGlyph.small(label: null),
+                        ),
+                      if (cell.overridden && !paused)
+                        Positioned(
+                          bottom: 3,
+                          child: OverrideDot(label: overriddenLabel ?? ''),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),

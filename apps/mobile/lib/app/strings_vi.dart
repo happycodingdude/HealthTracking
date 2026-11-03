@@ -359,6 +359,51 @@ abstract final class S {
   /// 04 Bản 5 §6.1, §6.9 (VoiceOver): "Bài thay cho {tên gốc}".
   static String replacementFor(String original) => 'Bài thay cho $original';
 
+  // Tạm dừng lịch tập S-76, banner, dấu hai vạch (04 Bản 5 §6.2, §6.5,
+  // §6.9; 03 Bản 5 F-31).
+  /// Dấu hai vạch `PauseGlyph`, trạng thái buổi tạm dừng (VoiceOver §6.9).
+  static const statusPaused = 'Tạm dừng';
+
+  /// Nút cam S-76 khi chưa có khoảng.
+  static const pauseButton = 'Tạm dừng';
+  static const pauseSheetTitle = 'Tạm dừng lịch tập';
+  static const pausingTitle = 'Đang tạm dừng';
+  static const pauseFrom = 'Từ ngày';
+  static const pauseTo = 'Đến ngày';
+
+  /// 03 Bản 5 F31-V2.
+  static const pauseEndBeforeStart =
+      'Ngày kết thúc phải từ ngày bắt đầu trở đi';
+
+  /// S-76 chữ đỏ khi đang có khoảng.
+  static const endPause = 'Kết thúc tạm dừng';
+
+  /// Hộp kết thúc tạm dừng (04 Bản 5 §6.9).
+  static const endPauseTitle = 'Kết thúc tạm dừng?';
+  static const endPauseBody = 'Lịch chạy lại từ hôm nay.';
+
+  /// Nút cam của hộp kết thúc tạm dừng, nút nhỏ của banner tạm dừng.
+  static const endPauseAction = 'Kết thúc';
+
+  /// Thông báo nhanh (04 Bản 5 §6.9).
+  static const pauseEnded = 'Đã kết thúc tạm dừng';
+
+  /// Thông báo nhanh "Đã tạm dừng đến {dd/mm}" (04 Bản 5 §6.9).
+  static String pausedUntil(String dayMonth) => 'Đã tạm dừng đến $dayMonth';
+
+  /// Banner tạm dừng: "Đến **{thứ dd/mm}**" (04 Bản 5 §6.2) — phần chữ thường.
+  static const pauseUntilPrefix = 'Đến ';
+
+  /// VoiceOver banner (04 Bản 5 §6.9): "Đang tạm dừng đến {ngày}".
+  static String pausingUntil(String date) => 'Đang tạm dừng đến $date';
+
+  /// Ô ngày S-76 khi là hôm nay: "Hôm nay, 03/11" (mock S-76).
+  static String todayDayMonth(String dayMonth) => 'Hôm nay, $dayMonth';
+
+  /// Nhãn VoiceOver ô lịch / dòng buổi tạm dừng: "Lưng, Tạm dừng" (04 Bản 5
+  /// S-20).
+  static String pausedSession(String muscles) => '$muscles, $statusPaused';
+
   /// 04 Bản 4 S-21: nút "Xem buổi" → S-63.
   static const viewSession = 'Xem buổi';
 
@@ -1143,6 +1188,19 @@ abstract final class S {
     'feelEasy': feelEasy,
     'feelMedium': feelMedium,
     'feelHard': feelHard,
+    'statusPaused': statusPaused,
+    'pauseButton': pauseButton,
+    'pauseSheetTitle': pauseSheetTitle,
+    'pausingTitle': pausingTitle,
+    'pauseFrom': pauseFrom,
+    'pauseTo': pauseTo,
+    'pauseEndBeforeStart': pauseEndBeforeStart,
+    'endPause': endPause,
+    'endPauseTitle': endPauseTitle,
+    'endPauseBody': endPauseBody,
+    'endPauseAction': endPauseAction,
+    'pauseEnded': pauseEnded,
+    'pauseUntilPrefix': pauseUntilPrefix,
     'viewSession': viewSession,
     'delete': delete,
     'cancel': cancel,

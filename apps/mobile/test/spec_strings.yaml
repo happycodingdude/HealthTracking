@@ -228,6 +228,19 @@ skippedMark: "Đã bỏ qua" # 04 Bản 5 §6.9 (VoiceOver)
 feelEasy: "Thoải mái" # 04 Bản 5 S-64 thanh chọn, §6.1 FeelGlyph (VoiceOver); 03 Bản 5 F33-R1
 feelMedium: "Vừa" # 04 Bản 5 S-64 thanh chọn, §6.1 FeelGlyph (VoiceOver); 03 Bản 5 F33-R1
 feelHard: "Mệt" # 04 Bản 5 S-64 thanh chọn, §6.1 FeelGlyph (VoiceOver); 03 Bản 5 F33-R1
+statusPaused: "Tạm dừng" # 04 Bản 5 §6.1 PauseGlyph, §6.2, §6.9 (VoiceOver); 03 Bản 5 §6.1 "Buổi tạm dừng"
+pauseButton: "Tạm dừng" # 04 Bản 5 S-76 nút cam
+pauseSheetTitle: "Tạm dừng lịch tập" # 04 Bản 5 S-76 tiêu đề
+pausingTitle: "Đang tạm dừng" # 04 Bản 5 S-76 đang có khoảng
+pauseFrom: "Từ ngày" # 04 Bản 5 S-76 ô ngày
+pauseTo: "Đến ngày" # 04 Bản 5 S-76 ô ngày
+pauseEndBeforeStart: "Ngày kết thúc phải từ ngày bắt đầu trở đi" # 04 Bản 5 S-76, §6.9; 03 Bản 5 F31-V2
+endPause: "Kết thúc tạm dừng" # 04 Bản 5 S-76 chữ đỏ
+endPauseTitle: "Kết thúc tạm dừng?" # 04 Bản 5 §6.9 hộp kết thúc tạm dừng
+endPauseBody: "Lịch chạy lại từ hôm nay." # 04 Bản 5 §6.9 hộp kết thúc tạm dừng
+endPauseAction: "Kết thúc" # 04 Bản 5 §6.9 nút cam hộp; §6.2 banner nút nhỏ "Kết thúc"
+pauseEnded: "Đã kết thúc tạm dừng" # 04 Bản 5 §6.9 thông báo nhanh
+pauseUntilPrefix: "Đến " # 04 Bản 5 §6.2 banner "Đến {thứ dd/mm}" (phần chữ thường, ngày in đậm)
 viewSession: "Xem buổi" # 04 Bản 4 S-21
 delete: "Xóa" # 04 §6.13.1 (hộp xác nhận: nút xóa chữ đỏ)
 cancel: "Hủy" # 04 S-20 (hộp xác nhận "Chia lại" · "Hủy")

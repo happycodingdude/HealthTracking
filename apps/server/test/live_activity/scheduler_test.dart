@@ -433,4 +433,62 @@ void main() {
       expect(state['allLogged'], isFalse);
     },
   );
+
+  group('Bản 5 — tạm dừng (F31-R4, F31-R7, F25-R64, TD5-13)', () {
+    const pauseId = '6f1d2c3b-0000-4000-8000-0000000000b1';
+    SyncMutation pauseMutation(LocalDate from, LocalDate to, DateTime at) =>
+        mutation(
+          'schedule_pause',
+          pauseId,
+          SyncOp.upsert,
+          at: at,
+          data: const SchedulePauseCodec().encode(
+            SchedulePause(id: pauseId, startDate: from, endDate: to),
+          ),
+        );
+
+    test('F31-AC1: tạm dừng thứ 2 → 18:00 không gửi start; tuần sau ngoài '
+        'khoảng gửi như thường', () async {
+      await setUpSchedule();
+      await putToken();
+      await setNow(DateTime.utc(2026, 10, 12, 2));
+      await push([
+        pauseMutation(
+          monday,
+          LocalDate(2026, 10, 18),
+          DateTime.utc(2026, 10, 12, 2),
+        ),
+      ]);
+      await runAt(DateTime.utc(2026, 10, 12, 11));
+      await runAt(DateTime.utc(2026, 10, 12, 11, 5));
+      expect(apns.sent, isEmpty);
+      expect(await sessions(), isEmpty);
+      await runAt(DateTime.utc(2026, 10, 19, 11));
+      expect(apns.events('start'), hasLength(1));
+    });
+
+    test('F31-R7, F25-R64: đặt tạm dừng hôm nay khi thẻ đang hiện → gửi end '
+        'một lần', () async {
+      await setUpSchedule();
+      await putToken();
+      await runAt(DateTime.utc(2026, 10, 12, 11));
+      expect(apns.events('start'), hasLength(1));
+      await setNow(DateTime.utc(2026, 10, 12, 11, 30));
+      await putToken(update: updateToken, date: monday);
+      await push([
+        pauseMutation(
+          monday,
+          LocalDate(2026, 10, 14),
+          DateTime.utc(2026, 10, 12, 11, 30),
+        ),
+      ]);
+      await runAt(DateTime.utc(2026, 10, 12, 11, 31));
+      final end = apns.events('end').single;
+      expect(end.token, updateToken);
+      await runAt(DateTime.utc(2026, 10, 12, 11, 32));
+      await runAt(DateTime.utc(2026, 10, 12, 17));
+      expect(apns.events('end'), hasLength(1));
+      expect((await sessions()).single[2], isTrue);
+    });
+  });
 }

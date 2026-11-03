@@ -28,10 +28,16 @@ final currentWeekDaysProvider = Provider<List<PlanDay>>(
 final unmarkedSessionsProvider = Provider<List<PlanDay>>((ref) {
   final now = ref.watch(nowProvider);
   final today = LocalDate.fromDateTime(now);
+  final pauses = ref.watch(pausesProvider).value ?? const <SchedulePause>[];
   return [
     for (final d in ref.watch(currentWeekDaysProvider))
       if (d.date != today &&
-          SessionStatus.derive(d, now)?.state == SessionState.awaitingMark)
+          SessionStatus.derive(
+                d,
+                now,
+                paused: PauseRules.isPaused(d.date, pauses),
+              )?.state ==
+              SessionState.awaitingMark)
         d,
   ];
 });

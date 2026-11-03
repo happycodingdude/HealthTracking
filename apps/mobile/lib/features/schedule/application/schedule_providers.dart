@@ -57,3 +57,23 @@ final templateChangedProvider = Provider<bool>((ref) {
   }
   return false;
 });
+
+/// Các khoảng tạm dừng trên máy (05 Bản 5 TD5-05, §6.4.3).
+final pausesProvider = StreamProvider<List<SchedulePause>>(
+  (ref) => ref.watch(schedulePauseRepositoryProvider).watchAll(),
+);
+
+/// Khoảng còn hiệu lực hôm nay: đang tạm dừng hoặc đặt trước (F31-R1, 05
+/// Bản 5 §6.4.3 `activePauseProvider`); null = chưa có. S-10, S-20, S-76.
+final activePauseProvider = Provider<SchedulePause?>(
+  (ref) => PauseRules.active(
+    ref.watch(pausesProvider).value ?? const [],
+    LocalDate.fromDateTime(ref.watch(nowProvider)),
+  ),
+);
+
+/// Ngày [date] nằm trong khoảng tạm dừng (lớp phủ lên lịch, FC5-09).
+final pausedProvider = Provider.family<bool, LocalDate>(
+  (ref, date) =>
+      PauseRules.isPaused(date, ref.watch(pausesProvider).value ?? const []),
+);

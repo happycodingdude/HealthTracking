@@ -25,7 +25,7 @@ class AddRow extends StatelessWidget {
         child: Opacity(
           opacity: onTap == null ? 0.4 : 1,
           child: CustomPaint(
-            foregroundPainter: _DashedBorder(
+            foregroundPainter: DashedBorderPainter(
               color: t.textFaint,
               radius: _radius,
               width: TokenSize.fieldStroke,
@@ -63,9 +63,10 @@ class AddRow extends StatelessWidget {
   }
 }
 
-/// Viền đứt bo góc: nét 5, khoảng 4.
-class _DashedBorder extends CustomPainter {
-  const _DashedBorder({
+/// Viền đứt bo góc: nét 5, khoảng 4. Dùng cả cho ô lịch ngày tạm dừng
+/// (04 Bản 5 §6.2).
+class DashedBorderPainter extends CustomPainter {
+  const DashedBorderPainter({
     required this.color,
     required this.radius,
     required this.width,
@@ -100,6 +101,6 @@ class _DashedBorder extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_DashedBorder old) =>
+  bool shouldRepaint(DashedBorderPainter old) =>
       old.color != color || old.radius != radius || old.width != width;
 }

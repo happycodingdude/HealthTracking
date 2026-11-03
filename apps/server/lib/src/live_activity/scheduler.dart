@@ -5,6 +5,7 @@ import 'package:postgres/postgres.dart';
 import '../alerts.dart';
 import '../logging/logger.dart';
 import '../sync/schedule_handlers.dart';
+import '../sync/session_v5_handlers.dart';
 import '../sync/shared_handlers.dart';
 import '../sync/sync_entity_handler.dart';
 import 'apns.dart';
@@ -27,6 +28,7 @@ final class LiveActivityAccount {
     this.today,
     this.startedToday = false,
     this.open = const [],
+    this.pauses = const [],
   });
 
   final String userId;
@@ -52,6 +54,9 @@ final class LiveActivityAccount {
 
   /// Thẻ đã bật, chưa gửi tắt; `endsAt` = 00:00 sau ngày đó (UTC).
   final List<OpenLiveActivity> open;
+
+  /// Các khoảng tạm dừng của tài khoản (05 Bản 5 TD5-13.1, F31-R4).
+  final List<SchedulePause> pauses;
 
   LocalDate get localToday => LocalDate.fromDateTime(localNow);
 }
@@ -98,7 +103,9 @@ abstract final class LiveActivityPlan {
     for (final a in accounts) ...[
       if (_start(a) case final day?) StartLiveActivity(a, a.localToday, day),
       for (final o in a.open)
-        if (!now.isBefore(o.endsAt))
+        // 00:00 sau ngày của thẻ; hoặc ngày đó đã vào khoảng tạm dừng (đặt
+        // tạm dừng khi thẻ đang hiện → tắt, F31-R7, F25-R64, 05 Bản 5 §6.6.3).
+        if (!now.isBefore(o.endsAt) || PauseRules.isPaused(o.date, a.pauses))
           EndLiveActivity(
             a,
             o.date,
@@ -110,10 +117,12 @@ abstract final class LiveActivityPlan {
 
   /// Buổi theo lịch hôm nay đã tới giờ, chưa đánh dấu, chưa bật thẻ (F25-R1,
   /// R2, FA3-12): không ngày nghỉ (kể cả sửa riêng thành nghỉ), không buổi
-  /// tập thêm, không tài khoản Chưa có lịch.
+  /// tập thêm, không tài khoản Chưa có lịch. Bản 5: không bật trong khoảng
+  /// tạm dừng (TD5-13.1, F31-R4).
   static PlanDay? _start(LiveActivityAccount a) {
     final day = a.today;
     if (!a.hasSchedule || a.startedToday || day == null) return null;
+    if (PauseRules.isPaused(a.localToday, a.pauses)) return null;
     if (!day.isWorkout || day.time == null || day.mark != null) return null;
     final startsAt = day.date.atTime(day.time!);
     if (a.localNow.isBefore(startsAt)) return null;
@@ -229,6 +238,7 @@ final class LiveActivityScheduler {
           FROM live_activity_sessions WHERE user_id = @user'''),
         parameters: {'user': userId, 'tz': r[8]! as String},
       );
+      final pauses = await SchedulePauseHandler.pauses(_pool, userId);
       out.add(
         LiveActivityAccount(
           userId: userId,
@@ -251,6 +261,7 @@ final class LiveActivityScheduler {
                   endsAt: s[2]! as DateTime,
                 ),
           ],
+          pauses: pauses,
         ),
       );
     }

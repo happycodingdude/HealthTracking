@@ -19,6 +19,7 @@ import '../application/schedule_edits.dart';
 import '../application/schedule_providers.dart';
 import 'day_line.dart';
 import 'day_sheet.dart';
+import 'pause_sheet.dart';
 import 'weekly_schedule_screen.dart';
 
 /// S-20 — Lịch tháng (04 Bản 4 S-20): tiêu đề "Tập luyện" + icon lịch cam
@@ -54,6 +55,8 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     final changed = month == current && ref.watch(templateChangedProvider);
     final noSchedule = ref.watch(scheduleStateProvider)?.hasSchedule == false;
     final weekStart = _week ?? today.weekStart;
+    final pauses = ref.watch(pausesProvider).value ?? const <SchedulePause>[];
+    final activePause = ref.watch(activePauseProvider);
 
     return IronlyTabPage(
       tab: AppTab.schedule,
@@ -61,21 +64,28 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
       scrollController: ref
           .watch(tabScrollControllersProvider)
           .section(TrainingSection.schedule),
-      trailing: Semantics(
-        button: true,
-        label: S.weeklySchedule,
-        child: ExcludeSemantics(
-          child: GestureDetector(
-            key: const ValueKey('open-weekly'),
-            behavior: HitTestBehavior.opaque,
-            onTap: () => context.push(weeklySchedulePath),
-            child: SizedBox(
-              width: 44,
-              height: 44,
-              child: Icon(Icons.calendar_month_outlined, color: t.accent),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Nút tạm dừng trước icon lịch (04 Bản 5 S-20, UA5-03).
+          if (!noSchedule) const PauseHeaderButton(),
+          Semantics(
+            button: true,
+            label: S.weeklySchedule,
+            child: ExcludeSemantics(
+              child: GestureDetector(
+                key: const ValueKey('open-weekly'),
+                behavior: HitTestBehavior.opaque,
+                onTap: () => context.push(weeklySchedulePath),
+                child: SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: Icon(Icons.calendar_month_outlined, color: t.accent),
+                ),
+              ),
             ),
           ),
-        ),
+        ],
       ),
       children: [
         const TrainingSectionBar(),
@@ -84,6 +94,15 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
           // Chưa có lịch: chỉ nút "Xếp lịch tuần" (F4-R7).
           const NoScheduleCard(key: ValueKey('no-schedule'))
         else ...[
+          // Đang tạm dừng (kể cả đặt trước): banner trên banner "Lịch tuần đã
+          // thay đổi" (04 Bản 5 S-20).
+          if (activePause != null) ...[
+            PauseBanner(
+              until: Fmt.shortWeekdayDate(activePause.lastDay),
+              onEnd: () => confirmEndPause(context, ref, activePause),
+            ),
+            const CardGap(),
+          ],
           if (changed) ...[const _RedistributeBanner(), const CardGap()],
           IronlyCard(
             key: const ValueKey('month-card'),
@@ -111,6 +130,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                     plan: plan,
                     days: days,
                     now: now,
+                    pauses: pauses,
                     onTap: (date) {
                       setState(() => _week = date.weekStart);
                       showDaySheet(context, date);
@@ -192,22 +212,32 @@ class _Grid extends StatelessWidget {
     required this.days,
     required this.now,
     required this.onTap,
+    this.pauses = const [],
   });
 
   final MonthPlan plan;
   final List<PlanDay> days;
   final DateTime now;
   final ValueChanged<LocalDate> onTap;
+  final List<SchedulePause> pauses;
 
   /// Ô và nhãn VoiceOver của một ngày (dùng chung với S-25, S-10).
   static (MonthCellKind, String) kindOf(
     LocalDate date,
     PlanDay? d,
-    DateTime now,
-  ) {
+    DateTime now, {
+    bool paused = false,
+  }) {
     final today = LocalDate.fromDateTime(now);
     if (d == null) return (MonthCellKind.rest, S.rest);
-    final status = SessionStatus.derive(d, now);
+    final status = SessionStatus.derive(d, now, paused: paused);
+    if (status?.state == SessionState.paused) {
+      // "Thứ 4, 04/11: Lưng, Tạm dừng" (04 Bản 5 S-20).
+      return (
+        MonthCellKind.paused,
+        S.pausedSession(Fmt.musclesTitle(d.muscles)),
+      );
+    }
     if (status != null) {
       // Ngày đã qua: không ổ khóa, không nhãn "Đã khóa" (UR5-05).
       final label = _label(status.state);
@@ -217,6 +247,7 @@ class _Grid extends StatelessWidget {
         SessionState.upcoming => (MonthCellKind.upcoming, label),
         SessionState.skipped ||
         SessionState.autoSkipped => (MonthCellKind.skipped, label),
+        SessionState.paused => (MonthCellKind.paused, label),
       };
     }
     if (d.extraMuscles != null) {
@@ -234,6 +265,7 @@ class _Grid extends StatelessWidget {
     SessionState.done => S.sessionDone,
     SessionState.skipped => S.sessionSkipped,
     SessionState.autoSkipped => S.statusAutoSkipped,
+    SessionState.paused => S.statusPaused,
   };
 
   @override
@@ -249,7 +281,7 @@ class _Grid extends StatelessWidget {
       final inPlan = date >= plan.startDate;
       final d = inPlan ? byDate[date] : null;
       final (kind, label) = inPlan
-          ? kindOf(date, d, now)
+          ? kindOf(date, d, now, paused: PauseRules.isPaused(date, pauses))
           : (MonthCellKind.rest, S.rest);
       cells.add((
         dateKey: date.toKey(),
@@ -294,6 +326,7 @@ class _WeekSummary extends ConsumerWidget {
     final days = ref.watch(progressWeekDaysProvider(week)).value ?? const [];
     final weeks = ref.watch(progressWeeksProvider);
     final progress = ref.watch(weekProgressProvider(week));
+    final pauses = ref.watch(pausesProvider).value ?? const <SchedulePause>[];
     final shown =
         progress != null && weeks.isNotEmpty && week.start >= weeks.first.start;
     final openable = shown && week.start <= weeks.last.start;
@@ -346,6 +379,7 @@ class _WeekSummary extends ConsumerWidget {
                   date: d.date,
                   day: d,
                   now: now,
+                  paused: PauseRules.isPaused(d.date, pauses),
                   onTap: () => showDaySheet(context, d.date),
                 ),
           ],

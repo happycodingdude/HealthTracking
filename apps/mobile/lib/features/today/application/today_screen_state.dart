@@ -9,7 +9,10 @@ import 'today_view.dart';
 
 /// Trạng thái của Hôm nay (03 Bản 4 §6.3 H1 → H6; 05 Bản 4 §6.5.2
 /// `todayScreenStateProvider`), thêm [extra] = ngày nghỉ đã có buổi tập thêm
-/// hôm nay (danh sách bài của buổi thêm nằm ngay ở Hôm nay).
+/// hôm nay (danh sách bài của buổi thêm nằm ngay ở Hôm nay). Bản 5 (F20-R66,
+/// 04 Bản 5 S-10): H7 = buổi Tạm dừng hôm nay — [notStarted] / [logging] theo
+/// giờ kèm [TodayScreenState.pausedScheduled]; H8 = ngày nghỉ trong khoảng tạm
+/// dừng — [rest] kèm [TodayScreenState.pausedRest].
 enum TodayKind {
   /// H1: chưa có lịch tuần.
   noSchedule,
@@ -42,6 +45,9 @@ final class TodayScreenState {
     this.next,
     this.canAddExtra = false,
     this.progress,
+    this.pause,
+    this.sessionPaused = false,
+    this.nextPaused = false,
   });
 
   final TodayKind kind;
@@ -58,7 +64,24 @@ final class TodayScreenState {
   final bool canAddExtra;
   final WeeklyProgress? progress;
 
+  /// Khoảng tạm dừng phủ hôm nay (banner H7, H8 và mọi trạng thái hôm nay
+  /// trong khoảng, 04 Bản 5 §6.2); null = hôm nay không tạm dừng.
+  final SchedulePause? pause;
+
+  /// Buổi theo lịch hôm nay là "Tạm dừng" (chưa đánh dấu, trong khoảng).
+  final bool sessionPaused;
+
+  /// Buổi tới (H2 / H8) rơi vào khoảng tạm dừng: hai vạch nhỏ sau dòng buổi
+  /// tới (04 Bản 5 S-10 H8).
+  final bool nextPaused;
+
   bool get hasSession => session != null;
+
+  /// H7 — Tạm dừng, ngày có buổi (05 Bản 5 §6.4.3 `pausedScheduled`).
+  bool get pausedScheduled => sessionPaused;
+
+  /// H8 — Tạm dừng, ngày nghỉ (05 Bản 5 §6.4.3 `pausedRest`).
+  bool get pausedRest => kind == TodayKind.rest && pause != null;
 }
 
 final todayScreenStateProvider = Provider<TodayScreenState?>((ref) {
@@ -70,6 +93,9 @@ final todayScreenStateProvider = Provider<TodayScreenState?>((ref) {
   final progress = ref.watch(
     weekProgressProvider(ProgressWeek.containing(today)),
   );
+  final pauses = ref.watch(pausesProvider).value ?? const <SchedulePause>[];
+  final pause = PauseRules.active(pauses, today);
+  final todayPause = pause != null && pause.covers(today) ? pause : null;
   if (!schedule.hasSchedule) {
     return TodayScreenState(
       kind: TodayKind.noSchedule,
@@ -80,13 +106,16 @@ final todayScreenStateProvider = Provider<TodayScreenState?>((ref) {
   final day = dayAsync.value;
   final session = ref.watch(sessionProvider(today));
   if (day == null || session == null) {
+    final next = ref.watch(nextSessionProvider);
     return TodayScreenState(
       kind: TodayKind.rest,
       today: today,
       day: day,
-      next: ref.watch(nextSessionProvider),
+      next: next,
       canAddExtra: day != null && ExtraSessionRules.canAdd(day, now),
       progress: progress,
+      pause: todayPause,
+      nextPaused: next != null && PauseRules.isPaused(next.date, pauses),
     );
   }
   final TodayKind kind;
@@ -98,6 +127,11 @@ final todayScreenStateProvider = Provider<TodayScreenState?>((ref) {
       SessionState.awaitingMark => TodayKind.logging,
       SessionState.done => TodayKind.done,
       SessionState.skipped || SessionState.autoSkipped => TodayKind.skipped,
+      // H7: như H3 / H4 theo giờ (và lúc tới gym, FD5-01).
+      SessionState.paused =>
+        now.isBefore(SessionRules.opensAt(day))
+            ? TodayKind.notStarted
+            : TodayKind.logging,
     };
   }
   return TodayScreenState(
@@ -106,5 +140,7 @@ final todayScreenStateProvider = Provider<TodayScreenState?>((ref) {
     day: day,
     session: session,
     progress: progress,
+    pause: todayPause,
+    sessionPaused: session.status?.state == SessionState.paused,
   );
 });
