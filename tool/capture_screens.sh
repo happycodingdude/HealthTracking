@@ -2,12 +2,14 @@
 # Bộ ảnh so sánh Bản 4 (06 Bản 4 ED4-04, VS43-T11): chụp màn × trạng thái của
 # một mốc trên simulator (flutter drive, cỡ chữ mặc định), ghép cạnh vùng tương
 # ứng cắt từ docs/specs/v4/04-ui-mockups.pdf → docs/review/v4/<M>.pdf.
+# Bản 5 (06 Bản 5 ED5-09): mốc M23 → M26 ghép cạnh hình mock của từng màn
+# trong docs/specs/v5/04-ui-mockups/ → docs/review/v5/<M>.pdf.
 #   tool/capture_screens.sh M17 [-d <simulator-id>] [--no-capture]
 # Cần: pdftoppm (brew install poppler), swiftc (Xcode).
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT/tool/flutter_sdk.sh"
-M="${1:?Mốc: M17 … M21}"; shift || true
+M="${1:?Mốc: M17 … M21, M23 … M26}"; shift || true
 DEVICE=""; CAPTURE=1
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -18,6 +20,8 @@ while [ $# -gt 0 ]; do
 done
 MOCK="$ROOT/docs/specs/v4/04-ui-mockups.pdf"
 OUT="$ROOT/docs/review/v4"
+V5=0
+case "$M" in M23|M24|M25|M26) V5=1; OUT="$ROOT/docs/review/v5" ;; esac
 SHOTS="$ROOT/apps/mobile/build/review"
 mkdir -p "$OUT" "$SHOTS"
 
@@ -50,10 +54,15 @@ if [ "$CAPTURE" = 1 ]; then
   cd "$ROOT"
 fi
 
-# Trang mock → PNG (144 dpi = 2× điểm).
-MOCKDIR="$ROOT/apps/mobile/build/review/mock"
-mkdir -p "$MOCKDIR"
-[ -f "$MOCKDIR/page-1.png" ] || pdftoppm -r 144 -png "$MOCK" "$MOCKDIR/page"
+# Trang mock → PNG (144 dpi = 2× điểm). Bản 5: hình mock là đường dẫn từ gốc
+# repo trong bảng ô.
+if [ "$V5" = 1 ]; then
+  MOCKDIR="$ROOT"
+else
+  MOCKDIR="$ROOT/apps/mobile/build/review/mock"
+  mkdir -p "$MOCKDIR"
+  [ -f "$MOCKDIR/page-1.png" ] || pdftoppm -r 144 -png "$MOCK" "$MOCKDIR/page"
+fi
 
 # Danh sách ô của mốc (từ review_matrix.dart) → tsv: id, screen, state, page, x, y, w, h.
 TSV="$SHOTS/$M.tsv"

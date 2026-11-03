@@ -250,8 +250,8 @@ final class MonthPlanHandler implements SyncEntityHandler {
 
 /// Entity `day` (key `YYYY-MM-DD`) = bảng `days`: kiểm tra cấu trúc, không có
 /// chủ nhật, phải thuộc tháng đã có `month_plan`, quy tắc theo thời gian của
-/// [DayChangeRules]. `ensure` khi chia tháng; `upsert` cho mọi thay đổi sau đó
-/// (06 §6.5.1).
+/// [DayChangeRules] (Bản 5: khóa trong ngày → `day_locked`, TD5-08).
+/// `ensure` khi chia tháng; `upsert` cho mọi thay đổi sau đó (06 §6.5.1).
 final class DayHandler implements SyncEntityHandler {
   const DayHandler();
 
@@ -310,15 +310,17 @@ final class DayHandler implements SyncEntityHandler {
       parameters: {'user': userId, 'month': m.key.substring(0, 7)},
     );
     if (plan.isEmpty) throw const SyncRejection('key');
-    // Buổi đã chốt và quy tắc theo thời gian (đánh dấu, ...) so với bản đang
-    // có, theo giờ trên iPhone lúc ghi (05 §6.6.2, 05 Bản 2 §6.6.3).
+    // Quy tắc theo thời gian (khóa trong ngày, đánh dấu, buổi tập thêm, lịch
+    // của ngày) so với bản đang có, theo giờ trên iPhone lúc ghi (05 Bản 5
+    // §6.6.2, TD5-08). `openedAt`: mốc sớm hơn thắng (TA5-02).
     final current = await read(s, userId, m.key);
     final before = current == null || current.deleted
         ? null
         : _codec.decode(m.key, current.data!);
+    final merged = d.withOpenedAt(DayChangeRules.mergeOpenedAt(before, d));
     final violation = DayChangeRules.check(
-      before,
-      d,
+      await _openedLocal(s, userId, before),
+      (await _openedLocal(s, userId, merged))!,
       await deviceNow(s, userId, m.clientUpdatedAt),
       fromV2App: ctx.appVersion != null,
     );
@@ -329,10 +331,10 @@ final class DayHandler implements SyncEntityHandler {
     if (violation != null) {
       throw SyncRejection(
         violation.field,
-        code: switch (violation.lock) {
-          DayLock.session => ErrorCode.sessionLocked,
-          DayLock.extra => ErrorCode.extraSessionLocked,
-          null => ErrorCode.validationFailed,
+        code: switch (violation.code) {
+          DayViolationCode.dayLocked => ErrorCode.dayLocked,
+          DayViolationCode.windowClosed => ErrorCode.liftWindowClosed,
+          DayViolationCode.invalid => ErrorCode.validationFailed,
         },
       );
     }
@@ -341,20 +343,26 @@ final class DayHandler implements SyncEntityHandler {
     await s.execute(
       Sql.named('''
         INSERT INTO days (user_id, date, kind, time, muscles, source, mark, actual_muscles,
-                          marked_at, extra_muscles, extra_logged_at, server_version, client_updated_at)
+                          marked_at, extra_muscles, extra_logged_at, opened_at,
+                          server_version, client_updated_at)
         VALUES (@user, @date::date, @kind::day_kind, @time::time, @muscles::muscle_group[],
                 @source::day_source, @mark::day_mark, @actual::muscle_group[], @markedAt,
-                @extra::muscle_group[], @extraAt, @version, @clientUpdatedAt)
+                @extra::muscle_group[], @extraAt, @openedAt, @version, @clientUpdatedAt)
         ON CONFLICT (user_id, date) DO UPDATE SET
           kind = EXCLUDED.kind,
           time = EXCLUDED.time,
           muscles = EXCLUDED.muscles,
           source = EXCLUDED.source,
-          mark = EXCLUDED.mark,
+          -- "Không tập (tự động)" do DayCloser ghi (TD5-12) không bị một lần
+          -- ghi trễ "chưa đánh dấu" xóa mất; "Đã tập" / "Không tập" trong ngày
+          -- vẫn đè được (05 Bản 5 §6.17).
+          mark = CASE WHEN EXCLUDED.mark IS NULL AND days.mark = 'skipped_auto'
+                      THEN days.mark ELSE EXCLUDED.mark END,
           actual_muscles = EXCLUDED.actual_muscles,
           marked_at = EXCLUDED.marked_at,
           extra_muscles = EXCLUDED.extra_muscles,
           extra_logged_at = EXCLUDED.extra_logged_at,
+          opened_at = EXCLUDED.opened_at,
           server_version = EXCLUDED.server_version,
           client_updated_at = EXCLUDED.client_updated_at,
           updated_at = now(),
@@ -371,6 +379,7 @@ final class DayHandler implements SyncEntityHandler {
         'markedAt': d.markedAt,
         'extra': names(d.extraMuscles),
         'extraAt': d.extraLoggedAt,
+        'openedAt': merged.openedAt,
         'version': serverVersion,
         'clientUpdatedAt': m.clientUpdatedAt,
       },
@@ -407,13 +416,25 @@ final class DayHandler implements SyncEntityHandler {
              'time', to_char(time, 'HH24:MI'),
              'muscles', to_jsonb(muscles::text[]),
              'source', source::text,
-             'mark', mark::text,
+             -- skipped_auto (DayCloser, TD5-12) không gửi: app suy ra "Không
+             -- tập (tự động)" từ ngày đã qua chưa đánh dấu (TA5-05); app 4.x
+             -- không biết giá trị này.
+             'mark', NULLIF(mark::text, 'skipped_auto'),
              'actualMuscles', to_jsonb(actual_muscles::text[]),
              'markedAt', ${_instant('marked_at')},
              'extraMuscles', to_jsonb(extra_muscles::text[]),
-             'extraLoggedAt', ${_instant('extra_logged_at')}) AS data
+             'extraLoggedAt', ${_instant('extra_logged_at')},
+             'openedAt', ${_instant('opened_at')}) AS data
     FROM days
     WHERE user_id = @user AND server_version > @cursor''';
+}
+
+/// [day] với `openedAt` quy về giờ trên iPhone (múi giờ trong hồ sơ) để so
+/// với giờ tập (05 Bản 5 TD5-07); chưa biết múi giờ thì giữ nguyên.
+Future<PlanDay?> _openedLocal(Session s, String userId, PlanDay? day) async {
+  final at = day?.openedAt;
+  if (day == null || at == null) return day;
+  return day.withOpenedAt(await deviceNow(s, userId, at) ?? at);
 }
 
 /// Tài khoản đã có lịch tuần (05 Bản 2 TD2-09); chưa có → `rejected`

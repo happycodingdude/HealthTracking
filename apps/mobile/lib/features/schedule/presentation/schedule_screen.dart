@@ -209,9 +209,8 @@ class _Grid extends StatelessWidget {
     if (d == null) return (MonthCellKind.rest, S.rest);
     final status = SessionStatus.derive(d, now);
     if (status != null) {
-      final label = status.locked
-          ? '${_label(status.state)}, ${S.statusLocked}'
-          : _label(status.state);
+      // Ngày đã qua: không ổ khóa, không nhãn "Đã khóa" (UR5-05).
+      final label = _label(status.state);
       return switch (status.state) {
         SessionState.done => (MonthCellKind.done, label),
         SessionState.awaitingMark => (MonthCellKind.today, label),
@@ -257,7 +256,10 @@ class _Grid extends StatelessWidget {
         day: date.day,
         kind: kind,
         extra: d?.extraMuscles != null,
-        overridden: d?.source == DaySource.override,
+        // Chấm sửa riêng chỉ cho hôm nay / tương lai (04 Bản 5 S-20).
+        overridden:
+            d?.source == DaySource.override &&
+            date >= LocalDate.fromDateTime(now),
         semantics: '${Fmt.weekdayDate(date)}: $label',
       ));
     }

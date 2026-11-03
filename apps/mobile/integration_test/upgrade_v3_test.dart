@@ -98,7 +98,9 @@ void main() {
     }
 
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.data.values.single, 2);
+    // Bản 5 (IR5-08): app hiện tại nâng thẳng schema 1 → 3 (05 Bản 5 §6.5).
+    expect(version.data.values.single, db.schemaVersion);
+    expect(db.schemaVersion, 3);
     expect(await db.select(db.outbox).get(), isEmpty);
     final state = await db.select(db.syncState).getSingle();
     expect(state.knownEntities, contains('exercise_note'));

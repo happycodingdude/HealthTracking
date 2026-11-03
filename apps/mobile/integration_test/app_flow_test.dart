@@ -235,6 +235,36 @@ void main() {
       expect(find.bySemanticsLabel(S.sessionDone), findsWidgets);
       expect(done, findsNothing, reason: 'server không trả bản chưa đánh dấu');
 
+      // 06 Bản 5 VS52-T08, J5-05 (F05-AC61, F05-AC62): trong ngày đổi "Đã
+      // tập" → "Không tập" → "Chưa đánh dấu" → "Đã tập" lại qua S-23; server
+      // (khóa trong ngày, TD5-08) nhận cả ba lần, không hoàn về.
+      final statusGlyph = find.byKey(const ValueKey('today-status'));
+      await tester.tap(statusGlyph);
+      await pumpUntil(tester, find.byKey(const ValueKey('status-sheet')));
+      expect(find.text(S.unmarked), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('status-skipped')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('status-save')));
+      await pumpUntil(tester, find.text(S.markedSkipped));
+      await pumpUntilGone(tester, find.text(S.markedSkipped));
+      await tester.pumpAndSettle(const Duration(seconds: 2));
+      expect(find.bySemanticsLabel(S.sessionSkipped), findsWidgets);
+      await tester.tap(statusGlyph);
+      await pumpUntil(tester, find.byKey(const ValueKey('status-sheet')));
+      await tester.tap(find.byKey(const ValueKey('status-unmarked')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('status-save')));
+      await pumpUntil(tester, done);
+      await tester.pumpAndSettle(const Duration(seconds: 2));
+      expect(done, findsOneWidget, reason: 'server nhận bỏ đánh dấu');
+      await tester.tap(done);
+      await pumpUntil(tester, find.text(S.doneConfirmBody));
+      await tester.tap(find.byKey(const ValueKey('lock-confirm-save')));
+      await pumpUntil(tester, find.text(S.markedDone('Ngực')));
+      await pumpUntilGone(tester, find.text(S.markedDone('Ngực')));
+      await tester.pumpAndSettle(const Duration(seconds: 2));
+      expect(done, findsNothing, reason: 'server nhận "Đã tập" lại');
+
       // VS-27, VS-36: "Xem bài tập" → S-63; buổi đã chốt vẫn ghi tạ đến hết
       // ngày (F21-E1). "Ghi" → S-64 lần ghi đầu: chọn nấc máy, nhập 7 và 8 →
       // Lưu → dòng bài đổi ngay, không chờ mạng; về Hôm nay, "Chưa đồng bộ"

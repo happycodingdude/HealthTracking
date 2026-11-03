@@ -241,8 +241,8 @@ void main() {
       expect(onTime.status, PushStatus.applied);
     });
 
-    test('F21-AC9: 23:59 → applied; 00:01 ngày sau → lift_window_closed, '
-        'server giữ nguyên bản cũ', () async {
+    test('F21-AC9: 23:59 → applied; 00:01 ngày sau → day_locked (TD5-08, '
+        'IR5-08), server giữ nguyên bản cũ', () async {
       expect(
         (await liftAt(
           monday,
@@ -259,7 +259,7 @@ void main() {
       );
       expect(
         (late.status, late.code),
-        (PushStatus.rejected, ErrorCode.liftWindowClosed),
+        (PushStatus.rejected, ErrorCode.dayLocked),
       );
       expect(late.current?.data?['endKgX10'], 140);
     });
@@ -385,32 +385,49 @@ void main() {
       );
     }
 
-    test('lưu hôm nay → mở từ lúc lưu đến 00:00', () async {
-      final sat = LocalDate(2026, 10, 10);
-      // Lưu 20:00 10/10 giờ Việt Nam.
-      await extra(sat, DateTime.utc(2026, 10, 10, 13));
-      expect(
-        (await liftAt(
-          sat,
-          'delt-side-machine',
-          DateTime.utc(2026, 10, 10, 13, 30),
-        )).status,
-        PushStatus.applied,
-      );
-      expect(
-        (await liftAt(
-          sat,
-          'delt-side-machine',
-          DateTime.utc(2026, 10, 10, 17, 1),
-        )).code,
-        ErrorCode.liftWindowClosed,
-      );
-    });
+    test(
+      'lưu hôm nay → mở từ lúc lưu đến 00:00 (sau đó day_locked, TD5-08)',
+      () async {
+        final sat = LocalDate(2026, 10, 10);
+        // Lưu 20:00 10/10 giờ Việt Nam.
+        await extra(sat, DateTime.utc(2026, 10, 10, 13));
+        expect(
+          (await liftAt(
+            sat,
+            'delt-side-machine',
+            DateTime.utc(2026, 10, 10, 13, 30),
+          )).status,
+          PushStatus.applied,
+        );
+        expect(
+          (await liftAt(
+            sat,
+            'delt-side-machine',
+            DateTime.utc(2026, 10, 10, 17, 1),
+          )).code,
+          ErrorCode.dayLocked,
+        );
+      },
+    );
 
-    test('F21-AC10: buổi tập thêm cho hôm qua → lift_window_closed', () async {
-      // Lưu 09:00 10/10 giờ Việt Nam cho thứ 6 09/10.
+    test('F05-R64 (IR5-08, CR5-07): buổi tập thêm cho hôm qua → day_locked; '
+        'mức tạ ngày đó → lift_no_session', () async {
+      // 09:00 10/10 giờ Việt Nam ghi buổi tập thêm cho thứ 6 09/10.
       final fri = LocalDate(2026, 10, 9);
-      await extra(fri, DateTime.utc(2026, 10, 10, 2));
+      final day = generated.days.firstWhere((d) => d.date == fri);
+      final at = DateTime.utc(2026, 10, 10, 2);
+      await setNow(at);
+      final added = (await push([
+        dayMutation(
+          day.withExtra(const [MuscleGroup.shoulders], loggedAt: at),
+          op: SyncOp.upsert,
+          at: at,
+        ),
+      ])).single;
+      expect(
+        (added.status, added.code),
+        (PushStatus.rejected, ErrorCode.dayLocked),
+      );
       final r = await liftAt(
         fri,
         'delt-side-machine',
@@ -418,7 +435,7 @@ void main() {
       );
       expect(
         (r.status, r.code),
-        (PushStatus.rejected, ErrorCode.liftWindowClosed),
+        (PushStatus.rejected, ErrorCode.liftNoSession),
       );
     });
   });

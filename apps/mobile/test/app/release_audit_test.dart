@@ -54,30 +54,30 @@ void main() {
     expect(used.difference(reviewed), isEmpty, reason: 'chỗ dùng đỏ mới');
   });
 
-  test('06 Bản 2 ED2-04, F05-V22, UX-AC26: mọi đường lưu "Đã tập" và buổi '
-      'tập thêm đi qua hộp S-65 (confirmLock)', () {
-    // Chỉ hai nơi gọi use case chốt buổi, cả hai lấy cờ từ confirmLock().
-    expect(
-      filesUsing(RegExp(r'markSessionDoneProvider|addExtraSessionProvider')),
-      {
+  test(
+    '06 Bản 2 ED2-04, F05-V22, F05-R61, F05-R64: mọi đường lưu "Đã tập" '
+    'đi qua hộp S-65 (confirmDone); buổi tập thêm lưu ngay (Bản 5 bỏ hộp)',
+    () {
+      expect(filesUsing(RegExp(r'markSessionDoneProvider')), {
         'lib/features/today/application/mark_session.dart',
         'lib/features/schedule/presentation/session_marking.dart',
-        'lib/features/schedule/presentation/extra_session_sheet.dart',
-      },
-    );
-    expect(filesUsing(RegExp(r'confirmed:\s*true')), isEmpty);
-    for (final f in [
-      'lib/features/schedule/presentation/session_marking.dart',
-      'lib/features/schedule/presentation/extra_session_sheet.dart',
-    ]) {
-      expect(sources[f], contains('await confirmLock('), reason: f);
-    }
-    // S-23 Bản 1 không còn trong code (UA2-07).
-    expect(
-      sources.keys.where((f) => f.contains('mark_session_sheet')),
-      isEmpty,
-    );
-  });
+      });
+      expect(filesUsing(RegExp(r'confirmed:\s*true')), isEmpty);
+      expect(
+        sources['lib/features/schedule/presentation/session_marking.dart'],
+        contains('await confirmDone('),
+      );
+      expect(
+        sources['lib/features/schedule/presentation/extra_session_sheet.dart'],
+        isNot(contains('confirmDone(')),
+      );
+      // S-23 Bản 1 không còn trong code (UA2-07).
+      expect(
+        sources.keys.where((f) => f.contains('mark_session_sheet')),
+        isEmpty,
+      );
+    },
+  );
 
   test('04 §6.17: nút chỉ có biểu tượng đều có tên đọc được (tooltip)', () {
     final missing = <String>[];

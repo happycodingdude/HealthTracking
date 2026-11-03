@@ -183,7 +183,9 @@ void main() {
       await snap('s10_done_${v.name}');
     });
 
-    testWidgets('S-23 từ dấu tích buổi đã tập ${v.name}', (tester) async {
+    testWidgets('S-23 ba mục từ dấu tích buổi đã tập (UA5-04) ${v.name}', (
+      tester,
+    ) async {
       final db = await seed();
       await seedMark(db, wed, DayMark.done);
       await pump(tester, v, db, DateTime(2026, 10, 7, 19));
@@ -221,13 +223,6 @@ void main() {
       await pump(tester, v, await seed(), DateTime(2026, 10, 8, 21));
       await openExtraSheet(tester);
       await snap('s24_${v.name}');
-    });
-
-    testWidgets('S-65 "Lưu buổi tập thêm?" hôm nay ${v.name}', (tester) async {
-      await pump(tester, v, await seed(), DateTime(2026, 10, 8, 21));
-      await openExtraSheet(tester);
-      await tapKey(tester, 'extra-save');
-      await snap('s65_extra_${v.name}');
     });
 
     testWidgets('S-10 hôm nay đã có buổi tập thêm ${v.name}', (tester) async {

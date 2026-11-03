@@ -19,6 +19,7 @@ export 'src/http/api_exception.dart';
 export 'src/http/json.dart';
 export 'src/http/middleware.dart';
 export 'src/http/request_info.dart';
+export 'src/jobs/day_closer.dart';
 export 'src/jobs/job_scheduler.dart';
 export 'src/library/guide_drafter.dart';
 export 'src/library/library_file.dart';

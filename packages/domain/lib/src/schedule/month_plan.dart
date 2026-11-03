@@ -24,6 +24,7 @@ final class PlanDay {
     this.markedAt,
     this.extraMuscles,
     this.extraLoggedAt,
+    this.openedAt,
   });
 
   /// Ngày theo lịch tuần (F03-R4): thứ không tập là ngày nghỉ.
@@ -51,6 +52,12 @@ final class PlanDay {
   final List<MuscleGroup>? extraMuscles;
   final DateTime? extraLoggedAt;
 
+  /// Lúc tới phòng gym trước giờ tập (05 Bản 5 TD5-07, FD5-01 = A): buổi
+  /// theo lịch mở sớm từ lúc này (cửa sổ ghi tạ, "Đã tập"). null = chưa.
+  /// Thời điểm tuyệt đối như [markedAt]; app và server giữ mốc **sớm hơn**
+  /// (TA5-02). Chỉ với ngày tập.
+  final DateTime? openedAt;
+
   bool get isWorkout => kind == DayKind.workout;
 
   /// Nhóm cơ của buổi tập ngày này (03 Bản 2 §6.1): buổi theo lịch = nhóm cơ
@@ -76,6 +83,7 @@ final class PlanDay {
     markedAt: markedAt,
     extraMuscles: extraMuscles,
     extraLoggedAt: extraLoggedAt,
+    openedAt: openedAt,
   );
 
   /// Bản ghi với buổi tập thêm mới (null = xóa); các trường khác giữ nguyên.
@@ -91,7 +99,23 @@ final class PlanDay {
         markedAt: markedAt,
         extraMuscles: muscles,
         extraLoggedAt: loggedAt,
+        openedAt: openedAt,
       );
+
+  /// Bản ghi với mốc mở sớm [at] (TD5-07); các trường khác giữ nguyên.
+  PlanDay withOpenedAt(DateTime? at) => PlanDay(
+    date: date,
+    kind: kind,
+    time: time,
+    muscles: muscles,
+    source: source,
+    mark: mark,
+    actualMuscles: actualMuscles,
+    markedAt: markedAt,
+    extraMuscles: extraMuscles,
+    extraLoggedAt: extraLoggedAt,
+    openedAt: at,
+  );
 
   /// Ràng buộc của bản ghi (05 §6.7.3): không có chủ nhật; ngày tập có giờ và
   /// ≥ 1 nhóm cơ, ngày nghỉ không có; buổi tập thêm chỉ ở ngày nghỉ; đánh dấu
@@ -116,6 +140,7 @@ final class PlanDay {
       if (mark != null || actualMuscles != null || markedAt != null) {
         return 'mark';
       }
+      if (openedAt != null) return 'openedAt';
       if (extraMuscles != null && extraMuscles!.isEmpty) return 'extraMuscles';
       if ((extraMuscles == null) != (extraLoggedAt == null)) {
         return 'extraLoggedAt';
@@ -136,7 +161,8 @@ final class PlanDay {
       _same(other.actualMuscles, actualMuscles) &&
       _sameInstant(other.markedAt, markedAt) &&
       _same(other.extraMuscles, extraMuscles) &&
-      _sameInstant(other.extraLoggedAt, extraLoggedAt);
+      _sameInstant(other.extraLoggedAt, extraLoggedAt) &&
+      _sameInstant(other.openedAt, openedAt);
 
   @override
   int get hashCode => Object.hash(
@@ -148,6 +174,7 @@ final class PlanDay {
     mark,
     markedAt?.millisecondsSinceEpoch,
     extraLoggedAt?.millisecondsSinceEpoch,
+    openedAt?.millisecondsSinceEpoch,
   );
 
   @override

@@ -52,6 +52,10 @@ final class JsonReader {
   int integer(String key) => _require<int>(key);
   int? optInteger(String key) => _optional<int>(key);
 
+  /// Số thực (JSON không phân biệt `1` và `1.0`), ví dụ tọa độ (05 Bản 5
+  /// §6.6.1 `gym_location`).
+  double number(String key) => _require<num>(key).toDouble();
+
   bool boolean(String key) => _require<bool>(key);
   bool? optBoolean(String key) => _optional<bool>(key);
 

@@ -92,7 +92,6 @@ class SessionScreen extends ConsumerWidget {
             ),
             SessionState.upcoming => (GlyphStatus.locked, S.readOnlyFuture),
           };
-    final locked = status?.locked ?? false;
     final showLogged = !future && exercises != null && exercises.total > 0;
 
     Widget stat(String label, String value, {Key? key}) => Column(
@@ -120,7 +119,8 @@ class SessionScreen extends ConsumerWidget {
         child: StatusGlyph(
           glyph,
           key: const ValueKey('session-status'),
-          label: locked ? '$label, ${S.statusLocked}' : label,
+          // Buổi đã qua chỉ xem, không ổ khóa (UR5-05).
+          label: label,
         ),
       ),
       children: [

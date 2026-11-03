@@ -30,6 +30,8 @@ class SegmentBar<T> extends StatelessWidget {
     this.keyOf,
     this.style = SegmentStyle.raised,
     this.enabled = true,
+    this.itemEnabled,
+    this.oneLine = false,
     this.background,
   });
 
@@ -40,6 +42,16 @@ class SegmentBar<T> extends StatelessWidget {
   final Key Function(T)? keyOf;
   final SegmentStyle style;
   final bool enabled;
+
+  /// Mục riêng lẻ bấm được không (mục mờ 40 %), ví dụ "Đã tập" trước giờ tập
+  /// ở S-23 (04 Bản 5 S-23, FC5-02). null = mọi mục theo [enabled].
+  final bool Function(T)? itemEnabled;
+
+  bool _on(T item) => enabled && (itemEnabled?.call(item) ?? true);
+
+  /// Chữ dài thu nhỏ trên một dòng thay vì xuống dòng khi các mục nằm một
+  /// hàng (S-23 "Chưa đánh dấu", 04 Bản 5 S-23).
+  final bool oneLine;
 
   /// Nền thanh; mặc định màu thẻ (trên nền) — trong thẻ truyền `surfaceRaised`.
   final Color? background;
@@ -88,7 +100,10 @@ class SegmentBar<T> extends StatelessWidget {
         final perItem =
             (constraints.maxWidth - 2 * _padding) / items.length -
             2 * _itemPadding;
-        final rows = widest <= perItem || items.length < 3
+        // [oneLine]: giữ một hàng (chữ thu nhỏ) khi cỡ chữ chưa phóng lớn; cỡ
+        // chữ lớn vẫn xuống hai hàng để đọc được (UX-AC18).
+        final keepOneRow = oneLine && scaler.scale(1) < 1.6;
+        final rows = keepOneRow || widest <= perItem || items.length < 3
             ? [items]
             : [items.sublist(0, 2), items.sublist(2)];
         return Opacity(
@@ -108,7 +123,14 @@ class SegmentBar<T> extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           for (final item in row)
-                            Expanded(child: _segment(context, item, textStyle)),
+                            Expanded(
+                              child: _segment(
+                                context,
+                                item,
+                                textStyle,
+                                oneLine: oneLine && rows.length == 1,
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -160,7 +182,12 @@ class SegmentBar<T> extends StatelessWidget {
     );
   }
 
-  Widget _segment(BuildContext context, T item, TextStyle textStyle) {
+  Widget _segment(
+    BuildContext context,
+    T item,
+    TextStyle textStyle, {
+    bool oneLine = false,
+  }) {
     final t = context.tokens;
     final isSelected = item == selected;
     final selectedBg = style == SegmentStyle.accent
@@ -169,13 +196,13 @@ class SegmentBar<T> extends StatelessWidget {
     return Semantics(
       button: true,
       selected: isSelected,
-      enabled: enabled,
+      enabled: _on(item),
       label: label(item),
       child: ExcludeSemantics(
         child: InkWell(
           key: keyOf?.call(item) ?? K.segment(label(item)),
           borderRadius: BorderRadius.circular(TokenRadius.segmentInner),
-          onTap: enabled ? () => onSelected(item) : null,
+          onTap: _on(item) ? () => onSelected(item) : null,
           child: Container(
             constraints: const BoxConstraints(minHeight: 34),
             alignment: Alignment.center,
@@ -191,12 +218,21 @@ class SegmentBar<T> extends StatelessWidget {
                     ),
                   )
                 : null,
-            child: Text(
-              label(item),
-              textAlign: TextAlign.center,
-              style: textStyle.copyWith(
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                color: isSelected ? t.textPrimary : t.textSecondary,
+            child: Opacity(
+              // Mục riêng bị tắt mờ 40 %; cả thanh tắt thì thanh đã mờ.
+              opacity: !enabled || _on(item) ? 1 : 0.4,
+              child: _fit(
+                oneLine,
+                Text(
+                  label(item),
+                  textAlign: TextAlign.center,
+                  maxLines: oneLine ? 1 : null,
+                  softWrap: !oneLine,
+                  style: textStyle.copyWith(
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                    color: isSelected ? t.textPrimary : t.textSecondary,
+                  ),
+                ),
               ),
             ),
           ),
@@ -205,6 +241,9 @@ class SegmentBar<T> extends StatelessWidget {
     );
   }
 }
+
+Widget _fit(bool oneLine, Widget child) =>
+    oneLine ? FittedBox(fit: BoxFit.scaleDown, child: child) : child;
 
 /// Viên chọn (nhóm cơ, 04 Bản 4 §6.1): tròn, viền 1,5 thẻ nổi; chọn = nền cam.
 class IronlyChip extends StatelessWidget {

@@ -70,6 +70,14 @@ abstract final class SyncEntities {
   static const exerciseUnit = 'exercise_unit';
   static const exerciseNote = 'exercise_note';
 
+  /// Bản 5 (05 Bản 5 §6.6.1, 06 Bản 5 ED5-01): bài trong buổi, mức thoải mái
+  /// (key `{date}:{exerciseId}`), khoảng tạm dừng (key `id`), vị trí phòng gym
+  /// (key `me`), push + pull.
+  static const sessionExercise = 'session_exercise';
+  static const exerciseFeel = 'exercise_feel';
+  static const schedulePause = 'schedule_pause';
+  static const gymLocation = 'gym_location';
+
   static const Map<String, EntityCodec<Object>> codecs = {
     account: AccountCodec(),
     profile: ProfileCodec(),

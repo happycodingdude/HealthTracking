@@ -122,6 +122,9 @@ final class DayCodec {
       extraLoggedAt: r.has('extraLoggedAt')
           ? r.decoded('extraLoggedAt', InstantCodec.decode)
           : null,
+      openedAt: r.has('openedAt')
+          ? r.decoded('openedAt', InstantCodec.decode)
+          : null,
     );
   }
 
@@ -142,6 +145,9 @@ final class DayCodec {
       'extraLoggedAt': d.extraLoggedAt == null
           ? null
           : InstantCodec.encode(d.extraLoggedAt!.toUtc()),
+      // Bản 5 (TD5-07): chỉ gửi khi có — app Bản 4 không biết trường này.
+      if (d.openedAt != null)
+        'openedAt': InstantCodec.encode(d.openedAt!.toUtc()),
     };
   }
 }

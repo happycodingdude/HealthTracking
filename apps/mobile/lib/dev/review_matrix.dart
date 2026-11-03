@@ -2,9 +2,13 @@
 // `reviewMatrix`): dùng chung cho bộ ảnh so sánh (capture_test.dart) và kiểm
 // mọi ô có golden (VS-51). Mỗi ô ghi trang và vùng tương ứng trong
 // docs/specs/v4/04-ui-mockups.pdf (tọa độ điểm, trang 930 × 1315).
+//
+// Bản 5 (06 Bản 5 ED5-09): mốc M23 → M26; mỗi ô so với hình riêng của màn
+// trong docs/specs/v5/04-ui-mockups/ ([ReviewCell.mockFile]); màn không có
+// hình Bản 5 thì giữ mock Bản 4 (`mockFile` null, [noMock]).
 
-/// Mốc của 06 Bản 4 §6.3.1.
-enum Milestone { m17, m18, m19, m20, m21 }
+/// Mốc của 06 Bản 4 §6.3.1 và 06 Bản 5 §6.3.1.
+enum Milestone { m17, m18, m19, m20, m21, m23, m24, m25, m26 }
 
 /// Vùng cắt trên trang mock: [page] 1-based; [x], [y], [w], [h] theo điểm.
 typedef MockRect = ({int page, double x, double y, double w, double h});
@@ -17,6 +21,7 @@ final class ReviewCell {
     required this.state,
     required this.mock,
     this.goldenTest,
+    this.mockFile,
   });
 
   /// Tên ảnh chụp (`build/review/<id>.png`).
@@ -32,7 +37,16 @@ final class ReviewCell {
 
   /// Tên file golden tương ứng (không có hậu tố biến thể), nếu có.
   final String? goldenTest;
+
+  /// Bản 5: hình mock của màn (đường dẫn từ gốc repo), so cả hình.
+  final String? mockFile;
 }
+
+/// Ô Bản 5 không có hình mock riêng (màn giữ nguyên Bản 4).
+const MockRect noMock = (page: 0, x: 0, y: 0, w: 0, h: 0);
+
+/// Hình mock Bản 5 của màn [name] (`s65`, `s21`…).
+String v5Mock(String name) => 'docs/specs/v5/04-ui-mockups/$name.png';
 
 /// Cột k (0..3) của một hàng mock có 4 màn: x ≈ 13 + 230·k, rộng 205.
 MockRect col(int page, int k, double y, double h) =>
@@ -532,6 +546,76 @@ final reviewMatrix = <ReviewCell>[
     screen: 'S-71',
     state: 'Dynamic Island mở rộng',
     mock: col(5, 1, 122, 113),
+  ),
+  // M23 — Bản 5 nền khóa trong ngày (06 Bản 5 VS-52).
+  ReviewCell(
+    id: 'm23_s65',
+    milestone: Milestone.m23,
+    screen: 'S-65',
+    state: 'xác nhận "Đã tập" câu mới',
+    mock: noMock,
+    mockFile: v5Mock('s65'),
+    goldenTest: 's65_today',
+  ),
+  ReviewCell(
+    id: 'm23_s23',
+    milestone: Milestone.m23,
+    screen: 'S-23',
+    state: 'ba mục Đã tập | Không tập | Chưa đánh dấu',
+    mock: noMock,
+    mockFile: v5Mock('s23'),
+    goldenTest: 's23_done',
+  ),
+  ReviewCell(
+    id: 'm23_s21_past',
+    milestone: Milestone.m23,
+    screen: 'S-21',
+    state: 'ngày đã qua: chỉ "Xem buổi"',
+    mock: noMock,
+    mockFile: v5Mock('s21'),
+    goldenTest: 's21_past',
+  ),
+  ReviewCell(
+    id: 'm23_s21_today',
+    milestone: Milestone.m23,
+    screen: 'S-21',
+    state: 'hôm nay đã "Không tập": "Đổi sang Đã tập" → S-23',
+    mock: noMock,
+    mockFile: v5Mock('s21'),
+    goldenTest: 's21_today_marked',
+  ),
+  ReviewCell(
+    id: 'm23_s20',
+    milestone: Milestone.m23,
+    screen: 'S-20',
+    state: 'ngày đã qua không ổ khóa (phần tạm dừng thuộc M25)',
+    mock: noMock,
+    mockFile: v5Mock('s20'),
+    goldenTest: 's20',
+  ),
+  const ReviewCell(
+    id: 'm23_s24_edit',
+    milestone: Milestone.m23,
+    screen: 'S-24',
+    state: 'sửa buổi tập thêm hôm nay, "Xóa buổi thêm"',
+    mock: noMock,
+    goldenTest: 's24_edit',
+  ),
+  const ReviewCell(
+    id: 'm23_s10_done',
+    milestone: Milestone.m23,
+    screen: 'S-10',
+    state: 'H5 Đã tập (chạm dấu → S-23)',
+    mock: noMock,
+    goldenTest: 's10_done',
+  ),
+  const ReviewCell(
+    id: 'm23_s10_skipped',
+    milestone: Milestone.m23,
+    screen: 'S-10',
+    state: 'H6 Không tập, đổi lại trong ngày',
+    mock: noMock,
+    goldenTest: 's10_skipped',
   ),
 ];
 

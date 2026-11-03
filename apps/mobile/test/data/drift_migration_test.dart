@@ -7,12 +7,18 @@ import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/data/sync/local_stores.dart';
 import 'package:mobile/data/sync/sync_engine.dart';
 import 'package:mobile/features/library/data/exercise_repository.dart';
+import 'package:mobile/features/me/data/gym_location_repository.dart';
+import 'package:mobile/features/schedule/data/schedule_pause_repository.dart';
+import 'package:mobile/features/schedule/data/schedule_repository.dart';
+import 'package:mobile/features/workout/data/exercise_feel_repository.dart';
 import 'package:mobile/features/workout/data/exercise_note_repository.dart';
 import 'package:mobile/features/workout/data/exercise_unit_repository.dart';
 import 'package:mobile/features/workout/data/lift_log_repository.dart';
+import 'package:mobile/features/workout/data/session_exercise_repository.dart';
 
 import '../generated_migrations/schema.dart';
 import '../generated_migrations/schema_v1.dart' as v1;
+import '../generated_migrations/schema_v2.dart' as v2;
 import '../support/fake_sync.dart';
 
 /// 06 Bản 3 VS32-T05, VS32-T10, TAC3-02: database Bản 2 (schema 1) có dữ liệu
@@ -135,5 +141,85 @@ void main() {
     await engine.syncNow();
     await engine.syncNow();
     expect(api.pulls, [0, 0, 900]);
+  });
+
+  test('schema 2 → 3 đúng cấu trúc khai báo (05 Bản 5 §6.5)', () async {
+    final connection = await verifier.startAt(2);
+    final db = AppDatabase(connection);
+    await verifier.migrateAndValidate(db, 3);
+    await db.close();
+  });
+
+  test('TAC5-02 (phần schema), TA5-10: database Bản 4 (schema 2) có dữ liệu '
+      'và outbox 2 mutation → schema 3 giữ nguyên; đồng bộ gửi đủ, cursor về 0 '
+      'một lần vì thêm 4 entity', () async {
+    const v4Entities =
+        'account,ai_daily_usage,day,dish_image,exercise,exercise_note,'
+        'exercise_unit,lift_log,menu,month_plan,profile,weekly_template,weight';
+    final schema = await verifier.schemaAt(2);
+    final old = v2.DatabaseAtV2(schema.newConnection());
+    await old.customStatement(
+      "INSERT INTO sync_state (id, cursor, known_entities) VALUES (1, 4321, '$v4Entities')",
+    );
+    await old.customStatement('''
+      INSERT INTO days (date, kind, time, muscles, source, mark, marked_at)
+      VALUES ('2026-11-03', 'workout', '18:00', '["back"]', 'template',
+        'skipped', '2026-11-03T19:00:00.000')''');
+    for (final (id, key) in [
+      ('33333333-3333-4333-8333-333333333333', '2026-11-04'),
+      ('44444444-4444-4444-8444-444444444444', '2026-11-04:x'),
+    ]) {
+      await old.customStatement(
+        'INSERT INTO outbox (mutation_id, entity, key, op, payload, client_updated_at) '
+        "VALUES ('$id', '${key.contains(':') ? 'lift_log' : 'day'}', '$key', "
+        "'upsert', '{}', '2026-11-04T18:40:00.000')",
+      );
+    }
+    await old.close();
+
+    final db = AppDatabase(schema.newConnection());
+    addTearDown(db.close);
+    final day = await ScheduleRepository(db).day(LocalDate(2026, 11, 3));
+    expect((day!.mark, day.openedAt), (DayMark.skipped, null));
+    expect(await db.select(db.outbox).get(), hasLength(2));
+    expect(await db.select(db.sessionExercises).get(), isEmpty);
+    expect(await db.select(db.gymArrivals).get(), isEmpty);
+
+    final api = FakeSyncApi();
+    final engine = SyncEngine(
+      db: db,
+      api: api,
+      stores: {
+        SyncEntities.sessionExercise: SessionExerciseStore(
+          SessionExerciseRepository(db),
+        ),
+        SyncEntities.exerciseFeel: ExerciseFeelStore(
+          ExerciseFeelRepository(db),
+        ),
+        SyncEntities.schedulePause: SchedulePauseStore(
+          SchedulePauseRepository(db),
+        ),
+        SyncEntities.gymLocation: GymLocationStore(GymLocationRepository(db)),
+      },
+      clock: FixedClock(DateTime(2026, 11, 4, 18, 45)),
+      reporter: RecordingReporter(),
+      scheduler: FakeScheduler(),
+    );
+    addTearDown(engine.stop);
+    expect(await engine.syncNow(), SyncOutcome.synced);
+    expect(api.pushes.single.mutations.map((m) => m.mutationId), [
+      '33333333-3333-4333-8333-333333333333',
+      '44444444-4444-4444-8444-444444444444',
+    ]);
+    expect(api.pulls, [0], reason: 'cursor 4321 → 0 một lần');
+    final state = await db.select(db.syncState).getSingle();
+    for (final e in [
+      'session_exercise',
+      'exercise_feel',
+      'schedule_pause',
+      'gym_location',
+    ]) {
+      expect(state.knownEntities, contains(e));
+    }
   });
 }

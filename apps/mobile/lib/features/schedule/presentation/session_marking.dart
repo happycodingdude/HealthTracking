@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
 import '../../../app/strings_vi.dart';
-import '../../../app/time_ticker.dart';
 import '../../../core/formatters.dart';
 import '../../../ui/components/components.dart';
 import '../../../ui/theme.dart';
@@ -13,14 +12,13 @@ import '../../today/application/mark_session.dart';
 /// Từ mức phóng chữ này trở lên, hai nút xếp dọc (UX-AC18).
 const _stackedScale = 1.6;
 
-/// S-65 — Xác nhận chốt buổi (04 Bản 2 S-65, UA2-02, 06 Bản 2 ED2-04). Mọi
-/// đường lưu "Đã tập" và buổi tập thêm đi qua hộp này. [title] = "Đã tập
-/// {nhóm cơ}?" hoặc "Lưu buổi tập thêm?"; dòng 2 chỉ khi buổi là hôm nay
-/// ([today]). Vuốt hay chạm vùng mờ = "Hủy". true = Bạn bấm "Lưu".
-Future<bool> confirmLock(
+/// S-65 — Xác nhận "Đã tập" (04 Bản 5 S-65; khung dùng chung cho S-79): tiêu
+/// đề [title] ("Đã tập {nhóm cơ}?"), một câu [body], nút xám "Hủy", cam
+/// "Lưu". Vuốt hay chạm vùng mờ = "Hủy". true = Bạn bấm "Lưu".
+Future<bool> confirmDone(
   BuildContext context, {
   required String title,
-  required bool today,
+  String body = S.doneConfirmBody,
 }) async =>
     await showIronlyDialog<bool>(
       context,
@@ -34,30 +32,19 @@ Future<bool> confirmLock(
         primaryLabel: S.save,
         primaryKey: const ValueKey('lock-confirm-save'),
         onPrimary: () => Navigator.of(dialogContext).pop(true),
-        // Câu chữ nguyên văn Bản 2 (FR4-03); dòng 2 chỉ khi buổi là hôm nay.
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(S.lockConfirmLine1, style: IronlyText.dialogBody),
-            if (today) ...[
-              const SizedBox(height: TokenSpace.s2),
-              Text(
-                S.lockConfirmLine2,
-                key: const ValueKey('lock-confirm-line2'),
-                style: IronlyText.dialogBody,
-              ),
-            ],
-          ],
+        child: Text(
+          body,
+          key: const ValueKey('lock-confirm-body'),
+          style: IronlyText.dialogBody,
         ),
       ),
     ) ??
     false;
 
-/// Đánh dấu buổi theo lịch từ Hôm nay và S-21 (04 Bản 2 §6.6.1, S-21).
+/// Đánh dấu buổi theo lịch từ Hôm nay, S-21, S-23 (04 Bản 5 S-23, S-65).
 ///
 /// - "Đã tập" → S-65 → "Lưu" → thông báo nhanh "Đã ghi: tập {nhóm cơ}"
-///   (UR2-04). "Hủy" không đổi gì.
+///   (UR2-04). "Hủy" không đổi gì. Đổi lại được đến hết ngày (F05-R61).
 /// - "Không tập" lưu ngay, thông báo nhanh "Đã ghi: không tập" kèm "Đổi sang
 ///   Đã tập" (mở S-65); không có Hoàn tác (UR2-05, UD2-03).
 ///
@@ -77,12 +64,10 @@ abstract final class SessionMarking {
   }) async {
     final host = _stable(context);
     final container = ProviderScope.containerOf(host, listen: false);
-    final today = LocalDate.fromDateTime(container.read(nowProvider));
     final muscles = Fmt.muscles(day.muscles);
-    final confirmed = await confirmLock(
+    final confirmed = await confirmDone(
       context,
       title: S.doneConfirmTitle(muscles),
-      today: day.date == today,
     );
     if (!confirmed) return;
     onConfirmed?.call();
@@ -91,8 +76,8 @@ abstract final class SessionMarking {
           .read(markSessionDoneProvider)
           .call(day.date, confirmed: confirmed);
     } on MarkException catch (e, st) {
-      // Nút chỉ hiện khi đánh dấu được; lỗi ở đây là vừa qua hạn khi hộp đang
-      // mở.
+      // Nút chỉ hiện khi đánh dấu được; lỗi ở đây là vừa qua 00:00 khi hộp
+      // đang mở.
       await container
           .read(errorReporterProvider)
           .report(e, st, reason: 'mark_done');
@@ -101,10 +86,11 @@ abstract final class SessionMarking {
     if (host.mounted) showToast(host, S.markedDone(muscles));
   }
 
-  /// "Không tập" cho buổi [day]. Buổi đã có mức tạ: hộp "Buổi này đã có mức
-  /// tạ của {N} bài." với "Tiếp tục" · "Hủy" trên [context] trước khi lưu
-  /// (F05-R28); mức tạ giữ nguyên (FD2-02). [onConfirmed] chạy ngay trước khi
-  /// lưu (S-21 đóng bảng).
+  /// "Không tập" cho buổi [day] (từ đầu ngày, kể cả đổi từ "Đã tập" —
+  /// F05-R62). Buổi đã có mức tạ: hộp "Buổi này đã có mức tạ của {N} bài."
+  /// với "Tiếp tục" · "Hủy" trên [context] trước khi lưu (F05-R28); mức tạ
+  /// giữ nguyên (FD2-02, A5-12). [onConfirmed] chạy ngay trước khi lưu (S-21
+  /// đóng bảng).
   static Future<void> skipped(
     BuildContext context,
     PlanDay day, {
@@ -137,6 +123,20 @@ abstract final class SessionMarking {
         if (host.mounted) done(host, updated);
       },
     );
+  }
+
+  /// Bỏ đánh dấu buổi [day] (FC5-13): về "Chờ đánh dấu", không hộp, không
+  /// thông báo nhanh (04 Bản 5 S-23).
+  static Future<void> unmark(BuildContext context, PlanDay day) async {
+    final host = _stable(context);
+    final container = ProviderScope.containerOf(host, listen: false);
+    try {
+      await container.read(unmarkSessionProvider).call(day.date);
+    } on MarkException catch (e, st) {
+      await container
+          .read(errorReporterProvider)
+          .report(e, st, reason: 'unmark');
+    }
   }
 }
 
@@ -226,30 +226,4 @@ class ChangeToDoneButton extends StatelessWidget {
     onPressed: onTap,
     child: const Text(S.changeToDone, textAlign: TextAlign.center),
   );
-}
-
-/// Dòng "Đã chốt khi lưu" thay nút Sửa ở Hôm nay và S-21 (04 Bản 2 UA2-06,
-/// mock S-10-3).
-class LockedOnSaveLine extends StatelessWidget {
-  const LockedOnSaveLine({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final color = context.tokens.textSecondary;
-    return Row(
-      key: const ValueKey('locked-on-save'),
-      children: [
-        ExcludeSemantics(
-          child: Icon(Icons.lock_outline, size: 18, color: color),
-        ),
-        const SizedBox(width: 6),
-        Flexible(
-          child: Text(
-            S.lockedOnSave,
-            style: context.text.bodyLarge?.copyWith(color: color),
-          ),
-        ),
-      ],
-    );
-  }
 }

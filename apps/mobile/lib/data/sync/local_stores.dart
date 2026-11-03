@@ -3,13 +3,17 @@ import 'package:domain/domain.dart';
 
 import '../../features/library/data/exercise_repository.dart';
 import '../../features/me/data/account_repository.dart';
+import '../../features/me/data/gym_location_repository.dart';
 import '../../features/me/data/profile_repository.dart';
 import '../../features/menu/data/menu_repository.dart';
+import '../../features/schedule/data/schedule_pause_repository.dart';
 import '../../features/schedule/data/schedule_repository.dart';
 import '../../features/weight/data/weight_repository.dart';
+import '../../features/workout/data/exercise_feel_repository.dart';
 import '../../features/workout/data/exercise_note_repository.dart';
 import '../../features/workout/data/exercise_unit_repository.dart';
 import '../../features/workout/data/lift_log_repository.dart';
+import '../../features/workout/data/session_exercise_repository.dart';
 
 /// Ghi bản ghi từ server vào bảng trên máy của một entity.
 abstract interface class LocalEntityStore {
@@ -263,6 +267,93 @@ final class ExerciseNoteStore implements LocalEntityStore {
     if (change == null || change.deleted || data == null) {
       final parsed = ExerciseNote.parseKey(key);
       if (parsed != null) await _repo.delete(parsed.$1, parsed.$2);
+      return;
+    }
+    await _repo.put(_codec.decode(key, data));
+  }
+}
+
+/// Entity `session_exercise` (push + pull, 06 Bản 5 VS52-T05). Tombstone →
+/// xóa.
+final class SessionExerciseStore implements LocalEntityStore {
+  SessionExerciseStore(this._repo);
+
+  final SessionExerciseRepository _repo;
+  static const _codec = SessionExerciseCodec();
+
+  @override
+  String get entity => SyncEntities.sessionExercise;
+
+  @override
+  Future<void> apply(String key, SyncChange? change) async {
+    final data = change?.data;
+    if (change == null || change.deleted || data == null) {
+      final parsed = SessionExerciseRow.parseKey(key);
+      if (parsed != null) await _repo.delete(parsed.$1, parsed.$2);
+      return;
+    }
+    await _repo.put(_codec.decode(key, data));
+  }
+}
+
+/// Entity `exercise_feel` (push + pull, 06 Bản 5 VS52-T05). Tombstone → xóa.
+final class ExerciseFeelStore implements LocalEntityStore {
+  ExerciseFeelStore(this._repo);
+
+  final ExerciseFeelRepository _repo;
+  static const _codec = ExerciseFeelCodec();
+
+  @override
+  String get entity => SyncEntities.exerciseFeel;
+
+  @override
+  Future<void> apply(String key, SyncChange? change) async {
+    final data = change?.data;
+    if (change == null || change.deleted || data == null) {
+      final parsed = ExerciseFeel.parseKey(key);
+      if (parsed != null) await _repo.delete(parsed.$1, parsed.$2);
+      return;
+    }
+    await _repo.put(_codec.decode(key, data));
+  }
+}
+
+/// Entity `schedule_pause` (push + pull, 06 Bản 5 VS52-T05). Tombstone → xóa.
+final class SchedulePauseStore implements LocalEntityStore {
+  SchedulePauseStore(this._repo);
+
+  final SchedulePauseRepository _repo;
+  static const _codec = SchedulePauseCodec();
+
+  @override
+  String get entity => SyncEntities.schedulePause;
+
+  @override
+  Future<void> apply(String key, SyncChange? change) async {
+    final data = change?.data;
+    if (change == null || change.deleted || data == null) {
+      await _repo.delete(key);
+      return;
+    }
+    await _repo.put(_codec.decode(key, data));
+  }
+}
+
+/// Entity `gym_location` (push + pull, 06 Bản 5 VS52-T05). Tombstone → xóa.
+final class GymLocationStore implements LocalEntityStore {
+  GymLocationStore(this._repo);
+
+  final GymLocationRepository _repo;
+  static const _codec = GymLocationCodec();
+
+  @override
+  String get entity => SyncEntities.gymLocation;
+
+  @override
+  Future<void> apply(String key, SyncChange? change) async {
+    final data = change?.data;
+    if (change == null || change.deleted || data == null) {
+      await _repo.delete();
       return;
     }
     await _repo.put(_codec.decode(key, data));

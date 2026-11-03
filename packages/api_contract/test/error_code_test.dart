@@ -27,6 +27,10 @@ void main() {
         'lift_exercise_not_in_session': 422,
         // Bản 3 (05 Bản 3 §6.6.3).
         'lift_unit_missing': 422,
+        // Bản 5 (05 Bản 5 §6.6.2).
+        'day_locked': 422,
+        'session_done': 422,
+        'pause_overlap': 422,
       };
       for (final entry in expected.entries) {
         final code = ErrorCode.fromWire(entry.key);

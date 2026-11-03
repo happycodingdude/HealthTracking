@@ -30,6 +30,26 @@ void main() {
     },
   );
 
+  test('06 Bản 5 §6.4, F05-AC65: câu Bản 5 bỏ không còn trong strings_vi.dart '
+      'và lib/', () {
+    final removed =
+        (loadYaml(File('test/spec_strings.yaml').readAsStringSync())
+                as YamlMap)['removed']
+            as YamlMap;
+    final sources = [
+      for (final f in Directory('lib').listSync(recursive: true))
+        if (f is File && f.path.endsWith('.dart')) f.readAsStringSync(),
+    ].join('\n');
+    for (final e in removed.entries) {
+      expect(S.catalog.containsKey(e.key), isFalse, reason: e.key as String);
+      expect(
+        sources,
+        isNot(contains(e.value as String)),
+        reason: e.key as String,
+      );
+    }
+  });
+
   test('UR-14, S-56: câu có tham số', () {
     expect(S.greeting('Minh'), 'Chào Minh');
     expect(S.syncedAt('18:42'), 'Đã đồng bộ lúc 18:42');
@@ -83,8 +103,6 @@ void main() {
   test('04 Bản 2 S-65, §6.6.1, S-21, S-24: câu chốt buổi có tham số', () {
     expect(S.doneConfirmTitle('Ngực'), 'Đã tập Ngực?');
     expect(S.doneLine('Ngực'), 'Đã tập · Ngực');
-    expect(S.changeToDoneUntil('14/10'), 'Đổi sang Đã tập được đến hết 14/10');
-    expect(S.changeableUntil('13/10'), 'Đổi được đến hết 13/10');
     expect(S.extraSheetTitle('Thứ 5', '09/10'), 'Buổi tập thêm · Thứ 5 09/10');
     expect(S.extraLogged('Vai'), 'Đã ghi buổi tập thêm: Vai');
   });

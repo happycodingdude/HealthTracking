@@ -47,56 +47,56 @@ void main() {
       expect(of(day(15), day(15).date, at14), DaySituation.futureRest);
     });
 
-    test('hôm nay nghỉ: chưa có buổi tập thêm / đã có → chỉ xem (F03-E4, '
-        'F05-R34)', () {
+    test('hôm nay nghỉ: chưa có buổi tập thêm → lên lịch / ghi buổi thêm; đã '
+        'có → sửa buổi thêm (F05-R64)', () {
       final thu = DateTime(2026, 10, 15, 9);
       expect(of(day(15), day(15).date, thu), DaySituation.todayRest);
       final extra = day(15).withExtra(const [MuscleGroup.abs], loggedAt: thu);
-      expect(of(extra, extra.date, thu), DaySituation.extraSaved);
+      expect(of(extra, extra.date, thu), DaySituation.todayExtra);
     });
 
-    test('Chờ đánh dấu → Đã tập · Không tập (UA2-07, không còn S-23)', () {
+    test('hôm nay Chờ đánh dấu → Đã tập · Không tập', () {
       expect(
         of(day(14), day(14).date, DateTime(2026, 10, 14, 18)),
         DaySituation.markable,
       );
     });
 
-    test('Không tập / Không tập (tự động) trong 7 ngày → Đổi sang Đã tập; quá '
-        '7 ngày → khóa', () {
-      expect(of(day(9), day(9).date, at14), DaySituation.changeToDone);
+    test('F05-R61, F05-R62: hôm nay đã Đã tập / Không tập → đổi lại trong ngày '
+        '(S-23)', () {
+      final at = DateTime(2026, 10, 14, 19);
       final skipped = day(
         14,
-      ).withMark(DayMark.skipped, markedAt: DateTime(2026, 10, 14, 18, 30));
-      expect(
-        of(skipped, skipped.date, DateTime(2026, 10, 14, 19)),
-        DaySituation.changeToDone,
-      );
-      expect(of(day(2), day(2).date, at14), DaySituation.locked);
-    });
-
-    test('Đã tập → chỉ xem, kể cả trong ngày và quá 7 ngày (F05-R24)', () {
+      ).withMark(DayMark.skipped, markedAt: DateTime(2026, 10, 14, 10));
+      expect(of(skipped, skipped.date, at), DaySituation.todayMarked);
       final done = day(14).withMark(
         DayMark.done,
         actual: const [MuscleGroup.back],
         markedAt: DateTime(2026, 10, 14, 18, 30),
       );
-      expect(
-        of(done, done.date, DateTime(2026, 10, 14, 19)),
-        DaySituation.done,
-      );
-      expect(of(done, done.date, DateTime(2026, 10, 30)), DaySituation.done);
+      expect(of(done, done.date, at), DaySituation.todayMarked);
     });
 
-    test('ngày nghỉ đã qua trong 7 ngày → buổi tập thêm; đã có → chỉ xem; quá '
-        '7 ngày → khóa; chủ nhật', () {
-      expect(of(day(13), day(13).date, at14), DaySituation.pastRest);
+    test('F03-AC62, F05-AC66 (IR5-08, CR5-02): ngày đã qua chỉ xem, không còn '
+        'cửa sổ 7 ngày, kể cả hôm qua', () {
+      final done = day(12).withMark(
+        DayMark.done,
+        actual: const [MuscleGroup.chest, MuscleGroup.triceps],
+        markedAt: DateTime(2026, 10, 12, 18, 30),
+      );
+      expect(of(done, done.date, at14), DaySituation.past);
+      expect(of(day(9), day(9).date, at14), DaySituation.past);
+      expect(of(day(2), day(2).date, at14), DaySituation.past);
       final extra = day(13).withExtra(const [
         MuscleGroup.abs,
       ], loggedAt: DateTime(2026, 10, 13, 20));
-      expect(of(extra, extra.date, at14), DaySituation.extraSaved);
-      expect(of(day(6), day(6).date, at14), DaySituation.locked);
+      expect(of(extra, extra.date, at14), DaySituation.past);
       expect(of(null, LocalDate(2026, 10, 18), at14), DaySituation.sunday);
+      // 00:00 ngày sau: hôm nay thành ngày đã qua.
+      expect(
+        of(day(14), day(14).date, DateTime(2026, 10, 15)),
+        DaySituation.past,
+      );
     });
 
     test('ngày tháng sau (không sửa riêng được) → chỉ xem', () {
@@ -310,7 +310,8 @@ void main() {
   });
 
   group('server: đổi lịch của ngày (VS09-T04)', () {
-    test('F03-AC9: sửa riêng ngày đã qua, ngày tháng sau → key', () {
+    test('F03-AC9: sửa riêng ngày đã qua → day_locked (TD5-08); ngày tháng '
+        'sau → key', () {
       final rest13 = PlanDay(
         date: LocalDate(2026, 10, 13),
         kind: DayKind.rest,
@@ -318,7 +319,7 @@ void main() {
       );
       expect(
         DayChangeRules.check(day(13), rest13, at14),
-        const DayViolation('key'),
+        const DayViolation('key', DayViolationCode.dayLocked),
       );
       final workout15 = OverrideRules.override(
         day(15),
@@ -329,7 +330,7 @@ void main() {
       expect(DayChangeRules.check(day(15), workout15, at14), isNull);
       expect(
         DayChangeRules.check(day(15), workout15, DateTime(2026, 10, 16, 9)),
-        const DayViolation('key'),
+        const DayViolation('key', DayViolationCode.dayLocked),
         reason: 'ngày đã qua',
       );
       final nov2 = PlanDay.fromTemplate(

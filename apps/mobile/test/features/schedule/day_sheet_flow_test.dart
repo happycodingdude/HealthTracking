@@ -139,8 +139,7 @@ void main() {
 
     testWidgets(
       'hôm nay nghỉ (mock S-21-2): lên lịch tập hôm nay · ghi buổi tập thêm; '
-      'đã có buổi tập thêm → chỉ xem "Buổi tập thêm · {nhóm cơ}", "Đã chốt '
-      'khi lưu", câu F03-E4 (04 Bản 2 S-21)',
+      'đã có buổi tập thêm → "Sửa buổi thêm" (04 Bản 5 S-21, F05-R64)',
       (tester) async {
         clock.set(DateTime(2026, 10, 15, 9));
         await seedSetUp(db);
@@ -164,49 +163,42 @@ void main() {
         expect(find.bySemanticsLabel(S.extraSession), findsOneWidget);
         expect(find.byKey(const ValueKey('locked-on-save')), findsNothing);
         expect(find.text(S.extraBlocksSchedule), findsNothing);
+        expect(find.byKey(const ValueKey('day-edit-extra')), findsOneWidget);
+        await tapKey(tester, 'day-edit-extra');
+        expect(find.byKey(const ValueKey('extra-sheet')), findsOneWidget);
+        expect(find.byKey(const ValueKey('extra-delete')), findsOneWidget);
       },
     );
 
     testWidgets(
-      'buổi Không tập (tự động) trong 7 ngày → "Đổi sang Đã tập" (không còn '
-      'S-23); ngày nghỉ đã qua → S-24; quá 7 ngày → khóa; chủ nhật → chỉ xem',
+      'F03-AC62, F05-AC66, UR5-05 (IR5-08, CR5-02): ngày đã qua chỉ "Xem '
+      'buổi" — kể cả hôm qua, không ổ khóa, không nút sửa; ngày nghỉ đã qua '
+      'không có nút nào; chủ nhật → chỉ xem',
       (tester) async {
         await seedSetUp(db);
         await pump(tester);
         await open(tester, LocalDate(2026, 10, 9));
         expect(find.byKey(const ValueKey('day-change-time')), findsNothing);
-        expect(find.text(S.changeableUntil('16/10')), findsNothing);
         expect(
           find.byKey(const ValueKey('change-to-done-2026-10-09')),
-          findsOneWidget,
+          findsNothing,
         );
         expect(
           find.byKey(const ValueKey('mark-skipped-2026-10-09')),
           findsNothing,
         );
+        expect(
+          find.byKey(const ValueKey('day-view-exercises')),
+          findsOneWidget,
+        );
+        expect(find.byType(IronlyButton), findsOneWidget);
+        expect(find.bySemanticsLabel(RegExp(S.statusLocked)), findsNothing);
         await tester.tapAt(const Offset(195, 60));
         await tester.pumpAndSettle();
 
         await open(tester, LocalDate(2026, 10, 13));
-        await tapKey(tester, 'day-log-extra');
-        expect(find.byKey(const ValueKey('extra-sheet')), findsOneWidget);
-        await tester.tapAt(const Offset(195, 60));
-        await tester.pumpAndSettle();
-
-        clock.set(DateTime(2026, 10, 16, 10));
-        scheduler.fireSync();
-        await tester.pumpAndSettle();
-        await open(tester, LocalDate(2026, 10, 7));
-        // Bản 4: ổ khóa cạnh dòng tóm tắt, nút "Đổi sang Đã tập" mờ (F4-R6).
-        expect(find.bySemanticsLabel(S.lockedNote), findsOneWidget);
-        expect(
-          find.byKey(const ValueKey('change-to-done-2026-10-07-locked')),
-          findsOneWidget,
-        );
-        expect(
-          find.byKey(const ValueKey('change-to-done-2026-10-07')),
-          findsNothing,
-        );
+        expect(find.byKey(const ValueKey('day-log-extra')), findsNothing);
+        expect(find.byType(IronlyButton), findsNothing);
         await tester.tapAt(const Offset(195, 60));
         await tester.pumpAndSettle();
 
@@ -219,12 +211,11 @@ void main() {
   });
 
   testWidgets(
-    'UX-AC26, UA2-07: S-21 buổi Chờ đánh dấu có "Đã tập" · "Không tập" ngay '
-    'trong bảng; "Đã tập" → S-65 (buổi đã qua: không có dòng 2) → Lưu → bảng '
-    'đóng, "Đã ghi: tập Lưng"; "Không tập" → lưu ngay, bảng đóng, thông báo có '
-    '"Đổi sang Đã tập"',
+    'UX-AC26, F05-AC61: S-21 buổi hôm nay Chờ đánh dấu có "Đã tập" · "Không '
+    'tập" ngay trong bảng; "Đã tập" → S-65 câu mới → Lưu → bảng đóng, "Đã ghi: '
+    'tập Lưng"; mở lại → "Đổi sang Không tập" (→ S-23)',
     (tester) async {
-      clock.set(DateTime(2026, 10, 8, 10));
+      clock.set(DateTime(2026, 10, 7, 18, 10));
       await seedSetUp(db);
       await pump(tester);
       final wed7 = LocalDate(2026, 10, 7);
@@ -232,7 +223,7 @@ void main() {
       expect(find.bySemanticsLabel(S.statusAwaiting), findsWidgets);
       await tapKey(tester, 'mark-done-${wed7.toKey()}');
       expect(find.text(S.doneConfirmTitle('Lưng')), findsOneWidget);
-      expect(find.byKey(const ValueKey('lock-confirm-line2')), findsNothing);
+      expect(find.text(S.doneConfirmBody), findsOneWidget);
       await tapKey(tester, 'lock-confirm-cancel');
       expect(
         find.byKey(ValueKey('mark-done-${wed7.toKey()}')),
@@ -246,13 +237,14 @@ void main() {
       expect((await day(7)).mark, DayMark.done);
 
       await open(tester, wed7);
-      // Bản 4: dấu tích ở tiêu đề, không câu "Đã chốt khi lưu".
       expect(find.bySemanticsLabel(S.sessionDone), findsWidgets);
-      expect(find.byKey(const ValueKey('locked-on-save')), findsNothing);
       expect(
         find.byKey(ValueKey('mark-skipped-${wed7.toKey()}')),
         findsNothing,
       );
+      expect(find.text(S.changeToSkipped), findsOneWidget);
+      await tapKey(tester, 'day-change-status');
+      expect(find.byKey(const ValueKey('status-sheet')), findsOneWidget);
     },
   );
 
@@ -260,7 +252,7 @@ void main() {
       '"Đã ghi: không tập" có "Đổi sang Đã tập", không có Hoàn tác', (
     tester,
   ) async {
-    clock.set(DateTime(2026, 10, 8, 10));
+    clock.set(DateTime(2026, 10, 7, 18, 10));
     await seedSetUp(db);
     await pump(tester);
     final wed7 = LocalDate(2026, 10, 7);

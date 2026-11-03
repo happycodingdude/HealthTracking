@@ -52,6 +52,10 @@ void main() {
       'lift_not_allowed_for_exercise',
       'lift_exercise_not_in_session',
       'lift_unit_missing',
+      // Bản 5 (05 Bản 5 §6.6.2).
+      'day_locked',
+      'session_done',
+      'pause_overlap',
     });
     expect(silentErrorCodes.intersection(displayed), isEmpty);
     for (final code in silentErrorCodes) {

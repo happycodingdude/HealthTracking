@@ -258,7 +258,6 @@ abstract final class S {
   static const menuTargetPrefix = 'Theo mức';
   static const actualMusclesLabel = 'Nhóm cơ đã tập';
   static const missingActualMuscles = 'Vui lòng chọn ít nhất 1 nhóm cơ';
-  static const lockedNote = 'Chỉ sửa được trong 7 ngày';
 
   /// F05-E1, UX-AC6: "Đánh dấu được từ {giờ tập}".
   static String markableFrom(String time) => 'Đánh dấu được từ $time';
@@ -287,13 +286,23 @@ abstract final class S {
   /// 04 Bản 2 S-24: "Đã ghi buổi tập thêm: {nhóm cơ}".
   static String extraLogged(String muscles) => 'Đã ghi buổi tập thêm: $muscles';
 
-  // Chốt buổi (04 Bản 2 S-65, §6.6.1, S-21; UA2-02), F05-R23, F05-R33.
-  static const lockConfirmLine1 = 'Sau khi lưu, buổi này không sửa được nữa.';
-  static const lockConfirmLine2 =
-      'Mức tạ của buổi vẫn ghi được đến hết hôm nay.';
-  static const extraConfirmTitle = 'Lưu buổi tập thêm?';
-  static const lockedOnSave = 'Đã chốt khi lưu';
+  // Xác nhận "Đã tập" S-65 (04 Bản 5 §6.9, F05-R61). Bản 5 bỏ câu "Sau khi
+  // lưu, buổi này không sửa được nữa." và hộp chốt buổi tập thêm (F05-R64).
+  static const doneConfirmBody =
+      'Ghi nhận buổi hôm nay là Đã tập. Bạn đổi lại được đến hết hôm nay.';
   static const changeToDone = 'Đổi sang Đã tập';
+
+  /// 04 Bản 5 S-21 hôm nay: "Đổi sang Đã tập / Không tập" → S-23.
+  static const changeToSkipped = 'Đổi sang Không tập';
+
+  /// 04 Bản 5 S-23 (UA5-04): mục thứ ba của thanh chọn.
+  static const unmarked = 'Chưa đánh dấu';
+
+  /// 04 Bản 5 S-21 hôm nay: "Sửa buổi thêm" → S-24.
+  static const editExtraSession = 'Sửa buổi thêm';
+
+  /// 04 Bản 5 S-24 khi sửa: "Xóa buổi thêm" đỏ.
+  static const deleteExtraSession = 'Xóa buổi thêm';
 
   /// 04 Bản 4 S-21: nút "Xem buổi" → S-63.
   static const viewSession = 'Xem buổi';
@@ -303,14 +312,6 @@ abstract final class S {
 
   /// 04 Bản 2 §6.6.1, S-21: "Đã tập · {nhóm cơ}".
   static String doneLine(String muscles) => 'Đã tập · $muscles';
-
-  /// 04 Bản 2 §6.6.1: "Đổi sang Đã tập được đến hết {dd/mm}".
-  static String changeToDoneUntil(String dayMonth) =>
-      'Đổi sang Đã tập được đến hết $dayMonth';
-
-  /// 04 Bản 2 S-21: "Đổi được đến hết {dd/mm}".
-  static String changeableUntil(String dayMonth) =>
-      'Đổi được đến hết $dayMonth';
 
   /// Mock S-25: "Nghỉ · Bụng".
   static String restWithExtra(String muscles) => '$rest · $muscles';
@@ -1055,15 +1056,15 @@ abstract final class S {
     'menuTargetPrefix': menuTargetPrefix,
     'actualMusclesLabel': actualMusclesLabel,
     'missingActualMuscles': missingActualMuscles,
-    'lockedNote': lockedNote,
     'logExtraSession': logExtraSession,
     'extraSession': extraSession,
     'extraNotCounted': extraNotCounted,
-    'lockConfirmLine1': lockConfirmLine1,
-    'lockConfirmLine2': lockConfirmLine2,
-    'extraConfirmTitle': extraConfirmTitle,
-    'lockedOnSave': lockedOnSave,
     'changeToDone': changeToDone,
+    'doneConfirmBody': doneConfirmBody,
+    'changeToSkipped': changeToSkipped,
+    'unmarked': unmarked,
+    'editExtraSession': editExtraSession,
+    'deleteExtraSession': deleteExtraSession,
     'viewSession': viewSession,
     'delete': delete,
     'cancel': cancel,

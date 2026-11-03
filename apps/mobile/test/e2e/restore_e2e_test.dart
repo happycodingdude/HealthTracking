@@ -133,9 +133,7 @@ void main() {
     await a.markDone(LocalDate(2026, 9, 14), confirmed: true);
     // T3 15/09 nghỉ: buổi tập thêm.
     a.clock.set(DateTime(2026, 9, 15, 20));
-    await a.addExtra(LocalDate(2026, 9, 15), const [
-      MuscleGroup.abs,
-    ], confirmed: true);
+    await a.addExtra(LocalDate(2026, 9, 15), const [MuscleGroup.abs]);
     // T4 16/09: "Không tập".
     a.clock.set(DateTime(2026, 9, 16, 8));
     await a.markSkipped(LocalDate(2026, 9, 16));

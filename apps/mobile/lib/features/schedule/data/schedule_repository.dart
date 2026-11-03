@@ -142,6 +142,7 @@ final class ScheduleRepository {
             markedAt: Value(d.markedAt),
             extraMuscles: Value(names(d.extraMuscles)),
             extraLoggedAt: Value(d.extraLoggedAt),
+            openedAt: Value(d.openedAt),
           ),
         );
   }
@@ -169,6 +170,7 @@ final class ScheduleRepository {
       markedAt: r.markedAt,
       extraMuscles: muscles(r.extraMuscles),
       extraLoggedAt: r.extraLoggedAt,
+      openedAt: r.openedAt,
     );
   }
 }

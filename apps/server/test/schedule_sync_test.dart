@@ -324,54 +324,44 @@ void main() {
       return const DayCodec().decode(c.key, c.data!);
     }
 
-    test('TAC2-03: buổi "Đã tập" → đổi sang Không tập, đổi nhóm cơ thực tế, '
-        'bỏ đánh dấu, cho nghỉ — app Bản 1 hay Bản 2 → rejected '
-        'session_locked, server giữ nguyên', () async {
+    test('TAC5-04, F05-AC61 (IR5-08, CR5-06): buổi "Đã tập" → đổi sang Không '
+        'tập, bỏ đánh dấu, lại Đã tập trong ngày → applied (app Bản 1 / 2 / 5); '
+        'sửa riêng buổi đã đánh dấu → key', () async {
       await setUpSchedule();
       // 19:00 07/10 giờ Việt Nam = 12:00 UTC.
+      for (final (i, version) in [null, AppVersion.v2, AppVersion.v5].indexed) {
+        DateTime at(int m) => DateTime.utc(2026, 10, 7, 11, 10 * i + m);
+        expect(
+          (await markAt(DayMark.done, at(0), appVersion: version)).status,
+          PushStatus.applied,
+          reason: '$version',
+        );
+        final skipped = await markAt(
+          DayMark.skipped,
+          at(1),
+          appVersion: version,
+        );
+        expect(skipped.status, PushStatus.applied, reason: '$version');
+        expect((await serverDay(wed.date)).mark, DayMark.skipped);
+        final unmarked = await writeAt(wed, at(2), appVersion: version);
+        expect(unmarked.status, PushStatus.applied, reason: '$version');
+        expect((await serverDay(wed.date)).mark, isNull);
+      }
       expect(
-        (await markAt(
-          DayMark.done,
-          DateTime.utc(2026, 10, 7, 12),
-          appVersion: AppVersion.v2,
-        )).status,
+        (await markAt(DayMark.done, DateTime.utc(2026, 10, 7, 13))).status,
         PushStatus.applied,
       );
-      final done = await serverDay(wed.date);
-      final attempts = [
-        marked(DayMark.skipped, DateTime.utc(2026, 10, 7, 12, 30)),
-        done.withMark(
-          DayMark.done,
-          actual: const [MuscleGroup.shoulders],
-          markedAt: done.markedAt,
-        ),
-        wed,
+      final rest = await writeAt(
         PlanDay(date: wed.date, kind: DayKind.rest, source: DaySource.override),
-      ];
-      for (final version in [null, AppVersion.v2]) {
-        for (final (i, a) in attempts.indexed) {
-          final r = await writeAt(
-            a,
-            DateTime.utc(2026, 10, 7, 12, 30 + i),
-            appVersion: version,
-          );
-          expect(
-            (r.status, r.code),
-            (PushStatus.rejected, ErrorCode.sessionLocked),
-            reason: '$version #$i',
-          );
-          expect(
-            const DayCodec().decode(wed.date.toKey(), r.current!.data!).mark,
-            DayMark.done,
-          );
-        }
-      }
+        DateTime.utc(2026, 10, 7, 13, 1),
+      );
+      expect((rest.status, rest.field), (PushStatus.rejected, 'key'));
       expect((await serverDay(wed.date)).actualMuscles, [MuscleGroup.back]);
     });
 
     test('app Bản 1 (không có header) ghi "Đã tập" với nhóm cơ thực tế tự '
-        'chọn → applied, rồi khóa như mọi buổi; app Bản 2 phải ghi đúng nhóm '
-        'cơ của lịch (TD2-08)', () async {
+        'chọn → applied; hôm sau → day_locked (TAC5-04); app Bản 2 trở đi phải '
+        'ghi đúng nhóm cơ của lịch (TD2-08)', () async {
       await setUpSchedule();
       final at = DateTime.utc(2026, 10, 7, 12);
       final v1 = wed.withMark(
@@ -385,38 +375,42 @@ void main() {
       );
       expect((await writeAt(v1, at)).status, PushStatus.applied);
       final undo = await writeAt(wed, DateTime.utc(2026, 10, 8, 3));
-      expect(undo.code, ErrorCode.sessionLocked);
+      expect(undo.code, ErrorCode.dayLocked);
       expect((await serverDay(wed.date)).actualMuscles, [
         MuscleGroup.shoulders,
       ]);
     });
 
-    test('F05-R25: Không tập → Đã tập trong 7 ngày (app Bản 2) → applied rồi '
-        'khóa', () async {
+    test('F05-R62, TAC5-04 (IR5-08, CR5-02): Không tập → Đã tập trong ngày → '
+        'applied; ngày hôm sau → day_locked', () async {
       await setUpSchedule();
+      // 13:00 07/10 giờ Việt Nam: "Không tập" trước giờ tập (FC5-02).
       expect(
         (await markAt(
           DayMark.skipped,
-          DateTime.utc(2026, 10, 7, 12),
-          appVersion: AppVersion.v2,
+          DateTime.utc(2026, 10, 7, 6),
+          appVersion: AppVersion.v5,
         )).status,
         PushStatus.applied,
       );
-      // 10:00 13/10 giờ Việt Nam.
       expect(
         (await markAt(
           DayMark.done,
-          DateTime.utc(2026, 10, 13, 3),
-          appVersion: AppVersion.v2,
+          DateTime.utc(2026, 10, 7, 12),
+          appVersion: AppVersion.v5,
         )).status,
         PushStatus.applied,
       );
-      final back = await markAt(
+      final next = await markAt(
         DayMark.skipped,
-        DateTime.utc(2026, 10, 13, 4),
-        appVersion: AppVersion.v2,
+        DateTime.utc(2026, 10, 8, 3),
+        appVersion: AppVersion.v5,
       );
-      expect(back.code, ErrorCode.sessionLocked);
+      expect(
+        (next.status, next.code),
+        (PushStatus.rejected, ErrorCode.dayLocked),
+      );
+      expect((await serverDay(wed.date)).mark, DayMark.done);
     });
 
     test('F05-AC1: 17:59 giờ iPhone → rejected, kèm bản trên server; 18:00 '
@@ -426,7 +420,10 @@ void main() {
         DayMark.done,
         DateTime.utc(2026, 10, 7, 10, 59),
       );
-      expect((early.status, early.field), (PushStatus.rejected, 'mark'));
+      expect(
+        (early.status, early.field, early.code),
+        (PushStatus.rejected, 'mark', ErrorCode.liftWindowClosed),
+      );
       expect(
         const DayCodec().decode(wed.date.toKey(), early.current!.data!).mark,
         isNull,
@@ -441,19 +438,19 @@ void main() {
       expect(day.actualMuscles, [MuscleGroup.back]);
     });
 
-    test('F05-AC4: sửa được đến hết 14/10, 00:00 15/10 giờ iPhone → '
-        'rejected', () async {
+    test('F05-E63, TAC5-04 (IR5-08, CR5-02): 23:59 07/10 "Đã tập" → applied; '
+        '00:00 08/10 giờ iPhone → day_locked', () async {
       await setUpSchedule();
-      // 23:59 14/10 giờ Việt Nam = 16:59 UTC.
+      // 23:59 07/10 giờ Việt Nam = 16:59 UTC.
       expect(
-        (await markAt(
-          DayMark.skipped,
-          DateTime.utc(2026, 10, 14, 16, 59),
-        )).status,
+        (await markAt(DayMark.done, DateTime.utc(2026, 10, 7, 16, 59))).status,
         PushStatus.applied,
       );
-      final late = await markAt(DayMark.done, DateTime.utc(2026, 10, 14, 17));
-      expect((late.status, late.field), (PushStatus.rejected, 'mark'));
+      final late = await markAt(DayMark.skipped, DateTime.utc(2026, 10, 7, 17));
+      expect(
+        (late.status, late.field, late.code),
+        (PushStatus.rejected, 'mark', ErrorCode.dayLocked),
+      );
     });
 
     test('đánh dấu ngày nghỉ, "Đã tập" thiếu nhóm cơ → rejected', () async {
@@ -636,36 +633,44 @@ void main() {
       expect(rows.single[0], 3, reason: '14/10, 21/10, 28/10');
     });
 
-    test('TAC2-04: buổi tập thêm đã lưu → xóa hoặc đổi nhóm cơ, kể cả trong '
-        'ngày → rejected extra_session_locked, server giữ nguyên', () async {
-      await setUpSchedule();
-      final added = sat.withExtra(const [
-        MuscleGroup.abs,
-      ], loggedAt: DateTime.utc(2026, 10, 10, 13));
-      expect(
-        (await extraAt(sat, const [
+    test(
+      'F05-E65, F05-AC64 (IR5-08, CR5-07): buổi tập thêm đã lưu → đổi '
+      'nhóm cơ, xóa trong ngày → applied; ngày hôm sau → day_locked',
+      () async {
+        await setUpSchedule();
+        final added = sat.withExtra(const [
           MuscleGroup.abs,
-        ], DateTime.utc(2026, 10, 10, 13))).status,
-        PushStatus.applied,
-      );
-      final changed = await extraAt(added, const [
-        MuscleGroup.back,
-      ], DateTime.utc(2026, 10, 10, 13, 30));
-      expect(
-        (changed.status, changed.code),
-        (PushStatus.rejected, ErrorCode.extraSessionLocked),
-      );
-      final deleted = await extraAt(
-        added,
-        null,
-        DateTime.utc(2026, 10, 10, 13, 31),
-      );
-      expect(deleted.code, ErrorCode.extraSessionLocked);
-      final rows = await app.tdb.pool.execute(
-        'SELECT extra_muscles::text[] FROM days '
-        "WHERE date = '2026-10-10'",
-      );
-      expect(rows.single[0], ['abs']);
-    });
+        ], loggedAt: DateTime.utc(2026, 10, 10, 13));
+        expect(
+          (await extraAt(sat, const [
+            MuscleGroup.abs,
+          ], DateTime.utc(2026, 10, 10, 13))).status,
+          PushStatus.applied,
+        );
+        final changed = await extraAt(added, const [
+          MuscleGroup.back,
+        ], DateTime.utc(2026, 10, 10, 14));
+        expect(changed.status, PushStatus.applied);
+        final rows = await app.tdb.pool.execute(
+          'SELECT extra_muscles::text[] FROM days '
+          "WHERE date = '2026-10-10'",
+        );
+        expect(rows.single[0], ['back']);
+        final deleted = await extraAt(
+          added,
+          null,
+          DateTime.utc(2026, 10, 10, 14, 30),
+        );
+        expect(deleted.status, PushStatus.applied);
+        // 00:00 11/10 giờ Việt Nam = 17:00 UTC 10/10: thêm lại → day_locked.
+        final late = await extraAt(sat, const [
+          MuscleGroup.abs,
+        ], DateTime.utc(2026, 10, 10, 17, 1));
+        expect(
+          (late.status, late.code),
+          (PushStatus.rejected, ErrorCode.dayLocked),
+        );
+      },
+    );
   });
 }

@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:api_contract/api_contract.dart';
 
-/// Phiên bản app Bản 4 (05 Bản 4 TD4-11), dùng trong test thay `AppVersion.v3`.
-final appVersionV4 = AppVersion.parse('4.0.0');
+/// Phiên bản app Bản 5 (05 Bản 5 TD5-18), dùng trong test.
+const appVersionV5 = AppVersion.v5;
 
 /// `version:` trong pubspec.yaml của app.
 AppVersion pubspecVersion() {

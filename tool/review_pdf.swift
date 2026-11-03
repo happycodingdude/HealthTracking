@@ -25,7 +25,10 @@ for line in tsv.split(separator: "\n") {
   let f = line.split(separator: "\t", omittingEmptySubsequences: false).map(String.init)
   guard f.count >= 8 else { continue }
   let id = f[0], screen = f[1], state = f[2]
-  let page = Int(f[3]) ?? 1
+  // Cột 4: số trang của PDF mock (Bản 4), hoặc đường dẫn hình mock của màn
+  // (Bản 5, so cả hình), hoặc "-" = màn không có hình mock mới.
+  let pageField = f[3]
+  let page = Int(pageField) ?? 0
   let x = CGFloat(Double(f[4]) ?? 0), y = CGFloat(Double(f[5]) ?? 0)
   let w = CGFloat(Double(f[6]) ?? 0), h = CGFloat(Double(f[7]) ?? 0)
   ctx.beginPDFPage(nil)
@@ -38,7 +41,10 @@ for line in tsv.split(separator: "\n") {
   NSGraphicsContext.current = NSGraphicsContext(cgContext: ctx, flipped: false)
   title.draw(at: NSPoint(x: 30, y: pageH - 50), withAttributes: attrs)
   ("simulator" as NSString).draw(at: NSPoint(x: 30, y: pageH - 80), withAttributes: [.font: NSFont.systemFont(ofSize: 14), .foregroundColor: NSColor.lightGray])
-  ("mock 04 (trang \(page))" as NSString).draw(at: NSPoint(x: 520, y: pageH - 80), withAttributes: [.font: NSFont.systemFont(ofSize: 14), .foregroundColor: NSColor.lightGray])
+  let mockLabel = page > 0 ? "mock 04 (trang \(page))"
+    : pageField == "-" ? "không có hình mock Bản 5 (giữ Bản 4)"
+    : "mock 04 Bản 5 (\((pageField as NSString).lastPathComponent))"
+  (mockLabel as NSString).draw(at: NSPoint(x: 520, y: pageH - 80), withAttributes: [.font: NSFont.systemFont(ofSize: 14), .foregroundColor: NSColor.lightGray])
   NSGraphicsContext.restoreGraphicsState()
   let areaH: CGFloat = pageH - 120, areaY: CGFloat = 30
   // Trái: ảnh simulator
@@ -50,9 +56,12 @@ for line in tsv.split(separator: "\n") {
   } else {
     missing.append(id)
   }
-  // Phải: vùng mock
-  if let mock = loadImage("\(mockDir)/page-\(page).png") {
-    let crop = CGRect(x: x * mockScale, y: y * mockScale, width: w * mockScale, height: h * mockScale)
+  // Phải: vùng mock (Bản 4) hoặc cả hình mock của màn (Bản 5).
+  let mockPath = page > 0 ? "\(mockDir)/page-\(page).png" : "\(mockDir)/\(pageField)"
+  if pageField != "-", let mock = loadImage(mockPath) {
+    let crop = w > 0
+      ? CGRect(x: x * mockScale, y: y * mockScale, width: w * mockScale, height: h * mockScale)
+      : CGRect(x: 0, y: 0, width: mock.width, height: mock.height)
     if let part = mock.cropping(to: crop) {
       let pw = CGFloat(part.width), ph = CGFloat(part.height)
       let scale = min(450 / pw, areaH / ph)

@@ -183,6 +183,9 @@ class Days extends Table {
   TextColumn get extraMuscles => text().nullable()();
   DateTimeColumn get extraLoggedAt => dateTime().nullable()();
 
+  /// Lúc tới phòng gym trước giờ tập (05 Bản 5 TD5-07), schema 3.
+  DateTimeColumn get openedAt => dateTime().nullable()();
+
   @override
   Set<Column<Object>> get primaryKey => {date};
 }
@@ -361,6 +364,96 @@ class ExerciseNotes extends Table {
   Set<Column<Object>> get primaryKey => {date, exerciseId};
 }
 
+/// Bản sao entity `session_exercise` (key `YYYY-MM-DD:exerciseId`, 05 Bản 5
+/// §6.5, TD5-03): bài đổi / bỏ qua / thêm của buổi, ghi qua outbox; tombstone
+/// = xóa dòng. Schema 3.
+@DataClassName('SessionExerciseDbRow')
+class SessionExercises extends Table {
+  @override
+  String get tableName => 'session_exercises';
+
+  /// `YYYY-MM-DD`.
+  TextColumn get date => text()();
+  TextColumn get exerciseId => text()();
+
+  /// `original` / `replacement` / `extra`.
+  TextColumn get role => text()();
+  TextColumn get replacesExerciseId => text().nullable()();
+  IntColumn get position => integer().withDefault(const Constant(0))();
+  BoolColumn get skipped => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column<Object>> get primaryKey => {date, exerciseId};
+}
+
+/// Bản sao entity `exercise_feel` (key `YYYY-MM-DD:exerciseId`, TD5-04): mức
+/// thoải mái của set cuối, ghi qua outbox; bỏ chọn = xóa dòng. Schema 3.
+@DataClassName('ExerciseFeelDbRow')
+class ExerciseFeels extends Table {
+  @override
+  String get tableName => 'exercise_feels';
+
+  /// `YYYY-MM-DD`.
+  TextColumn get date => text()();
+  TextColumn get exerciseId => text()();
+
+  /// `easy` / `medium` / `hard`.
+  TextColumn get feel => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {date, exerciseId};
+}
+
+/// Bản sao entity `schedule_pause` (key `id`, TD5-05): khoảng tạm dừng lịch
+/// tập, ghi qua outbox. Schema 3.
+@DataClassName('SchedulePauseDbRow')
+class SchedulePauses extends Table {
+  @override
+  String get tableName => 'schedule_pauses';
+
+  TextColumn get id => text()();
+
+  /// `YYYY-MM-DD`.
+  TextColumn get startDate => text()();
+  TextColumn get endDate => text()();
+  TextColumn get endedOn => text().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+/// Bản sao entity `gym_location` (key `me`, TD5-06): vị trí phòng gym, một
+/// dòng, ghi qua outbox. Schema 3.
+@DataClassName('GymLocationDbRow')
+class GymLocations extends Table {
+  @override
+  String get tableName => 'gym_locations';
+
+  TextColumn get key => text()();
+  RealColumn get lat => real()();
+  RealColumn get lng => real()();
+  DateTimeColumn get savedAt => dateTime()();
+  BoolColumn get enabled => boolean().withDefault(const Constant(true))();
+
+  @override
+  Set<Column<Object>> get primaryKey => {key};
+}
+
+/// Ngày đã báo server "tới phòng gym" (05 Bản 5 §6.5): **chỉ trên máy**, không
+/// đồng bộ; để không gọi `gym-arrival` lặp trong ngày. Xóa khi đăng xuất.
+/// Schema 3.
+@DataClassName('GymArrivalDbRow')
+class GymArrivals extends Table {
+  @override
+  String get tableName => 'gym_arrivals';
+
+  /// `YYYY-MM-DD`.
+  TextColumn get date => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {date};
+}
+
 /// SQLite trên máy (TD-04). Bản 2 đã phát hành với `schemaVersion = 1`; từ
 /// Bản 3 mỗi lần đổi cấu trúc tăng `schemaVersion` và có bước nâng cấp, chỉ
 /// thêm, không xóa database vì outbox có thể còn thay đổi chưa gửi (ED-05,
@@ -384,14 +477,19 @@ class ExerciseNotes extends Table {
     LiftLogs,
     ExerciseUnits,
     ExerciseNotes,
+    SessionExercises,
+    ExerciseFeels,
+    SchedulePauses,
+    GymLocations,
+    GymArrivals,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
-  /// 1 = Bản 2; 2 = Bản 3 (06 Bản 3 §6.5.2).
+  /// 1 = Bản 2; 2 = Bản 3 (06 Bản 3 §6.5.2); 3 = Bản 5 (05 Bản 5 §6.5).
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   /// Vùng cơ còn thiếu (lần tạo: 19 vùng; nâng từ schema 1: 3 vùng chân).
   Future<void> _insertMuscleRegions() => batch((b) {
@@ -443,6 +541,17 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(exercises, exercises.sortInGroup);
         await m.addColumn(exercises, exercises.deleted);
         await _insertMuscleRegions();
+      }
+      // 2 → 3 (Bản 5): chỉ thêm 5 bảng và cột `days.opened_at`; outbox giữ
+      // nguyên. Cursor về 0 một lần do bộ entity đã biết thêm 4 entity
+      // (TA5-10).
+      if (from < 3 && to >= 3) {
+        await m.createTable(sessionExercises);
+        await m.createTable(exerciseFeels);
+        await m.createTable(schedulePauses);
+        await m.createTable(gymLocations);
+        await m.createTable(gymArrivals);
+        await m.addColumn(days, days.openedAt);
       }
     },
     beforeOpen: (details) async {

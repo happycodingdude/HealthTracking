@@ -18,6 +18,10 @@ const silentErrorCodes = {
   ErrorCode.liftNotAllowedForExercise,
   ErrorCode.liftExerciseNotInSession,
   ErrorCode.liftUnitMissing,
+  // Bản 5 (05 Bản 5 §6.6.2).
+  ErrorCode.dayLocked,
+  ErrorCode.sessionDone,
+  ErrorCode.pauseOverlap,
 };
 
 /// Hàm duy nhất đổi lỗi thành câu tiếng Việt (06 §6.4.3, AP-6).
@@ -51,7 +55,10 @@ String errorMessage(ApiError? error, ErrorScreen screen, {int? nextMonth}) {
     ErrorCode.liftWindowClosed ||
     ErrorCode.liftNotAllowedForExercise ||
     ErrorCode.liftExerciseNotInSession ||
-    ErrorCode.liftUnitMissing => offline,
+    ErrorCode.liftUnitMissing ||
+    ErrorCode.dayLocked ||
+    ErrorCode.sessionDone ||
+    ErrorCode.pauseOverlap => offline,
     ErrorCode.unauthorized ||
     ErrorCode.profileIncomplete ||
     ErrorCode.notFound ||

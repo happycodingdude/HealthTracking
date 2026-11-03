@@ -18,6 +18,8 @@ void main() {
   late MarkSessionDone done;
   late MarkSessionSkipped skipped;
   late AddExtraSession addExtra;
+  late EditExtraSession editExtra;
+  late UnmarkSession unmark;
   late ScheduleRepository schedule;
   final wed = LocalDate(2026, 10, 7);
   final thu = LocalDate(2026, 10, 8);
@@ -47,6 +49,18 @@ void main() {
       outbox: outbox,
       clock: clock,
     );
+    editExtra = EditExtraSession(
+      db: db,
+      schedule: schedule,
+      outbox: outbox,
+      clock: clock,
+    );
+    unmark = UnmarkSession(
+      db: db,
+      schedule: schedule,
+      outbox: outbox,
+      clock: clock,
+    );
     await seedSetUp(db);
   });
 
@@ -62,12 +76,7 @@ void main() {
       done(wed, confirmed: false),
       throwsA(isA<NotConfirmedException>()),
     );
-    await expectLater(
-      addExtra(thu, const [MuscleGroup.abs], confirmed: false),
-      throwsA(isA<NotConfirmedException>()),
-    );
     expect((await schedule.day(wed))!.mark, isNull);
-    expect((await schedule.day(thu))!.extraMuscles, isNull);
     expect(await db.select(db.outbox).get(), isEmpty);
   });
 
@@ -85,32 +94,20 @@ void main() {
     );
   });
 
-  test(
-    'F05-AC22: sau "Đã tập" không "Không tập" được, không "Đã tập" lại',
-    () async {
-      await done(wed, confirmed: true);
-      await expectLater(
-        skipped(wed),
-        throwsA(
-          isA<MarkException>().having(
-            (e) => e.error,
-            'error',
-            MarkError.alreadyDone,
-          ),
-        ),
-      );
-      await expectLater(
-        done(wed, confirmed: true),
-        throwsA(isA<MarkException>()),
-      );
-      expect((await schedule.day(wed))!.mark, DayMark.done);
-    },
-  );
-
-  test('F05-R25: "Không tập" lưu ngay; đổi sang "Đã tập" trong 7 ngày → '
-      'gộp thành một mutation khi chưa gửi', () async {
+  test('F05-AC61, F05-E61 (IR5-08, CR5-06): "Đã tập" → "Không tập" → bỏ đánh '
+      'dấu → "Đã tập" lại trong ngày; gộp một mutation khi chưa gửi', () async {
+    await done(wed, confirmed: true);
+    clock.set(DateTime(2026, 10, 7, 18, 30));
     await skipped(wed);
-    clock.set(DateTime(2026, 10, 14, 23, 59));
+    expect((await schedule.day(wed))!.mark, DayMark.skipped);
+    await unmark(wed);
+    expect((await schedule.day(wed))!.mark, isNull);
+    await expectLater(
+      unmark(wed),
+      throwsA(
+        isA<MarkException>().having((e) => e.error, 'e', MarkError.notMarked),
+      ),
+    );
     await done(wed, confirmed: true);
     final sent = const DayCodec().decode(
       '2026-10-07',
@@ -119,8 +116,26 @@ void main() {
     expect(sent.mark, DayMark.done);
   });
 
-  test('F05-R22: trước giờ tập → MarkException, không ghi gì', () async {
-    clock.set(DateTime(2026, 10, 7, 17, 59));
+  test('F05-E63 (IR5-08, CR5-02): 00:00 ngày sau → mọi thao tác MarkException '
+      'locked, không ghi gì', () async {
+    await done(wed, confirmed: true);
+    await db.delete(db.outbox).go();
+    clock.set(DateTime(2026, 10, 8, 0, 1));
+    for (final call in [() => skipped(wed), () => unmark(wed)]) {
+      await expectLater(
+        call(),
+        throwsA(
+          isA<MarkException>().having((e) => e.error, 'e', MarkError.locked),
+        ),
+      );
+    }
+    expect((await schedule.day(wed))!.mark, DayMark.done);
+    expect(await db.select(db.outbox).get(), isEmpty);
+  });
+
+  test('F05-R22, FC5-02: trước giờ tập → "Đã tập" tooEarly; "Không tập" được '
+      '(F05-E62)', () async {
+    clock.set(DateTime(2026, 10, 7, 10));
     await expectLater(
       done(wed, confirmed: true),
       throwsA(
@@ -131,9 +146,9 @@ void main() {
         ),
       ),
     );
-    await expectLater(skipped(wed), throwsA(isA<MarkException>()));
     expect((await schedule.day(wed))!.mark, isNull);
-    expect(await db.select(db.outbox).get(), isEmpty);
+    await skipped(wed);
+    expect((await schedule.day(wed))!.mark, DayMark.skipped);
   });
 
   test('ngày nghỉ, chủ nhật → notWorkout', () async {
@@ -144,17 +159,18 @@ void main() {
     );
   });
 
-  test('F05-AC26: buổi tập thêm đã xác nhận → ghi + outbox; không thêm lại '
-      'được (khóa), không có cách sửa hay xóa', () async {
+  test('F05-R64, F05-E65, F05-AC64 (IR5-08, CR5-07): buổi tập thêm hôm nay → '
+      'ghi + outbox, không hộp xác nhận; sửa nhóm cơ, xóa trong ngày; hôm sau '
+      'khóa', () async {
     clock.set(DateTime(2026, 10, 8, 20));
-    await addExtra(thu, const [MuscleGroup.abs], confirmed: true);
+    await addExtra(thu, const [MuscleGroup.shoulders]);
     final sent = const DayCodec().decode(
       '2026-10-08',
       (await onlyMutation()).data!,
     );
-    expect(sent.extraMuscles, [MuscleGroup.abs]);
+    expect(sent.extraMuscles, [MuscleGroup.shoulders]);
     await expectLater(
-      addExtra(thu, const [MuscleGroup.back], confirmed: true),
+      addExtra(thu, const [MuscleGroup.back]),
       throwsA(
         isA<ExtraException>().having(
           (e) => e.error,
@@ -163,20 +179,34 @@ void main() {
         ),
       ),
     );
+    clock.set(DateTime(2026, 10, 8, 21));
+    await editExtra(thu, const [MuscleGroup.back]);
+    expect((await schedule.day(thu))!.extraMuscles, [MuscleGroup.back]);
+    await editExtra(thu, null);
+    expect((await schedule.day(thu))!.extraMuscles, isNull);
+    await addExtra(thu, const [MuscleGroup.abs]);
+    clock.set(DateTime(2026, 10, 9, 0, 1));
+    await expectLater(
+      editExtra(thu, null),
+      throwsA(
+        isA<ExtraException>().having((e) => e.error, 'e', ExtraError.locked),
+      ),
+    );
     expect((await schedule.day(thu))!.extraMuscles, [MuscleGroup.abs]);
   });
 
-  test(
-    'F05-E29: ngày đã có buổi theo lịch, ngày mai → ExtraException',
-    () async {
-      await expectLater(
-        addExtra(wed, const [MuscleGroup.abs], confirmed: true),
-        throwsA(isA<ExtraException>()),
-      );
-      await expectLater(
-        addExtra(thu, const [MuscleGroup.abs], confirmed: true),
-        throwsA(isA<ExtraException>()),
-      );
-    },
-  );
+  test('F05-AC64, F05-E66: thêm buổi tập thêm cho hôm qua → locked; ngày đã '
+      'có buổi theo lịch → notRestDay', () async {
+    clock.set(DateTime(2026, 10, 9, 9));
+    await expectLater(
+      addExtra(thu, const [MuscleGroup.abs]),
+      throwsA(
+        isA<ExtraException>().having((e) => e.error, 'e', ExtraError.locked),
+      ),
+    );
+    await expectLater(
+      addExtra(wed, const [MuscleGroup.abs]),
+      throwsA(isA<ExtraException>()),
+    );
+  });
 }

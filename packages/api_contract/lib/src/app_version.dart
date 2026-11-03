@@ -36,6 +36,10 @@ final class AppVersion implements Comparable<AppVersion> {
   /// dạng Bản 2 (TD3-21).
   static const v3 = AppVersion(3, 0, 0);
 
+  /// Bản 5 đầu tiên (05 Bản 5 TD5-18). App thấp hơn không nhận 4 entity mới
+  /// của Bản 5 (TR5-07, TA2-01).
+  static const v5 = AppVersion(5, 0, 0);
+
   static final _pattern = RegExp(r'^(\d{1,4})\.(\d{1,4})\.(\d{1,4})(\+\d+)?$');
 
   final int major;

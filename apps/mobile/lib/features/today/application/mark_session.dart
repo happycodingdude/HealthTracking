@@ -76,10 +76,10 @@ abstract base class _DayWrite {
   }
 }
 
-/// "Đã tập" (F05-R23, F05-R24, 05 Bản 2 TD2-08): chỉ khi Bạn đã xác nhận hộp
-/// S-65 ([confirmed]); ghi `mark = done`, nhóm cơ thực tế = nhóm cơ của lịch,
-/// `markedAt`. Buổi chốt từ đây. Ném [NotConfirmedException] hoặc
-/// [MarkException].
+/// "Đã tập" (F05-R61, 05 Bản 2 TD2-08): chỉ khi Bạn đã xác nhận hộp S-65
+/// ([confirmed]); ghi `mark = done`, nhóm cơ thực tế = nhóm cơ của lịch,
+/// `markedAt`. Từ giờ mở buổi ([LiftWindow], FD5-01) đến hết ngày ([DayLock]);
+/// đổi lại được trong ngày. Ném [NotConfirmedException] hoặc [MarkException].
 final class MarkSessionDone extends _DayWrite {
   MarkSessionDone({
     required super.db,
@@ -100,8 +100,9 @@ final class MarkSessionDone extends _DayWrite {
   }
 }
 
-/// "Không tập" (F05-R25): lưu ngay, không cần xác nhận, chỉ từ "Chờ đánh dấu".
-/// Ném [MarkException]. Mức tạ đã ghi của buổi giữ nguyên (FD2-02).
+/// "Không tập" (F05-R62, FC5-02): lưu ngay, không cần xác nhận, từ đầu ngày
+/// đến hết ngày, kể cả đổi từ "Đã tập" (D5-02 = B). Ném [MarkException]. Mức
+/// tạ, ghi chú, bài trong buổi giữ nguyên (FD2-02, A5-12).
 final class MarkSessionSkipped extends _DayWrite {
   MarkSessionSkipped({
     required super.db,
@@ -126,10 +127,27 @@ final class MarkSessionSkipped extends _DayWrite {
   }, endsLiveActivity: _hooks);
 }
 
-/// Thêm buổi tập thêm (F05-R31 → R35): chỉ khi Bạn đã xác nhận hộp S-65
-/// ([confirmed]) và đã có lịch tuần; khóa ngay khi lưu. Không có sửa, xóa.
-/// Ném
-/// [NotConfirmedException] hoặc [ExtraException].
+/// Bỏ đánh dấu (FC5-13, F05-R65): buổi về "Chờ đánh dấu" đến hết ngày; mức
+/// tạ, ghi chú, mức thoải mái, bài đổi / bỏ / thêm giữ nguyên (A5-12). Thẻ màn
+/// hình khóa không làm gì tại chỗ: server bật lại (TA5-06, 05 Bản 5 §6.4.4).
+/// Ném [MarkException].
+final class UnmarkSession extends _DayWrite {
+  UnmarkSession({
+    required super.db,
+    required super.schedule,
+    required super.outbox,
+    required super.clock,
+  });
+
+  Future<PlanDay> call(LocalDate date) => _write(date, (day, now) {
+    if (day == null) throw const MarkException(MarkError.notWorkout);
+    return SessionRules.unmark(day, now: now);
+  });
+}
+
+/// Thêm buổi tập thêm (F05-R31 → R35, F05-R64): chỉ cho hôm nay, đã có lịch
+/// tuần; lưu ngay (Bản 5 bỏ hộp "Sau khi lưu, buổi này không sửa được nữa").
+/// Ném [ExtraException].
 final class AddExtraSession extends _DayWrite {
   AddExtraSession({
     required super.db,
@@ -138,12 +156,7 @@ final class AddExtraSession extends _DayWrite {
     required super.clock,
   });
 
-  Future<PlanDay> call(
-    LocalDate date,
-    List<MuscleGroup> muscles, {
-    required bool confirmed,
-  }) async {
-    if (!confirmed) throw const NotConfirmedException();
+  Future<PlanDay> call(LocalDate date, List<MuscleGroup> muscles) async {
     // F05-R31: chưa có lịch tuần thì không có buổi tập thêm.
     final hasSchedule = await _schedule.template() != null;
     return _write(date, (day, now) {
@@ -160,6 +173,25 @@ final class AddExtraSession extends _DayWrite {
       );
     });
   }
+}
+
+/// Sửa nhóm cơ / xóa buổi tập thêm (F05-R64, F05-E65): chỉ hôm nay, đến hết
+/// ngày. [muscles] null = xóa. Ném [ExtraException].
+final class EditExtraSession extends _DayWrite {
+  EditExtraSession({
+    required super.db,
+    required super.schedule,
+    required super.outbox,
+    required super.clock,
+  });
+
+  Future<PlanDay> call(LocalDate date, List<MuscleGroup>? muscles) =>
+      _write(date, (day, now) {
+        if (day == null) throw const ExtraException(ExtraError.notRestDay);
+        return muscles == null
+            ? ExtraSessionRules.delete(day, now: now)
+            : ExtraSessionRules.edit(day, muscles, now: now);
+      });
 }
 
 final markSessionDoneProvider = Provider<MarkSessionDone>(
@@ -183,8 +215,26 @@ final markSessionSkippedProvider = Provider<MarkSessionSkipped>(
   ),
 );
 
+final unmarkSessionProvider = Provider<UnmarkSession>(
+  (ref) => UnmarkSession(
+    db: ref.watch(databaseProvider),
+    schedule: ref.watch(scheduleRepositoryProvider),
+    outbox: ref.watch(outboxWriterProvider),
+    clock: ref.watch(clockProvider),
+  ),
+);
+
 final addExtraSessionProvider = Provider<AddExtraSession>(
   (ref) => AddExtraSession(
+    db: ref.watch(databaseProvider),
+    schedule: ref.watch(scheduleRepositoryProvider),
+    outbox: ref.watch(outboxWriterProvider),
+    clock: ref.watch(clockProvider),
+  ),
+);
+
+final editExtraSessionProvider = Provider<EditExtraSession>(
+  (ref) => EditExtraSession(
     db: ref.watch(databaseProvider),
     schedule: ref.watch(scheduleRepositoryProvider),
     outbox: ref.watch(outboxWriterProvider),

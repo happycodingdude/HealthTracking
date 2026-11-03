@@ -77,10 +77,14 @@ final class LiftLogHandler implements SyncEntityHandler {
     final (date, exerciseId) = LiftLog.parseKey(m.key)!;
     final existing = await read(s, userId, m.key);
     final exercise = await libraryExercise(s, exerciseId);
+    final now =
+        await deviceNow(s, userId, m.clientUpdatedAt) ?? m.clientUpdatedAt;
+    final day = await sessionDay(s, userId, date);
+    if (LiftLogRules.isSession(day)) requireDayOpen(date, now);
     final error = LiftLogRules.check(
-      day: await sessionDay(s, userId, date),
+      day: day,
       exercise: exercise,
-      now: await deviceNow(s, userId, m.clientUpdatedAt) ?? m.clientUpdatedAt,
+      now: now,
       exists: existing != null && !existing.deleted,
     );
     if (error != null) {
@@ -179,18 +183,31 @@ const liftErrorCodes = {
   LiftError.exerciseNotInSession: ErrorCode.liftExerciseNotInSession,
 };
 
-/// Dòng `days` của [date]; thời điểm lưu buổi tập thêm quy về giờ trên
-/// iPhone như `clientUpdatedAt` (05 Bản 2 §6.4.3).
+/// Dòng `days` của [date]; thời điểm lưu buổi tập thêm và lúc tới gym
+/// (`openedAt`, 05 Bản 5 TD5-07) quy về giờ trên iPhone như `clientUpdatedAt`
+/// (05 Bản 2 §6.4.3).
 Future<PlanDay?> sessionDay(Session s, String userId, LocalDate date) async {
   final change = await const DayHandler().read(s, userId, date.toKey());
   if (change == null || change.deleted) return null;
-  final day = const DayCodec().decode(change.key, change.data!);
+  var day = const DayCodec().decode(change.key, change.data!);
+  final openedAt = day.openedAt;
+  if (openedAt != null) {
+    day = day.withOpenedAt(await deviceNow(s, userId, openedAt) ?? openedAt);
+  }
   final loggedAt = day.extraLoggedAt;
   if (loggedAt == null) return day;
   return day.withExtra(
     day.extraMuscles,
     loggedAt: await deviceNow(s, userId, loggedAt) ?? loggedAt,
   );
+}
+
+/// 05 Bản 5 TD5-08: ghi mức tạ / ghi chú cho ngày đã qua (hết ngày, theo giờ
+/// iPhone lúc ghi) → `day_locked`.
+void requireDayOpen(LocalDate date, DateTime now) {
+  if (!DayLock.isOpen(date, now)) {
+    throw const SyncRejection('key', code: ErrorCode.dayLocked);
+  }
 }
 
 /// Bài trong thư viện; bài bỏ ở Bản 3 (tombstone) coi như không có.

@@ -30,6 +30,14 @@ enum ErrorCode {
   /// Chỉ trong kết quả push, không hiện câu nào (TA-12, 06 Bản 3 §6.4).
   liftUnitMissing('lift_unit_missing', 422),
 
+  /// Bản 5 (05 Bản 5 §6.6.2, TD5-08), chỉ trong kết quả push, không hiện câu
+  /// nào (TA-12): sửa buổi của ngày đã qua (thay `session_locked`,
+  /// `extra_session_locked`, hạn 7 ngày); đổi / bỏ / thêm bài khi buổi "Đã
+  /// tập"; khoảng tạm dừng thứ hai còn hiệu lực.
+  dayLocked('day_locked', 422),
+  sessionDone('session_done', 422),
+  pauseOverlap('pause_overlap', 422),
+
   /// Mã kỹ thuật: đường dẫn không tồn tại. App xử lý như lỗi kết nối.
   notFound('not_found', 404),
 

@@ -316,7 +316,7 @@ void main() {
       }
     });
 
-    test('00:01 → lift_window_closed; bài bụng trong buổi có Bụng → applied '
+    test('00:01 → day_locked (TD5-08); bài bụng trong buổi có Bụng → applied '
         '(không xét logsWeight); bài khác nhóm → '
         'lift_exercise_not_in_session; ngày không có buổi → '
         'lift_no_session', () async {
@@ -347,7 +347,8 @@ void main() {
       app.clock.set(after);
       token = await login('0912345678');
       final closed = (await push([note(pecDeck, 'muộn', at: after)])).single;
-      expect(closed.code, ErrorCode.liftWindowClosed);
+      // 05 Bản 5 TD5-08 (IR5-08): ngày đã qua → day_locked.
+      expect(closed.code, ErrorCode.dayLocked);
     });
   });
 

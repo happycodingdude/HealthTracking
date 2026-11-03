@@ -1,3 +1,4 @@
+import '../day_lock.dart';
 import '../schedule/month_plan.dart';
 import '../session/session.dart';
 
@@ -23,7 +24,9 @@ sealed class LiftWindow {
   /// của [day] là giờ trên iPhone; thời điểm UTC được đổi sang giờ máy (app).
   /// Server quy về múi giờ trong hồ sơ trước khi gọi.
   ///
-  /// - Buổi theo lịch: từ giờ tập đến 00:00 ngày sau (FD2-01).
+  /// - Buổi theo lịch: từ giờ tập — hoặc lúc tới phòng gym nếu sớm hơn
+  ///   (FD5-01 = A, TD5-07: `[min(time, openedAt), 00:00)`) — đến 00:00
+  ///   ngày sau (FD2-01, FC5-01).
   /// - Buổi tập thêm lưu trong chính ngày của buổi: từ lúc lưu đến 00:00
   ///   ngày sau (FA2-11). Lưu cho ngày đã qua: không bao giờ mở.
   static LiftWindow of(PlanDay? day, DateTime now) {
@@ -32,7 +35,7 @@ sealed class LiftWindow {
     }
     final DateTime opensAt;
     if (day.isWorkout) {
-      opensAt = SessionRules.startsAt(day);
+      opensAt = SessionRules.opensAt(day);
     } else if (SessionLock.extra(day) && day.extraLoggedAt != null) {
       final at = day.extraLoggedAt!;
       final logged = at.isUtc ? at.toLocal() : at;
@@ -45,7 +48,7 @@ sealed class LiftWindow {
     } else {
       return const LiftWindowClosed(LiftClosedReason.noSession);
     }
-    final closesAt = day.date.addDays(1).startOfDay;
+    final closesAt = DayLock.endOf(day.date);
     if (!now.isBefore(closesAt)) {
       return const LiftWindowClosed(LiftClosedReason.ended);
     }

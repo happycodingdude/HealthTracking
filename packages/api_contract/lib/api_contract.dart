@@ -14,5 +14,6 @@ export 'src/live_activity_dtos.dart';
 export 'src/menu_dtos.dart';
 export 'src/profile_codecs.dart';
 export 'src/schedule_codecs.dart';
+export 'src/session_v5_codecs.dart';
 export 'src/sync_dtos.dart';
 export 'src/sync_entities.dart';

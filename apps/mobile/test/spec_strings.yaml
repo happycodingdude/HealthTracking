@@ -190,7 +190,6 @@ menuCardTitle: "Thực đơn hôm nay" # mock S-10-1
 menuTargetPrefix: "Theo mức" # mock S-10-1 "Theo mức 2.090 kcal"
 actualMusclesLabel: "Nhóm cơ đã tập" # mock S-24-1 Bản 2
 missingActualMuscles: "Vui lòng chọn ít nhất 1 nhóm cơ" # 03 Bản 2 F05-V21
-lockedNote: "Chỉ sửa được trong 7 ngày" # 03 F05-E3
 
 # Buổi tập thêm S-24 (VS-07)
 logExtraSession: "Đã tập ngoài lịch? Ghi buổi tập thêm" # 04 §6.7.1, mock S-10-3, S-21-2
@@ -198,11 +197,12 @@ extraSession: "Buổi tập thêm" # 04 §6.13.3, mock S-25-1
 extraNotCounted: "Không tính vào kế hoạch tuần." # 04 S-24, mock S-24-1
 
 # Chốt buổi Bản 2 (VS-24): S-65, S-10, S-21
-lockConfirmLine1: "Sau khi lưu, buổi này không sửa được nữa." # 03 Bản 2 F05-R23, F05-R33; 04 Bản 2 S-65, UA2-02
-lockConfirmLine2: "Mức tạ của buổi vẫn ghi được đến hết hôm nay." # 04 Bản 2 S-65, UA2-02
-extraConfirmTitle: "Lưu buổi tập thêm?" # 04 Bản 2 S-65, UA2-02
-lockedOnSave: "Đã chốt khi lưu" # 04 Bản 2 §6.6.1, S-21, UA2-06
 changeToDone: "Đổi sang Đã tập" # 04 Bản 2 §6.6.1, S-21, UR2-05
+doneConfirmBody: "Ghi nhận buổi hôm nay là Đã tập. Bạn đổi lại được đến hết hôm nay." # 04 Bản 5 S-65, §6.9; 03 Bản 5 F05-R61
+changeToSkipped: "Đổi sang Không tập" # 04 Bản 5 S-21 hôm nay "Đổi sang Đã tập / Không tập → S-23"
+unmarked: "Chưa đánh dấu" # 04 Bản 5 S-23, UA5-04
+editExtraSession: "Sửa buổi thêm" # 04 Bản 5 S-21 hôm nay → S-24
+deleteExtraSession: "Xóa buổi thêm" # 04 Bản 5 S-24 khi sửa
 viewSession: "Xem buổi" # 04 Bản 4 S-21
 delete: "Xóa" # 04 §6.13.1 (hộp xác nhận: nút xóa chữ đỏ)
 cancel: "Hủy" # 04 S-20 (hộp xác nhận "Chia lại" · "Hủy")
@@ -478,7 +478,6 @@ semanticsOnly:
   - menuCardTitle
   - menuTargetPrefix
   - actualMusclesLabel
-  - lockedNote
   - extraNotCounted
   - weekProgressTitle
   - noPlannedSessions
@@ -544,3 +543,12 @@ semanticsOnly:
   - activityAllLogged
   - activityAbsOnly
   - activityNextNone
+
+# Câu Bản 5 BỎ (04 Bản 5 §6.9, 06 Bản 5 §6.4 "câu bỏ đánh dấu removed: true"):
+# không còn trong strings_vi.dart và không xuất hiện ở bất kỳ đâu trong lib/.
+removed:
+  lockConfirmLine1: "Sau khi lưu, buổi này không sửa được nữa." # F05-R64, F05-AC65
+  lockConfirmLine2: "Mức tạ của buổi vẫn ghi được đến hết hôm nay." # S-65 cũ, F05-R61
+  extraConfirmTitle: "Lưu buổi tập thêm?" # hộp chốt S-24 bỏ, F05-R64
+  lockedOnSave: "Đã chốt khi lưu" # CR5-06, CR5-07
+  lockedNote: "Chỉ sửa được trong 7 ngày" # CR5-02, UR5-05

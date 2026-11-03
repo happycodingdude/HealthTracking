@@ -115,7 +115,7 @@ void main() {
       'activityPushToken': update,
       'activityDate': '2026-10-12',
       'environment': 'sandbox',
-      'appVersion': appVersionV4.toString(),
+      'appVersion': appVersionV5.toString(),
     });
   });
 

@@ -188,10 +188,14 @@ final class ExerciseNoteHandler implements SyncEntityHandler {
     final (date, exerciseId) = ExerciseNote.parseKey(m.key)!;
     final existing = await read(s, userId, m.key);
     final exists = existing != null && !existing.deleted;
+    final now =
+        await deviceNow(s, userId, m.clientUpdatedAt) ?? m.clientUpdatedAt;
+    final day = await sessionDay(s, userId, date);
+    if (LiftLogRules.isSession(day)) requireDayOpen(date, now);
     final error = ExerciseNoteRules.check(
-      day: await sessionDay(s, userId, date),
+      day: day,
       exercise: await libraryExercise(s, exerciseId),
-      now: await deviceNow(s, userId, m.clientUpdatedAt) ?? m.clientUpdatedAt,
+      now: now,
       exists: exists,
     );
     if (error != null) {

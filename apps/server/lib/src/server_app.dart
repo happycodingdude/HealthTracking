@@ -12,6 +12,7 @@ import 'app.dart';
 import 'config.dart';
 import 'db/database.dart';
 import 'db/migrator.dart';
+import 'jobs/day_closer.dart';
 import 'jobs/job_scheduler.dart';
 import 'jobs/maintenance.dart';
 import 'library/video_check.dart';
@@ -76,8 +77,18 @@ final class ServerApp {
         log.info('ai_cleanup', {'requests': r.requests, 'menus': r.menus});
       }
     });
+    // 05 Bản 5 TD5-12: "Chờ đánh dấu" → "Không tập (tự động)" lúc 00:00 theo
+    // múi giờ từng tài khoản; lần chạy đầu quét 8 ngày (TD5-17).
+    final dayCloser = DayCloser(db.pool, deps.clock);
+    Future<void> closeDays() async {
+      final closed = await dayCloser.run();
+      if (closed > 0) log.info('day_closer', {'closed': closed});
+    }
+
+    jobs.every('day_closer', DayCloser.interval, closeDays);
     // Chạy một lần khi khởi động để không phụ thuộc server chạy liền 24 giờ.
     unawaited(jobs.runNow('daily_cleanup', cleanup));
+    unawaited(jobs.runNow('day_closer', closeDays));
     // 05 Bản 2 TD2-17: kiểm tra video thư viện hằng ngày (mặc định 03:30 giờ
     // Việt Nam). Không có khóa YouTube (dev, CI) thì không chạy.
     final dsn = config.sentryDsn;

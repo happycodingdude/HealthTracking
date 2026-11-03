@@ -143,6 +143,8 @@ void main() {
       GoldenVariant v, {
       bool changed = false,
       bool skipWed = false,
+      bool extraThu = false,
+      DateTime? now,
     }) async {
       final db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);
@@ -160,6 +162,9 @@ void main() {
             DayMark.skipped,
             markedAt: DateTime(2026, 10, 7, 19),
           ),
+          8 when extraThu => d.withExtra(const [
+            MuscleGroup.abs,
+          ], loggedAt: DateTime(2026, 10, 8, 20)),
           _ => d,
         });
       }
@@ -179,7 +184,7 @@ void main() {
         tester,
         v,
         db,
-        now: DateTime(2026, 10, 8, 10),
+        now: now ?? DateTime(2026, 10, 8, 10),
         onboarded: true,
       );
       await tester.tap(
@@ -222,26 +227,46 @@ void main() {
       await snap('s21_today_rest_${v.name}');
     });
 
-    testWidgets('S-21 chờ đánh dấu: hai nút trong bảng (mock S-21-1 Bản 2) '
-        '${v.name}', (tester) async {
-      await seedOctober(tester, v);
+    testWidgets('S-21 hôm nay chờ đánh dấu: hai nút trong bảng ${v.name}', (
+      tester,
+    ) async {
+      await seedOctober(tester, v, now: DateTime(2026, 10, 7, 18, 30));
       await tapRow(tester, '2026-10-07');
       await snap('s21_markable_${v.name}');
     });
 
-    testWidgets('S-21 buổi đã chốt, chỉ xem (mock S-21-2 Bản 2) ${v.name}', (
-      tester,
-    ) async {
+    testWidgets('S-21 ngày đã qua, chỉ "Xem buổi" (mock S-21 Bản 5) '
+        '${v.name}', (tester) async {
       await seedOctober(tester, v);
       await tapRow(tester, '2026-10-05');
-      await snap('s21_done_${v.name}');
+      await snap('s21_past_${v.name}');
     });
 
-    testWidgets('S-21 "Không tập" còn trong 7 ngày (mock S-21-3 Bản 2) '
+    testWidgets('S-21 hôm nay đã "Không tập": "Đổi sang Đã tập" → S-23 '
         '${v.name}', (tester) async {
-      await seedOctober(tester, v, skipWed: true);
+      await seedOctober(
+        tester,
+        v,
+        skipWed: true,
+        now: DateTime(2026, 10, 7, 19),
+      );
       await tapRow(tester, '2026-10-07');
-      await snap('s21_change_${v.name}');
+      await snap('s21_today_marked_${v.name}');
+    });
+
+    testWidgets('S-24 sửa buổi tập thêm hôm nay (Xóa buổi thêm) ${v.name}', (
+      tester,
+    ) async {
+      await seedOctober(
+        tester,
+        v,
+        extraThu: true,
+        now: DateTime(2026, 10, 8, 21),
+      );
+      await tapRow(tester, '2026-10-08');
+      await tester.tap(find.byKey(const ValueKey('day-edit-extra')));
+      await tester.pumpAndSettle();
+      await snap('s24_edit_${v.name}');
     });
 
     testWidgets('S-22 lịch tuần, chế độ sửa (mock S-22-1) ${v.name}', (

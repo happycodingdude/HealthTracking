@@ -15,6 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:mobile/app/app.dart';
 import 'package:mobile/app/router.dart';
+import 'package:mobile/app/strings_vi.dart';
 import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/dev/review_matrix.dart';
 import 'package:mobile/features/auth/application/auth_controller.dart';
@@ -27,6 +28,7 @@ import 'package:mobile/features/onboarding/application/setup_state.dart';
 import 'package:mobile/features/onboarding/data/onboarding_draft_repository.dart';
 import 'package:mobile/features/weight/data/weight_repository.dart';
 import 'package:mobile/features/workout/presentation/session_screen.dart';
+import 'package:mobile/ui/components/ironly_tab_bar.dart';
 import 'package:mobile/ui/gallery.dart';
 import 'package:mobile/ui/theme.dart';
 
@@ -720,6 +722,98 @@ void main() {
           ],
         );
         await shot(tester, 'm20_s07');
+      });
+    }
+    if (milestone == Milestone.m23) {
+      // 06 Bản 5 VS-52: lịch templateAc2 (T2 Ngực + Tay sau, T4 Lưng, T6 Vai
+      // 18:00, thiết lập 07/10/2026).
+      Future<void> pumpAt(
+        WidgetTester tester,
+        AppDatabase db,
+        DateTime now,
+      ) async {
+        final container = ProviderContainer(
+          retry: (_, _) => null,
+          overrides: appOverrides(db: db, clock: FixedClock(now)),
+        );
+        addTearDown(container.dispose);
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const IronlyApp(),
+          ),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      Future<void> tapKey(WidgetTester tester, String key) async {
+        final f = find.byKey(ValueKey(key));
+        await tester.ensureVisible(f);
+        await tester.pumpAndSettle();
+        await tester.tap(f);
+        await tester.pumpAndSettle();
+      }
+
+      Future<void> training(WidgetTester tester) async {
+        await tester.tap(
+          find.descendant(
+            of: find.byType(IronlyTabBar),
+            matching: find.text(S.tabTraining),
+          ),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      Future<AppDatabase> seeded() async {
+        final db = AppDatabase(NativeDatabase.memory());
+        addTearDown(db.close);
+        await seedSetUp(db);
+        return db;
+      }
+
+      final wed = LocalDate(2026, 10, 7);
+
+      testWidgets('M23: S-65 câu mới, S-10 H5, S-23 ba mục', (tester) async {
+        final db = await seeded();
+        await pumpAt(tester, db, DateTime(2026, 10, 7, 18, 5));
+        await tapKey(tester, 'today-mark-done');
+        await shot(tester, 'm23_s65');
+        await tapKey(tester, 'lock-confirm-save');
+        await tester.pump(const Duration(seconds: 4));
+        await tester.pumpAndSettle();
+        await shot(tester, 'm23_s10_done');
+        await tapKey(tester, 'today-status');
+        await shot(tester, 'm23_s23');
+      });
+
+      testWidgets('M23: S-10 H6, S-21 hôm nay đã Không tập', (tester) async {
+        final db = await seeded();
+        await seedMark(db, wed, DayMark.skipped);
+        await pumpAt(tester, db, DateTime(2026, 10, 7, 19));
+        await shot(tester, 'm23_s10_skipped');
+        await training(tester);
+        await tapKey(tester, 'month-cell-2026-10-07');
+        await shot(tester, 'm23_s21_today');
+      });
+
+      testWidgets('M23: S-20, S-21 ngày đã qua', (tester) async {
+        final db = await seeded();
+        await seedMark(db, wed, DayMark.done);
+        await pumpAt(tester, db, DateTime(2026, 10, 13, 10));
+        await training(tester);
+        await shot(tester, 'm23_s20');
+        await tapKey(tester, 'month-cell-2026-10-07');
+        await shot(tester, 'm23_s21_past');
+      });
+
+      testWidgets('M23: S-24 sửa buổi tập thêm hôm nay', (tester) async {
+        final db = await seeded();
+        await seedExtra(db, LocalDate(2026, 10, 8), const [MuscleGroup.abs]);
+        await pumpAt(tester, db, DateTime(2026, 10, 8, 21));
+        await training(tester);
+        await tapKey(tester, 'month-cell-2026-10-08');
+        await tapKey(tester, 'day-edit-extra');
+        await shot(tester, 'm23_s24_edit');
       });
     }
   });

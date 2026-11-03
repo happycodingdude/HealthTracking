@@ -14,7 +14,7 @@ void main() {
   final sun = PlanDay(date: LocalDate(2026, 10, 11), kind: DayKind.rest);
   final satNoon = DateTime(2026, 10, 10, 12);
 
-  group('buổi tập thêm Bản 2 (F05-R31 → R35, F05-V21)', () {
+  group('buổi tập thêm (F05-R31 → R35, F05-V21; Bản 5 F05-R64)', () {
     test('F05-R32, F05-E29: không thêm được cho ngày mai, chủ nhật, ngày đã có '
         'buổi theo lịch', () {
       final fridayNoon = DateTime(2026, 10, 9, 12);
@@ -32,19 +32,19 @@ void main() {
       );
     });
 
-    test('F05-R32, F05-R35: ngày nghỉ hôm nay (bất kỳ lúc nào) hoặc trong 7 '
-        'ngày trước', () {
+    test('F05-R64, F05-E66, F05-AC64 (IR5-08, CR5-07): chỉ ngày nghỉ hôm '
+        'nay (bất kỳ lúc nào trong ngày); ngày đã qua không thêm được', () {
       expect(
         ExtraSessionRules.canAdd(sat, DateTime(2026, 10, 10, 0, 1)),
         isTrue,
       );
-      expect(ExtraSessionRules.canAdd(thu, satNoon), isTrue);
       expect(
-        ExtraSessionRules.canAdd(thu, DateTime(2026, 10, 15, 23, 59)),
+        ExtraSessionRules.canAdd(sat, DateTime(2026, 10, 10, 23, 59)),
         isTrue,
       );
+      expect(ExtraSessionRules.validate(thu, null, satNoon), ExtraError.locked);
       expect(
-        ExtraSessionRules.validate(thu, null, DateTime(2026, 10, 16)),
+        ExtraSessionRules.validate(sat, null, DateTime(2026, 10, 11, 0, 1)),
         ExtraError.locked,
       );
     });
@@ -60,8 +60,8 @@ void main() {
       );
     });
 
-    test('F05-AC26, F05-R34: lưu xong thì khóa — không thêm lại, không sửa; '
-        'thứ tự nhóm cơ theo bộ chọn', () {
+    test('F05-R64, F05-E65: lưu xong vẫn sửa nhóm cơ, xóa được đến hết ngày; '
+        'không thêm buổi thứ hai; thứ tự nhóm cơ theo bộ chọn', () {
       final added = ExtraSessionRules.add(sat, const [
         MuscleGroup.back,
         MuscleGroup.chest,
@@ -80,6 +80,29 @@ void main() {
             ExtraError.alreadyLogged,
           ),
         ),
+      );
+      final edited = ExtraSessionRules.edit(added, const [
+        MuscleGroup.shoulders,
+      ], now: DateTime(2026, 10, 10, 21));
+      expect(edited.extraMuscles, [MuscleGroup.shoulders]);
+      expect(edited.extraLoggedAt, satNoon, reason: 'giữ lúc lưu lần đầu');
+      expect(
+        ExtraSessionRules.validateEdit(added, const [], satNoon),
+        ExtraError.noMuscles,
+      );
+      final deleted = ExtraSessionRules.delete(added, now: satNoon);
+      expect(deleted.extraMuscles, isNull);
+      expect(deleted.invalidField, isNull);
+      // 00:00 khóa (F05-E65).
+      final midnight = DateTime(2026, 10, 11);
+      expect(ExtraSessionRules.canEdit(added, midnight), isFalse);
+      expect(
+        ExtraSessionRules.validateEdit(added, null, midnight),
+        ExtraError.locked,
+      );
+      expect(
+        ExtraSessionRules.validateEdit(sat, null, satNoon),
+        ExtraError.notLogged,
       );
     });
 

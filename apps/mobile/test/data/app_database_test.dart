@@ -11,9 +11,9 @@ void main() {
   tearDown(() => db.close());
 
   test(
-    'schemaVersion 2 (Bản 3): tạo sync_state một dòng, cursor 0, chưa đồng bộ',
+    'schemaVersion 3 (Bản 5): tạo sync_state một dòng, cursor 0, chưa đồng bộ',
     () async {
-      expect(db.schemaVersion, 2);
+      expect(db.schemaVersion, 3);
       final rows = await db.select(db.syncState).get();
       expect(rows, hasLength(1));
       expect(rows.single.id, 1);

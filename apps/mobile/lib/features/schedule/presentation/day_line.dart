@@ -42,7 +42,8 @@ class DayLine extends StatelessWidget {
         SessionState.skipped => (GlyphStatus.skipped, S.sessionSkipped),
         SessionState.autoSkipped => (GlyphStatus.skipped, S.statusAutoSkipped),
       };
-      return (g, status.locked ? '$label, ${S.statusLocked}' : label);
+      // Ngày đã qua không còn nhãn "Đã khóa" (UR5-05).
+      return (g, label);
     }
     if (d.extraMuscles != null) return (GlyphStatus.extra, S.extraSession);
     return null;

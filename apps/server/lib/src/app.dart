@@ -24,6 +24,7 @@ import 'sync/lift_log_handler.dart';
 import 'sync/menu_handlers.dart';
 import 'sync/profile_handler.dart';
 import 'sync/schedule_handlers.dart';
+import 'sync/session_v5_handlers.dart';
 import 'sync/shared_handlers.dart';
 import 'sync/sync_entity_handler.dart';
 import 'sync/sync_routes.dart';
@@ -49,6 +50,12 @@ const defaultSyncHandlers = <SyncEntityHandler>[
   // Bản 3: đơn vị của bài, ghi chú bài theo buổi, push + pull (VS32-T04).
   ExerciseUnitHandler(),
   ExerciseNoteHandler(),
+  // Bản 5: bài trong buổi, mức thoải mái, tạm dừng, vị trí phòng gym, push +
+  // pull; app < 5.0.0 không nhận (06 Bản 5 VS52-T04, ED5-01).
+  SessionExerciseHandler(),
+  ExerciseFeelHandler(),
+  SchedulePauseHandler(),
+  GymLocationHandler(),
 ];
 
 /// Các thành phần dùng chung của API, tạo một lần khi khởi động.

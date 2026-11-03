@@ -85,7 +85,7 @@ void main() {
         serverMigrationsDir(),
         Logger((_) {}),
       ).migrate();
-      expect(applied, ['0002_v3']);
+      expect(applied, ['0002_v3', '0003_v5']);
 
       final lifts = await tdb.pool.execute(
         Sql.named(
@@ -166,7 +166,7 @@ void main() {
           serverMigrationsDir(),
           Logger((_) {}),
         ).migrate(),
-        ['0002_v3'],
+        ['0002_v3', '0003_v5'],
       );
       final purge = LibraryPurge(
         tdb.pool,

@@ -8,6 +8,7 @@ import 'package:mobile/app/strings_vi.dart';
 import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/features/schedule/data/schedule_repository.dart';
 import 'package:mobile/features/today/application/mark_session.dart';
+import 'package:mobile/features/today/application/progress_view.dart';
 import 'package:mobile/features/today/presentation/today_screen.dart';
 import 'package:mobile/ui/components/ironly_tab_bar.dart';
 
@@ -86,8 +87,8 @@ void main() {
       await pump(tester);
       await tapKey(tester, 'extra-log');
       await tapKey(tester, 'muscle-abs');
+      // F05-R64: Bản 5 lưu ngay, không hộp xác nhận.
       await tapKey(tester, 'extra-save');
-      await tapKey(tester, 'lock-confirm-save');
       // Ngày nghỉ đã có buổi tập thêm: hàng số liệu "+ Bụng", Tuần 1 / 2.
       expect(find.text('+ Bụng'), findsOneWidget);
       expect(find.text('1 / 2', findRichText: true), findsOneWidget);
@@ -166,23 +167,29 @@ void main() {
   );
 
   testWidgets(
-    'F06-AC3, F05-E2: đang xem S-25 tuần trước, buổi thứ 6 "Không tập (tự '
-    'động)" được sửa thành "Đã tập" → tiến độ tuần trước tăng 1',
+    'F06-AC3 (IR5-08, CR5-02): đang xem S-25, buổi hôm nay đổi "Không tập" '
+    '→ "Đã tập" trong ngày → tiến độ tăng 1 ngay; ngày đã qua không sửa được '
+    '(F05-R63)',
     (tester) async {
       await seedSetUp(db);
       await seedMark(db, wed, DayMark.done);
-      clock.set(DateTime(2026, 10, 13, 9));
+      clock.set(DateTime(2026, 10, 9, 19));
+      await seedMark(db, LocalDate(2026, 10, 9), DayMark.skipped);
       await pump(tester);
-      await tester.tap(card());
-      await tester.pumpAndSettle();
-      await tapKey(tester, 'week-previous');
-      expect(find.bySemanticsLabel(S.progressLine(1, 2)), findsOneWidget);
+      final week = ProgressWeek.containing(LocalDate(2026, 10, 9));
+      expect(container.read(weekProgressProvider(week))!.done, 1);
+      expect(find.text('1 / 2', findRichText: true), findsOneWidget);
 
       await container
           .read(markSessionDoneProvider)
           .call(LocalDate(2026, 10, 9), confirmed: true);
       await tester.pumpAndSettle();
-      expect(find.bySemanticsLabel(S.progressLine(2, 2)), findsOneWidget);
+      expect(container.read(weekProgressProvider(week))!.done, 2);
+      expect(find.text('2 / 2', findRichText: true), findsOneWidget);
+      await expectLater(
+        container.read(markSessionSkippedProvider).call(LocalDate(2026, 10, 7)),
+        throwsA(isA<MarkException>()),
+      );
     },
   );
 

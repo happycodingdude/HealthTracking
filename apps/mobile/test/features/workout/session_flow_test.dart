@@ -962,8 +962,8 @@ void main() {
       await pump(tester, tall: false);
       await tapKey(tester, 'extra-log');
       await tapKey(tester, 'muscle-shoulders');
+      // F05-R64: Bản 5 lưu ngay, không hộp xác nhận.
       await tapKey(tester, 'extra-save');
-      await tapKey(tester, 'lock-confirm-save');
       expect(find.text(S.extraLogged('Vai')), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('toast-action')));
       await tester.pumpAndSettle();

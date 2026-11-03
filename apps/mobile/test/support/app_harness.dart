@@ -143,7 +143,7 @@ List<Override> appOverrides({
     clockProvider.overrideWithValue(
       clock ?? FixedClock(DateTime(2026, 10, 7, 18, 42)),
     ),
-    appVersionProvider.overrideWithValue(appVersionV4),
+    appVersionProvider.overrideWithValue(appVersionV5),
     publicApiClientProvider.overrideWith(
       (ref) => fake.client()
         ..dio.interceptors.add(

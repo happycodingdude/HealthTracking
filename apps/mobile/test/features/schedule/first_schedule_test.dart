@@ -195,7 +195,7 @@ void main() {
         clock: clock,
       );
       await expectLater(
-        add(LocalDate(2026, 10, 13), const [MuscleGroup.abs], confirmed: true),
+        add(LocalDate(2026, 10, 13), const [MuscleGroup.abs]),
         throwsA(
           isA<ExtraException>().having(
             (e) => e.error,

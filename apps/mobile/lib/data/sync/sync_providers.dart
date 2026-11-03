@@ -4,13 +4,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../features/library/data/exercise_repository.dart';
 import '../../features/me/data/account_repository.dart';
+import '../../features/me/data/gym_location_repository.dart';
 import '../../features/me/data/profile_repository.dart';
 import '../../features/menu/data/menu_repository.dart';
+import '../../features/schedule/data/schedule_pause_repository.dart';
 import '../../features/schedule/data/schedule_repository.dart';
 import '../../features/weight/data/weight_repository.dart';
+import '../../features/workout/data/exercise_feel_repository.dart';
 import '../../features/workout/data/exercise_note_repository.dart';
 import '../../features/workout/data/exercise_unit_repository.dart';
 import '../../features/workout/data/lift_log_repository.dart';
+import '../../features/workout/data/session_exercise_repository.dart';
 import 'local_stores.dart';
 import 'outbox_writer.dart';
 import 'sync_api.dart';
@@ -54,6 +58,23 @@ final exerciseNoteRepositoryProvider = Provider<ExerciseNoteRepository>(
   (ref) => ExerciseNoteRepository(ref.watch(databaseProvider)),
 );
 
+// Bản 5 (06 Bản 5 VS52-T05): 4 entity mới.
+final sessionExerciseRepositoryProvider = Provider<SessionExerciseRepository>(
+  (ref) => SessionExerciseRepository(ref.watch(databaseProvider)),
+);
+
+final exerciseFeelRepositoryProvider = Provider<ExerciseFeelRepository>(
+  (ref) => ExerciseFeelRepository(ref.watch(databaseProvider)),
+);
+
+final schedulePauseRepositoryProvider = Provider<SchedulePauseRepository>(
+  (ref) => SchedulePauseRepository(ref.watch(databaseProvider)),
+);
+
+final gymLocationRepositoryProvider = Provider<GymLocationRepository>(
+  (ref) => GymLocationRepository(ref.watch(databaseProvider)),
+);
+
 final outboxWriterProvider = Provider<OutboxWriter>(
   (ref) => OutboxWriter(ref.watch(databaseProvider), ref.watch(clockProvider)),
 );
@@ -93,6 +114,19 @@ final syncEngineProvider = Provider<SyncEngine>((ref) {
       ),
       SyncEntities.exerciseNote: ExerciseNoteStore(
         ref.watch(exerciseNoteRepositoryProvider),
+      ),
+      // Bản 5 (VS52-T05): thêm 4 entity → cursor về 0 một lần (TA5-10).
+      SyncEntities.sessionExercise: SessionExerciseStore(
+        ref.watch(sessionExerciseRepositoryProvider),
+      ),
+      SyncEntities.exerciseFeel: ExerciseFeelStore(
+        ref.watch(exerciseFeelRepositoryProvider),
+      ),
+      SyncEntities.schedulePause: SchedulePauseStore(
+        ref.watch(schedulePauseRepositoryProvider),
+      ),
+      SyncEntities.gymLocation: GymLocationStore(
+        ref.watch(gymLocationRepositoryProvider),
       ),
     },
     clock: ref.watch(clockProvider),

@@ -112,7 +112,7 @@ void main() {
     expect(today()['kind'], 'rest');
     await container.read(addExtraSessionProvider).call(tuesday, const [
       MuscleGroup.abs,
-    ], confirmed: true);
+    ]);
     await tester.pumpAndSettle();
     expect(today()['extra'], isTrue);
     expect(week()['extra'], 1);

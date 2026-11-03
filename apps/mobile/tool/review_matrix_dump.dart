@@ -13,7 +13,7 @@ void main(List<String> args) {
         c.id,
         c.screen,
         c.state,
-        c.mock.page,
+        c.mockFile ?? (c.mock == rm.noMock ? '-' : c.mock.page),
         c.mock.x,
         c.mock.y,
         c.mock.w,

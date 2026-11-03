@@ -16,84 +16,116 @@ void main() {
   );
 
   DayViolation field(String f) => DayViolation(f);
-  const sessionLocked = DayViolation('mark', DayLock.session);
-  const extraLocked = DayViolation('extraMuscles', DayLock.extra);
+  DayViolation locked(String f) => DayViolation(f, DayViolationCode.dayLocked);
+  const windowClosed = DayViolation('mark', DayViolationCode.windowClosed);
 
-  group('đánh dấu (05 Bản 2 §6.6.3)', () {
-    test('F05-R22: đánh dấu trước giờ tập → mark', () {
+  group('đánh dấu (05 Bản 5 §6.6.2, TD5-08; IR5-08 sửa kỳ vọng Bản 2 theo '
+      'CR5-02, CR5-06)', () {
+    test('F05-R22, FC5-02: "Đã tập" trước giờ tập → lift_window_closed; '
+        '"Không tập" từ đầu ngày được', () {
       final at = DateTime(2026, 10, 7, 17, 59);
       expect(
         DayChangeRules.check(wed, marked(DayMark.done, at), at),
-        field('mark'),
+        windowClosed,
       );
       final ok = DateTime(2026, 10, 7, 18);
       expect(DayChangeRules.check(wed, marked(DayMark.done, ok), ok), isNull);
+      final morning = DateTime(2026, 10, 7, 10);
+      expect(
+        DayChangeRules.check(wed, marked(DayMark.skipped, morning), morning),
+        isNull,
+      );
+    });
+
+    test('TAC5-04: done → skipped cùng ngày → được; hôm sau → day_locked', () {
+      final done = marked(DayMark.done, DateTime(2026, 10, 7, 19));
+      final at = DateTime(2026, 10, 7, 19, 30);
+      expect(
+        DayChangeRules.check(done, marked(DayMark.skipped, at), at),
+        isNull,
+      );
+      expect(
+        DayChangeRules.check(done, wed, at),
+        isNull,
+        reason: 'bỏ đánh dấu',
+      );
+      final next = DateTime(2026, 10, 8, 0, 1);
+      expect(
+        DayChangeRules.check(done, marked(DayMark.skipped, next), next),
+        locked('mark'),
+      );
+      expect(
+        DayChangeRules.check(wed, marked(DayMark.done, next), next),
+        locked('mark'),
+      );
+    });
+
+    test('TAC5-04, FD5-01: "Đã tập" 17:20 với openedAt 17:20, giờ tập 18:00 → '
+        'được; không openedAt → lift_window_closed', () {
+      final at = DateTime(2026, 10, 7, 17, 20);
+      final opened = wed.withOpenedAt(at);
+      expect(
+        DayChangeRules.check(
+          opened,
+          marked(DayMark.done, at).withOpenedAt(at),
+          at,
+        ),
+        isNull,
+      );
+      expect(
+        DayChangeRules.check(wed, marked(DayMark.done, at), at),
+        windowClosed,
+      );
     });
 
     test(
-      'skipped → done chấp nhận đến hết ngày thứ 7; ngày thứ 8 bị từ chối',
+      'openedAt: chỉ ngày tập, không muộn hơn giờ tập; mốc sớm hơn thắng',
       () {
-        final skipped = marked(DayMark.skipped, DateTime(2026, 10, 7, 19));
-        final last = DateTime(2026, 10, 14, 23, 59);
+        final at = DateTime(2026, 10, 7, 17, 20);
         expect(
-          DayChangeRules.check(skipped, marked(DayMark.done, last), last),
-          isNull,
+          DayChangeRules.check(
+            wed,
+            wed.withOpenedAt(DateTime(2026, 10, 7, 18, 30)),
+            at,
+          ),
+          field('openedAt'),
         );
-        final late = DateTime(2026, 10, 15, 0, 1);
+        expect(DayChangeRules.check(wed, wed.withOpenedAt(at), at), isNull);
+        final early = DateTime(2026, 10, 7, 17, 10);
         expect(
-          DayChangeRules.check(skipped, marked(DayMark.done, late), late),
-          field('mark'),
+          DayChangeRules.mergeOpenedAt(
+            wed.withOpenedAt(at),
+            wed.withOpenedAt(early),
+          ),
+          early,
         );
+        expect(
+          DayChangeRules.mergeOpenedAt(
+            wed.withOpenedAt(early),
+            wed.withOpenedAt(at),
+          ),
+          early,
+        );
+        expect(DayChangeRules.mergeOpenedAt(wed.withOpenedAt(at), wed), at);
+        expect(DayChangeRules.mergeOpenedAt(null, wed), isNull);
       },
     );
 
-    test(
-      'TAC2-03: buổi done → đổi sang skipped, đổi nhóm cơ thực tế, bỏ đánh '
-      'dấu, sửa riêng → session_locked, kể cả trong ngày và trong hạn 7 ngày',
-      () {
-        final done = marked(DayMark.done, DateTime(2026, 10, 7, 19));
-        final at = DateTime(2026, 10, 7, 19, 30);
-        expect(
-          DayChangeRules.check(done, marked(DayMark.skipped, at), at),
-          sessionLocked,
-        );
-        expect(
-          DayChangeRules.check(
-            done,
-            done.withMark(
-              DayMark.done,
-              actual: const [MuscleGroup.shoulders],
-              markedAt: done.markedAt,
-            ),
-            at,
+    test('sửa riêng buổi đã đánh dấu → key (F05-R68)', () {
+      final done = marked(DayMark.done, DateTime(2026, 10, 7, 19));
+      expect(
+        DayChangeRules.check(
+          done,
+          PlanDay(
+            date: wed.date,
+            kind: DayKind.rest,
+            source: DaySource.override,
           ),
-          sessionLocked,
-        );
-        expect(
-          DayChangeRules.check(done, wed, at),
-          sessionLocked,
-          reason: 'Hoàn tác',
-        );
-        expect(
-          DayChangeRules.check(
-            done,
-            PlanDay(
-              date: wed.date,
-              kind: DayKind.rest,
-              source: DaySource.override,
-            ),
-            DateTime(2026, 10, 7, 12),
-          ),
-          sessionLocked,
-          reason: 'sửa riêng',
-        );
-        // Không có múi giờ vẫn khóa (không phụ thuộc thời gian).
-        expect(
-          DayChangeRules.check(done, marked(DayMark.skipped, at), null),
-          sessionLocked,
-        );
-      },
-    );
+          DateTime(2026, 10, 7, 19, 30),
+        ),
+        field('key'),
+      );
+    });
 
     test('TD2-08: app Bản 2 ghi Đã tập phải có nhóm cơ thực tế = nhóm cơ lịch; '
         'app Bản 1 tự chọn được rồi khóa', () {
@@ -123,11 +155,11 @@ void main() {
       final at = DateTime(2026, 10, 7, 12);
       expect(
         DayChangeRules.check(null, marked(DayMark.done, at), at),
-        field('mark'),
+        windowClosed,
       );
     });
 
-    test('không đổi gì → không áp quy tắc nào', () {
+    test('không đổi gì → không áp quy tắc nào, kể cả ngày đã qua', () {
       final done = marked(DayMark.done, DateTime(2026, 10, 7, 19));
       expect(DayChangeRules.check(done, done, DateTime(2026, 11, 1)), isNull);
       expect(DayChangeRules.check(null, wed, DateTime(2026, 10, 1)), isNull);
@@ -139,7 +171,7 @@ void main() {
     });
   });
 
-  group('buổi tập thêm (05 Bản 2 §6.6.3)', () {
+  group('buổi tập thêm (05 Bản 5 §6.6.2, F05-R64)', () {
     final sat = PlanDay(date: LocalDate(2026, 10, 10), kind: DayKind.rest);
     PlanDay extra(DateTime at, [MuscleGroup m = MuscleGroup.abs]) =>
         sat.withExtra([m], loggedAt: at);
@@ -152,24 +184,34 @@ void main() {
       expect(DayChangeRules.check(null, extra(now), now), isNull);
     });
 
-    test('quá 7 ngày không thêm được', () {
-      final late = DateTime(2026, 10, 18, 0, 1);
+    test('TAC5-04: thêm cho hôm qua → day_locked', () {
+      final sun = DateTime(2026, 10, 11, 0, 1);
       expect(
-        DayChangeRules.check(sat, extra(late), late),
-        field('extraMuscles'),
+        DayChangeRules.check(sat, extra(sun), sun),
+        locked('extraMuscles'),
       );
     });
 
-    test('TAC2-04: buổi tập thêm đã lưu → xóa hoặc đổi nhóm cơ → '
-        'extra_session_locked, kể cả trong ngày', () {
+    test('F05-E65: buổi tập thêm đã lưu → đổi nhóm cơ, xóa trong ngày được; '
+        '00:00 → day_locked', () {
       final added = extra(DateTime(2026, 10, 10, 20));
       final at = DateTime(2026, 10, 10, 21);
-      expect(DayChangeRules.check(added, sat, at), extraLocked);
+      expect(DayChangeRules.check(added, sat, at), isNull);
       expect(
-        DayChangeRules.check(added, extra(at, MuscleGroup.back), at),
-        extraLocked,
+        DayChangeRules.check(
+          added,
+          sat.withExtra(const [
+            MuscleGroup.back,
+          ], loggedAt: added.extraLoggedAt),
+          at,
+        ),
+        isNull,
       );
-      expect(DayChangeRules.check(added, sat, null), extraLocked);
+      final midnight = DateTime(2026, 10, 11);
+      expect(
+        DayChangeRules.check(added, sat, midnight),
+        locked('extraMuscles'),
+      );
       expect(DayChangeRules.check(added, added, at), isNull);
     });
 

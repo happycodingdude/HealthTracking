@@ -16,6 +16,7 @@ import 'day_line.dart';
 import 'extra_session_sheet.dart';
 import 'muscle_picker.dart';
 import 'session_marking.dart';
+import 'session_status_sheet.dart';
 import 'weekly_template_editor.dart';
 
 /// Mở S-21 cho ngày [date] (từ S-20, S-25).
@@ -29,12 +30,13 @@ Future<void> showDaySheet(BuildContext context, LocalDate date) =>
 
 enum _Mode { actions, time, muscles, schedule }
 
-/// S-21 — Chi tiết ngày (04 Bản 4 S-21): tiêu đề "Thứ 4, 28/10" + dấu trạng
-/// thái phải; dòng "Lưng · 18:00" chữ phụ (+ ổ khóa khi quá 7 ngày); các nút
-/// xám xếp dọc, chỉ hiện nút hợp lệ: Đổi giờ · Đổi nhóm cơ · Cho nghỉ ngày
-/// này · Xem buổi · Đã tập / Không tập · Đổi sang Đã tập; "Trả về theo lịch
-/// tuần" chữ cam. Không câu "Chỉ sửa được trong 7 ngày", "Đã chốt khi lưu".
-/// Quy tắc F-03, F-05 như Bản 1 → 3 ([DaySituation]).
+/// S-21 — Chi tiết ngày (04 Bản 5 S-21): tiêu đề "Thứ 4, 28/10" + dấu trạng
+/// thái phải; dòng "Lưng · 18:00" chữ phụ; các nút xám xếp dọc, chỉ hiện nút
+/// hợp lệ ([DaySituation]): ngày đã qua chỉ "Xem buổi" (không ổ khóa, không
+/// câu — UR5-05); hôm nay: Đổi giờ · Đổi nhóm cơ · Cho nghỉ ngày này (trước
+/// giờ tập) · Không tập (FC5-02) · Xem buổi · Đã tập / Không tập · Đổi sang
+/// Đã tập / Không tập (→ S-23) · Sửa buổi thêm (→ S-24); ngày tương lai như
+/// Bản 4. "Trả về theo lịch tuần" chữ cam.
 class DaySheet extends ConsumerStatefulWidget {
   const DaySheet({super.key, required this.date, required this.host});
 
@@ -134,11 +136,6 @@ class _DaySheetState extends ConsumerState<DaySheet> {
     final day = async.value;
     final situation = OverrideRules.situation(_date, day, now);
     final glyph = DayLine.glyphOf(day, now);
-    // Ổ khóa khi ngày đã quá 7 ngày (04 Bản 4 S-21) hoặc buổi đã khóa.
-    final locked =
-        situation == DaySituation.locked ||
-        _date.daysUntil(LocalDate.fromDateTime(now)) > 7 ||
-        (day != null && (SessionStatus.derive(day, now)?.locked ?? false));
 
     return UnsavedChangesGuard(
       dirty: _mode != _Mode.actions && _changed,
@@ -156,21 +153,10 @@ class _DaySheetState extends ConsumerState<DaySheet> {
           if (day != null)
             Padding(
               padding: const EdgeInsets.only(bottom: TokenSpace.s4),
-              child: Row(
+              child: Text(
+                _summary(day),
                 key: const ValueKey('day-summary'),
-                children: [
-                  Expanded(
-                    child: Text(_summary(day), style: IronlyText.caption),
-                  ),
-                  if (locked) ...[
-                    const SizedBox(width: TokenSpace.s2),
-                    const StatusGlyph(
-                      GlyphStatus.locked,
-                      label: S.lockedNote,
-                      size: TokenSize.lockSmall,
-                    ),
-                  ],
-                ],
+                style: IronlyText.caption,
               ),
             ),
           ...switch (_mode) {
@@ -227,6 +213,12 @@ class _DaySheetState extends ConsumerState<DaySheet> {
       'day-log-extra',
       () => _open((h) => showExtraSessionSheet(h, _date)),
     );
+    final today = _date == LocalDate.fromDateTime(now);
+    Widget markSkipped(PlanDay d) => _gray(
+      S.sessionSkipped,
+      'mark-skipped-${d.date.toKey()}',
+      () => SessionMarking.skipped(context, d, onConfirmed: close),
+    );
     return switch (situation) {
       DaySituation.editableWorkout => [
         _gray(S.changeTime, 'day-change-time', () => _edit(_Mode.time, day!)),
@@ -236,6 +228,8 @@ class _DaySheetState extends ConsumerState<DaySheet> {
           () => _edit(_Mode.muscles, day!),
         ),
         _gray(S.restThisDay, 'day-rest', _rest),
+        // FC5-02: "Không tập" bấm được từ đầu ngày (F05-E62).
+        if (today) markSkipped(day!),
         ?viewSession,
         ?revert,
       ],
@@ -256,39 +250,28 @@ class _DaySheetState extends ConsumerState<DaySheet> {
           'mark-done-${day!.date.toKey()}',
           () => SessionMarking.done(context, day, onConfirmed: close),
         ),
+        markSkipped(day),
+        ?viewSession,
+      ],
+      // F05-R61, F05-R62: đổi lại trong ngày qua S-23.
+      DaySituation.todayMarked => [
         _gray(
-          S.sessionSkipped,
-          'mark-skipped-${day.date.toKey()}',
-          () => SessionMarking.skipped(context, day, onConfirmed: close),
+          day!.mark == DayMark.done ? S.changeToSkipped : S.changeToDone,
+          'day-change-status',
+          () => _open((h) => showSessionStatusSheet(h, _date)),
         ),
         ?viewSession,
       ],
-      DaySituation.done => [?viewSession],
-      DaySituation.changeToDone => [
+      // F05-R64: sửa / xóa buổi tập thêm đến hết ngày.
+      DaySituation.todayExtra => [
         _gray(
-          S.changeToDone,
-          'change-to-done-${day!.date.toKey()}',
-          () => SessionMarking.done(context, day, onConfirmed: close),
+          S.editExtraSession,
+          'day-edit-extra',
+          () => _open((h) => showExtraSessionSheet(h, _date)),
         ),
         ?viewSession,
       ],
-      DaySituation.pastRest => [if (canAdd) logExtra],
-      DaySituation.extraSaved => [?viewSession],
-      DaySituation.upcoming => [?viewSession],
-      // Quá 7 ngày: nút mờ, không câu giải thích (F4-R6).
-      DaySituation.locked => [
-        if (day != null && day.isWorkout)
-          Padding(
-            padding: const EdgeInsets.only(bottom: TokenSpace.s2),
-            child: IronlyButton.gray(
-              key: ValueKey('change-to-done-${day.date.toKey()}-locked'),
-              label: S.changeToDone,
-              enabled: false,
-              onPressed: () {},
-            ),
-          ),
-        ?viewSession,
-      ],
+      DaySituation.upcoming || DaySituation.past => [?viewSession],
       DaySituation.sunday => const [],
     };
   }
