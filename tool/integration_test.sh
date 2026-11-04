@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Integration test trên iOS simulator, chạy trên Mac trước khi đóng slice và trước tag (ED-10).
 #   tool/integration_test.sh [-d <simulator-id>]
+#   ITEST_TARGET=integration_test/<file>_test.dart tool/integration_test.sh   chạy một file
 # Bật PostgreSQL + server test riêng (cổng 18080) để luồng đăng nhập/đồng bộ chạy thật.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -28,7 +29,10 @@ mkdir -p "$ROOT/build"
   JWT_SECRET="$JWT_SECRET" BCRYPT_COST=4 \
   exec dart run bin/server.dart >"$ROOT/build/itest-server.log" 2>&1) &
 SERVER_PID=$!
+MOVER_PID=""
 cleanup() {
+  [ -n "$MOVER_PID" ] && kill "$MOVER_PID" 2>/dev/null || true
+  [ -n "${DEVICE:-}" ] && xcrun simctl location "$DEVICE" clear 2>/dev/null || true
   kill "$SERVER_PID" 2>/dev/null || true
   sleep 1
   docker compose -f "$ROOT/deploy/docker-compose.dev.yml" exec -T db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "DROP DATABASE IF EXISTS $DBNAME WITH (FORCE)" >/dev/null || true
@@ -53,6 +57,31 @@ fi
 xcrun simctl uninstall "$DEVICE" com.happycodingdude.ironly.dev 2>/dev/null || true
 xcrun simctl keychain "$DEVICE" reset
 
+# Vị trí phòng gym (06 Bản 5 VS58-T06, TA5-12): quyền "Luôn luôn" cho bản dev
+# và vị trí giả dời qua lại giữa hai điểm cách nhau ~1 km để iOS báo "vào vùng"
+# cho gym_location_test (các kịch bản khác không lưu vị trí nên không bị ảnh
+# hưởng). Chỉ là điểm thử, không phải vị trí của ai.
+GYM_A="10.7700,106.7000"; GYM_B="10.7790,106.7000"
+xcrun simctl location "$DEVICE" set "$GYM_A"
+(granted=""; tick=0
+while true; do
+  # Quyền chỉ đặt được sau khi flutter test cài app (gỡ app ở trên xóa quyền);
+  # cài lại (thư mục app đổi) thì đặt lại.
+  APP_DIR="$(xcrun simctl get_app_container "$DEVICE" com.happycodingdude.ironly.dev 2>/dev/null || true)"
+  if [ -n "$APP_DIR" ] && [ "$APP_DIR" != "$granted" ]; then
+    xcrun simctl privacy "$DEVICE" grant location-always com.happycodingdude.ironly.dev 2>/dev/null && granted="$APP_DIR"
+  fi
+  tick=$((tick + 1))
+  # Đổi điểm mỗi 6 giây.
+  if [ $((tick % 12)) -eq 0 ]; then
+    if [ $((tick / 12 % 2)) -eq 1 ]; then P="$GYM_B"; else P="$GYM_A"; fi
+    xcrun simctl location "$DEVICE" set "$P" 2>/dev/null || true
+  fi
+  sleep 0.5
+done) &
+MOVER_PID=$!
+disown "$MOVER_PID"
+
 cd "$ROOT/apps/mobile"
-flutter test integration_test --flavor dev -d "$DEVICE" \
+flutter test "${ITEST_TARGET:-integration_test}" --flavor dev -d "$DEVICE" \
   --dart-define=FLAVOR=dev --dart-define=API_BASE_URL="http://localhost:$PORT"

@@ -20,6 +20,7 @@ import 'data/notifications/notification_gateway.dart';
 import 'features/account/application/logout.dart';
 import 'features/auth/application/auth_controller.dart';
 import 'features/me/data/profile_repository.dart';
+import 'features/native/gym_region_bridge.dart';
 import 'features/native/live_activity_controller.dart';
 import 'features/native/native_bridge.dart';
 import 'features/native/native_logout_hooks.dart';
@@ -80,6 +81,7 @@ Future<void> runIronlyApp({
               ref.watch(clockProvider),
               store: ref.watch(liveActivityStoreProvider),
               deleteToken: ref.watch(liveActivityApiProvider).delete,
+              gym: ref.watch(gymRegionBridgeProvider),
             ),
           ),
           // Thẻ màn hình khóa cập nhật / tắt tại chỗ (05 Bản 3 §6.4.4).
@@ -105,6 +107,7 @@ Future<void> runIronlyApp({
         const ChannelNativeBridge(),
         const SystemClock(),
         store: PrefsLiveActivityStore(),
+        gym: ChannelGymRegionBridge(),
       ),
       flag: logoutFlag,
       reporter: reporter,

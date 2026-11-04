@@ -404,6 +404,56 @@ abstract final class S {
   /// S-20).
   static String pausedSession(String muscles) => '$muscles, $statusPaused';
 
+  // Vị trí phòng gym S-50, S-77 (04 Bản 5 §6.6, §6.9, §6.10; 03 Bản 5 F-32).
+  /// 04 Bản 5 S-50 dòng thứ tư, S-77 tiêu đề.
+  static const gymLocation = 'Vị trí phòng gym';
+  static const gymOn = 'Đang bật';
+  static const gymOff = 'Đã tắt';
+
+  /// 04 Bản 5 S-50: "Lưu 03/11 · Đang bật" / "Lưu 03/11 · Đã tắt".
+  static String gymSummary(String dayMonth, {required bool on}) =>
+      'Lưu $dayMonth · ${on ? gymOn : gymOff}';
+
+  /// 04 Bản 5 S-77 nút cam (chưa lưu).
+  static const saveGymLocation = 'Lưu vị trí này';
+
+  /// 04 Bản 5 S-77 nút xám (đã lưu).
+  static const resaveGymLocation = 'Lưu lại vị trí này';
+
+  /// 04 Bản 5 S-77, §6.10: đang lấy vị trí.
+  static const gettingLocation = 'Đang lấy vị trí…';
+
+  /// 04 Bản 5 S-77: "Lưu lúc 17:20 · T3 03/11/2026" (F32-R2).
+  static String gymSavedAt(String time, String date) => 'Lưu lúc $time · $date';
+
+  /// 04 Bản 5 S-77 công tắc.
+  static const gymCardSwitch = 'Hiện thẻ khi tới phòng gym';
+
+  /// 04 Bản 5 S-77 dòng quyền (F32-R5, chỉ thông tin).
+  static const locationPermission = 'Quyền vị trí';
+  static const locationAlways = 'Luôn luôn';
+  static const locationWhenInUse = 'Khi dùng app';
+  static const locationNone = 'Không';
+
+  /// 04 Bản 5 S-77 chữ đỏ.
+  static const deleteGymLocation = 'Xóa vị trí';
+
+  /// 03 Bản 5 F32-R3, 04 Bản 5 §6.9 banner S-77.
+  static const gymNoFix =
+      'Chưa lấy được vị trí. Kiểm tra quyền vị trí của Ironly trong Cài đặt.';
+
+  /// 04 Bản 5 §6.9 hộp lưu lại.
+  static const resaveGymTitle = 'Lưu lại vị trí phòng gym?';
+  static const resaveGymBody = 'Vị trí cũ sẽ bị thay.';
+  static const resaveGymAction = 'Lưu lại';
+
+  /// 04 Bản 5 §6.9 hộp xóa (F32-R8).
+  static const deleteGymTitle = 'Xóa vị trí phòng gym?';
+  static const deleteGymBody = 'Thẻ sẽ chỉ hiện theo giờ tập.';
+
+  /// 04 Bản 5 §6.9 thông báo nhanh.
+  static const gymSaved = 'Đã lưu vị trí phòng gym';
+
   /// 04 Bản 4 S-21: nút "Xem buổi" → S-63.
   static const viewSession = 'Xem buổi';
 
@@ -1201,6 +1251,25 @@ abstract final class S {
     'endPauseAction': endPauseAction,
     'pauseEnded': pauseEnded,
     'pauseUntilPrefix': pauseUntilPrefix,
+    'gymLocation': gymLocation,
+    'gymOn': gymOn,
+    'gymOff': gymOff,
+    'saveGymLocation': saveGymLocation,
+    'resaveGymLocation': resaveGymLocation,
+    'gettingLocation': gettingLocation,
+    'gymCardSwitch': gymCardSwitch,
+    'locationPermission': locationPermission,
+    'locationAlways': locationAlways,
+    'locationWhenInUse': locationWhenInUse,
+    'locationNone': locationNone,
+    'deleteGymLocation': deleteGymLocation,
+    'gymNoFix': gymNoFix,
+    'resaveGymTitle': resaveGymTitle,
+    'resaveGymBody': resaveGymBody,
+    'resaveGymAction': resaveGymAction,
+    'deleteGymTitle': deleteGymTitle,
+    'deleteGymBody': deleteGymBody,
+    'gymSaved': gymSaved,
     'viewSession': viewSession,
     'delete': delete,
     'cancel': cancel,

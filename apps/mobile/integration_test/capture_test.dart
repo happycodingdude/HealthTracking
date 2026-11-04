@@ -21,10 +21,13 @@ import 'package:mobile/data/db/app_database.dart';
 import 'package:mobile/dev/review_matrix.dart';
 import 'package:mobile/features/auth/application/auth_controller.dart';
 import 'package:mobile/features/me/data/account_repository.dart';
+import 'package:mobile/features/me/data/gym_location_repository.dart';
 import 'package:mobile/features/me/data/profile_repository.dart';
 import 'package:mobile/features/me/presentation/calorie_proposal_sheet.dart';
+import 'package:mobile/features/me/presentation/gym_location_screen.dart';
 import 'package:mobile/features/me/presentation/me_screen.dart';
 import 'package:mobile/features/menu/data/menu_repository.dart';
+import 'package:mobile/features/native/gym_region_bridge.dart';
 import 'package:mobile/features/onboarding/application/setup_state.dart';
 import 'package:mobile/features/onboarding/data/onboarding_draft_repository.dart';
 import 'package:mobile/features/schedule/presentation/pause_sheet.dart';
@@ -45,6 +48,7 @@ import 'package:mobile/ui/keys.dart';
 import 'package:mobile/ui/theme.dart';
 
 import '../test/support/app_harness.dart';
+import '../test/support/fake_native.dart';
 import '../test/support/fake_server.dart';
 import '../test/support/fake_sync.dart';
 import '../test/support/schedule_fixture.dart';
@@ -1168,6 +1172,67 @@ void main() {
       ) async {
         await pumpAt(tester, await seeded(), thu0940);
         await shot(tester, 'm25_s10_h8');
+      });
+    }
+    if (milestone == Milestone.m26) {
+      // 06 Bản 5 VS-58: S-50, S-77 × 3 với cầu vị trí giả (mock S-77: T3
+      // 03/11/2026 17:20). Vị trí thật trên simulator: gym_location_test.
+      final tue = DateTime(2026, 11, 3, 17, 20);
+      final saved = GymLocation(lat: 10.77, lng: 106.69, savedAt: tue);
+
+      Future<FakeGymRegionBridge> pumpGym(
+        WidgetTester tester,
+        String location, {
+        GymLocation? at,
+        bool fetching = false,
+      }) async {
+        final db = AppDatabase(NativeDatabase.memory());
+        addTearDown(db.close);
+        await AccountRepository(db).put('Anton');
+        if (at != null) await GymLocationRepository(db).put(at);
+        final gym = FakeGymRegionBridge();
+        if (fetching) gym.hold = Completer<GymFix?>();
+        final container = ProviderContainer(
+          retry: (_, _) => null,
+          overrides: appOverrides(db: db, clock: FixedClock(tue), gym: gym),
+        );
+        addTearDown(container.dispose);
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const IronlyApp(),
+          ),
+        );
+        await tester.pumpAndSettle();
+        container.read(routerProvider).go(location);
+        await tester.pumpAndSettle();
+        if (fetching) {
+          await tester.tap(find.byKey(const ValueKey('gym-save')));
+          await tester.pump();
+        }
+        return gym;
+      }
+
+      testWidgets('M26: S-50 dòng Vị trí phòng gym', (tester) async {
+        await pumpGym(tester, '/me', at: saved);
+        await shot(tester, 'm26_s50');
+      });
+
+      testWidgets('M26: S-77 chưa lưu', (tester) async {
+        await pumpGym(tester, gymLocationPath);
+        await shot(tester, 'm26_s77_empty');
+      });
+
+      testWidgets('M26: S-77 đang lấy vị trí', (tester) async {
+        final gym = await pumpGym(tester, gymLocationPath, fetching: true);
+        await shot(tester, 'm26_s77_fetching');
+        gym.hold!.complete(null);
+        await tester.pumpAndSettle();
+      });
+
+      testWidgets('M26: S-77 đã lưu', (tester) async {
+        await pumpGym(tester, gymLocationPath, at: saved);
+        await shot(tester, 'm26_s77_saved');
       });
     }
   });

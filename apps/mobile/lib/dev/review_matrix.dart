@@ -845,6 +845,46 @@ final reviewMatrix = <ReviewCell>[
     mock: noMock,
     mockFile: v5Mock('s70'),
   ),
+  // M26 — vị trí phòng gym (06 Bản 5 VS-58): cầu vị trí giả của test (vị trí
+  // thật trên simulator kiểm ở integration_test/gym_location_test.dart).
+  ReviewCell(
+    id: 'm26_s50',
+    milestone: Milestone.m26,
+    screen: 'S-50',
+    state: 'dòng thứ tư "Vị trí phòng gym · Lưu 03/11 · Đang bật"',
+    mock: noMock,
+    mockFile: v5Mock('s50'),
+    goldenTest: 's50_gym',
+  ),
+  ReviewCell(
+    id: 'm26_s77_empty',
+    milestone: Milestone.m26,
+    screen: 'S-77',
+    state: 'chưa lưu: ghim 64 thẻ nổi, "Lưu vị trí này" cam, công tắc mờ',
+    mock: noMock,
+    mockFile: v5Mock('s77a'),
+    goldenTest: 's77_empty',
+  ),
+  ReviewCell(
+    id: 'm26_s77_fetching',
+    milestone: Milestone.m26,
+    screen: 'S-77',
+    state: 'đang lấy vị trí: vòng xoay cam + "Đang lấy vị trí…"',
+    mock: noMock,
+    mockFile: v5Mock('s77a'),
+    goldenTest: 's77_fetching',
+  ),
+  ReviewCell(
+    id: 'm26_s77_saved',
+    milestone: Milestone.m26,
+    screen: 'S-77',
+    state:
+        'đã lưu: ghim viền cam, "Lưu lúc 17:20 · T3 03/11/2026", công tắc, '
+        'Quyền vị trí "Luôn luôn", "Xóa vị trí"',
+    mock: noMock,
+    mockFile: v5Mock('s77b'),
+    goldenTest: 's77_saved',
+  ),
 ];
 
 List<ReviewCell> cellsOf(Milestone m) => [

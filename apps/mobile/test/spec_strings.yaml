@@ -241,6 +241,25 @@ endPauseBody: "Lịch chạy lại từ hôm nay." # 04 Bản 5 §6.9 hộp kế
 endPauseAction: "Kết thúc" # 04 Bản 5 §6.9 nút cam hộp; §6.2 banner nút nhỏ "Kết thúc"
 pauseEnded: "Đã kết thúc tạm dừng" # 04 Bản 5 §6.9 thông báo nhanh
 pauseUntilPrefix: "Đến " # 04 Bản 5 §6.2 banner "Đến {thứ dd/mm}" (phần chữ thường, ngày in đậm)
+gymLocation: "Vị trí phòng gym" # 04 Bản 5 S-50 dòng thứ tư, S-77 tiêu đề
+gymOn: "Đang bật" # 04 Bản 5 S-50 "Lưu {dd/mm} · Đang bật"
+gymOff: "Đã tắt" # 04 Bản 5 S-50 "Lưu {dd/mm} · Đã tắt"
+saveGymLocation: "Lưu vị trí này" # 04 Bản 5 S-77; 03 Bản 5 F-32 luồng chính
+resaveGymLocation: "Lưu lại vị trí này" # 04 Bản 5 S-77 đã lưu
+gettingLocation: "Đang lấy vị trí…" # 04 Bản 5 S-77, §6.10
+gymCardSwitch: "Hiện thẻ khi tới phòng gym" # 04 Bản 5 S-77; 03 Bản 5 F-32 luồng chính
+locationPermission: "Quyền vị trí" # 04 Bản 5 S-77
+locationAlways: "Luôn luôn" # 04 Bản 5 S-77
+locationWhenInUse: "Khi dùng app" # 04 Bản 5 S-77
+locationNone: "Không" # 04 Bản 5 S-77
+deleteGymLocation: "Xóa vị trí" # 04 Bản 5 S-77; 03 Bản 5 F32-R8
+gymNoFix: "Chưa lấy được vị trí. Kiểm tra quyền vị trí của Ironly trong Cài đặt." # 03 Bản 5 F32-R3; 04 Bản 5 §6.9
+resaveGymTitle: "Lưu lại vị trí phòng gym?" # 04 Bản 5 §6.9
+resaveGymBody: "Vị trí cũ sẽ bị thay." # 04 Bản 5 §6.9
+resaveGymAction: "Lưu lại" # 04 Bản 5 §6.9
+deleteGymTitle: "Xóa vị trí phòng gym?" # 04 Bản 5 §6.9
+deleteGymBody: "Thẻ sẽ chỉ hiện theo giờ tập." # 04 Bản 5 §6.9
+gymSaved: "Đã lưu vị trí phòng gym" # 04 Bản 5 §6.9 thông báo nhanh
 viewSession: "Xem buổi" # 04 Bản 4 S-21
 delete: "Xóa" # 04 §6.13.1 (hộp xác nhận: nút xóa chữ đỏ)
 cancel: "Hủy" # 04 S-20 (hộp xác nhận "Chia lại" · "Hủy")

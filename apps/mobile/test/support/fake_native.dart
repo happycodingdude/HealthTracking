@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:domain/domain.dart';
+import 'package:mobile/features/native/gym_region_bridge.dart';
 import 'package:mobile/features/native/native_bridge.dart';
 
 /// Cầu Swift giả (06 Bản 3 VS39-T02, VS41-T02): ghi lại nội dung widget, các
@@ -82,4 +83,63 @@ final class FakeNativeBridge implements NativeBridge {
 
   @override
   Stream<LiveActivityEvent> get liveActivityEvents => _events.stream;
+}
+
+/// `GymRegionMonitor` Swift giả (06 Bản 5 VS58-T06): vị trí trả về khi "Lưu vị
+/// trí này", vùng đang theo dõi, hàng chờ vào vùng, quyền.
+final class FakeGymRegionBridge implements GymRegionBridge {
+  /// Vị trí iOS trả (null: không lấy được — F32-R3).
+  GymFix? fix = (lat: 10.7701234, lng: 106.6904567);
+  LocationAccess access = LocationAccess.always;
+  final calls = <String>[];
+
+  /// Vùng đang theo dõi (null: không theo dõi).
+  ({double lat, double lng})? region;
+  final queue = <GymArrivalEvent>[];
+  int settingsOpened = 0;
+  final _arrivals = StreamController<void>.broadcast();
+
+  /// Đặt để "Lưu vị trí này" chờ (S-77 đang lấy vị trí).
+  Completer<GymFix?>? hold;
+
+  /// iOS báo vào vùng (xếp hàng rồi gửi `gymArrival`).
+  void enter(LocalDate date, LocalTime time) {
+    queue.add((date: date, localTime: time));
+    _arrivals.add(null);
+  }
+
+  @override
+  Future<GymFix?> requestLocation() async {
+    calls.add('requestLocation');
+    return hold == null ? fix : hold!.future;
+  }
+
+  @override
+  Future<void> start(double lat, double lng) async {
+    calls.add('start');
+    region = (lat: lat, lng: lng);
+  }
+
+  @override
+  Future<void> stop() async {
+    calls.add('stop');
+    region = null;
+    queue.clear();
+  }
+
+  @override
+  Future<LocationAccess> authorizationStatus() async => access;
+
+  @override
+  Future<void> openSettings() async => settingsOpened++;
+
+  @override
+  Future<List<GymArrivalEvent>> takeArrivals() async {
+    final taken = [...queue];
+    queue.clear();
+    return taken;
+  }
+
+  @override
+  Stream<void> get arrivals => _arrivals.stream;
 }

@@ -25,6 +25,14 @@ step "file cấm và chuỗi giống khóa trong git"
 step "câu chữ Swift của widget (06 Bản 3 VS39-T07)"
 "$ROOT/tool/scan_strings.sh"
 
+step "vị trí chỉ theo dõi một vùng (06 Bản 5 ED5-12, IR5-07, AP-18)"
+# Không theo dõi vị trí liên tục / nền trong code Swift, Dart của repo: chỉ
+# CLCircularRegion + notifyOnEntry và một lần requestLocation() khi lưu.
+if git grep --untracked -nE 'startUpdatingLocation|startMonitoringSignificantLocationChanges|allowsBackgroundLocationUpdates' -- '*.swift' '*.dart'; then
+  echo "check.sh: có API theo dõi vị trí liên tục (IR5-07)" >&2
+  exit 1
+fi
+
 step "schema.sql khớp tổng các migration (06 Bản 3 ED3-01)"
 "$ROOT/tool/gen_schema.sh" --check
 

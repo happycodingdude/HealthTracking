@@ -43,6 +43,10 @@
 	<true/>
 	<key>IronlyAppGroup</key>
 	<string>$(IRONLY_APP_GROUP)</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -74,6 +78,10 @@
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 	</array>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Ironly dùng vị trí để hiện thẻ buổi tập khi Bạn tới phòng gym. App chỉ theo dõi một vùng quanh phòng gym Bạn đã lưu, không lưu đường đi.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Ironly dùng vị trí để hiện thẻ buổi tập khi Bạn tới phòng gym. App chỉ theo dõi một vùng quanh phòng gym Bạn đã lưu, không lưu đường đi.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>UIUserInterfaceStyle</key>

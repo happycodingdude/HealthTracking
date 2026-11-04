@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		9E5C1A7F3B6D8E0F2A4C5B6D /* GymRegionMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D4B0F6E2A5C7D9E1F3B4A5C /* GymRegionMonitorTests.swift */; };
+		6B2F8D4C0E3A5B7C9D1F2E3A /* GymRegionMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A1E7C3B9D2F4A6B8C0E1D2F /* GymRegionMonitor.swift */; };
+		7C3A9E5D1F4B6C8D0E2A3F4B /* GymRegionMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A1E7C3B9D2F4A6B8C0E1D2F /* GymRegionMonitor.swift */; };
 		059C77C5EE9D6211E5562AC1 /* IronlyWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3036CE9DB07F57F8E9BD850F /* IronlyWidget.swift */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		20DA7DCCB1B2ECF1E96824CD /* SharedState.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3BBAAB75F49042289FA9281 /* SharedState.swift */; };
@@ -83,6 +86,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		8D4B0F6E2A5C7D9E1F3B4A5C /* GymRegionMonitorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GymRegionMonitorTests.swift; sourceTree = "<group>"; };
+		5A1E7C3B9D2F4A6B8C0E1D2F /* GymRegionMonitor.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GymRegionMonitor.swift; sourceTree = "<group>"; };
 		027436D1691226A67F625C40 /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		03F87C05C5AF632B9DBC39D1 /* Pods-Runner.debug-dev.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug-dev.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug-dev.xcconfig"; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
@@ -185,6 +190,7 @@
 			isa = PBXGroup;
 			children = (
 				6F695565F867E81A9F198803 /* IronlyWidgetsTests.swift */,
+				8D4B0F6E2A5C7D9E1F3B4A5C /* GymRegionMonitorTests.swift */,
 			);
 			name = IronlyWidgetsTests;
 			path = IronlyWidgetsTests;
@@ -270,6 +276,7 @@
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 				16E8F9B59EE3A607F500505C /* Runner.entitlements */,
 				ECE846D392C6B0A3DCE6B0AE /* NativeBridge.swift */,
+				5A1E7C3B9D2F4A6B8C0E1D2F /* GymRegionMonitor.swift */,
 			);
 			path = Runner;
 			sourceTree = "<group>";
@@ -558,6 +565,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				25DEC2DB9408DE567E4652F9 /* IronlyWidgetsTests.swift in Sources */,
+				9E5C1A7F3B6D8E0F2A4C5B6D /* GymRegionMonitorTests.swift in Sources */,
+				7C3A9E5D1F4B6C8D0E2A3F4B /* GymRegionMonitor.swift in Sources */,
 				7D3334C0FF4BC52C72782A77 /* WidgetModels.swift in Sources */,
 				B2D5F1C6E3A7B8C9D0E1F2A3 /* Tokens.g.swift in Sources */,
 				46D38C018D76DF10CC2347BA /* WidgetTimeline.swift in Sources */,
@@ -599,6 +608,7 @@
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 				F77FEA15EF451DF141AAC3F8 /* NativeBridge.swift in Sources */,
+				6B2F8D4C0E3A5B7C9D1F2E3A /* GymRegionMonitor.swift in Sources */,
 				C00D6D2F44BC98C4009DD95A /* SharedState.swift in Sources */,
 				8571F4938F5612757DC2B84F /* IronlySessionAttributes.swift in Sources */,
 			);

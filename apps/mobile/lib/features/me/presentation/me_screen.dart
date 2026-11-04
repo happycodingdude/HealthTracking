@@ -15,17 +15,20 @@ import '../../auth/application/auth_controller.dart';
 import '../../schedule/application/schedule_providers.dart';
 import '../application/budget_view.dart';
 import '../application/calorie_view.dart';
+import '../application/gym_location.dart';
 import '../application/reminders.dart';
 import '../application/update_display_name.dart';
 import 'budget_screen.dart';
 import 'dev_server_status.dart';
+import 'gym_location_screen.dart';
 
 /// S-50 — Tôi (04 Bản 4 S-50): thẻ hồ sơ (vòng tròn cam chữ cái đầu · tên ·
 /// số điện thoại); thẻ danh sách mục icon tròn + tên + giá trị tóm tắt + ›:
 /// Hồ sơ cơ thể · Mức calo (chấm cam khi có đề xuất chờ) · Nhắc đi tập +
 /// công tắc; banner "iPhone đang chặn thông báo…" + "Mở Cài đặt"; thẻ tiếp:
 /// Ngân sách AI + thanh nhỏ · Tài khoản và dữ liệu (icon đồng bộ xám xoay
-/// vòng cạnh tên chỉ khi chưa đồng bộ) · Về gợi ý tham khảo.
+/// vòng cạnh tên chỉ khi chưa đồng bộ) · Về gợi ý tham khảo. Bản 5: dòng thứ
+/// tư của thẻ đầu "Vị trí phòng gym" → S-77 (04 Bản 5 S-50).
 class MeScreen extends ConsumerWidget {
   const MeScreen({super.key});
 
@@ -118,6 +121,7 @@ class MeScreen extends ConsumerWidget {
               onTap: () => context.go('/me/calorie'),
             ),
             const _RemindersRow(),
+            const _GymLocationRow(),
           ],
         ),
         const _BlockedBanner(),
@@ -179,6 +183,31 @@ class MeScreen extends ConsumerWidget {
         const CardGap(),
         const DevServerStatus(),
       ],
+    );
+  }
+}
+
+/// Dòng "Vị trí phòng gym" (04 Bản 5 S-50): icon ghim tròn, giá trị phụ
+/// "Lưu {dd/mm} · Đang bật / Đã tắt" (trống khi chưa lưu), › → S-77. Không
+/// công tắc tại chỗ.
+class _GymLocationRow extends ConsumerWidget {
+  const _GymLocationRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final g = ref.watch(gymLocationProvider).value;
+    return IronlyRow(
+      key: const ValueKey('row-gym-location'),
+      leading: const CircleIcon(Icons.location_on_outlined),
+      title: S.gymLocation,
+      subtitle: g == null
+          ? null
+          : S.gymSummary(
+              Fmt.dayMonth(LocalDate.fromDateTime(g.savedAt.toLocal())),
+              on: g.enabled,
+            ),
+      chevron: true,
+      onTap: () => context.go(gymLocationPath),
     );
   }
 }

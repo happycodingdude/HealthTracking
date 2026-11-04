@@ -13,6 +13,10 @@ import UIKit
     // Nhắc đi tập (flutter_local_notifications): nhận cả khi app đang mở và khi
     // Bạn chạm vào thông báo (NAV-2). Phải đặt trước khi hàm này trả về.
     UNUserNotificationCenter.current().delegate = self as? UNUserNotificationCenterDelegate
+    // Vùng phòng gym (05 Bản 5 TD5-01): iOS mở app ở nền khi Bạn vào vùng
+    // (`launchOptions[.location]`); delegate phải có ngay để nhận sự kiện,
+    // trước khi Flutter chạy. Sự kiện chờ trong hàng tới khi Dart lấy.
+    _ = GymRegionMonitor.shared
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 

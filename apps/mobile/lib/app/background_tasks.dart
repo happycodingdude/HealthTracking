@@ -8,7 +8,9 @@ import '../data/sync/sync_providers.dart';
 import '../data/sync/sync_scheduler.dart';
 import '../features/auth/application/auth_controller.dart';
 import '../features/me/application/calorie_updates.dart';
+import '../features/me/application/gym_location.dart';
 import '../features/me/application/reminders.dart';
+import '../features/native/gym_region_bridge.dart';
 import '../features/native/live_activity_controller.dart';
 import '../features/native/widget_state_writer.dart';
 import '../features/schedule/application/month_materializer.dart';
@@ -21,7 +23,9 @@ import 'time_ticker.dart';
 /// kiểm tra sang năm mới cho mức calo (F01-E2), rồi [ReminderScheduler]
 /// (TR-10). Chạm vào nhắc → Hôm nay (NAV-2). Bản 3: ghi nội dung widget mỗi
 /// khi đổi và mỗi lần mở app / quay lại foreground (F24-R5, TD3-15); thẻ màn
-/// hình khóa: tắt thẻ ngày cũ, gửi token (05 Bản 3 §6.4.4).
+/// hình khóa: tắt thẻ ngày cũ, gửi token (05 Bản 3 §6.4.4). Bản 5: vùng phòng
+/// gym theo bản ghi trên máy, lấy hàng chờ "vào vùng" của iOS (05 Bản 5
+/// §6.4.6).
 class BackgroundTasks extends ConsumerStatefulWidget {
   const BackgroundTasks({super.key, required this.child});
 
@@ -34,6 +38,7 @@ class BackgroundTasks extends ConsumerStatefulWidget {
 class _BackgroundTasksState extends ConsumerState<BackgroundTasks> {
   late final AppLifecycleListener _lifecycle;
   CancelSchedule? _midnight;
+  StreamSubscription<void>? _gymArrivals;
 
   @override
   void initState() {
@@ -43,6 +48,16 @@ class _BackgroundTasksState extends ConsumerState<BackgroundTasks> {
         unawaited(ref.read(widgetStateWriterProvider).write(next));
       }
     });
+    // Vùng phòng gym đi theo bản ghi trên máy (mở app, khôi phục, đồng bộ về).
+    ref.listenManual(gymLocationProvider, (_, next) {
+      if (next case AsyncData(:final value)) {
+        unawaited(ref.read(gymRegionSyncProvider).apply(value));
+      }
+    }, fireImmediately: true);
+    _gymArrivals = ref
+        .read(gymRegionBridgeProvider)
+        .arrivals
+        .listen((_) => unawaited(_drainGymArrivals()));
     _lifecycle = AppLifecycleListener(
       onResume: _run,
       onHide: () {
@@ -83,6 +98,9 @@ class _BackgroundTasksState extends ConsumerState<BackgroundTasks> {
     }
     // Thẻ ngày cũ tắt, token gửi lại khi cần (05 Bản 3 §6.4.4).
     unawaited(ref.read(liveActivityControllerProvider).refresh());
+    // Quyền vị trí có thể đã đổi trong Cài đặt; lần vào vùng lúc app ở nền.
+    ref.invalidate(locationAccessProvider);
+    unawaited(_drainGymArrivals());
     unawaited(_tasks());
     _scheduleMidnight();
   }
@@ -108,6 +126,16 @@ class _BackgroundTasksState extends ConsumerState<BackgroundTasks> {
     }
   }
 
+  Future<void> _drainGymArrivals() async {
+    if (!mounted) return;
+    final reporter = ref.read(errorReporterProvider);
+    try {
+      await ref.read(gymArrivalUseCaseProvider).drain();
+    } catch (e, st) {
+      await reporter.report(e, st, reason: 'gym_arrival');
+    }
+  }
+
   /// Hẹn lần chạy kế tiếp ngay sau 00:00 theo giờ trên máy.
   void _scheduleMidnight() {
     _midnight?.call();
@@ -121,6 +149,7 @@ class _BackgroundTasksState extends ConsumerState<BackgroundTasks> {
   @override
   void dispose() {
     _lifecycle.dispose();
+    unawaited(_gymArrivals?.cancel());
     _midnight?.call();
     super.dispose();
   }

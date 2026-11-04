@@ -641,6 +641,75 @@ void main() {
         isEmpty,
       );
     });
+    test('VS58-T02: mỗi tài khoản một dòng riêng; lưu lại ghi đè; xóa → '
+        'tombstone; lng sai → lng, log không có tọa độ', () async {
+      final mine = GymLocation(lat: 10.7701234, lng: 106.6904567, savedAt: t0);
+      final other = (await app.register(phone: '0912345679')).accessToken;
+      final theirs = GymLocation(lat: 21.0285, lng: 105.8542, savedAt: t0);
+      SyncMutation put(GymLocation g, DateTime at) => mutation(
+        SyncEntities.gymLocation,
+        'me',
+        SyncOp.upsert,
+        at: at,
+        data: const GymLocationCodec().encode(g),
+      );
+      expect((await push([put(mine, t0)])).single.status, PushStatus.applied);
+      expect(
+        (await push([put(theirs, t0)], as: other)).single.status,
+        PushStatus.applied,
+      );
+      Future<GymLocation?> pulled(String who) async {
+        final c = (await app.pull(who, appVersion: AppVersion.v5)).changes
+            .where((c) => c.entity == SyncEntities.gymLocation)
+            .lastOrNull;
+        return c == null || c.deleted
+            ? null
+            : const GymLocationCodec().decode('me', c.data!);
+      }
+
+      expect((await pulled(token))?.lat, 10.770123);
+      expect((await pulled(other))?.lat, 21.0285);
+      // Lưu lại ở chỗ khác (F32-AC3): ghi đè, vẫn một dòng.
+      final moved = GymLocation(
+        lat: 10.78,
+        lng: 106.7,
+        savedAt: t0.add(const Duration(minutes: 1)),
+        enabled: false,
+      );
+      final at1 = t0.add(const Duration(minutes: 1));
+      expect((await push([put(moved, at1)])).single.status, PushStatus.applied);
+      expect(
+        ((await pulled(token))?.lat, (await pulled(token))?.enabled),
+        (10.78, false),
+      );
+      expect((await pulled(other))?.lat, 21.0285);
+      // Xóa vị trí (F32-R8): tombstone, tài khoản khác không đổi.
+      final del = (await push([
+        mutation(
+          SyncEntities.gymLocation,
+          'me',
+          SyncOp.delete,
+          at: t0.add(const Duration(minutes: 2)),
+        ),
+      ])).single;
+      expect(del.status, PushStatus.applied);
+      expect(await pulled(token), isNull);
+      expect((await pulled(other))?.lat, 21.0285);
+      final bad = (await push([
+        mutation(
+          SyncEntities.gymLocation,
+          'me',
+          SyncOp.upsert,
+          at: t0.add(const Duration(minutes: 3)),
+          data: {...const GymLocationCodec().encode(mine), 'lng': 181.5},
+        ),
+      ])).single;
+      expect((bad.status, bad.field), (PushStatus.rejected, 'lng'));
+      final log = app.log.lines.join('\n');
+      for (final v in ['10.77', '106.69', '21.0285', '105.8542', '181.5']) {
+        expect(log, isNot(contains(v)));
+      }
+    });
   });
 
   group('day.openedAt (TD5-07)', () {

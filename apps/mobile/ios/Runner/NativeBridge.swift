@@ -3,7 +3,8 @@ import Flutter
 import WidgetKit
 
 /// Cầu Flutter ↔ Swift (05 Bản 3 TD3-02, 06 Bản 3 ED3-06): channel
-/// `dev.antonnguyen.ironly/native`, phía Dart là `native_bridge.dart`.
+/// `dev.antonnguyen.ironly/native`, phía Dart là `native_bridge.dart` và
+/// `gym_region_bridge.dart` (Bản 5).
 /// App chỉ cập nhật và tắt thẻ màn hình khóa; bật thẻ chỉ server (ED3-09).
 enum NativeBridge {
   static func register(with registrar: FlutterPluginRegistrar) {
@@ -12,6 +13,9 @@ enum NativeBridge {
     channel.setMethodCallHandler { call, result in
       if call.method.hasPrefix("liveActivity.") {
         return LiveActivities.handle(call, result: result)
+      }
+      if call.method.hasPrefix("gym.") {
+        return GymRegionChannel.handle(call, result: result)
       }
       do {
         switch call.method {
@@ -37,6 +41,52 @@ enum NativeBridge {
     FlutterEventChannel(
       name: "dev.antonnguyen.ironly/native/events", binaryMessenger: registrar.messenger()
     ).setStreamHandler(LiveActivities.events)
+    GymRegionChannel.attach(channel)
+  }
+}
+
+/// Vị trí phòng gym (05 Bản 5 TD5-01, §6.4.6; 06 Bản 5 VS58-T03): lấy vị trí
+/// lúc "Lưu vị trí này", theo dõi / ngừng theo dõi vùng, trạng thái quyền; lần
+/// vào vùng gửi sang Dart bằng `gymArrival` (Dart lấy hàng chờ qua
+/// `gym.takeArrivals`). Không gửi tọa độ nào ngoài điểm Bạn lưu (AP-18).
+enum GymRegionChannel {
+  static var monitor: GymRegionMonitor { GymRegionMonitor.shared }
+
+  /// Báo Dart mỗi lần vào vùng; hàng chờ có sẵn (app vừa được iOS mở ở nền)
+  /// cũng báo một lần để Dart lấy.
+  static func attach(_ channel: FlutterMethodChannel) {
+    monitor.onArrival = { arrival in
+      channel.invokeMethod("gymArrival", arguments: arrival.asMap)
+    }
+    if let first = monitor.queued().first {
+      channel.invokeMethod("gymArrival", arguments: first.asMap)
+    }
+  }
+
+  static func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+    let args = call.arguments as? [String: Any]
+    switch call.method {
+    case "gym.requestLocation":
+      monitor.requestFix { coordinate in
+        result(coordinate.map { ["lat": $0.latitude, "lng": $0.longitude] })
+      }
+    case "gym.start":
+      guard let lat = args?["lat"] as? Double, let lng = args?["lng"] as? Double else {
+        return result(FlutterError(code: "bad_args", message: nil, details: nil))
+      }
+      let radius = args?["radius"] as? Double ?? GymRegionMonitor.radius
+      monitor.start(latitude: lat, longitude: lng, radius: radius)
+      result(nil)
+    case "gym.stop":
+      monitor.stop()
+      result(nil)
+    case "gym.authorizationStatus":
+      result(monitor.authorization)
+    case "gym.takeArrivals":
+      result(monitor.takeArrivals().map(\.asMap))
+    default:
+      result(FlutterMethodNotImplemented)
+    }
   }
 }
 
