@@ -1,8 +1,8 @@
 // Báo cáo AC → test (ED-02, 06 §6.9.3; 06 Bản 2 §6.9.3: gộp cả `03` Bản 2;
-// 06 Bản 3 VS42-T02, TAC3-14: gộp cả Bản 3).
+// 06 Bản 3 VS42-T02, TAC3-14: gộp cả Bản 3; 06 Bản 5 VS60-T02: gộp cả Bản 5).
 //
-// Đọc mã AC trong spec của từng bản (03: Fxx-ACn, LIB-ACn; 04: UX-ACn; 05:
-// TAC-nn, TAC2-nn, TAC3-nn) và tìm mã đó trong tên/nội dung các file test
+// Đọc mã AC trong spec của từng bản (03: Fxx-ACn, LIB-ACn; 04: UX-ACn,
+// U5-ACn; 05: TAC-nn, TAC2-nn, TAC3-nn, TAC5-nn) và tìm mã đó trong tên/nội dung các file test
 // (`_isTest`). In bảng Markdown cho từng bản: AC nào đã có test, AC nào chưa.
 // Mã trùng giữa hai bản (ví dụ UX-AC44 → AC55 có ở cả `04` Bản 2 và Bản 3)
 // được đánh dấu để kiểm tay: test gắn mã đó được tính cho cả hai bản.
@@ -31,11 +31,16 @@ const _releases = {
     'docs/specs/v3/04-ux-ui-specifications.md': r'\*\*(UX-AC\d+):\*\*',
     'docs/specs/v3/05-technical-architecture.md': r'\*\*(TAC3-\d+):\*\*',
   },
+  'Bản 5': {
+    'docs/specs/v5/03-feature-specifications.md': r'\*\*(F\d{2}-AC\d+):\*\*',
+    'docs/specs/v5/04-ux-ui-specifications.md': r'\*\*(U5-AC\d+):\*\*',
+    'docs/specs/v5/05-technical-architecture.md': r'\*\*(TAC5-\d+):\*\*',
+  },
 };
 
 /// Mã AC xuất hiện trong test (dùng khi không có spec).
 final _acInTest = RegExp(
-  r'\b(F\d{2}-AC\d+|LIB-AC\d+|UX-AC\d+|TAC[23]?-\d+)(?!\d)',
+  r'\b(F\d{2}-AC\d+|LIB-AC\d+|UX-AC\d+|U5-AC\d+|TAC[235]?-\d+)(?!\d)',
 );
 
 /// File test: test Dart, test Swift của extension (`IronlyWidgetsTests`,
@@ -48,7 +53,7 @@ bool _isTest(String path) =>
 
 /// Test ghi khoảng "F18-AC41 → AC44" được tính cho mọi AC trong khoảng.
 String _expandRanges(String text) => text.replaceAllMapped(
-  RegExp(r'\b((?:F\d{2}|LIB|UX)-AC)(\d+) → AC(\d+)(?!\d)'),
+  RegExp(r'\b((?:F\d{2}|LIB|UX|U5)-AC)(\d+) → AC(\d+)(?!\d)'),
   (m) => [
     for (var n = int.parse(m[2]!); n <= int.parse(m[3]!); n++) '${m[1]}$n',
   ].join(' '),

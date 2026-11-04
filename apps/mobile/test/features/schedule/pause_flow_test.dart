@@ -105,80 +105,85 @@ void main() {
 
   Finder ratio(String text) => find.text(text, findRichText: true);
 
-  testWidgets('J5-03, F31-AC1, F03-AC61, F06-AC61: T3 21:00 S-20 nút hai vạch '
-      '→ S-76 → từ mai đến CN → "Tạm dừng" → banner, ô T4, T6 viền đứt, '
-      '"Tuần này 1 / 1"; F31-AC3: T4 H7 chốt "Đã tập" → 2 / 2; F31-AC2: T5 '
-      'H8, "+ Buổi thêm" vẫn có; F31-AC4: T7 "Kết thúc" → hộp → banner mất; '
-      'F31-AC5: T6 hết ngày chưa chốt vẫn Tạm dừng', (tester) async {
-    await pump(tester);
-    await openTab(tester, S.tabTraining);
-    expect(find.byKey(const ValueKey('pause-banner')), findsNothing);
-    await tapKey(tester, 'open-pause');
-    expect(find.text(S.pauseSheetTitle), findsOneWidget);
-    expect(find.text(S.todayDayMonth('13/10')), findsNWidgets(2));
-    await pickDays(tester, 'pause-from-field', 13, 1);
-    expect(find.text('T4 14/10'), findsNWidgets(2));
-    await pickDays(tester, 'pause-to-field', 14, 4);
-    expect(find.text('CN 18/10'), findsOneWidget);
-    expect(find.text('Lưng T4 · Vai T6'), findsOneWidget);
-    await tapKey(tester, 'pause-submit');
-    expect(find.text(S.pausedUntil('18/10')), findsOneWidget);
-    final saved = (await SchedulePauseRepository(db).all()).single;
-    expect((saved.startDate, saved.endDate), (wed, sun));
+  testWidgets(
+    'J5-03, U5-AC5, F31-AC1, F03-AC61, F06-AC61: T3 21:00 S-20 nút hai vạch '
+    '→ S-76 → từ mai đến CN → "Tạm dừng" → banner, ô T4, T6 viền đứt, '
+    '"Tuần này 1 / 1"; F31-AC3: T4 H7 chốt "Đã tập" → 2 / 2; F31-AC2: T5 '
+    'H8, "+ Buổi thêm" vẫn có; F31-AC4: T7 "Kết thúc" → hộp → banner mất; '
+    'F31-AC5: T6 hết ngày chưa chốt vẫn Tạm dừng',
+    (tester) async {
+      await pump(tester);
+      await openTab(tester, S.tabTraining);
+      expect(find.byKey(const ValueKey('pause-banner')), findsNothing);
+      await tapKey(tester, 'open-pause');
+      expect(find.text(S.pauseSheetTitle), findsOneWidget);
+      expect(find.text(S.todayDayMonth('13/10')), findsNWidgets(2));
+      await pickDays(tester, 'pause-from-field', 13, 1);
+      expect(find.text('T4 14/10'), findsNWidgets(2));
+      await pickDays(tester, 'pause-to-field', 14, 4);
+      expect(find.text('CN 18/10'), findsOneWidget);
+      expect(find.text('Lưng T4 · Vai T6'), findsOneWidget);
+      await tapKey(tester, 'pause-submit');
+      expect(find.text(S.pausedUntil('18/10')), findsOneWidget);
+      final saved = (await SchedulePauseRepository(db).all()).single;
+      expect((saved.startDate, saved.endDate), (wed, sun));
 
-    // S-20: banner "Đến CN 18/10", ô T4 / T6 viền đứt + hai vạch, tuần 1 / 1.
-    expect(find.byKey(const ValueKey('pause-banner')), findsOneWidget);
-    expect(find.text('Đến CN 18/10', findRichText: true), findsOneWidget);
-    expect(pauseBars(wed), findsOneWidget);
-    expect(pauseBars(fri), findsOneWidget);
-    expect(pauseBars(mon), findsNothing);
-    expect(
-      find.bySemanticsLabel('Thứ 4, 14/10: Lưng, Tạm dừng'),
-      findsOneWidget,
-    );
-    expect(ratio('1 / 1'), findsWidgets);
+      // S-20: banner "Đến CN 18/10", ô T4 / T6 viền đứt + hai vạch, tuần 1 / 1.
+      expect(find.byKey(const ValueKey('pause-banner')), findsOneWidget);
+      expect(find.text('Đến CN 18/10', findRichText: true), findsOneWidget);
+      expect(pauseBars(wed), findsOneWidget);
+      expect(pauseBars(fri), findsOneWidget);
+      expect(pauseBars(mon), findsNothing);
+      expect(
+        find.bySemanticsLabel('Thứ 4, 14/10: Lưng, Tạm dừng'),
+        findsOneWidget,
+      );
+      // U5-AC11: banner đọc "Đang tạm dừng đến {ngày}" (04 Bản 5 §6.9).
+      expect(find.bySemanticsLabel(S.pausingUntil('CN 18/10')), findsOneWidget);
+      expect(ratio('1 / 1'), findsWidgets);
 
-    // Hôm nay T3 không đổi (không banner, F31-E3).
-    await openTab(tester, S.tabToday);
-    expect(find.byKey(const ValueKey('pause-banner')), findsNothing);
+      // Hôm nay T3 không đổi (không banner, F31-E3).
+      await openTab(tester, S.tabToday);
+      expect(find.byKey(const ValueKey('pause-banner')), findsNothing);
 
-    // T4 18:05 trong khoảng: H7 — banner, vòng hai vạch góc trên → S-65.
-    await advanceTo(tester, DateTime(2026, 10, 14, 18, 5));
-    expect(find.byKey(const ValueKey('pause-banner')), findsOneWidget);
-    expect(find.byKey(K.glyph('paused')), findsWidgets);
-    expect(ratio('1 / 1'), findsOneWidget);
-    await tapKey(tester, 'today-mark-done');
-    expect(find.text(S.doneConfirmTitle('Lưng')), findsOneWidget);
-    await tapKey(tester, 'lock-confirm-save');
-    expect(ratio('2 / 2'), findsOneWidget);
-    expect(find.byKey(const ValueKey('pause-banner')), findsOneWidget);
+      // T4 18:05 trong khoảng: H7 — banner, vòng hai vạch góc trên → S-65.
+      await advanceTo(tester, DateTime(2026, 10, 14, 18, 5));
+      expect(find.byKey(const ValueKey('pause-banner')), findsOneWidget);
+      expect(find.byKey(K.glyph('paused')), findsWidgets);
+      expect(ratio('1 / 1'), findsOneWidget);
+      await tapKey(tester, 'today-mark-done');
+      expect(find.text(S.doneConfirmTitle('Lưng')), findsOneWidget);
+      await tapKey(tester, 'lock-confirm-save');
+      expect(ratio('2 / 2'), findsOneWidget);
+      expect(find.byKey(const ValueKey('pause-banner')), findsOneWidget);
 
-    // T5 nghỉ trong khoảng: H8 — banner, buổi tới T6 kèm hai vạch.
-    await advanceTo(tester, DateTime(2026, 10, 15, 9, 40));
-    expect(find.byKey(const ValueKey('pause-banner')), findsOneWidget);
-    expect(find.byKey(const ValueKey('rest-card')), findsOneWidget);
-    expect(find.byKey(const ValueKey('next-session-paused')), findsOneWidget);
-    expect(find.byKey(const ValueKey('extra-log')), findsOneWidget);
-    expect(ratio('2 / 2'), findsOneWidget);
+      // T5 nghỉ trong khoảng: H8 — banner, buổi tới T6 kèm hai vạch.
+      await advanceTo(tester, DateTime(2026, 10, 15, 9, 40));
+      expect(find.byKey(const ValueKey('pause-banner')), findsOneWidget);
+      expect(find.byKey(const ValueKey('rest-card')), findsOneWidget);
+      expect(find.byKey(const ValueKey('next-session-paused')), findsOneWidget);
+      expect(find.byKey(const ValueKey('extra-log')), findsOneWidget);
+      expect(ratio('2 / 2'), findsOneWidget);
 
-    // T7: hết T6 chưa chốt → vẫn Tạm dừng; "Kết thúc" → hộp → banner mất.
-    await advanceTo(tester, DateTime(2026, 10, 17, 9));
-    await tapKey(tester, 'pause-banner-end');
-    expect(find.text(S.endPauseTitle), findsOneWidget);
-    expect(find.text(S.endPauseBody), findsOneWidget);
-    await tapKey(tester, 'confirm-end-pause');
-    expect(find.text(S.pauseEnded), findsOneWidget);
-    expect(find.byKey(const ValueKey('pause-banner')), findsNothing);
-    final ended = (await SchedulePauseRepository(db).all()).single;
-    expect(ended.endedOn, fri);
-    await openTab(tester, S.tabTraining);
-    expect(find.byKey(const ValueKey('pause-banner')), findsNothing);
-    expect(pauseBars(fri), findsOneWidget);
-    expect(
-      find.bySemanticsLabel('Thứ 6, 16/10: Vai, Tạm dừng'),
-      findsOneWidget,
-    );
-  });
+      // T7: hết T6 chưa chốt → vẫn Tạm dừng; "Kết thúc" → hộp → banner mất.
+      await advanceTo(tester, DateTime(2026, 10, 17, 9));
+      await tapKey(tester, 'pause-banner-end');
+      expect(find.text(S.endPauseTitle), findsOneWidget);
+      expect(find.text(S.endPauseBody), findsOneWidget);
+      await tapKey(tester, 'confirm-end-pause');
+      expect(find.text(S.pauseEnded), findsOneWidget);
+      expect(find.byKey(const ValueKey('pause-banner')), findsNothing);
+      final ended = (await SchedulePauseRepository(db).all()).single;
+      expect(ended.endedOn, fri);
+      await openTab(tester, S.tabTraining);
+      expect(find.byKey(const ValueKey('pause-banner')), findsNothing);
+      expect(pauseBars(fri), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Thứ 6, 16/10: Vai, Tạm dừng'),
+        findsOneWidget,
+      );
+    },
+  );
 
   testWidgets('F31-AC6: đang có khoảng → S-76 "Đang tạm dừng", không có cách '
       'tạo khoảng thứ hai; F31-AC7: B trước A → câu lỗi, nút mờ', (

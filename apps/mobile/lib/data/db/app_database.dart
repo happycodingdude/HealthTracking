@@ -551,11 +551,21 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(schedulePauses);
         await m.createTable(gymLocations);
         await m.createTable(gymArrivals);
-        await m.addColumn(days, days.openedAt);
+        // Quay lui 5.0.0 → 4.0.0 → 5.0.0 (05 Bản 5 §6.12): app 4.0.0 hạ
+        // user_version về 2 nhưng bảng, cột Bản 5 còn nguyên. `createTable`
+        // đã là IF NOT EXISTS; cột thì kiểm trước để không thêm lần hai.
+        if (!await _hasColumn('days', 'opened_at')) {
+          await m.addColumn(days, days.openedAt);
+        }
       }
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
     },
   );
+
+  Future<bool> _hasColumn(String table, String column) async {
+    final rows = await customSelect('PRAGMA table_info($table)').get();
+    return rows.any((r) => r.read<String>('name') == column);
+  }
 }

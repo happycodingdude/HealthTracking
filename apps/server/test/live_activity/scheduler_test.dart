@@ -449,25 +449,28 @@ void main() {
           ),
         );
 
-    test('F31-AC1: tạm dừng thứ 2 → 18:00 không gửi start; tuần sau ngoài '
-        'khoảng gửi như thường', () async {
-      await setUpSchedule();
-      await putToken();
-      await setNow(DateTime.utc(2026, 10, 12, 2));
-      await push([
-        pauseMutation(
-          monday,
-          LocalDate(2026, 10, 18),
-          DateTime.utc(2026, 10, 12, 2),
-        ),
-      ]);
-      await runAt(DateTime.utc(2026, 10, 12, 11));
-      await runAt(DateTime.utc(2026, 10, 12, 11, 5));
-      expect(apns.sent, isEmpty);
-      expect(await sessions(), isEmpty);
-      await runAt(DateTime.utc(2026, 10, 19, 11));
-      expect(apns.events('start'), hasLength(1));
-    });
+    test(
+      'F31-AC1, TAC5-05: tạm dừng thứ 2 → 18:00 không gửi start; tuần sau ngoài '
+      'khoảng gửi như thường',
+      () async {
+        await setUpSchedule();
+        await putToken();
+        await setNow(DateTime.utc(2026, 10, 12, 2));
+        await push([
+          pauseMutation(
+            monday,
+            LocalDate(2026, 10, 18),
+            DateTime.utc(2026, 10, 12, 2),
+          ),
+        ]);
+        await runAt(DateTime.utc(2026, 10, 12, 11));
+        await runAt(DateTime.utc(2026, 10, 12, 11, 5));
+        expect(apns.sent, isEmpty);
+        expect(await sessions(), isEmpty);
+        await runAt(DateTime.utc(2026, 10, 19, 11));
+        expect(apns.events('start'), hasLength(1));
+      },
+    );
 
     test('F31-R7, F25-R64: đặt tạm dừng hôm nay khi thẻ đang hiện → gửi end '
         'một lần', () async {

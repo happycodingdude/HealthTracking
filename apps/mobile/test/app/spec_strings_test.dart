@@ -15,7 +15,7 @@ void main() {
   };
 
   test(
-    'UR-12/ED-12: mọi câu trong spec_strings.yaml đúng nguyên văn trong strings_vi.dart',
+    'UR-12/ED-12, U5-AC9: mọi câu trong spec_strings.yaml đúng nguyên văn trong strings_vi.dart',
     () {
       for (final entry in spec.entries) {
         expect(S.catalog[entry.key], entry.value, reason: entry.key);
@@ -24,7 +24,7 @@ void main() {
   );
 
   test(
-    'ED-12: mọi câu hằng trong strings_vi.dart đều có nguồn trong spec_strings.yaml',
+    'ED-12, U5-AC2: mọi câu hằng trong strings_vi.dart đều có nguồn trong spec_strings.yaml',
     () {
       expect(S.catalog.keys.toSet().difference(spec.keys.toSet()), isEmpty);
     },

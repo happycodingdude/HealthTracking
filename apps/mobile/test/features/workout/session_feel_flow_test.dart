@@ -154,53 +154,56 @@ void main() {
       (o.entity, o.entityKey, o.op),
   ];
 
-  testWidgets('F20-AC62, F33-AC2, F21-AC61, J5-02 bước 2: buổi trước 40 → 45 '
-      '· Mệt → ô BUỔI TRƯỚC có 3 vạch xám; S-64 cạnh "Kết thúc" 3 vạch xám, '
-      'thanh chọn trống; +bước, chọn Vừa, Lưu → 40 → 47,5 · 2 vạch cam sau '
-      'tên', (tester) async {
-    await pump(tester);
-    expect(key('feel-previous-${pecDeck.id}'), findsOneWidget);
-    expect(isPrevious(tester, 'feel-previous-${pecDeck.id}'), isTrue);
-    expect(lit(tester, 'feel-previous-${pecDeck.id}'), 3);
-    // F33-AC3: buổi trước không chọn mức → không dấu.
-    expect(key('feel-previous-${flat.id}'), findsNothing);
-    expect(key('feel-today-${pecDeck.id}'), findsNothing);
-    expect(
-      find.bySemanticsLabel(RegExp(S.feelPrevious(S.feelHard))),
-      findsOneWidget,
-    );
+  testWidgets(
+    'F20-AC62, F33-AC2, U5-AC4, F21-AC61, J5-02 bước 2: buổi trước 40 → 45 '
+    '· Mệt → ô BUỔI TRƯỚC có 3 vạch xám; S-64 cạnh "Kết thúc" 3 vạch xám, '
+    'thanh chọn trống; +bước, chọn Vừa, Lưu → 40 → 47,5 · 2 vạch cam sau '
+    'tên',
+    (tester) async {
+      await pump(tester);
+      expect(key('feel-previous-${pecDeck.id}'), findsOneWidget);
+      expect(isPrevious(tester, 'feel-previous-${pecDeck.id}'), isTrue);
+      expect(lit(tester, 'feel-previous-${pecDeck.id}'), 3);
+      // F33-AC3: buổi trước không chọn mức → không dấu.
+      expect(key('feel-previous-${flat.id}'), findsNothing);
+      expect(key('feel-today-${pecDeck.id}'), findsNothing);
+      expect(
+        find.bySemanticsLabel(RegExp(S.feelPrevious(S.feelHard))),
+        findsOneWidget,
+      );
 
-    await tapKey(tester, 'lift-row-${pecDeck.id}');
-    expect(key('lift-previous-feel'), findsOneWidget);
-    expect(isPrevious(tester, 'lift-previous-feel'), isTrue);
-    expect(lit(tester, 'lift-previous-feel'), 3);
-    expect(selected(tester), isNull);
-    expect(find.text(S.feelEasy), findsOneWidget);
-    expect(find.text(S.feelMedium), findsOneWidget);
-    expect(find.text(S.feelHard), findsOneWidget);
-    await tapKey(tester, 'lift-end-plus');
-    await tapKey(tester, 'lift-feel-medium');
-    expect(selected(tester), Feel.medium);
-    await tapKey(tester, 'lift-save');
+      await tapKey(tester, 'lift-row-${pecDeck.id}');
+      expect(key('lift-previous-feel'), findsOneWidget);
+      expect(isPrevious(tester, 'lift-previous-feel'), isTrue);
+      expect(lit(tester, 'lift-previous-feel'), 3);
+      expect(selected(tester), isNull);
+      expect(find.text(S.feelEasy), findsOneWidget);
+      expect(find.text(S.feelMedium), findsOneWidget);
+      expect(find.text(S.feelHard), findsOneWidget);
+      await tapKey(tester, 'lift-end-plus');
+      await tapKey(tester, 'lift-feel-medium');
+      expect(selected(tester), Feel.medium);
+      await tapKey(tester, 'lift-save');
 
-    final log = await logs.get(mon, pecDeck.id);
-    expect((log?.startKgX10, log?.endKgX10), (400, 475));
-    expect((await feels.get(mon, pecDeck.id))?.feel, Feel.medium);
-    expect(key('feel-today-${pecDeck.id}'), findsOneWidget);
-    expect(isPrevious(tester, 'feel-today-${pecDeck.id}'), isFalse);
-    expect(lit(tester, 'feel-today-${pecDeck.id}'), 2);
-    // Đã ghi buổi này: ô BUỔI TRƯỚC không còn dấu xám.
-    expect(key('feel-previous-${pecDeck.id}'), findsNothing);
-    expect(
-      find.text(S.liftSaved('40', '47,5', Fmt.liftUnit(LiftUnit.kg))),
-      findsOneWidget,
-    );
-    // Một lần Lưu: mức tạ rồi mức thoải mái, cùng outbox (F21-R61).
-    expect(await outbox(), [
-      ('lift_log', LiftLog.keyOf(mon, pecDeck.id), 'upsert'),
-      ('exercise_feel', ExerciseFeel.keyOf(mon, pecDeck.id), 'upsert'),
-    ]);
-  });
+      final log = await logs.get(mon, pecDeck.id);
+      expect((log?.startKgX10, log?.endKgX10), (400, 475));
+      expect((await feels.get(mon, pecDeck.id))?.feel, Feel.medium);
+      expect(key('feel-today-${pecDeck.id}'), findsOneWidget);
+      expect(isPrevious(tester, 'feel-today-${pecDeck.id}'), isFalse);
+      expect(lit(tester, 'feel-today-${pecDeck.id}'), 2);
+      // Đã ghi buổi này: ô BUỔI TRƯỚC không còn dấu xám.
+      expect(key('feel-previous-${pecDeck.id}'), findsNothing);
+      expect(
+        find.text(S.liftSaved('40', '47,5', Fmt.liftUnit(LiftUnit.kg))),
+        findsOneWidget,
+      );
+      // Một lần Lưu: mức tạ rồi mức thoải mái, cùng outbox (F21-R61).
+      expect(await outbox(), [
+        ('lift_log', LiftLog.keyOf(mon, pecDeck.id), 'upsert'),
+        ('exercise_feel', ExerciseFeel.keyOf(mon, pecDeck.id), 'upsert'),
+      ]);
+    },
+  );
 
   testWidgets('F33-AC1, F33-AC4, F33-R1, F33-AC6: Lưu 40 → 45 với Thoải mái → '
       '1 vạch cam; Chi tiết bài / Tiến bộ không có dấu; sửa Kết thúc 47,5 → '

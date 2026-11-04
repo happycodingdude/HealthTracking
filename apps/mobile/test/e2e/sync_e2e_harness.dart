@@ -28,20 +28,24 @@ import 'package:mobile/features/library/data/exercise_repository.dart';
 import 'package:mobile/features/me/application/calorie_updates.dart';
 import 'package:mobile/features/me/application/update_display_name.dart';
 import 'package:mobile/features/me/data/account_repository.dart';
+import 'package:mobile/features/me/data/gym_location_repository.dart';
 import 'package:mobile/features/me/data/profile_repository.dart';
 import 'package:mobile/features/menu/data/menu_api.dart';
 import 'package:mobile/features/menu/data/menu_repository.dart';
 import 'package:mobile/features/onboarding/application/onboarding_steps.dart';
 import 'package:mobile/features/onboarding/data/onboarding_draft_repository.dart';
 import 'package:mobile/features/schedule/application/month_materializer.dart';
+import 'package:mobile/features/schedule/data/schedule_pause_repository.dart';
 import 'package:mobile/features/schedule/data/schedule_repository.dart';
 import 'package:mobile/features/today/application/mark_session.dart';
 import 'package:mobile/features/weight/application/weight_edits.dart';
 import 'package:mobile/features/weight/data/weight_repository.dart';
 import 'package:mobile/features/workout/application/lift_log_edits.dart';
+import 'package:mobile/features/workout/data/exercise_feel_repository.dart';
 import 'package:mobile/features/workout/data/exercise_note_repository.dart';
 import 'package:mobile/features/workout/data/exercise_unit_repository.dart';
 import 'package:mobile/features/workout/data/lift_log_repository.dart';
+import 'package:mobile/features/workout/data/session_exercise_repository.dart';
 import 'package:server/server.dart';
 import 'package:server/testing.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
@@ -210,6 +214,11 @@ final class E2eDevice {
         SyncEntities.liftLog: LiftLogStore(liftLogs),
         SyncEntities.exerciseUnit: ExerciseUnitStore(units),
         SyncEntities.exerciseNote: ExerciseNoteStore(notes),
+        // Bản 5 (05 Bản 5 §6.6.1, F09-R61).
+        SyncEntities.sessionExercise: SessionExerciseStore(sessionRows),
+        SyncEntities.exerciseFeel: ExerciseFeelStore(feels),
+        SyncEntities.schedulePause: SchedulePauseStore(pauses),
+        SyncEntities.gymLocation: GymLocationStore(gyms),
       },
       clock: clock,
       reporter: reporter,
@@ -234,6 +243,12 @@ final class E2eDevice {
   late final LiftLogRepository liftLogs;
   late final ExerciseUnitRepository units = ExerciseUnitRepository(db);
   late final ExerciseNoteRepository notes = ExerciseNoteRepository(db);
+  late final SessionExerciseRepository sessionRows = SessionExerciseRepository(
+    db,
+  );
+  late final ExerciseFeelRepository feels = ExerciseFeelRepository(db);
+  late final SchedulePauseRepository pauses = SchedulePauseRepository(db);
+  late final GymLocationRepository gyms = GymLocationRepository(db);
   late final SaveLiftLog saveLift;
   late final SaveExerciseNote saveNote;
   late final DeleteLiftLog deleteLift;

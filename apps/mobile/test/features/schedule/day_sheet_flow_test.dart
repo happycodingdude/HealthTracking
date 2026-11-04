@@ -171,7 +171,7 @@ void main() {
     );
 
     testWidgets(
-      'F03-AC62, F05-AC66, UR5-05 (IR5-08, CR5-02): ngày đã qua chỉ "Xem '
+      'F03-AC62, F05-AC66, UR5-05, U5-AC6 (IR5-08, CR5-02): ngày đã qua chỉ "Xem '
       'buổi" — kể cả hôm qua, không ổ khóa, không nút sửa; ngày nghỉ đã qua '
       'không có nút nào; chủ nhật → chỉ xem',
       (tester) async {

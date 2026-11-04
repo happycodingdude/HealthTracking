@@ -87,42 +87,45 @@ void main() {
     expect(find.byKey(const ValueKey('gym-save')), findsOneWidget);
   });
 
-  testWidgets('F32-AC1: chưa lưu → công tắc mờ; "Lưu vị trí này" → lấy vị '
-      'trí → "Lưu lúc 17:20 · T3 03/11/2026", công tắc bật, theo dõi vùng; '
-      'F32-AC5: không tọa độ', (tester) async {
-    final c = await pump(tester);
-    await open(tester, c);
-    expect(find.text(S.saveGymLocation), findsOneWidget);
-    expect(gymSwitch(tester).onChanged, isNull);
-    expect(gymSwitch(tester).value, isFalse);
-    expect(find.byKey(const ValueKey('row-gym-permission')), findsNothing);
+  testWidgets(
+    'F32-AC1, U5-AC8: chưa lưu → công tắc mờ; "Lưu vị trí này" → lấy vị '
+    'trí → "Lưu lúc 17:20 · T3 03/11/2026", công tắc bật, theo dõi vùng; '
+    'F32-AC5: không tọa độ',
+    (tester) async {
+      final c = await pump(tester);
+      await open(tester, c);
+      expect(find.text(S.saveGymLocation), findsOneWidget);
+      expect(gymSwitch(tester).onChanged, isNull);
+      expect(gymSwitch(tester).value, isFalse);
+      expect(find.byKey(const ValueKey('row-gym-permission')), findsNothing);
 
-    await tester.tap(find.byKey(const ValueKey('gym-save')));
-    await tester.pumpAndSettle();
-    expect(gym.calls, containsAllInOrder(['requestLocation', 'start']));
-    expect(gym.region, (lat: 10.7701234, lng: 106.6904567));
-    expect(find.text('Lưu lúc 17:20 · T3 03/11/2026'), findsOneWidget);
-    expect(find.text(S.gymSaved), findsOneWidget);
-    expect(find.text(S.resaveGymLocation), findsOneWidget);
-    expect(gymSwitch(tester).value, isTrue);
-    expect(gymSwitch(tester).onChanged, isNotNull);
-    expect(find.text(S.locationPermission), findsOneWidget);
-    expect(find.text(S.locationAlways), findsOneWidget);
-    expect(find.text(S.deleteGymLocation), findsOneWidget);
-    // F32-AC5, F32-R2: không tọa độ, không địa chỉ trên màn.
-    expect(find.textContaining('10.77'), findsNothing);
-    expect(find.textContaining('106.69'), findsNothing);
-    final saved = await GymLocationRepository(db).get();
-    expect((saved!.enabled, saved.savedAt), (true, tue));
-    final m = (await outbox()).single;
-    expect((m.key, m.op), ('me', SyncOp.upsert));
-    expect(m.data!['lat'], 10.770123);
+      await tester.tap(find.byKey(const ValueKey('gym-save')));
+      await tester.pumpAndSettle();
+      expect(gym.calls, containsAllInOrder(['requestLocation', 'start']));
+      expect(gym.region, (lat: 10.7701234, lng: 106.6904567));
+      expect(find.text('Lưu lúc 17:20 · T3 03/11/2026'), findsOneWidget);
+      expect(find.text(S.gymSaved), findsOneWidget);
+      expect(find.text(S.resaveGymLocation), findsOneWidget);
+      expect(gymSwitch(tester).value, isTrue);
+      expect(gymSwitch(tester).onChanged, isNotNull);
+      expect(find.text(S.locationPermission), findsOneWidget);
+      expect(find.text(S.locationAlways), findsOneWidget);
+      expect(find.text(S.deleteGymLocation), findsOneWidget);
+      // F32-AC5, F32-R2: không tọa độ, không địa chỉ trên màn.
+      expect(find.textContaining('10.77'), findsNothing);
+      expect(find.textContaining('106.69'), findsNothing);
+      final saved = await GymLocationRepository(db).get();
+      expect((saved!.enabled, saved.savedAt), (true, tue));
+      final m = (await outbox()).single;
+      expect((m.key, m.op), ('me', SyncOp.upsert));
+      expect(m.data!['lat'], 10.770123);
 
-    // S-50: "Lưu 03/11 · Đang bật".
-    c.read(routerProvider).go('/me');
-    await tester.pumpAndSettle();
-    expect(find.text(S.gymSummary('03/11', on: true)), findsOneWidget);
-  });
+      // S-50: "Lưu 03/11 · Đang bật".
+      c.read(routerProvider).go('/me');
+      await tester.pumpAndSettle();
+      expect(find.text(S.gymSummary('03/11', on: true)), findsOneWidget);
+    },
+  );
 
   testWidgets('F32-AC2: không lấy được vị trí → banner F32-R3 + "Mở Cài đặt"; '
       'không lưu gì; công tắc mờ', (tester) async {
@@ -172,28 +175,31 @@ void main() {
     expect(gym.region?.lat, 10.7701234);
   });
 
-  testWidgets('F32-AC4, F32-R4: tắt công tắc → ngừng theo dõi, vị trí giữ, '
-      'ghim không viền; S-50 "Đã tắt"; bật lại → theo dõi lại', (tester) async {
-    await GymLocationRepository(
-      db,
-    ).put(GymLocation(lat: 10.77, lng: 106.69, savedAt: tue));
-    final c = await pump(tester);
-    expect(gym.region, isNotNull, reason: 'mở app → theo dõi theo bản ghi');
-    await open(tester, c);
-    await tester.tap(find.byKey(const ValueKey('gym-switch')));
-    await tester.pumpAndSettle();
-    expect(gym.region, isNull);
-    expect((await GymLocationRepository(db).get())!.enabled, isFalse);
-    expect(find.textContaining('Lưu lúc'), findsOneWidget);
-    expect((await outbox()).last.data!['enabled'], isFalse);
-    c.read(routerProvider).go('/me');
-    await tester.pumpAndSettle();
-    expect(find.text(S.gymSummary('03/11', on: false)), findsOneWidget);
-    await open(tester, c);
-    await tester.tap(find.byKey(const ValueKey('gym-switch')));
-    await tester.pumpAndSettle();
-    expect(gym.region, (lat: 10.77, lng: 106.69));
-  });
+  testWidgets(
+    'F32-AC4, F25-AC66, F32-R4: tắt công tắc → ngừng theo dõi, vị trí giữ, '
+    'ghim không viền; S-50 "Đã tắt"; bật lại → theo dõi lại',
+    (tester) async {
+      await GymLocationRepository(
+        db,
+      ).put(GymLocation(lat: 10.77, lng: 106.69, savedAt: tue));
+      final c = await pump(tester);
+      expect(gym.region, isNotNull, reason: 'mở app → theo dõi theo bản ghi');
+      await open(tester, c);
+      await tester.tap(find.byKey(const ValueKey('gym-switch')));
+      await tester.pumpAndSettle();
+      expect(gym.region, isNull);
+      expect((await GymLocationRepository(db).get())!.enabled, isFalse);
+      expect(find.textContaining('Lưu lúc'), findsOneWidget);
+      expect((await outbox()).last.data!['enabled'], isFalse);
+      c.read(routerProvider).go('/me');
+      await tester.pumpAndSettle();
+      expect(find.text(S.gymSummary('03/11', on: false)), findsOneWidget);
+      await open(tester, c);
+      await tester.tap(find.byKey(const ValueKey('gym-switch')));
+      await tester.pumpAndSettle();
+      expect(gym.region, (lat: 10.77, lng: 106.69));
+    },
+  );
 
   testWidgets('F32-R8: "Xóa vị trí" → hộp "Xóa vị trí phòng gym?" → Xóa → về '
       'chưa lưu, ngừng theo dõi, outbox delete', (tester) async {
@@ -295,22 +301,25 @@ void main() {
     });
     tearDown(() => db.close());
 
-    test('một lần / ngày (A5-09); chưa lưu, tắt, tạm dừng → không', () async {
-      expect(await arrival(event), isFalse, reason: 'chưa lưu vị trí');
-      await repo.put(
-        GymLocation(lat: 10.77, lng: 106.69, savedAt: tue, enabled: false),
-      );
-      expect(await arrival(event), isFalse, reason: 'công tắc tắt');
-      await repo.put(GymLocation(lat: 10.77, lng: 106.69, savedAt: tue));
-      await SchedulePauseRepository(db).put(
-        SchedulePause(id: 'p1', startDate: today, endDate: today.addDays(2)),
-      );
-      expect(await arrival(event), isFalse, reason: 'tạm dừng');
-      await SchedulePauseRepository(db).delete('p1');
-      expect(await arrival(event), isTrue);
-      expect(await arrival(event), isFalse, reason: 'đã báo hôm nay');
-      expect(await repo.arrived(today), isTrue);
-    });
+    test(
+      'F25-AC66, một lần / ngày (A5-09); chưa lưu, tắt, tạm dừng → không',
+      () async {
+        expect(await arrival(event), isFalse, reason: 'chưa lưu vị trí');
+        await repo.put(
+          GymLocation(lat: 10.77, lng: 106.69, savedAt: tue, enabled: false),
+        );
+        expect(await arrival(event), isFalse, reason: 'công tắc tắt');
+        await repo.put(GymLocation(lat: 10.77, lng: 106.69, savedAt: tue));
+        await SchedulePauseRepository(db).put(
+          SchedulePause(id: 'p1', startDate: today, endDate: today.addDays(2)),
+        );
+        expect(await arrival(event), isFalse, reason: 'tạm dừng');
+        await SchedulePauseRepository(db).delete('p1');
+        expect(await arrival(event), isTrue);
+        expect(await arrival(event), isFalse, reason: 'đã báo hôm nay');
+        expect(await repo.arrived(today), isTrue);
+      },
+    );
 
     test('drain lấy hàng chờ iOS và xử lý, báo iOS xong', () async {
       await repo.put(GymLocation(lat: 10.77, lng: 106.69, savedAt: tue));

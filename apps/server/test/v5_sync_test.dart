@@ -567,39 +567,45 @@ void main() {
       ),
     );
 
-    test('đặt T4 → CN; khoảng thứ hai → pause_overlap; bắt đầu ngày đã qua → '
-        'startDate; kết thúc sớm (endedOn hôm qua) → applied; xóa khoảng đã '
-        'bắt đầu → rejected', () async {
-      final at = vn(3, 21);
-      expect((await pushAt(at, pause(a, 4, 8, at))).status, PushStatus.applied);
-      final second = await pushAt(at, pause(b, 10, 12, at));
-      expect(
-        (second.status, second.code),
-        (PushStatus.rejected, ErrorCode.pauseOverlap),
-      );
-      final past = await pushAt(at, pause(b, 2, 12, at));
-      expect(past.field, 'startDate');
-      final sat = vn(7, 9);
-      expect(
-        (await pushAt(sat, pause(a, 4, 8, sat, ended: 6))).status,
-        PushStatus.applied,
-      );
-      final del = await pushAt(
-        sat.add(const Duration(minutes: 1)),
-        mutation(
-          SyncEntities.schedulePause,
-          a,
-          SyncOp.delete,
-          at: sat.add(const Duration(minutes: 1)),
-        ),
-      );
-      expect(del.status, PushStatus.rejected);
-      // Khoảng cũ đã kết thúc → đặt khoảng mới được.
-      expect(
-        (await pushAt(sat, pause(b, 10, 12, sat))).status,
-        PushStatus.applied,
-      );
-    });
+    test(
+      'TAC5-05: đặt T4 → CN; khoảng thứ hai → pause_overlap; bắt đầu ngày đã qua → '
+      'startDate; kết thúc sớm (endedOn hôm qua) → applied; xóa khoảng đã '
+      'bắt đầu → rejected',
+      () async {
+        final at = vn(3, 21);
+        expect(
+          (await pushAt(at, pause(a, 4, 8, at))).status,
+          PushStatus.applied,
+        );
+        final second = await pushAt(at, pause(b, 10, 12, at));
+        expect(
+          (second.status, second.code),
+          (PushStatus.rejected, ErrorCode.pauseOverlap),
+        );
+        final past = await pushAt(at, pause(b, 2, 12, at));
+        expect(past.field, 'startDate');
+        final sat = vn(7, 9);
+        expect(
+          (await pushAt(sat, pause(a, 4, 8, sat, ended: 6))).status,
+          PushStatus.applied,
+        );
+        final del = await pushAt(
+          sat.add(const Duration(minutes: 1)),
+          mutation(
+            SyncEntities.schedulePause,
+            a,
+            SyncOp.delete,
+            at: sat.add(const Duration(minutes: 1)),
+          ),
+        );
+        expect(del.status, PushStatus.rejected);
+        // Khoảng cũ đã kết thúc → đặt khoảng mới được.
+        expect(
+          (await pushAt(sat, pause(b, 10, 12, sat))).status,
+          PushStatus.applied,
+        );
+      },
+    );
   });
 
   group('gym_location (05 Bản 5 §6.6.2, TAC5-10)', () {
@@ -799,7 +805,7 @@ void main() {
       expect(await markOf(wed), 'done');
     });
 
-    test('F31-R3: ngày trong khoảng tạm dừng không bị đóng', () async {
+    test('F31-R3, TAC5-05: ngày trong khoảng tạm dừng không bị đóng', () async {
       final at = vn(3, 21);
       await setNow(at);
       expect(

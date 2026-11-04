@@ -233,7 +233,7 @@ void main() {
   );
 
   testWidgets(
-    'F05-AC61, F05-AC62, UA5-04 (IR5-08, CR5-06): S-23 từ dấu tích ba mục; '
+    'F05-AC61, F05-AC62, UA5-04, U5-AC7 (IR5-08, CR5-06): S-23 từ dấu tích ba mục; '
     'Đã tập → Không tập → Lưu; Chưa đánh dấu → Lưu → Hôm nay về H4 (ô tick); '
     'mức tạ giữ nguyên',
     (tester) async {

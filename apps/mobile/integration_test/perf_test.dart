@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:mobile/app/app.dart';
 import 'package:mobile/app/providers.dart';
 import 'package:mobile/app/strings_vi.dart';
 import 'package:mobile/data/db/open_database.dart';
@@ -18,6 +19,7 @@ import 'package:mobile/features/me/data/account_repository.dart';
 import 'package:mobile/features/me/data/profile_repository.dart';
 import 'package:mobile/features/schedule/data/schedule_repository.dart';
 import 'package:mobile/features/weight/data/weight_repository.dart';
+import 'package:mobile/features/workout/data/session_exercise_repository.dart';
 import 'package:mobile/main.dart' as app;
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -51,6 +53,16 @@ final LocalDate _today = () {
   }
   return d;
 }();
+
+/// Bài lẻ thêm vào buổi hôm nay (ngoài mọi nhóm cơ của lịch tuần).
+const _extraIds = [
+  'legs-quads-leg-press',
+  'legs-quads-seated-leg-extension',
+  'legs-hamstrings-lying-leg-curl',
+  'legs-hamstrings-barbell-romanian-deadlift',
+  'biceps-biceps-cable-bar-curl',
+  'biceps-machine-machine-preacher-curl',
+];
 
 /// Ghi thẳng vào database của app 1 năm dữ liệu: thiết lập cách đây 364 ngày,
 /// lịch từng tháng, buổi đã qua xen kẽ "Đã tập"/"Không tập", cân mỗi tuần.
@@ -197,6 +209,46 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tapAt(const Offset(20, 80));
     await tester.pumpAndSettle();
+
+    // IA5-11: Hôm nay ≥ 10 dòng — thêm 6 bài lẻ (Chân, Tay trước) vào buổi
+    // sau khi đã đo IA-04 / IA2-05 (giữ điều kiện đo của các bản trước) và
+    // trước khi đánh dấu (server thử chưa có lịch nên đánh dấu xong ngày bị
+    // hoàn về). Ghi qua database của chính app để danh sách cập nhật ngay.
+    final appDb = ProviderScope.containerOf(
+      tester.element(find.byType(IronlyApp)),
+    ).read(databaseProvider);
+    for (final (i, id) in _extraIds.indexed) {
+      await SessionExerciseRepository(appDb).put(
+        SessionExerciseRow(
+          date: _today,
+          exerciseId: id,
+          role: SessionExerciseRole.extra,
+          position: i + 1,
+        ),
+      );
+    }
+    await tester.pumpAndSettle();
+    final rows = find.byWidgetPredicate(
+      (w) =>
+          w.key is ValueKey<String> &&
+          (w.key! as ValueKey<String>).value.startsWith('exercise-name-'),
+      skipOffstage: false,
+    );
+    expect(rows.evaluate().length, greaterThanOrEqualTo(10));
+    final policy = binding.framePolicy;
+    binding.framePolicy = LiveTestWidgetsFlutterBindingFramePolicy.fullyLive;
+    final todayList = find.byType(Scrollable).first;
+    await binding.watchPerformance(() async {
+      for (var i = 0; i < 3; i++) {
+        await tester.fling(todayList, const Offset(0, -600), 2500);
+        await tester.pumpAndSettle();
+      }
+      for (var i = 0; i < 3; i++) {
+        await tester.fling(todayList, const Offset(0, 600), 2500);
+        await tester.pumpAndSettle();
+      }
+    }, reportKey: 'scroll_s10');
+    binding.framePolicy = policy;
     await reveal(tester, done);
     await tester.pumpAndSettle();
 
@@ -229,6 +281,8 @@ void main() {
 
     await scroll(S.tabTraining, 'scroll_s20');
     await scroll(S.tabWeight, 'scroll_s40');
+    final s10 = (binding.reportData!['scroll_s10']! as Map)
+        .cast<String, Object?>();
 
     binding.reportData = {
       ...?binding.reportData,
@@ -246,6 +300,11 @@ void main() {
       sheetMs,
       lessThan(100),
       reason: 'IA3-09: mở bảng ghi tạ dưới 100 ms',
+    );
+    expect(
+      s10['average_frame_build_time_millis']! as num,
+      lessThan(1000 / 60),
+      reason: 'IA5-11: Hôm nay 10 dòng không rớt dưới 60 khung hình / giây',
     );
   });
 }

@@ -37,6 +37,19 @@ for key in NSAllowsLocalNetworking NSLocalNetworkUsageDescription NSBonjourServi
   fi
 done
 
+# 05 Bản 5 TD5-19, TAC5-10: hai câu xin quyền vị trí và chế độ nền `location`
+# (geofence chạy khi app tắt); không thì iOS không hỏi quyền "Luôn luôn".
+for key in NSLocationWhenInUseUsageDescription NSLocationAlwaysAndWhenInUseUsageDescription; do
+  if ! plutil -convert xml1 -o - "$INFO" | grep -q "<key>$key</key>"; then
+    echo "TD5-19: Info.plist thiếu $key" >&2
+    FAIL=1
+  fi
+done
+if ! /usr/libexec/PlistBuddy -c 'Print :UIBackgroundModes' "$INFO" 2>/dev/null | grep -qx '[[:space:]]*location'; then
+  echo "TD5-19: UIBackgroundModes thiếu location" >&2
+  FAIL=1
+fi
+
 # TAC3-11: không có file khóa .p8 trong .ipa (khóa YouTube dò bằng giá trị thật ở trên).
 if find "$WORK" -name '*.p8' | grep -q .; then
   echo "TAC3-11: .ipa có file .p8" >&2

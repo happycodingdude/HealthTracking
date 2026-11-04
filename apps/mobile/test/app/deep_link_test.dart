@@ -124,19 +124,20 @@ void main() {
     expect(find.byType(TodayScreen), findsNothing);
   });
 
-  testWidgets('F25-AC63, 04 Bản 5 §6.3: thẻ ngày nghỉ → ironly://extra-session '
-      '→ Hôm nay mở S-24 cho hôm nay; tham số bỏ khỏi đường dẫn', (
-    tester,
-  ) async {
-    // Thứ 3 13/10 là ngày nghỉ của lịch thử.
-    final c = await pump(tester, now: DateTime(2026, 10, 13, 17));
-    c.read(routerProvider).go('/me');
-    await tester.pumpAndSettle();
-    await open(tester, 'ironly://extra-session');
-    expect(find.byType(TodayScreen), findsOneWidget);
-    expect(find.byKey(const ValueKey('extra-sheet')), findsOneWidget);
-    expect(c.read(routerProvider).state.uri.toString(), AppTab.today.path);
-  });
+  testWidgets(
+    'F25-AC63, U5-AC10, 04 Bản 5 §6.3: thẻ ngày nghỉ → ironly://extra-session '
+    '→ Hôm nay mở S-24 cho hôm nay; tham số bỏ khỏi đường dẫn',
+    (tester) async {
+      // Thứ 3 13/10 là ngày nghỉ của lịch thử.
+      final c = await pump(tester, now: DateTime(2026, 10, 13, 17));
+      c.read(routerProvider).go('/me');
+      await tester.pumpAndSettle();
+      await open(tester, 'ironly://extra-session');
+      expect(find.byType(TodayScreen), findsOneWidget);
+      expect(find.byKey(const ValueKey('extra-sheet')), findsOneWidget);
+      expect(c.read(routerProvider).state.uri.toString(), AppTab.today.path);
+    },
+  );
 
   testWidgets('ironly://extra-session ngày có buổi (đã hết lựa chọn thêm buổi) '
       '→ chỉ Hôm nay, không S-24', (tester) async {

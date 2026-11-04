@@ -67,4 +67,16 @@ void main() {
     expect(text, contains('đổi sang'));
     expectNoAdvice(text);
   });
+
+  test('F33-R2, F33-R6, 01 Bản 5 §6.8: câu chữ Bản 5 (thao tác với bài, mức '
+      'thoải mái, tạm dừng, vị trí phòng gym) không khuyên, không gợi ý tăng '
+      'giảm tạ, không kết luận', () {
+    final text = block(
+      '// Thao tác với bài S-74',
+      '// Tiến độ tuần (04 §6.7.3, S-25, S-20), F-06.',
+    );
+    expect(text, contains('thoải mái'));
+    expect(text, contains('tạm dừng'));
+    expectNoAdvice(text);
+  });
 }

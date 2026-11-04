@@ -1,3 +1,6 @@
+// TAC5-12: toàn bộ unit test packages/domain (session_list, window, day_lock,
+// feel, pause, gym, week_progress, widget_state) phủ mọi AC logic của 03
+// Bản 5; chạy trong tool/check.sh.
 import 'package:domain/domain.dart';
 import 'package:domain/testing.dart';
 import 'package:test/test.dart';
@@ -445,5 +448,45 @@ void main() {
       expect(pick, isNot(contains(leg)));
       expect(pick.intersection({c1, c2, c3, c4}), isEmpty);
     });
+  });
+
+  test('IA5-11: buildSessionList < 5 ms — thư viện 28 bài, buổi 12 dòng (bài '
+      'thay, bỏ qua, 6 bài thêm), trung bình 1000 lần', () {
+    Exercise ex(String id, MuscleRegion region, int sort) => Exercise(
+      id: id,
+      region: region,
+      nameVi: id,
+      youtubeVideoId: 'v',
+      videoChannel: 'c',
+      guideSteps: const ['a'],
+      guideSafety: const ['b'],
+      approvedAt: LocalDate(2026, 10, 11),
+      sortInGroup: sort,
+      sortOrder: sort,
+    );
+    const others = [MuscleRegion.lats, MuscleRegion.quads, MuscleRegion.absMid];
+    final big = [
+      for (var i = 0; i < 6; i++) ex('chest-$i', MuscleRegion.chestMid, i),
+      for (var i = 0; i < 22; i++) ex('other-$i', others[i % 3], 10 + i),
+    ];
+    final rows = [
+      SessionCasesV5.replace('other-0', 'chest-1'),
+      SessionCasesV5.skip('chest-2'),
+      for (var i = 1; i <= 6; i++) SessionCasesV5.extra('other-$i', i),
+    ];
+    List<SessionItem> run() => SessionList.build(
+      library: big,
+      groups: const [MuscleGroup.chest],
+      rows: rows,
+    );
+    expect(run(), hasLength(12));
+    for (var i = 0; i < 100; i++) {
+      run(); // khởi động JIT
+    }
+    final watch = Stopwatch()..start();
+    for (var i = 0; i < 1000; i++) {
+      run();
+    }
+    expect(watch.elapsedMicroseconds / 1000 / 1000, lessThan(5));
   });
 }

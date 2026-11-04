@@ -1,3 +1,5 @@
+// U5-AC1 (04 Bản 5): golden theme tối × 2 cỡ chữ cho S-50, S-77 × 3
+// (reviewMatrix ED5-09).
 @Tags(['golden'])
 library;
 

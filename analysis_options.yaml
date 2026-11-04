@@ -15,8 +15,11 @@ analyzer:
     - "**/build/**"
     # Chạy trong bản code app 2.x (tool/compat_e2e.sh), không phải cây này.
     - "tool/compat/**"
-    # Chạy trong bản code app 3.0.0 (tool/upgrade_test.sh), không phải cây này.
+    # Chạy trong bản code app 4.0.0 (tool/upgrade_test.sh) hoặc chép tạm vào
+    # apps/mobile/integration_test/, không phải cây này.
     - "tool/upgrade/**"
+    # Chép tạm vào apps/mobile/integration_test/ (tool/gym_killed_test.sh).
+    - "tool/gym/**"
 
 linter:
   rules:

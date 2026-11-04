@@ -44,29 +44,32 @@ void main() {
       return out;
     }
 
-    test('database từ 0001 + 0002 và từ schema.sql giống nhau', () async {
-      final fromMigrations = await TestDatabase.create();
-      final fromSchema = await TestDatabase.create(schema: false);
-      addTearDown(fromMigrations.dispose);
-      addTearDown(fromSchema.dispose);
-      for (final segment in SqlScript.segments(
-        serverSchemaFile().readAsStringSync(),
-      )) {
-        await fromSchema.pool.execute(segment, queryMode: QueryMode.simple);
-      }
-      // Hai bên cùng có bảng schema_migrations (bỏ qua khi so).
-      await fromSchema.pool.execute(
-        'CREATE TABLE schema_migrations (version text PRIMARY KEY)',
-      );
-      final a = await structure(fromMigrations.pool);
-      final b = await structure(fromSchema.pool);
-      expect(a, b);
-      expect(a, contains(startsWith('exercise_units.unit text NO')));
-      expect(
-        a,
-        contains('muscle_group chest,triceps,shoulders,abs,back,biceps,legs'),
-      );
-    });
+    test(
+      'TAC5-11: database từ 0001 + 0002 + 0003 và từ schema.sql giống nhau',
+      () async {
+        final fromMigrations = await TestDatabase.create();
+        final fromSchema = await TestDatabase.create(schema: false);
+        addTearDown(fromMigrations.dispose);
+        addTearDown(fromSchema.dispose);
+        for (final segment in SqlScript.segments(
+          serverSchemaFile().readAsStringSync(),
+        )) {
+          await fromSchema.pool.execute(segment, queryMode: QueryMode.simple);
+        }
+        // Hai bên cùng có bảng schema_migrations (bỏ qua khi so).
+        await fromSchema.pool.execute(
+          'CREATE TABLE schema_migrations (version text PRIMARY KEY)',
+        );
+        final a = await structure(fromMigrations.pool);
+        final b = await structure(fromSchema.pool);
+        expect(a, b);
+        expect(a, contains(startsWith('exercise_units.unit text NO')));
+        expect(
+          a,
+          contains('muscle_group chest,triceps,shoulders,abs,back,biceps,legs'),
+        );
+      },
+    );
   });
 
   group('ED3-02: chạy từ bản trước (0001 + dữ liệu Bản 2 + 0002)', () {

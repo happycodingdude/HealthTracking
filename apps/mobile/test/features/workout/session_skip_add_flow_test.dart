@@ -12,6 +12,7 @@ import 'package:mobile/data/db/app_database.dart' hide ExerciseRow;
 import 'package:mobile/features/library/data/video_player_gateway.dart';
 import 'package:mobile/features/schedule/data/schedule_repository.dart';
 import 'package:mobile/features/workout/application/session_item_edits.dart';
+import 'package:mobile/features/workout/data/exercise_feel_repository.dart';
 import 'package:mobile/features/workout/data/exercise_unit_repository.dart';
 import 'package:mobile/features/workout/data/lift_log_repository.dart';
 import 'package:mobile/features/workout/data/session_exercise_repository.dart';
@@ -136,40 +137,43 @@ void main() {
       (o.entity, o.entityKey, o.op),
   ];
 
-  testWidgets('F29-AC1, J5-02 bước 5, UD5-02: ··· bài 4 → "Bỏ qua hôm nay" → '
-      'tên gạch ngang, vòng gạch, không hàng số, thông báo nhanh; "Đã ghi 0 / '
-      'm−1"; S-74 bài bỏ qua có "Hủy bỏ qua" → về bình thường', (tester) async {
-    await pump(tester);
-    final total = session.where((e) => e.logsWeight).length;
-    expect(stat(tester), S.ratio(0, total));
-    await tapKey(tester, 'exercise-${decline.id}');
-    expect(opacity(tester, 'action-skip'), 1);
-    expect(opacity(tester, 'action-remove-extra'), 0.4);
-    await tapKey(tester, 'action-skip');
-    expect(find.text(S.skippedExercise(decline.nameVi)), findsOneWidget);
-    expect(key('skipped-mark-${decline.id}'), findsOneWidget);
-    expect(key('lift-row-${decline.id}'), findsNothing);
-    final name = tester.widget<Text>(key('exercise-name-${decline.id}'));
-    expect(name.style?.decoration, TextDecoration.lineThrough);
-    expect(stat(tester), S.ratio(0, total - 1));
-    expect(await rows.day(mon), [
-      SessionExerciseRow(
-        date: mon,
-        exerciseId: decline.id,
-        role: SessionExerciseRole.original,
-        position: 3,
-        skipped: true,
-      ),
-    ]);
+  testWidgets(
+    'F29-AC1, U5-AC3, J5-02 bước 5, UD5-02: ··· bài 4 → "Bỏ qua hôm nay" → '
+    'tên gạch ngang, vòng gạch, không hàng số, thông báo nhanh; "Đã ghi 0 / '
+    'm−1"; S-74 bài bỏ qua có "Hủy bỏ qua" → về bình thường',
+    (tester) async {
+      await pump(tester);
+      final total = session.where((e) => e.logsWeight).length;
+      expect(stat(tester), S.ratio(0, total));
+      await tapKey(tester, 'exercise-${decline.id}');
+      expect(opacity(tester, 'action-skip'), 1);
+      expect(opacity(tester, 'action-remove-extra'), 0.4);
+      await tapKey(tester, 'action-skip');
+      expect(find.text(S.skippedExercise(decline.nameVi)), findsOneWidget);
+      expect(key('skipped-mark-${decline.id}'), findsOneWidget);
+      expect(key('lift-row-${decline.id}'), findsNothing);
+      final name = tester.widget<Text>(key('exercise-name-${decline.id}'));
+      expect(name.style?.decoration, TextDecoration.lineThrough);
+      expect(stat(tester), S.ratio(0, total - 1));
+      expect(await rows.day(mon), [
+        SessionExerciseRow(
+          date: mon,
+          exerciseId: decline.id,
+          role: SessionExerciseRole.original,
+          position: 3,
+          skipped: true,
+        ),
+      ]);
 
-    await tapKey(tester, 'exercise-${decline.id}');
-    expect(find.text(S.actionUnskip), findsOneWidget);
-    await tapKey(tester, 'action-skip');
-    expect(key('skipped-mark-${decline.id}'), findsNothing);
-    expect(key('lift-row-${decline.id}'), findsOneWidget);
-    expect(stat(tester), S.ratio(0, total));
-    expect(await rows.day(mon), isEmpty);
-  });
+      await tapKey(tester, 'exercise-${decline.id}');
+      expect(find.text(S.actionUnskip), findsOneWidget);
+      await tapKey(tester, 'action-skip');
+      expect(key('skipped-mark-${decline.id}'), findsNothing);
+      expect(key('lift-row-${decline.id}'), findsOneWidget);
+      expect(stat(tester), S.ratio(0, total));
+      expect(await rows.day(mon), isEmpty);
+    },
+  );
 
   testWidgets('F29-AC3, FC5-14: bài đã ghi 40 → 45 → "Bỏ qua" → S-78 "Bỏ qua '
       'bài?"; Hủy → không đổi gì; Xóa và bỏ qua → bản ghi không còn, outbox '
@@ -383,5 +387,39 @@ void main() {
     expect(key('extra-mark-${plank.id}'), findsOneWidget);
     expect(key('add-exercise'), findsNothing);
     expect(key('more-${plank.id}'), findsNothing);
+  });
+
+  testWidgets('U5-AC11, 04 Bản 5 §6.9: VoiceOver đọc dấu hiệu mới — "Bài thay '
+      'cho {tên gốc}", "Bài thêm", "Đã bỏ qua", mức thoải mái hôm nay và '
+      '"…, buổi trước"', (tester) async {
+    final handle = tester.ensureSemantics();
+    await pump(tester);
+    final back = library.firstWhere(
+      (e) => e.group == MuscleGroup.back && e.active,
+    );
+    await container.read(replaceExerciseProvider)(mon, session[1].id, back.id);
+    await container.read(skipExerciseProvider)(
+      mon,
+      session[2].id,
+      skipped: true,
+    );
+    await container.read(addExtraExerciseProvider)(mon, plank.id);
+    final feels = ExerciseFeelRepository(db);
+    await feels.put(
+      ExerciseFeel(date: mon, exerciseId: plank.id, feel: Feel.hard),
+    );
+    await feels.put(
+      ExerciseFeel(date: prevMon, exerciseId: pecDeck.id, feel: Feel.easy),
+    );
+    await tester.pumpAndSettle();
+
+    Finder label(String text) =>
+        find.bySemanticsLabel(RegExp(RegExp.escape(text)));
+    expect(label(S.replacementFor(session[1].nameVi)), findsWidgets);
+    expect(label(S.extraMark), findsWidgets);
+    expect(label(S.skippedMark), findsWidgets);
+    expect(label(S.feelHard), findsWidgets);
+    expect(label(S.feelPrevious(S.feelEasy)), findsWidgets);
+    handle.dispose();
   });
 }

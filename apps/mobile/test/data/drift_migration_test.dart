@@ -222,4 +222,31 @@ void main() {
       expect(state.knownEntities, contains(e));
     }
   });
+
+  test(
+    '05 Bản 5 §6.12 quay lui: schema 3 → app 4.0.0 hạ user_version về 2 '
+    '(bảng, cột Bản 5 còn nguyên) → cài lại 5.0.0 mở được, dữ liệu còn',
+    () async {
+      final schema = await verifier.schemaAt(2);
+      final first = AppDatabase(schema.newConnection());
+      await first.customStatement('''
+      INSERT INTO days (date, kind, time, muscles, source, opened_at)
+      VALUES ('2026-11-04', 'workout', '18:00', '["back"]', 'template',
+        '2026-11-04T17:20:00.000')''');
+      // App 4.0.0 (schemaVersion 2) mở database schema 3: Drift chỉ ghi lại
+      // user_version = 2, không xóa bảng / cột.
+      await first.customStatement('PRAGMA user_version = 2');
+      await first.close();
+
+      final again = AppDatabase(schema.newConnection());
+      addTearDown(again.close);
+      final day = await ScheduleRepository(again).day(LocalDate(2026, 11, 4));
+      expect(day!.openedAt, isNotNull);
+      expect(await again.select(again.gymArrivals).get(), isEmpty);
+      final version = await again
+          .customSelect('PRAGMA user_version')
+          .getSingle();
+      expect(version.read<int>('user_version'), 3);
+    },
+  );
 }
