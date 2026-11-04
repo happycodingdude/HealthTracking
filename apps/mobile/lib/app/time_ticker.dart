@@ -17,8 +17,9 @@ class TimeTicker extends Notifier<DateTime> {
     final now = ref.watch(clockProvider).now();
     final today = LocalDate.fromDateTime(now);
     final day = ref.watch(dayProvider(today)).value;
+    // Giờ mở buổi: giờ tập, hoặc lúc tới phòng gym nếu sớm hơn (FD5-01).
     final start = day != null && day.isWorkout
-        ? SessionRules.startsAt(day)
+        ? SessionRules.opensAt(day)
         : null;
     final next = start != null && start.isAfter(now)
         ? start

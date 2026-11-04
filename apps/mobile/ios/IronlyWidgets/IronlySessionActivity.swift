@@ -12,28 +12,114 @@ import WidgetKit
 /// Không cân nặng, calo, ghi chú, lời khuyên (F25-R8). `ContentState`,
 /// `Attributes`, hiện / tắt theo `03` Bản 3 (F4-R9). Màu theo token, không
 /// theo sáng / tối của máy (TA4-08).
+///
+/// Bản 5 (04 Bản 5 S-71, UD5-04; 05 Bản 5 TD5-15): thẻ ngày nghỉ khi tới phòng
+/// gym (`kind = extra` / `inviteExtra`) — dạng rút gọn [RestInviteView], chạm
+/// mở `ironly://extra-session` (S-24).
 struct IronlySessionActivity: Widget {
   static let url = URL(string: "ironly://session/today")!
+  static let extraUrl = URL(string: "ironly://extra-session")!
+
+  /// Thẻ ngày nghỉ: theo loại thẻ, hoặc nội dung mời (push thiếu `kind`).
+  static func isRestInvite(
+    _ attributes: IronlySessionAttributes, _ state: IronlySessionAttributes.ContentState
+  ) -> Bool {
+    attributes.isExtra || state.inviteExtra
+  }
+
+  static func url(
+    _ attributes: IronlySessionAttributes, _ state: IronlySessionAttributes.ContentState
+  ) -> URL {
+    isRestInvite(attributes, state) ? extraUrl : url
+  }
 
   var body: some WidgetConfiguration {
     ActivityConfiguration(for: IronlySessionAttributes.self) { context in
-      LockScreenActivityView(groups: context.attributes.groups, state: context.state)
-        .activityBackgroundTint(Tokens.color.surface)
-        .widgetURL(Self.url)
+      Group {
+        if Self.isRestInvite(context.attributes, context.state) {
+          RestInviteView(groups: context.attributes.groups)
+        } else {
+          LockScreenActivityView(groups: context.attributes.groups, state: context.state)
+        }
+      }
+      .activityBackgroundTint(Tokens.color.surface)
+      .widgetURL(Self.url(context.attributes, context.state))
     } dynamicIsland: { context in
-      DynamicIsland {
+      let invite = Self.isRestInvite(context.attributes, context.state)
+      return DynamicIsland {
         DynamicIslandExpandedRegion(.bottom) {
-          IslandExpandedView(groups: context.attributes.groups, state: context.state)
+          if invite {
+            RestInviteView(groups: context.attributes.groups, island: true)
+          } else {
+            IslandExpandedView(groups: context.attributes.groups, state: context.state)
+          }
         }
       } compactLeading: {
         IslandCompactLeading(groups: context.attributes.groups)
       } compactTrailing: {
-        IslandCompactTrailing(state: context.state)
+        if invite {
+          IslandInviteTrailing()
+        } else {
+          IslandCompactTrailing(state: context.state)
+        }
       } minimal: {
         AppMark(size: 18)
       }
-      .widgetURL(Self.url)
+      .widgetURL(Self.url(context.attributes, context.state))
     }
+  }
+}
+
+/// Thẻ ngày nghỉ rút gọn (04 Bản 5 S-71, UD5-04): hàng đầu icon app + "Nghỉ"
+/// chữ phụ 13 / 600; một ô thẻ nổi bo 12: "+ Buổi tập thêm" cam 15 / 600 + ›
+/// chữ phụ. Không nút; chạm cả thẻ → S-24. [island] = Dynamic Island mở rộng
+/// (nền đen, không đệm thẻ).
+struct RestInviteView: View {
+  let groups: String
+  var island = false
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: Tokens.space.s3) {
+      HStack(spacing: Tokens.space.s2) {
+        AppMark(size: island ? 18 : 22)
+        Text(groups)
+          .scaledFont(Tokens.type.activityTitle, .semibold)
+          .foregroundStyle(Tokens.color.textSecondary)
+          .lineLimit(1)
+        Spacer(minLength: 0)
+      }
+      HStack(spacing: Tokens.space.s2) {
+        Text("+ Buổi tập thêm")
+          .scaledFont(Tokens.type.subtitle, .semibold)
+          .foregroundStyle(Tokens.color.accent)
+          .lineLimit(1)
+          .minimumScaleFactor(0.8)
+        Spacer(minLength: 0)
+        Image(systemName: "chevron.right")
+          .scaledFont(13, .semibold)
+          .foregroundStyle(Tokens.color.textSecondary)
+          .accessibilityHidden(true)
+      }
+      .padding(Tokens.space.s3)
+      .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+      .background(
+        RoundedRectangle(cornerRadius: 12, style: .continuous)
+          .fill(Tokens.color.surfaceRaised))
+    }
+    .foregroundStyle(Tokens.color.textPrimary)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .padding(island ? 0 : Tokens.size.cardPadding)
+    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+  }
+}
+
+/// Dynamic Island thu gọn, phải, thẻ ngày nghỉ: "+" cam (UD5-04).
+struct IslandInviteTrailing: View {
+  var body: some View {
+    Text("+")
+      .scaledFont(Tokens.type.subtitle, .bold)
+      .foregroundStyle(Tokens.color.accent)
+      .accessibilityLabel("Buổi tập thêm")
   }
 }
 

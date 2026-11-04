@@ -1,6 +1,7 @@
 import 'package:api_contract/api_contract.dart' show AppVersion;
 import 'package:domain/domain.dart' show SystemClock;
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -17,8 +18,10 @@ import 'data/device_files.dart';
 import 'data/local_marks.dart';
 import 'data/logout_flag.dart';
 import 'data/notifications/notification_gateway.dart';
+import 'data/sync/sync_providers.dart';
 import 'features/account/application/logout.dart';
 import 'features/auth/application/auth_controller.dart';
+import 'features/me/application/gym_location.dart';
 import 'features/me/data/profile_repository.dart';
 import 'features/native/gym_region_bridge.dart';
 import 'features/native/live_activity_controller.dart';
@@ -29,6 +32,48 @@ import 'features/today/application/mark_session.dart';
 import 'features/workout/application/lift_log_edits.dart';
 
 Future<void> main() => runIronlyApp();
+
+/// Điểm vào của engine nền khi iOS mở app vì Bạn bước vào vùng phòng gym lúc
+/// app đã tắt hẳn (05 Bản 5 §6.4.6, TA5-07; 06 Bản 5 VS59-T03): app dùng UIScene
+/// nên lần mở ở nền không có màn hình, không chạy [main]; Swift
+/// (`GymBackgroundRunner`) chạy điểm vào này. Không vẽ gì: lấy hàng chờ "vào
+/// vùng", xử lý như khi app mở ([GymArrivalUseCase]: báo server trước, ghi
+/// SQLite sau), đẩy outbox (mốc mở buổi sớm), rồi báo Swift xong để tắt engine
+/// — trong khoảng thời gian chạy nền iOS cho (≤ 25 giây).
+@pragma('vm:entry-point')
+Future<void> gymArrivalMain() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final bridge = ChannelGymRegionBridge();
+  try {
+    final store = SecureSessionStore();
+    // Chưa đăng nhập / đã đăng xuất: không có gì để làm (F32-E3).
+    if (await store.read() == null) return;
+    final version = AppVersion.parse(
+      (await PackageInfo.fromPlatform()).version,
+    );
+    final db = openAppDatabase();
+    final container = ProviderContainer(
+      overrides: [
+        envProvider.overrideWithValue(AppEnv.fromEnvironment()),
+        appVersionProvider.overrideWithValue(version),
+        databaseProvider.overrideWithValue(db),
+        sessionStoreProvider.overrideWithValue(store),
+        gymRegionBridgeProvider.overrideWithValue(bridge),
+      ],
+    );
+    try {
+      await container.read(gymArrivalUseCaseProvider).drain(notify: false);
+      await container.read(syncEngineProvider).flush();
+    } finally {
+      container.dispose();
+      await db.close();
+    }
+  } catch (_) {
+    // Lỗi ở nền không làm gì thêm; lần mở app sau xử lý tiếp như thường.
+  } finally {
+    await bridge.arrivalHandled();
+  }
+}
 
 /// Khởi động app. [overrides], [database] chỉ dùng cho integration test (ví
 /// dụ đồng hồ, database trống như iPhone mới); [database] chỉ dùng cho lần

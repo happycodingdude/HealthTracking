@@ -130,6 +130,8 @@ final class ServerApp {
       );
       // 05 Bản 5 §6.6.3: thẻ hiện lại sau bỏ đánh dấu / kết thúc tạm dừng sớm.
       deps.sync.onPushed = liveActivity.afterPush;
+      // 05 Bản 5 TD5-02, TD5-14: thẻ khi tới phòng gym (buổi tập / ngày nghỉ).
+      deps.gymArrival.starter = liveActivity.startOnArrival;
     }
     final handler = buildApp(deps);
     final http = await shelf_io.serve(handler, config.host, config.port);

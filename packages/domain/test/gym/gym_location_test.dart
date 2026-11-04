@@ -1,4 +1,5 @@
 import 'package:domain/domain.dart';
+import 'package:domain/testing.dart';
 import 'package:test/test.dart';
 
 /// F32-R1, 05 Bản 5 §6.6.2 `gym_location`.
@@ -97,6 +98,142 @@ void main() {
         ),
         isTrue,
       );
+    });
+  });
+
+  group('GymArrivalRules.decide (VS59-T01, FC5-10, §6.9.4, TAC5-06)', () {
+    final wed = ClockV5.backDay;
+    final sat = PlanDay(date: LocalDate(2026, 11, 7), kind: DayKind.rest);
+    final sun = PlanDay(date: LocalDate(2026, 11, 8), kind: DayKind.rest);
+    GymArrivalDecision decide(
+      PlanDay? day,
+      DateTime now, {
+      LocalDate? date,
+      bool token = true,
+      bool schedule = true,
+      bool paused = false,
+      bool started = false,
+    }) => GymArrivalRules.decide(
+      GymArrivalServerState(
+        date: date ?? LocalDate.fromDateTime(now),
+        localNow: now,
+        hasToken: token,
+        hasSchedule: schedule,
+        paused: paused,
+        day: day,
+        startedToday: started,
+      ),
+    );
+
+    test('F25-AC61, F25-E61: ngày Lưng 18:00, tới gym 17:20 → thẻ buổi tập, '
+        'mở buổi sớm; lần hai (đã bật) → không', () {
+      expect(
+        decide(wed, ClockV5.gymArrival),
+        const GymArrivalDecision(GymArrivalOutcome.session, openEarly: true),
+      );
+      expect(
+        decide(wed, DateTime(2026, 11, 4, 17, 30), started: true),
+        const GymArrivalDecision.none(
+          GymArrivalReason.alreadyStarted,
+          openEarly: true,
+        ),
+      );
+    });
+
+    test('F25-E61: sau giờ tập, thẻ theo giờ đã hiện → không hiện thêm; chưa '
+        'hiện (không có dòng) → bật, không mở sớm', () {
+      expect(
+        decide(wed, ClockV5.t1900, started: true),
+        const GymArrivalDecision.none(GymArrivalReason.alreadyStarted),
+      );
+      expect(
+        decide(wed, ClockV5.t1900),
+        const GymArrivalDecision(GymArrivalOutcome.session),
+      );
+    });
+
+    test('F25-AC63: thứ 7 nghỉ → thẻ ngày nghỉ; đã có Buổi tập thêm → không; '
+        'F25-E62: Chủ nhật → không', () {
+      final at = DateTime(2026, 11, 7, 17);
+      expect(
+        decide(sat, at),
+        const GymArrivalDecision(GymArrivalOutcome.extra),
+      );
+      expect(
+        decide(sat.withExtra(const [MuscleGroup.shoulders], loggedAt: at), at),
+        const GymArrivalDecision.none(GymArrivalReason.extraLogged),
+      );
+      expect(
+        decide(sat, at, started: true),
+        const GymArrivalDecision.none(GymArrivalReason.alreadyStarted),
+      );
+      expect(
+        decide(sun, DateTime(2026, 11, 8, 17)),
+        const GymArrivalDecision.none(GymArrivalReason.sunday),
+      );
+    });
+
+    test('F25-AC64, A5-07: tạm dừng → không thẻ (vẫn mở buổi sớm); đã đánh '
+        'dấu, chưa có lịch, không token, ngày lệch → không', () {
+      expect(
+        decide(wed, ClockV5.gymArrival, paused: true),
+        const GymArrivalDecision.none(GymArrivalReason.paused, openEarly: true),
+      );
+      expect(
+        decide(
+          wed.withMark(DayMark.done, markedAt: ClockV5.gymArrival),
+          ClockV5.gymArrival,
+        ).outcome,
+        GymArrivalOutcome.none,
+      );
+      expect(
+        decide(wed, ClockV5.gymArrival, schedule: false).reason,
+        GymArrivalReason.noSchedule,
+      );
+      expect(
+        decide(wed, ClockV5.gymArrival, token: false),
+        const GymArrivalDecision.none(
+          GymArrivalReason.noToken,
+          openEarly: true,
+        ),
+      );
+      expect(
+        decide(wed, ClockV5.gymArrival, date: LocalDate(2026, 11, 3)),
+        const GymArrivalDecision.none(GymArrivalReason.notToday),
+      );
+      expect(decide(null, ClockV5.gymArrival).reason, GymArrivalReason.noDay);
+    });
+
+    test('opensEarly (FD5-01): chỉ ngày có buổi, chưa đánh dấu, trước giờ '
+        'tập, đúng ngày', () {
+      expect(GymArrivalRules.opensEarly(wed, ClockV5.gymArrival), isTrue);
+      expect(GymArrivalRules.opensEarly(wed, ClockV5.start), isFalse);
+      expect(
+        GymArrivalRules.opensEarly(wed, DateTime(2026, 11, 3, 17)),
+        isFalse,
+      );
+      expect(
+        GymArrivalRules.opensEarly(sat, DateTime(2026, 11, 7, 9)),
+        isFalse,
+      );
+      expect(
+        GymArrivalRules.opensEarly(
+          wed.withMark(DayMark.skipped, markedAt: ClockV5.gymArrival),
+          ClockV5.gymArrival,
+        ),
+        isFalse,
+      );
+      expect(GymArrivalRules.opensEarly(null, ClockV5.gymArrival), isFalse);
+    });
+
+    test('F25-E61, TAC5-04: openedAt 17:20 → cửa sổ ghi tạ và "Đã tập" mở '
+        'từ 17:20', () {
+      final opened = wed.withOpenedAt(ClockV5.gymArrival);
+      final at1725 = DateTime(2026, 11, 4, 17, 25);
+      expect(LiftWindow.of(opened, at1725).isOpen, isTrue);
+      expect(LiftWindow.of(wed, at1725).isOpen, isFalse);
+      expect(SessionRules.canMarkDone(opened, at1725), isTrue);
+      expect(SessionRules.canMarkDone(wed, at1725), isFalse);
     });
   });
 }

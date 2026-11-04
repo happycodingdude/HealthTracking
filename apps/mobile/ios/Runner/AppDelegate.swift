@@ -16,7 +16,10 @@ import UIKit
     // Vùng phòng gym (05 Bản 5 TD5-01): iOS mở app ở nền khi Bạn vào vùng
     // (`launchOptions[.location]`); delegate phải có ngay để nhận sự kiện,
     // trước khi Flutter chạy. Sự kiện chờ trong hàng tới khi Dart lấy.
-    _ = GymRegionMonitor.shared
+    // App đã tắt hẳn → không có engine nghe: engine nền xử lý (VS59-T03).
+    GymRegionMonitor.shared.onQueued = { listening in
+      GymBackgroundRunner.shared.queued(listening: listening)
+    }
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 

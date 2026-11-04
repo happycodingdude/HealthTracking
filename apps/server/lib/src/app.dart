@@ -14,6 +14,7 @@ import 'auth/login_rate_limiter.dart';
 import 'auth/logout.dart';
 import 'auth/token_service.dart';
 import 'db/database.dart';
+import 'gym/arrival.dart';
 import 'health/health_routes.dart';
 import 'http/middleware.dart';
 import 'live_activity/token_routes.dart';
@@ -85,6 +86,8 @@ final class AppDeps {
       logger: logger,
       budgetCapVnd: aiConfig.capVnd,
     );
+    // 05 Bản 5 TD5-14: báo "tới phòng gym"; bật thẻ gắn sau khi có APNs.
+    gymArrival = GymArrivalService(pool: db.pool, clock: clock, logger: logger);
     // ED-11: mặc định dùng nhà cung cấp giả.
     menus = MenuService(
       pool: db.pool,
@@ -106,6 +109,7 @@ final class AppDeps {
   late final AuthService auth;
   late final SyncService sync;
   late final MenuService menus;
+  late final GymArrivalService gymArrival;
 }
 
 /// Ghép toàn bộ route và middleware của API.
@@ -116,6 +120,7 @@ Handler buildApp(AppDeps deps) {
   addLogoutRoute(router, deps.db.pool, deps.tokens);
   addLiveActivityTokenRoutes(router, deps.db.pool, deps.tokens);
   addMeRoutes(router, deps.db.pool, deps.tokens);
+  addGymArrivalRoutes(router, deps.gymArrival, deps.tokens);
   addSyncRoutes(router, deps.sync, deps.tokens);
   addMenuRoutes(router, deps.menus, deps.tokens);
   return const Pipeline()

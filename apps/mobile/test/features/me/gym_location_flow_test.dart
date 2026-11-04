@@ -272,13 +272,24 @@ void main() {
     final today = LocalDate(2026, 11, 3);
     final event = (date: today, localTime: LocalTime(17, 20));
 
+    final reported = <String>[];
+    var offline = false;
+
     setUp(() {
       repo = GymLocationRepository(db);
+      reported.clear();
+      offline = false;
       arrival = GymArrivalUseCase(
+        db: db,
         repo: repo,
         schedule: ScheduleRepository(db),
         pauses: SchedulePauseRepository(db),
+        outbox: OutboxWriter(db, clock),
         bridge: gym,
+        report: (date, time) async {
+          if (offline) throw Exception('offline');
+          reported.add('${date.toKey()} ${time.toKey()}');
+        },
         clock: clock,
       );
     });
@@ -301,12 +312,74 @@ void main() {
       expect(await repo.arrived(today), isTrue);
     });
 
-    test('drain lấy hàng chờ iOS và xử lý', () async {
+    test('drain lấy hàng chờ iOS và xử lý, báo iOS xong', () async {
       await repo.put(GymLocation(lat: 10.77, lng: 106.69, savedAt: tue));
       gym.queue.add(event);
       await arrival.drain();
       expect(gym.queue, isEmpty);
       expect(await repo.arrived(today), isTrue);
+      expect(reported, ['2026-11-03 17:20']);
+      expect(gym.handled, 1);
+    });
+
+    // Thứ 3 03/11 có buổi Lưng 18:00 (FD5-01 = A, VS59-T03).
+    final tueDay = PlanDay(
+      date: today,
+      kind: DayKind.workout,
+      time: LocalTime(18, 0),
+      muscles: const [MuscleGroup.back],
+    );
+    Future<void> seedDay(PlanDay d) => ScheduleRepository(db).putDay(d);
+
+    test('FD5-01, F25-E61: tới gym 17:20 trước giờ tập 18:00 → openedAt 17:20 '
+        '+ outbox day, báo server; ghi tạ, "Đã tập" mở từ 17:20', () async {
+      await repo.put(GymLocation(lat: 10.77, lng: 106.69, savedAt: tue));
+      await seedDay(tueDay);
+      clock.set(DateTime(2026, 11, 3, 17, 21));
+      expect(await arrival(event), isTrue);
+      final day = (await ScheduleRepository(db).day(today))!;
+      expect(day.openedAt, DateTime(2026, 11, 3, 17, 20));
+      expect(SessionRules.canMarkDone(day, clock.now()), isTrue);
+      expect(LiftWindow.of(day, clock.now()).isOpen, isTrue);
+      final days = [
+        for (final r in await db.select(db.outbox).get())
+          if (r.entity == SyncEntities.day) r.toMutation(),
+      ];
+      expect(days.single.data!['openedAt'], '2026-11-03T10:20:00.000Z');
+      expect(reported, ['2026-11-03 17:20']);
+    });
+
+    test('F25-R66: mất mạng → không thẻ, nhưng buổi vẫn mở sớm và không gọi '
+        'lại trong ngày', () async {
+      await repo.put(GymLocation(lat: 10.77, lng: 106.69, savedAt: tue));
+      await seedDay(tueDay);
+      offline = true;
+      expect(await arrival(event), isTrue);
+      expect(reported, isEmpty);
+      expect((await ScheduleRepository(db).day(today))!.openedAt, isNotNull);
+      offline = false;
+      expect(await arrival(event), isFalse);
+      expect(reported, isEmpty);
+    });
+
+    test('Tạm dừng: không báo server (A5-07) nhưng vẫn mở buổi sớm (F31-R5); '
+        'sau giờ tập / đã đánh dấu → không mở sớm', () async {
+      await repo.put(GymLocation(lat: 10.77, lng: 106.69, savedAt: tue));
+      await seedDay(tueDay);
+      await SchedulePauseRepository(
+        db,
+      ).put(SchedulePause(id: 'p1', startDate: today, endDate: today));
+      expect(await arrival(event), isFalse);
+      expect(reported, isEmpty);
+      expect((await ScheduleRepository(db).day(today))!.openedAt, isNotNull);
+
+      await ScheduleRepository(db).putDay(tueDay);
+      await SchedulePauseRepository(db).delete('p1');
+      expect(
+        await arrival((date: today, localTime: LocalTime(18, 30))),
+        isTrue,
+      );
+      expect((await ScheduleRepository(db).day(today))!.openedAt, isNull);
     });
 
     test('GymRegionSync chỉ gọi iOS khi bản ghi đổi', () async {

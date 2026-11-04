@@ -1,12 +1,15 @@
 import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../app/router.dart';
 import '../../../app/shell/app_tab.dart';
 import '../../../app/strings_vi.dart';
 import '../../../core/formatters.dart';
 import '../../../ui/components/components.dart';
 import '../../../ui/theme.dart';
+import '../../schedule/presentation/extra_session_sheet.dart';
 import '../../schedule/presentation/pause_sheet.dart';
 import '../../schedule/presentation/session_marking.dart';
 import '../../schedule/presentation/session_status_sheet.dart';
@@ -28,6 +31,7 @@ class TodayScreen extends ConsumerWidget {
     if (state == null) {
       return const IronlyTabPage(tab: AppTab.today, title: S.tabToday);
     }
+    _openExtraSessionLink(context, state);
     final hasSession =
         state.kind != TodayKind.noSchedule && state.kind != TodayKind.rest;
     // Banner tạm dừng dưới tiêu đề (04 Bản 5 S-10 H7, H8).
@@ -74,6 +78,26 @@ class TodayScreen extends ConsumerWidget {
       },
     );
   }
+}
+
+/// Thẻ ngày nghỉ (S-71 rút gọn) mở `ironly://extra-session` → Hôm nay
+/// `?open=extra-session` (04 Bản 5 §6.3): bỏ tham số, rồi mở S-24 cho hôm nay
+/// nếu còn thêm được Buổi tập thêm (F25-R63, F05-R64); không thì chỉ ở Hôm nay.
+void _openExtraSessionLink(BuildContext context, TodayScreenState state) {
+  final GoRouterState route;
+  try {
+    route = GoRouterState.of(context);
+  } on GoError {
+    return;
+  }
+  if (route.uri.queryParameters['open'] != extraSessionLink) return;
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (!context.mounted) return;
+    GoRouter.of(context).go(AppTab.today.path);
+    if (state.canAddExtra) {
+      showExtraSessionSheet(context, state.today);
+    }
+  });
 }
 
 /// Góc phải tiêu đề: ngày (H1, H2, H3) hoặc dấu trạng thái buổi (H4 → H6,

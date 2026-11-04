@@ -62,6 +62,11 @@ final class GymRegionMonitor: NSObject, CLLocationManagerDelegate {
   /// Gọi trên luồng chính mỗi khi có lần vào vùng mới được xếp hàng.
   var onArrival: ((GymArrival) -> Void)?
 
+  /// Gọi sau mỗi lần xếp hàng, kèm "đã có cầu Flutter nghe" (`onArrival`):
+  /// app giữ thời gian chạy nền và, khi chưa có ai nghe (app được iOS mở ở nền
+  /// lúc đã tắt hẳn), chạy engine nền xử lý hàng chờ (06 Bản 5 VS59-T03).
+  var onQueued: ((_ listening: Bool) -> Void)?
+
   private var pending: [FixHandler] = []
   private var fixGeneration = 0
   private var waitingAuthorization = false
@@ -256,6 +261,7 @@ final class GymRegionMonitor: NSObject, CLLocationManagerDelegate {
     queue.append(arrival)
     save(queue)
     onArrival?(arrival)
+    onQueued?(onArrival != nil)
   }
 
   func locationManager(

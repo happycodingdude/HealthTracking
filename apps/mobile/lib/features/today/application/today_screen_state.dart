@@ -82,6 +82,17 @@ final class TodayScreenState {
 
   /// H8 — Tạm dừng, ngày nghỉ (05 Bản 5 §6.4.3 `pausedRest`).
   bool get pausedRest => kind == TodayKind.rest && pause != null;
+
+  /// Đã tới phòng gym trước giờ tập (05 Bản 5 §6.4.3 `opened`, FD5-01 = A):
+  /// buổi mở từ lúc tới gym — H4 ghi tạ, "Đã tập" được trước giờ tập.
+  bool get opened {
+    final d = session?.day;
+    final at = d?.openedAt;
+    if (d == null || at == null || !d.isWorkout || d.time == null) {
+      return false;
+    }
+    return SessionRules.opensAt(d).isBefore(SessionRules.startsAt(d));
+  }
 }
 
 final todayScreenStateProvider = Provider<TodayScreenState?>((ref) {

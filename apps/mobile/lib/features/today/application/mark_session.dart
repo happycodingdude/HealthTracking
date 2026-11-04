@@ -159,14 +159,18 @@ final class UnmarkSession extends _DayWrite {
 
 /// Thêm buổi tập thêm (F05-R31 → R35, F05-R64): chỉ cho hôm nay, đã có lịch
 /// tuần; lưu ngay (Bản 5 bỏ hộp "Sau khi lưu, buổi này không sửa được nữa").
-/// Ném [ExtraException].
+/// Thẻ ngày nghỉ (khi tới gym, F25-R63) tắt tại chỗ, mutation kèm
+/// `liveActivityEnded` (05 Bản 5 §6.4.4, TD5-13.5). Ném [ExtraException].
 final class AddExtraSession extends _DayWrite {
   AddExtraSession({
     required super.db,
     required super.schedule,
     required super.outbox,
     required super.clock,
-  });
+    SessionMarkHooks hooks = const NoSessionMarkHooks(),
+  }) : _hooks = hooks;
+
+  final SessionMarkHooks _hooks;
 
   Future<PlanDay> call(LocalDate date, List<MuscleGroup> muscles) async {
     // F05-R31: chưa có lịch tuần thì không có buổi tập thêm.
@@ -183,7 +187,7 @@ final class AddExtraSession extends _DayWrite {
         now: now,
         hasSchedule: hasSchedule,
       );
-    });
+    }, endsLiveActivity: _hooks);
   }
 }
 
@@ -243,6 +247,7 @@ final addExtraSessionProvider = Provider<AddExtraSession>(
     schedule: ref.watch(scheduleRepositoryProvider),
     outbox: ref.watch(outboxWriterProvider),
     clock: ref.watch(clockProvider),
+    hooks: ref.watch(sessionMarkHooksProvider),
   ),
 );
 

@@ -30,6 +30,7 @@ import 'package:mobile/features/menu/data/menu_repository.dart';
 import 'package:mobile/features/native/gym_region_bridge.dart';
 import 'package:mobile/features/onboarding/application/setup_state.dart';
 import 'package:mobile/features/onboarding/data/onboarding_draft_repository.dart';
+import 'package:mobile/features/schedule/data/schedule_repository.dart';
 import 'package:mobile/features/schedule/presentation/pause_sheet.dart';
 import 'package:mobile/features/schedule/presentation/schedule_screen.dart';
 import 'package:mobile/features/today/presentation/week_progress_screen.dart';
@@ -1233,6 +1234,36 @@ void main() {
       testWidgets('M26: S-77 đã lưu', (tester) async {
         await pumpGym(tester, gymLocationPath, at: saved);
         await shot(tester, 'm26_s77_saved');
+      });
+
+      // 06 Bản 5 VS-59 (FD5-01 = A, F25-E61): buổi Ngực thứ 2 26/10 18:00, tới
+      // gym 17:20 → 17:25 Hôm nay là H4 (ghi tạ, "Đã tập" được), không phải H3.
+      testWidgets('M26: S-10 mở buổi sớm khi tới gym (17:25, giờ tập 18:00)', (
+        tester,
+      ) async {
+        final db = AppDatabase(NativeDatabase.memory());
+        addTearDown(db.close);
+        await seedCaptureV5(db, rows: false);
+        final schedule = ScheduleRepository(db);
+        final day = (await schedule.day(captureMonday))!;
+        await schedule.putDay(day.withOpenedAt(DateTime(2026, 10, 26, 17, 20)));
+        final container = ProviderContainer(
+          retry: (_, _) => null,
+          overrides: appOverrides(
+            db: db,
+            clock: FixedClock(DateTime(2026, 10, 26, 17, 25)),
+          ),
+        );
+        addTearDown(container.dispose);
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const IronlyApp(),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.byKey(const ValueKey('today-mark-done')), findsOneWidget);
+        await shot(tester, 'm26_s10_opened');
       });
     }
   });

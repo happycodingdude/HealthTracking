@@ -1,4 +1,5 @@
 import ActivityKit
+import UIKit
 import Flutter
 import WidgetKit
 
@@ -7,7 +8,9 @@ import WidgetKit
 /// `gym_region_bridge.dart` (Bản 5).
 /// App chỉ cập nhật và tắt thẻ màn hình khóa; bật thẻ chỉ server (ED3-09).
 enum NativeBridge {
-  static func register(with registrar: FlutterPluginRegistrar) {
+  /// [background] = engine nền của `GymBackgroundRunner` (không màn hình): không
+  /// nghe token thẻ; `gym.arrivalHandled` tắt chính engine đó.
+  static func register(with registrar: FlutterPluginRegistrar, background: Bool = false) {
     let channel = FlutterMethodChannel(
       name: "dev.antonnguyen.ironly/native", binaryMessenger: registrar.messenger())
     channel.setMethodCallHandler { call, result in
@@ -15,7 +18,7 @@ enum NativeBridge {
         return LiveActivities.handle(call, result: result)
       }
       if call.method.hasPrefix("gym.") {
-        return GymRegionChannel.handle(call, result: result)
+        return GymRegionChannel.handle(call, result: result, background: background)
       }
       do {
         switch call.method {
@@ -38,10 +41,84 @@ enum NativeBridge {
         result(FlutterError(code: "app_group", message: "\(error)", details: nil))
       }
     }
-    FlutterEventChannel(
-      name: "dev.antonnguyen.ironly/native/events", binaryMessenger: registrar.messenger()
-    ).setStreamHandler(LiveActivities.events)
+    if !background {
+      FlutterEventChannel(
+        name: "dev.antonnguyen.ironly/native/events", binaryMessenger: registrar.messenger()
+      ).setStreamHandler(LiveActivities.events)
+    }
     GymRegionChannel.attach(channel)
+  }
+}
+
+/// iOS mở app ở nền khi Bạn bước vào vùng phòng gym (05 Bản 5 §6.4.6, TA5-07).
+/// App dùng UIScene: lần mở ở nền không kết nối màn hình nên engine Flutter của
+/// app không chạy. Runner này giữ thời gian chạy nền (≤ [timeout]) và, khi
+/// chưa có engine nào nghe hoặc không có màn hình, chạy engine nền điểm vào
+/// `gymArrivalMain` (Dart) để báo server và mở buổi sớm; Dart báo xong bằng
+/// `gym.arrivalHandled` (06 Bản 5 VS59-T03). Không gửi tọa độ (AP-18).
+final class GymBackgroundRunner {
+  static let shared = GymBackgroundRunner()
+  /// Tối đa iOS cho khi mở app ở nền vì sự kiện vùng (~30 giây, TA5-07).
+  static let timeout: TimeInterval = 25
+
+  private var engine: FlutterEngine?
+  private var engineToken = 0
+  private var task: UIBackgroundTaskIdentifier = .invalid
+  private var generation = 0
+
+  /// Vừa xếp hàng một lần vào vùng.
+  func queued(listening: Bool) {
+    hold()
+    if !listening || UIApplication.shared.connectedScenes.isEmpty {
+      startEngine()
+    }
+  }
+
+  private func hold() {
+    guard task == .invalid else { return }
+    generation += 1
+    let current = generation
+    task = UIApplication.shared.beginBackgroundTask(withName: "ironly.gymArrival") {
+      [weak self] in self?.finish()
+    }
+    DispatchQueue.main.asyncAfter(deadline: .now() + Self.timeout) { [weak self] in
+      guard let self, self.generation == current else { return }
+      self.finish()
+    }
+  }
+
+  private func startEngine() {
+    guard engine == nil else { return }
+    let engine = FlutterEngine(name: "ironly.gymArrival", project: nil, allowHeadlessExecution: true)
+    // Điểm vào nằm ở `main.dart` (kể cả bản integration test, thư viện gốc khác).
+    guard engine.run(withEntrypoint: "gymArrivalMain", libraryURI: "package:mobile/main.dart")
+    else { return finish() }
+    GeneratedPluginRegistrant.register(with: engine)
+    if let registrar = engine.registrar(forPlugin: "IronlyNativeBridge") {
+      NativeBridge.register(with: registrar, background: true)
+    }
+    engineToken = GymRegionChannel.attachCount
+    self.engine = engine
+  }
+
+  /// Engine app (có màn hình) xử lý xong: chỉ trả thời gian chạy nền.
+  func release() {
+    guard engine == nil, task != .invalid else { return }
+    UIApplication.shared.endBackgroundTask(task)
+    task = .invalid
+  }
+
+  /// Engine nền xử lý xong hoặc hết giờ: tắt engine nền, trả thời gian chạy nền.
+  func finish() {
+    if let engine {
+      self.engine = nil
+      engine.destroyContext()
+      GymRegionChannel.detachBackground(token: engineToken)
+    }
+    if task != .invalid {
+      UIApplication.shared.endBackgroundTask(task)
+      task = .invalid
+    }
   }
 }
 
@@ -55,15 +132,33 @@ enum GymRegionChannel {
   /// Báo Dart mỗi lần vào vùng; hàng chờ có sẵn (app vừa được iOS mở ở nền)
   /// cũng báo một lần để Dart lấy.
   static func attach(_ channel: FlutterMethodChannel) {
+    let before = monitor.onArrival
     monitor.onArrival = { arrival in
       channel.invokeMethod("gymArrival", arguments: arrival.asMap)
     }
     if let first = monitor.queued().first {
       channel.invokeMethod("gymArrival", arguments: first.asMap)
     }
+    attachCount += 1
+    listenerBefore = before
   }
 
-  static func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+  /// Số lần một engine gắn cầu (engine nền ghi lại để tháo đúng cầu của nó).
+  private(set) static var attachCount = 0
+  /// Cầu đang nghe trước lần gắn gần nhất (thường là nil: app đã tắt).
+  private static var listenerBefore: ((GymArrival) -> Void)?
+
+  /// Engine nền tắt: trả lại cầu đang nghe trước nó; engine app gắn sau engine
+  /// nền ([token] cũ) thì giữ cầu của engine app.
+  static func detachBackground(token: Int) {
+    guard attachCount == token else { return }
+    monitor.onArrival = listenerBefore
+    listenerBefore = nil
+  }
+
+  static func handle(
+    _ call: FlutterMethodCall, result: @escaping FlutterResult, background: Bool = false
+  ) {
     let args = call.arguments as? [String: Any]
     switch call.method {
     case "gym.requestLocation":
@@ -84,6 +179,9 @@ enum GymRegionChannel {
       result(monitor.authorization)
     case "gym.takeArrivals":
       result(monitor.takeArrivals().map(\.asMap))
+    case "gym.arrivalHandled":
+      background ? GymBackgroundRunner.shared.finish() : GymBackgroundRunner.shared.release()
+      result(nil)
     default:
       result(FlutterMethodNotImplemented)
     }

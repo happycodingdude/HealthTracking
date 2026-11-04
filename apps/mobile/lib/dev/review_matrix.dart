@@ -885,6 +885,50 @@ final reviewMatrix = <ReviewCell>[
     mockFile: v5Mock('s77b'),
     goldenTest: 's77_saved',
   ),
+  // M26 — thẻ theo vị trí, thẻ ngày nghỉ (06 Bản 5 VS-59): thẻ là snapshot
+  // XCTest (như M21, M25); S-10 mở buổi sớm chụp trên simulator.
+  ReviewCell(
+    id: 'm26_s10_opened',
+    milestone: Milestone.m26,
+    screen: 'S-10',
+    state:
+        'tới gym 17:20, giờ tập 18:00 → 17:25 là H4: danh sách bài ghi tạ '
+        'được, ô chốt buổi (FD5-01)',
+    mock: noMock,
+    mockFile: v5Mock('s10-h4'),
+  ),
+  ReviewCell(
+    id: 'm26_s71_logging',
+    milestone: Milestone.m26,
+    screen: 'S-71',
+    state: 'thẻ buổi tập bật theo vị trí: nội dung như Bản 4',
+    mock: noMock,
+    mockFile: v5Mock('s71'),
+  ),
+  ReviewCell(
+    id: 'm26_s71_extra',
+    milestone: Milestone.m26,
+    screen: 'S-71',
+    state: 'thẻ ngày nghỉ rút gọn: icon + "Nghỉ", ô "+ Buổi tập thêm" cam + ›',
+    mock: noMock,
+    mockFile: v5Mock('s71'),
+  ),
+  ReviewCell(
+    id: 'm26_s71_island_extra_compact',
+    milestone: Milestone.m26,
+    screen: 'S-71',
+    state: 'Dynamic Island thu gọn thẻ ngày nghỉ: icon · "+" cam',
+    mock: noMock,
+    mockFile: v5Mock('s71'),
+  ),
+  ReviewCell(
+    id: 'm26_s71_island_extra_expanded',
+    milestone: Milestone.m26,
+    screen: 'S-71',
+    state: 'Dynamic Island mở rộng thẻ ngày nghỉ: như thẻ',
+    mock: noMock,
+    mockFile: v5Mock('s71'),
+  ),
 ];
 
 List<ReviewCell> cellsOf(Milestone m) => [

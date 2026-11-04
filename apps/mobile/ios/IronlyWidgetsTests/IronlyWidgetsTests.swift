@@ -224,6 +224,71 @@ final class IronlyWidgetsTests: XCTestCase {
     XCTAssertEqual(IronlySessionActivity.url.absoluteString, "ironly://session/today")
   }
 
+  /// 05 Bản 5 TD5-15, TA5-04 (VS59-T05): push Bản 3 / 4 không có `kind`,
+  /// `inviteExtra` → thẻ buổi tập; thẻ ngày nghỉ mở `ironly://extra-session`.
+  func testTD515ExtraKindDecodesWithDefaults() throws {
+    typealias Attrs = IronlySessionAttributes
+    let old = try JSONDecoder().decode(
+      Attrs.self, from: Data(#"{"date":"2026-11-04","groups":"Lưng"}"#.utf8))
+    XCTAssertEqual(old.kind, "session")
+    XCTAssertFalse(old.isExtra)
+    let extra = try JSONDecoder().decode(
+      Attrs.self, from: Data(#"{"date":"2026-11-07","groups":"Nghỉ","kind":"extra"}"#.utf8))
+    XCTAssertTrue(extra.isExtra)
+
+    let v3 = try state(
+      #"{"lastLogged":null,"next":{"name":"Máy ép ngực","prev":"40 → 45 kg"},"allLogged":false,"absOnly":false}"#)
+    XCTAssertFalse(v3.inviteExtra)
+    let invite = try state(
+      #"{"lastLogged":null,"next":null,"allLogged":false,"absOnly":false,"inviteExtra":true}"#)
+    XCTAssertTrue(invite.inviteExtra)
+
+    XCTAssertEqual(IronlySessionActivity.url(old, v3).absoluteString, "ironly://session/today")
+    XCTAssertEqual(IronlySessionActivity.url(extra, invite).absoluteString, "ironly://extra-session")
+    // Push thiếu `kind` nhưng nội dung mời (app 4.0.0 vẽ lại sau khi nâng cấp).
+    XCTAssertTrue(IronlySessionActivity.isRestInvite(old, invite))
+  }
+
+  /// 04 Bản 5 S-71 thẻ ngày nghỉ (UD5-04): thẻ + Dynamic Island thu gọn / mở
+  /// rộng; máy sáng / tối vẽ như nhau (TA4-08).
+  @MainActor
+  func testRestInviteSnapshots() throws {
+    let recording = !FileManager.default.fileExists(
+      atPath: snapshotDir.appendingPathComponent("s71_extra.png").path)
+      || ProcessInfo.processInfo.environment["SNAPSHOT_RECORD"] == "1"
+    var failures: [String] = []
+    for (variant, size) in [("", DynamicTypeSize.large), ("_maxtext", DynamicTypeSize.accessibility3)] {
+      let card = RestInviteView(groups: "Nghỉ")
+        .frame(width: 361)
+        .background(Tokens.color.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 22))
+      let dark = try snapshot(card, scheme: .dark, size: size)
+      XCTAssertEqual(try snapshot(card, scheme: .light, size: size).pngData(), dark.pngData())
+      if let problem = try compare(dark, name: "s71_extra\(variant)", record: recording) {
+        failures.append(problem)
+      }
+    }
+    let islands: [(String, AnyView)] = [
+      ("compact", AnyView(HStack {
+        IslandCompactLeading(groups: "Nghỉ")
+        Spacer(minLength: 24)
+        IslandInviteTrailing()
+      }.padding(.horizontal, 18).frame(width: 250, height: 37).background(Color.black)
+        .clipShape(Capsule()))),
+      ("expanded", AnyView(RestInviteView(groups: "Nghỉ", island: true)
+        .padding(24).frame(width: 371).background(Color.black)
+        .clipShape(RoundedRectangle(cornerRadius: 44)))),
+    ]
+    for (name, island) in islands {
+      let dark = try snapshot(island, scheme: .dark, size: .large)
+      XCTAssertEqual(try snapshot(island, scheme: .light, size: .large).pngData(), dark.pngData())
+      if let problem = try compare(dark, name: "s71_island_extra_\(name)", record: recording) {
+        failures.append(problem)
+      }
+    }
+    XCTAssertTrue(failures.isEmpty, failures.joined(separator: "\n"))
+  }
+
   private var activityStates: [(String, String, State)] {
     let lift = State.Lift(name: "Máy ép ngực", lift: "40 → 47,5 kg")
     return [

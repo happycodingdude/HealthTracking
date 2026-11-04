@@ -397,6 +397,17 @@ final class DayHandler implements SyncEntityHandler {
         parameters: {'now': ctx.serverNow, 'user': userId, 'date': m.key},
       );
     }
+    // 05 Bản 5 §6.6.3, TD5-13.5: lưu Buổi tập thêm → thẻ ngày nghỉ (kind =
+    // extra) của ngày đó tắt; app đã tắt tại chỗ nên job không gửi push tắt.
+    if (d.extraMuscles?.isNotEmpty ?? false) {
+      await s.execute(
+        Sql.named('''
+          UPDATE live_activity_sessions SET end_sent_at = @now
+          WHERE user_id = @user AND date = @date::date AND kind = 'extra'
+            AND end_sent_at IS NULL'''),
+        parameters: {'now': ctx.serverNow, 'user': userId, 'date': m.key},
+      );
+    }
     // 05 Bản 5 §6.6.3, TD5-13.3: bỏ đánh dấu buổi hôm nay → sau commit, thẻ
     // hiện lại nếu còn trong cửa sổ (F25-R61, FC5-13).
     if (before?.mark != null &&

@@ -1,5 +1,6 @@
 import 'package:domain/domain.dart';
 import 'package:drift/native.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -30,6 +31,11 @@ void main() {
     expect(deepLinkLocation(Uri.parse('ironly://login'), monday), loginPath);
     expect(deepLinkLocation(Uri.parse('ironly://login/'), monday), loginPath);
     expect(deepLinkLocation(Uri.parse('/today'), monday), isNull);
+    // 04 Bản 5 §6.3: thẻ ngày nghỉ → Hôm nay + S-24.
+    expect(
+      deepLinkLocation(Uri.parse('ironly://extra-session'), monday),
+      '/today?open=extra-session',
+    );
   });
 
   /// iOS gửi URL vào app như khi chạm widget (FlutterDeepLinkingEnabled).
@@ -47,6 +53,7 @@ void main() {
   Future<ProviderContainer> pump(
     WidgetTester tester, {
     bool signedIn = true,
+    DateTime? now,
   }) async {
     tester.view
       ..physicalSize = const Size(390 * 3, 844 * 3)
@@ -59,7 +66,7 @@ void main() {
       overrides: appOverrides(
         db: db,
         session: signedIn ? signedInSession : null,
-        clock: FixedClock(DateTime(2026, 10, 12, 10)),
+        clock: FixedClock(now ?? DateTime(2026, 10, 12, 10)),
       ),
     );
     addTearDown(container.dispose);
@@ -115,5 +122,28 @@ void main() {
     await pump(tester, signedIn: false);
     await open(tester, 'ironly://session/today');
     expect(find.byType(TodayScreen), findsNothing);
+  });
+
+  testWidgets('F25-AC63, 04 Bản 5 §6.3: thẻ ngày nghỉ → ironly://extra-session '
+      '→ Hôm nay mở S-24 cho hôm nay; tham số bỏ khỏi đường dẫn', (
+    tester,
+  ) async {
+    // Thứ 3 13/10 là ngày nghỉ của lịch thử.
+    final c = await pump(tester, now: DateTime(2026, 10, 13, 17));
+    c.read(routerProvider).go('/me');
+    await tester.pumpAndSettle();
+    await open(tester, 'ironly://extra-session');
+    expect(find.byType(TodayScreen), findsOneWidget);
+    expect(find.byKey(const ValueKey('extra-sheet')), findsOneWidget);
+    expect(c.read(routerProvider).state.uri.toString(), AppTab.today.path);
+  });
+
+  testWidgets('ironly://extra-session ngày có buổi (đã hết lựa chọn thêm buổi) '
+      '→ chỉ Hôm nay, không S-24', (tester) async {
+    final c = await pump(tester);
+    await open(tester, 'ironly://extra-session');
+    expect(find.byType(TodayScreen), findsOneWidget);
+    expect(find.byKey(const ValueKey('extra-sheet')), findsNothing);
+    expect(c.read(routerProvider).state.uri.toString(), AppTab.today.path);
   });
 }

@@ -56,6 +56,21 @@ print(re.search(r"iOS-(\d+)", rt).group(1))')"
   done
 fi
 
+# M26: thẻ màn hình khóa (bật theo vị trí, thẻ ngày nghỉ) là snapshot XCTest
+# (06 Bản 5 VS59-T05), chép với tiền tố m26_; màn app chụp qua flutter drive.
+if [ "$CAPTURE" = 1 ] && [ "$M" = "M26" ]; then
+  OS="ios$(xcrun simctl list -j devices booted | python3 -c '
+import json, sys, re
+d = json.load(sys.stdin)["devices"]
+rt = next(rt for rt, ds in d.items() if any(x["state"] == "Booted" for x in ds))
+print(re.search(r"iOS-(\d+)", rt).group(1))')"
+  SNAP="$ROOT/apps/mobile/ios/IronlyWidgetsTests/__Snapshots__/$OS"
+  for f in s71_logging s71_extra s71_island_extra_compact s71_island_extra_expanded; do
+    [ -f "$SNAP/$f.png" ] || { echo "Chưa có snapshot $SNAP/$f.png: chạy xcodebuild test (check.sh) trước" >&2; exit 1; }
+    cp "$SNAP/$f.png" "$SHOTS/m26_$f.png"
+  done
+fi
+
 if [ "$CAPTURE" = 1 ]; then
   if [ -z "$DEVICE" ]; then
     DEVICE="$(xcrun simctl list devices booted | grep -Eo '\([0-9A-F-]{36}\)' | head -1 | tr -d '()')"

@@ -140,6 +140,12 @@ final class FakeGymRegionBridge implements GymRegionBridge {
     return taken;
   }
 
+  /// Số lần Dart báo xử lý xong hàng chờ (`gym.arrivalHandled`).
+  int handled = 0;
+
+  @override
+  Future<void> arrivalHandled() async => handled++;
+
   @override
   Stream<void> get arrivals => _arrivals.stream;
 }

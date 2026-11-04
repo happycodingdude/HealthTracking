@@ -116,9 +116,15 @@ String? deepLinkLocation(Uri uri, LocalDate today) {
   // `ironly://session/today` cũng về tab Hôm nay; URL không đổi.
   return switch (target) {
     'login' => loginPath,
+    // Thẻ ngày nghỉ khi tới phòng gym (04 Bản 5 §6.3, UD5-04): Hôm nay rồi mở
+    // S-24 cho hôm nay.
+    extraSessionLink => '${AppTab.today.path}?open=$extraSessionLink',
     _ => AppTab.today.path,
   };
 }
+
+/// `ironly://extra-session` (05 Bản 5 TD5-15).
+const extraSessionLink = 'extra-session';
 
 /// Màn đầu tiên khi mở app: Hôm nay (NAV-1); sau đăng xuất là màn Đăng nhập
 /// S-01b (05 Bản 3 §6.6.6 bước 6).

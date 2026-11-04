@@ -346,4 +346,21 @@ void main() {
       expect(value, isNot(contains('màn hình khóa')), reason: key);
     }
   });
+
+  test('05 Bản 5 §6.4.4, TD5-13.5 (F25-AC63): thẻ ngày nghỉ đang hiện, lưu '
+      'Buổi tập thêm → tắt tại chỗ, mutation day kèm liveActivityEnded; nội '
+      'dung thẻ ngày nghỉ không cập nhật theo bài', () async {
+    final tue = LocalDate(2026, 10, 13);
+    final c = await setUpPhone(now: DateTime(2026, 10, 13, 17));
+    native.startActivity('extra', tue, token: randomTestSecret());
+    expect(await c.contentOf(tue), isNull);
+    await container.read(addExtraSessionProvider)(tue, const [
+      MuscleGroup.shoulders,
+    ]);
+    expect(native.activities, isEmpty);
+    final day = (await db.select(db.outbox).get()).lastWhere(
+      (o) => o.entity == 'day' && o.entityKey == '2026-10-13',
+    );
+    expect(day.payload, contains('"liveActivityEnded":true'));
+  });
 }

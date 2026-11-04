@@ -99,6 +99,12 @@ List<Override> appOverrides({
       );
     },
   );
+  // Báo "tới phòng gym" (05 Bản 5 TD5-14): luôn 204.
+  fake.routes.putIfAbsent(
+    'POST /v1/me/gym-arrival',
+    () =>
+        (_) => (204, null),
+  );
   fake.routes.putIfAbsent(
     'GET /v1/sync/pull',
     () =>

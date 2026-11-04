@@ -173,6 +173,39 @@ abstract final class LiveActivityPayload {
     };
   }
 
+  /// Thẻ ngày nghỉ rút gọn (05 Bản 5 TD5-15, §6.9.2, UD5-04): cùng
+  /// `IronlySessionAttributes`, `kind = extra`, `groups = "Nghỉ"`, nội dung chỉ
+  /// mời bắt đầu Buổi tập thêm. App 4.0.0 nhận được (trường mới có mặc định,
+  /// TA5-04).
+  static Map<String, Object?> startExtra({
+    required DateTime now,
+    required LocalDate date,
+    required DateTime staleAt,
+  }) => {
+    'aps': {
+      'timestamp': _seconds(now),
+      'event': 'start',
+      'attributes-type': 'IronlySessionAttributes',
+      'attributes': {
+        'date': DateCodec.encode(date),
+        'groups': restGroups,
+        'kind': 'extra',
+      },
+      'content-state': {
+        'lastLogged': null,
+        'next': null,
+        'allLogged': false,
+        'absOnly': false,
+        'inviteExtra': true,
+      },
+      'stale-date': _seconds(staleAt),
+      'alert': {'title': 'Buổi tập hôm nay', 'body': restGroups},
+    },
+  };
+
+  /// Nhóm cơ của thẻ ngày nghỉ (S-71, `alert.body`).
+  static const restGroups = 'Nghỉ';
+
   static Map<String, Object?> end(DateTime now) => {
     'aps': {
       'timestamp': _seconds(now),
@@ -231,6 +264,77 @@ final class LiveActivityScheduler {
       final day = LiveActivityPlan.restart(a);
       if (day == null) continue;
       await _restart(now, a, day);
+    }
+  }
+
+  /// Thẻ khi tới phòng gym (05 Bản 5 TD5-14, §6.9.1), gọi từ
+  /// `GymArrivalService` sau khi [GymArrivalRules.decide] chọn bật. Giành dòng
+  /// `live_activity_sessions(trigger = location, kind)` trước khi gửi để job
+  /// mỗi phút không bật thêm thẻ theo giờ (TD5-13.2); gửi lỗi → xóa dòng, thẻ
+  /// theo giờ vẫn bật được như Bản 3 (BR5-24).
+  Future<void> startOnArrival(String userId, GymArrivalOutcome outcome) async {
+    if (outcome == GymArrivalOutcome.none) return;
+    final now = _clock.now().toUtc();
+    final found = await accounts(now, userId: userId);
+    if (found.isEmpty) return;
+    final account = found.single;
+    final date = account.localToday;
+    final day = account.today;
+    final session = outcome == GymArrivalOutcome.session;
+    if (session && (day == null || !day.isWorkout)) return;
+    final claimed = await _pool.execute(
+      Sql.named('''
+        INSERT INTO live_activity_sessions (user_id, date, started_at, trigger, kind)
+        VALUES (@user, @date::date, @now, 'location', @kind)
+        ON CONFLICT DO NOTHING RETURNING 1'''),
+      parameters: {
+        'user': userId,
+        'date': date.toKey(),
+        'now': now,
+        'kind': session ? 'session' : 'extra',
+      },
+    );
+    if (claimed.isEmpty) return;
+    final payload = session
+        ? LiveActivityPayload.start(
+            now: now,
+            date: date,
+            groups: day!.sessionMuscles,
+            content: await content(userId, day),
+            staleAt: account.tomorrowStart,
+          )
+        : LiveActivityPayload.startExtra(
+            now: now,
+            date: date,
+            staleAt: account.tomorrowStart,
+          );
+    final result = await _apns.send(
+      ApnsPush(
+        token: account.pushToStartToken,
+        environment: account.environment,
+        payload: payload,
+      ),
+    );
+    _log.info('live_activity_start', {
+      'userId': userId,
+      'date': date.toKey(),
+      'trigger': 'location',
+      'kind': session ? 'session' : 'extra',
+      'result': result.outcome.name,
+      if (result.status != null) 'status': result.status,
+    });
+    if (result.outcome == ApnsOutcome.sent) return;
+    await _pool.execute(
+      Sql.named('''
+        DELETE FROM live_activity_sessions
+        WHERE user_id = @user AND date = @date::date AND trigger = 'location'
+          AND end_sent_at IS NULL'''),
+      parameters: {'user': userId, 'date': date.toKey()},
+    );
+    if (result.outcome == ApnsOutcome.invalidToken) {
+      await _deleteToken(userId, result);
+    } else {
+      await _failed('start', userId, date, result);
     }
   }
 

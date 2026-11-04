@@ -39,6 +39,10 @@ abstract interface class GymRegionBridge {
   /// Lấy và xóa các lần vào vùng iOS đã xếp hàng.
   Future<List<GymArrivalEvent>> takeArrivals();
 
+  /// Đã xử lý xong hàng chờ: iOS trả thời gian chạy nền, tắt engine nền nếu
+  /// app được mở ở nền vì sự kiện vùng (05 Bản 5 §6.4.6, VS59-T03).
+  Future<void> arrivalHandled();
+
   /// Có lần vào vùng mới (nghe rồi gọi [takeArrivals]).
   Stream<void> get arrivals;
 }
@@ -110,6 +114,9 @@ final class ChannelGymRegionBridge implements GymRegionBridge {
           localTime: LocalTime.tryParse('${a['localTime']}')!,
         ),
   ];
+
+  @override
+  Future<void> arrivalHandled() => _call<void>('gym.arrivalHandled');
 
   /// Nhận `gymArrival` từ iOS: chỉ bản đang được nghe (gốc app) đặt handler,
   /// bản dùng một lần lúc đăng xuất thì không.
