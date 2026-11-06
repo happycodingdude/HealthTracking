@@ -330,6 +330,7 @@ abstract final class S {
 
   /// 04 Bản 5 §6.1 `AddRow`, UD5-05: dòng viền đứt cuối danh sách bài.
   static const addExerciseRow = '+ Thêm bài';
+  static const trainAnywayToday = 'Vẫn tập hôm nay';
 
   /// 04 Bản 5 §6.9 (VoiceOver): dấu bài thêm, dấu bài bỏ qua.
   static const extraMark = 'Bài thêm';
@@ -1233,6 +1234,7 @@ abstract final class S {
     'removeExtraConfirmAction': removeExtraConfirmAction,
     'allSkippedBody': allSkippedBody,
     'addExerciseRow': addExerciseRow,
+    'trainAnywayToday': trainAnywayToday,
     'extraMark': extraMark,
     'skippedMark': skippedMark,
     'feelEasy': feelEasy,

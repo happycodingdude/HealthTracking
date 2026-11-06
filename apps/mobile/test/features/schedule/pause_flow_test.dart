@@ -108,7 +108,8 @@ void main() {
   testWidgets(
     'J5-03, U5-AC5, F31-AC1, F03-AC61, F06-AC61: T3 21:00 S-20 nút hai vạch '
     '→ S-76 → từ mai đến CN → "Tạm dừng" → banner, ô T4, T6 viền đứt, '
-    '"Tuần này 1 / 1"; F31-AC3: T4 H7 chốt "Đã tập" → 2 / 2; F31-AC2: T5 '
+    '"Tuần này 1 / 1"; T4 H7 ẩn danh sách bài, "Vẫn tập hôm nay" → hiện lại '
+    '(Bạn chọn B 06/11/2026); F31-AC3: T4 H7 chốt "Đã tập" → 2 / 2; F31-AC2: T5 '
     'H8, "+ Buổi thêm" vẫn có; F31-AC4: T7 "Kết thúc" → hộp → banner mất; '
     'F31-AC5: T6 hết ngày chưa chốt vẫn Tạm dừng',
     (tester) async {
@@ -151,6 +152,14 @@ void main() {
       expect(find.byKey(const ValueKey('pause-banner')), findsOneWidget);
       expect(find.byKey(K.glyph('paused')), findsWidgets);
       expect(ratio('1 / 1'), findsOneWidget);
+      // Bạn chọn B 06/11/2026: H7 ẩn danh sách bài; "Vẫn tập hôm nay" →
+      // danh sách hiện lại (có "+ Thêm bài"), tạm dừng giữ nguyên.
+      expect(find.byKey(const ValueKey('session-log-list')), findsNothing);
+      await tapKey(tester, 'train-anyway');
+      expect(find.byKey(const ValueKey('session-log-list')), findsOneWidget);
+      expect(find.byKey(const ValueKey('add-exercise')), findsOneWidget);
+      expect(find.byKey(const ValueKey('train-anyway')), findsNothing);
+      expect(find.byKey(const ValueKey('pause-banner')), findsOneWidget);
       await tapKey(tester, 'today-mark-done');
       expect(find.text(S.doneConfirmTitle('Lưng')), findsOneWidget);
       await tapKey(tester, 'lock-confirm-save');

@@ -612,7 +612,8 @@ void main() {
     testWidgets(
       'F21-AC49, F21-AC47: chọn đơn vị rồi, ô trống bấm ±bước → một bước, '
       'hoặc ±bước từ số ô còn lại (Bạn quyết 31/10/2026, thay FA3-05); 13 → '
-      '+2,5 → 15,5; chặn ở 0,5 và 300; UA3-03: đã bấm ±bước → đóng phải hỏi',
+      '+2,5 → 15,5; chặn ở 0,5 và 300; đóng khi đang sửa → đóng ngay, không '
+      'hỏi, không lưu (Bạn yêu cầu 06/11/2026)',
       (tester) async {
         await openMonday(tester);
         await tapKey(tester, 'lift-row-${incline.id}');
@@ -635,24 +636,45 @@ void main() {
         expect(fieldText(tester, 'end'), '300');
 
         await dismissSheet(tester);
-        expect(find.text(S.discardChanges), findsOneWidget);
-        await tapKey(tester, 'discard-confirm');
+        expect(find.text(S.discardChanges), findsNothing);
         expect(key('lift-save'), findsNothing);
         expect(await logs.get(mon, incline.id), isNull);
 
-        // Chỉ bấm ±bước rồi đóng vẫn là có thay đổi; nấc máy: ô trống bấm
-        // −bước → 1 nấc.
+        // Nấc máy: ô trống bấm −bước → 1 nấc; đóng → không hỏi.
         await tapKey(tester, 'lift-row-${incline.id}');
         await tapKey(tester, 'lift-unit-steps');
         await tapKey(tester, 'lift-end-minus');
         expect(fieldText(tester, 'end'), '1');
         await dismissSheet(tester);
-        expect(find.text(S.discardChanges), findsOneWidget);
+        expect(find.text(S.discardChanges), findsNothing);
+        expect(key('lift-save'), findsNothing);
       },
     );
 
-    testWidgets('UX-AC51, F26-AC8: gõ ghi chú rồi đóng → "Bỏ thay đổi chưa '
-        'lưu?"; "Tiếp tục ghi" → còn nguyên; hai ô trống + ghi chú → "Đã lưu '
+    testWidgets(
+      'Bạn yêu cầu 06/11/2026: lần ghi đầu, đổi kg ↔ nấc máy → hai ô về trống; '
+      'chạm lại đơn vị đang chọn → giữ số; chọn đơn vị lần đầu → giữ số đã gõ',
+      (tester) async {
+        await openMonday(tester);
+        await tapKey(tester, 'lift-row-${incline.id}');
+        await enter(tester, start: '40', end: '45', save: false);
+        await tapKey(tester, 'lift-unit-kg');
+        expect(fieldText(tester, 'start'), '40');
+        expect(fieldText(tester, 'end'), '45');
+        await tapKey(tester, 'lift-unit-kg');
+        expect(fieldText(tester, 'start'), '40');
+        await tapKey(tester, 'lift-unit-steps');
+        expect(fieldText(tester, 'start'), '');
+        expect(fieldText(tester, 'end'), '');
+        await enter(tester, start: '8', end: '10', save: false);
+        await tapKey(tester, 'lift-unit-kg');
+        expect(fieldText(tester, 'start'), '');
+        expect(fieldText(tester, 'end'), '');
+      },
+    );
+
+    testWidgets('UX-AC51, F26-AC8: gõ ghi chú rồi đóng → đóng ngay, không hỏi, '
+        'không lưu (Bạn yêu cầu 06/11/2026); hai ô trống + ghi chú → "Đã lưu '
         'ghi chú", biểu tượng rõ, vẫn "Ghi", thanh đáy không đổi; F26-AC3: bộ '
         'đếm 200/200', (tester) async {
       await openMonday(tester);
@@ -660,12 +682,12 @@ void main() {
       await tester.enterText(key('note-input'), 'máy 2 hỏng, tập máy 5');
       await tester.pumpAndSettle();
       await dismissSheet(tester);
-      expect(find.text(S.discardChanges), findsOneWidget);
-      await tapKey(tester, 'discard-keep');
-      expect(
-        tester.widget<TextField>(key('note-input')).controller!.text,
-        'máy 2 hỏng, tập máy 5',
-      );
+      expect(find.text(S.discardChanges), findsNothing);
+      expect(key('lift-save'), findsNothing);
+      expect(await notes.get(mon, incline.id), isNull);
+      await tapKey(tester, 'lift-row-${incline.id}');
+      await tester.enterText(key('note-input'), 'máy 2 hỏng, tập máy 5');
+      await tester.pumpAndSettle();
       await tapKey(tester, 'lift-save');
       expect(find.text(S.noteSaved), findsOneWidget);
       expect(key('note-mark-${incline.id}-today'), findsOneWidget);

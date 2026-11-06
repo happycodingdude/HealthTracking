@@ -325,7 +325,8 @@ void main() {
       expect(byKey('replaced-mark-$latsId'), findsOneWidget);
 
       // 06 Bản 5 VS54-T05, J5-02 bước 5 → 6 (F29-AC1, F30-AC1, F20-AC61):
-      // bỏ qua bài 4 → gạch ngang, không hàng số; "+ Thêm bài" → S-75 "Thêm
+      // bỏ qua bài 4 → gạch ngang, hàng số mờ không ô tick (Bạn yêu cầu
+      // 06/11/2026); "+ Thêm bài" → S-75 "Thêm
       // bài" → Plank nối cuối có "+"; server thật nhận dòng bỏ qua và dòng
       // bài thêm (không hoàn về), lịch tuần không đổi.
       const declineId = 'chest-chest-lower-decline-plate-loaded-press';
@@ -335,7 +336,8 @@ void main() {
       await pumpUntil(tester, byKey('action-skip'));
       await tester.tap(byKey('action-skip'));
       await pumpUntil(tester, byKey('skipped-mark-$declineId'));
-      expect(byKey('lift-row-$declineId'), findsNothing);
+      expect(byKey('lift-row-$declineId'), findsOneWidget);
+      expect(byKey('lift-tick-$declineId'), findsNothing);
       await reveal(tester, byKey('add-exercise'));
       await tester.tap(byKey('add-exercise'));
       await pumpUntil(tester, byKey('pick-list'));
@@ -361,6 +363,10 @@ void main() {
       // 06 Bản 5 VS55-T05, J5-02 bước 6 (F33-E5, FC5-05): Plank (bụng) →
       // S-64 chỉ thanh ba mức + ghi chú; "Mệt" + "60 giây" → server thật nhận
       // cả hai (exercise_feel không xét bài có mức tạ), không hoàn về.
+      // Thông báo nhanh "Đã thêm …" (3 giây) che dòng cuối (Plank nằm cuối
+      // danh sách từ khi "+ Thêm bài" lên đầu, 06/11/2026): chờ tắt rồi chạm.
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pumpAndSettle();
       await reveal(tester, byKey('note-mark-$plankId-none'));
       await tester.tap(byKey('note-mark-$plankId-none'));
       await pumpUntil(tester, byKey('lift-feel-bar'));

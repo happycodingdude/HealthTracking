@@ -192,7 +192,19 @@ final class LiftDraft {
         : _copy(end: shown, endEdited: endEdited || changed, stepped: true);
   }
 
-  LiftDraft chooseUnit(LiftUnit unit) => _copy(unit: unit);
+  /// Đổi giữa kg và nấc máy khi đã chọn một đơn vị → xóa số trong hai ô
+  /// (Bạn yêu cầu 06/11/2026: số của đơn vị cũ không còn đúng nghĩa). Chọn
+  /// đơn vị lần đầu, hoặc chạm lại đơn vị đang chọn → giữ số.
+  LiftDraft chooseUnit(LiftUnit unit) {
+    if (this.unit == null || this.unit == unit) return _copy(unit: unit);
+    return _copy(
+      unit: unit,
+      start: '',
+      end: '',
+      startEdited: false,
+      endEdited: false,
+    );
+  }
 
   /// F26-V1, E1: không quá 200 ký tự.
   LiftDraft editNote(String text) => _copy(note: ExerciseNoteRules.clip(text));

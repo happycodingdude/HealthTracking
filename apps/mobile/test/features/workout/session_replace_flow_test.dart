@@ -155,7 +155,8 @@ void main() {
     expect(find.text(S.actionReplace), findsOneWidget);
     expect(find.text(S.actionRestoreOriginal), findsNothing);
     expect(find.text(S.actionSkipToday), findsOneWidget);
-    expect(find.text(S.actionRemoveExtra), findsOneWidget);
+    // Bài trong lịch: không có "Xóa bài thêm" (Bạn yêu cầu 06/11/2026).
+    expect(find.text(S.actionRemoveExtra), findsNothing);
 
     await tapKey(tester, 'action-replace');
     expect(key('pick-list'), findsOneWidget);

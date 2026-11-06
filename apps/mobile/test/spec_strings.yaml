@@ -223,6 +223,7 @@ removeExtraConfirmTitle: "Xóa bài thêm?" # 04 Bản 5 S-78
 removeExtraConfirmAction: "Xóa bài" # 04 Bản 5 S-78
 allSkippedBody: "Mọi bài đã bỏ qua. Buổi sẽ ghi là Không tập." # 04 Bản 5 S-79, §6.9; 03 Bản 5 FC5-03
 addExerciseRow: "+ Thêm bài" # 04 Bản 5 §6.1 AddRow, UD5-05, mock S-10 H4
+trainAnywayToday: "Vẫn tập hôm nay" # Bạn chọn B 06/11/2026: H7 ẩn danh sách bài, nút mở lại
 extraMark: "Bài thêm" # 04 Bản 5 §6.1, §6.9 (VoiceOver)
 skippedMark: "Đã bỏ qua" # 04 Bản 5 §6.9 (VoiceOver)
 feelEasy: "Thoải mái" # 04 Bản 5 S-64 thanh chọn, §6.1 FeelGlyph (VoiceOver); 03 Bản 5 F33-R1

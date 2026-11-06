@@ -155,3 +155,17 @@ final todayScreenStateProvider = Provider<TodayScreenState?>((ref) {
     sessionPaused: session.status?.state == SessionState.paused,
   );
 });
+
+/// Ngày tạm dừng (H7) mà Bạn đã bấm "Vẫn tập hôm nay" (Bạn chọn B
+/// 06/11/2026): danh sách bài hiện lại cho ngày đó, khoảng tạm dừng giữ
+/// nguyên. Giữ trong lúc app chạy; buổi đã có ghi / đổi / bỏ / thêm bài thì
+/// danh sách tự hiện (TodayScreen).
+final trainDuringPauseProvider =
+    NotifierProvider<TrainDuringPause, Set<LocalDate>>(TrainDuringPause.new);
+
+class TrainDuringPause extends Notifier<Set<LocalDate>> {
+  @override
+  Set<LocalDate> build() => const {};
+
+  void show(LocalDate date) => state = {...state, date};
+}

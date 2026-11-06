@@ -49,6 +49,20 @@ class SessionLogList extends ConsumerWidget {
       key: const ValueKey('session-log-list'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // "+ Thêm bài" (04 Bản 5 S-10, UD5-05): chỉ buổi theo lịch hôm nay
+        // trên Hôm nay (không có ở ngày nghỉ, Buổi tập thêm, S-63); mờ khi
+        // buổi "Đã tập" (BR5-13, F30-R7). Đầu danh sách (Bạn yêu cầu
+        // 06/11/2026: cuối danh sách dài khó thấy).
+        if (more == LiftRowMore.actions) ...[
+          AddRow(
+            key: const ValueKey('add-exercise'),
+            label: S.addExerciseRow,
+            onTap: ref.watch(sessionActionsProvider(date)) == null
+                ? () => context.push(pickExercisePath(date))
+                : null,
+          ),
+          const SizedBox(height: TokenSpace.s4),
+        ],
         for (final (gi, g) in exercises.groups.indexed) ...[
           if (multi)
             Padding(
@@ -71,17 +85,6 @@ class SessionLogList extends ConsumerWidget {
         // Bài thêm nối cuối danh sách (A5-02).
         for (final item in exercises.extras)
           LiftRow(session: session, item: item, tab: tab, more: more),
-        // "+ Thêm bài" (04 Bản 5 S-10, UD5-05): chỉ buổi theo lịch hôm nay
-        // trên Hôm nay (không có ở ngày nghỉ, Buổi tập thêm, S-63); mờ khi
-        // buổi "Đã tập" (BR5-13, F30-R7).
-        if (more == LiftRowMore.actions)
-          AddRow(
-            key: const ValueKey('add-exercise'),
-            label: S.addExerciseRow,
-            onTap: ref.watch(sessionActionsProvider(date)) == null
-                ? () => context.push(pickExercisePath(date))
-                : null,
-          ),
       ],
     );
   }
@@ -135,8 +138,9 @@ class LiftRow extends StatelessWidget {
     final prev = item.previous;
     final log = item.log;
     final loggedThisSession = log != null;
-    // Bài bỏ qua hôm nay (F-29, 04 Bản 5 §6.2): không hàng số, không ghi
-    // chú, không mở bảng ghi tạ (F21-R63).
+    // Bài bỏ qua hôm nay (F-29, 04 Bản 5 §6.2): vẫn hiện đủ hàng số, ghi chú
+    // nhưng mờ (Bạn yêu cầu 06/11/2026), không ô tick, không mở bảng ghi tạ
+    // (F21-R63).
     final skippedItem = item.item.skipped;
     final isExtraItem = item.item.role == SessionExerciseRole.extra;
     // Nhãn VoiceOver của dấu bài thêm / bài bỏ qua (04 Bản 5 §6.9).
@@ -167,7 +171,7 @@ class LiftRow extends StatelessWidget {
     Widget? numbers;
     String? numbersSemantics;
     Widget? previousFeelGlyph;
-    if (e.logsWeight && !skippedItem) {
+    if (e.logsWeight) {
       final firstLabel = future ? S.liftLatestLabel : S.liftPreviousLabel;
       final String first;
       final String start;
@@ -210,7 +214,7 @@ class LiftRow extends StatelessWidget {
         }
       }
       final style = strong ? IronlyText.liftNumber : IronlyText.liftPrefill;
-      final tick = open
+      final tick = open && !skippedItem
           ? Container(
               key: ValueKey('lift-tick-${e.id}'),
               width: TokenSize.check,
@@ -308,7 +312,7 @@ class LiftRow extends StatelessWidget {
     Widget? noteLine;
     final note = item.note;
     final previousNote = item.previousNote;
-    if (!skippedItem && (note != null || previousNote != null)) {
+    if (note != null || previousNote != null) {
       final isToday = note != null;
       noteLine = Material(
         color: t.surface,
@@ -335,9 +339,7 @@ class LiftRow extends StatelessWidget {
       );
     }
 
-    final noteIcon =
-        !skippedItem &&
-            (item.noteMark != NoteMark.none || (!e.logsWeight && open))
+    final noteIcon = item.noteMark != NoteMark.none || (!e.logsWeight && open)
         ? Semantics(
             container: true,
             button: canOpenSheet,
@@ -508,17 +510,21 @@ class LiftRow extends StatelessWidget {
               container: true,
               button: canOpenSheet,
               label: numbersSemantics,
-              child: ExcludeSemantics(child: numbers),
+              child: ExcludeSemantics(child: _dimIf(skippedItem, numbers)),
             ),
           if (noteLine != null) ...[
             const SizedBox(height: TokenSpace.s1 + 2),
-            noteLine,
+            _dimIf(skippedItem, noteLine),
           ],
         ],
       ),
     );
   }
 }
+
+/// Bài bỏ qua: hàng số, ghi chú mờ 45 % như icon bài.
+Widget _dimIf(bool dim, Widget child) =>
+    dim ? Opacity(opacity: 0.45, child: child) : child;
 
 /// Ba cột của hàng số: buổi trước / gần nhất (rộng hơn) · bắt đầu · kết thúc
 /// · phần phải (ô tick) có bề rộng cố định. Mỗi ô thu nhỏ chữ khi không đủ

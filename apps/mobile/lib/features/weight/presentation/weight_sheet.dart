@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/providers.dart';
 import '../../../app/strings_vi.dart';
 import '../../../core/formatters.dart';
-import '../../../core/widgets/unsaved_changes.dart';
 import '../../../data/sync/sync_providers.dart';
 import '../../../ui/components/components.dart';
 import '../../../ui/theme.dart';
@@ -20,7 +19,6 @@ Future<void> showWeightSheet(
   bool edit = false,
 }) => showIronlySheet<void>(
   context,
-  enableDrag: false,
   builder: (_) => WeightSheet(week: week, edit: edit, host: context),
 );
 
@@ -174,56 +172,53 @@ class _WeightSheetState extends ConsumerState<WeightSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return UnsavedChangesGuard(
-      dirty: _loaded && _input.text != _initial,
-      child: IronlySheet(
-        title: _range,
-        footer: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            IronlyButton.primary(
-              key: const ValueKey('weight-save'),
-              label: S.save,
-              onPressed: () => _loaded ? _save() : null,
-            ),
-            if (widget.edit) ...[
-              const SizedBox(height: TokenSpace.s1),
-              IronlyButton.danger(
-                key: const ValueKey('weight-delete'),
-                label: S.deleteWeight,
-                onPressed: _delete,
-              ),
-            ],
-          ],
-        ),
+    return IronlySheet(
+      title: _range,
+      footer: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          BigNumberField(
-            name: 'weight',
-            controller: _input,
-            focusNode: _focus,
-            unit: S.unitKg,
-            active: true,
-            style: IronlyText.numberField,
-            height: 72,
-            semanticsLabel: S.fieldWeight,
-            background: context.tokens.surfaceRaised,
-            onChanged: (_) => setState(() => _error = null),
+          IronlyButton.primary(
+            key: const ValueKey('weight-save'),
+            label: S.save,
+            onPressed: () => _loaded ? _save() : null,
           ),
-          if (_error != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 6, left: 2),
-              child: Semantics(
-                liveRegion: true,
-                child: Text(
-                  _error!,
-                  key: const ValueKey('weight-error'),
-                  style: IronlyText.error,
-                ),
-              ),
+          if (widget.edit) ...[
+            const SizedBox(height: TokenSpace.s1),
+            IronlyButton.danger(
+              key: const ValueKey('weight-delete'),
+              label: S.deleteWeight,
+              onPressed: _delete,
             ),
+          ],
         ],
       ),
+      children: [
+        BigNumberField(
+          name: 'weight',
+          controller: _input,
+          focusNode: _focus,
+          unit: S.unitKg,
+          active: true,
+          style: IronlyText.numberField,
+          height: 72,
+          semanticsLabel: S.fieldWeight,
+          background: context.tokens.surfaceRaised,
+          onChanged: (_) => setState(() => _error = null),
+        ),
+        if (_error != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6, left: 2),
+            child: Semantics(
+              liveRegion: true,
+              child: Text(
+                _error!,
+                key: const ValueKey('weight-error'),
+                style: IronlyText.error,
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

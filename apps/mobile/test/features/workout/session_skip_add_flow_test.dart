@@ -139,7 +139,8 @@ void main() {
 
   testWidgets(
     'F29-AC1, U5-AC3, J5-02 bước 5, UD5-02: ··· bài 4 → "Bỏ qua hôm nay" → '
-    'tên gạch ngang, vòng gạch, không hàng số, thông báo nhanh; "Đã ghi 0 / '
+    'tên gạch ngang, vòng gạch, hàng số vẫn hiện nhưng mờ, không ô tick (Bạn '
+    'yêu cầu 06/11/2026), thông báo nhanh; "Đã ghi 0 / '
     'm−1"; S-74 bài bỏ qua có "Hủy bỏ qua" → về bình thường',
     (tester) async {
       await pump(tester);
@@ -147,11 +148,26 @@ void main() {
       expect(stat(tester), S.ratio(0, total));
       await tapKey(tester, 'exercise-${decline.id}');
       expect(opacity(tester, 'action-skip'), 1);
-      expect(opacity(tester, 'action-remove-extra'), 0.4);
+      // Bài trong lịch: không có "Xóa bài thêm" (Bạn yêu cầu 06/11/2026).
+      expect(key('action-remove-extra'), findsNothing);
       await tapKey(tester, 'action-skip');
       expect(find.text(S.skippedExercise(decline.nameVi)), findsOneWidget);
       expect(key('skipped-mark-${decline.id}'), findsOneWidget);
-      expect(key('lift-row-${decline.id}'), findsNothing);
+      expect(key('lift-row-${decline.id}'), findsOneWidget);
+      expect(key('lift-tick-${decline.id}'), findsNothing);
+      expect(
+        tester
+            .widget<Opacity>(
+              find
+                  .ancestor(
+                    of: key('lift-row-${decline.id}'),
+                    matching: find.byType(Opacity),
+                  )
+                  .first,
+            )
+            .opacity,
+        0.45,
+      );
       final name = tester.widget<Text>(key('exercise-name-${decline.id}'));
       expect(name.style?.decoration, TextDecoration.lineThrough);
       expect(stat(tester), S.ratio(0, total - 1));
@@ -245,7 +261,9 @@ void main() {
 
   testWidgets('F30-AC1, F30-AC3, J5-02 bước 6, UD5-05: "+ Thêm bài" → S-75 '
       '"Thêm bài" ẩn bài của buổi → chọn Plank → dòng cuối có "+", chỉ ghi '
-      'chú; S-75 lần sau ẩn cả Plank', (tester) async {
+      'chú; "+ Thêm bài" ở đầu danh sách; S-75 lần sau ẩn cả Plank', (
+    tester,
+  ) async {
     await pump(tester);
     expect(key('add-exercise'), findsOneWidget);
     await tapKey(tester, 'add-exercise');
@@ -264,9 +282,10 @@ void main() {
       top(tester, 'lift-block-${last.id}'),
       lessThan(top(tester, 'lift-block-${plank.id}')),
     );
+    // "+ Thêm bài" ở đầu danh sách (Bạn yêu cầu 06/11/2026).
     expect(
-      top(tester, 'lift-block-${plank.id}'),
-      lessThan(top(tester, 'add-exercise')),
+      top(tester, 'add-exercise'),
+      lessThan(top(tester, 'lift-block-${session.first.id}')),
     );
 
     await tapKey(tester, 'add-exercise');

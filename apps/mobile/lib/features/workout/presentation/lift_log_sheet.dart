@@ -8,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/providers.dart';
 import '../../../app/strings_vi.dart';
 import '../../../core/formatters.dart';
-import '../../../core/widgets/unsaved_changes.dart';
 import '../../../ui/components/components.dart';
 import '../../../ui/theme.dart';
 import '../application/lift_log_draft.dart';
@@ -66,7 +65,6 @@ Future<void> showLiftLogSheet(
   final host = Navigator.of(context, rootNavigator: true).context;
   return showIronlySheet<void>(
     context,
-    enableDrag: false,
     builder: (_) => LiftLogSheet(args: args, host: host),
   );
 }
@@ -143,6 +141,21 @@ class _LiftLogSheetState extends ConsumerState<LiftLogSheet> {
       selection: TextSelection.collapsed(offset: text.length),
     );
     setState(() => _active = f);
+  }
+
+  /// Chọn kg | nấc máy; đổi đơn vị thì hai ô về trống (LiftDraft.chooseUnit).
+  void _chooseUnit(LiftUnit unit) {
+    _draft.chooseUnit(unit);
+    final draft = ref.read(liftLogDraftProvider(widget.args));
+    for (final f in LiftField.values) {
+      final text = draft.text(f);
+      if (_controllers[f]!.text != text) {
+        _controllers[f]!.value = TextEditingValue(
+          text: text,
+          selection: TextSelection.collapsed(offset: text.length),
+        );
+      }
+    }
   }
 
   Future<void> _save() async {
@@ -279,79 +292,75 @@ class _LiftLogSheetState extends ConsumerState<LiftLogSheet> {
       onChanged: (text) => _draft.edit(f, text),
     );
 
-    return UnsavedChangesGuard(
-      dirty: draft.isDirty,
-      title: S.discardChanges,
-      keepLabel: S.keepLogging,
-      child: IronlySheet(
-        title: args.exercise.nameVi,
-        footer: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            IronlyButton.primary(
-              key: const ValueKey('lift-save'),
-              label: S.save,
-              onPressed: _save,
-            ),
-            if (args.existing != null && !draft.noteOnly) ...[
-              const SizedBox(height: TokenSpace.s1),
-              IronlyButton.danger(
-                key: const ValueKey('lift-delete'),
-                label: S.deleteLift,
-                onPressed: _delete,
-              ),
-            ],
-          ],
-        ),
+    return IronlySheet(
+      title: args.exercise.nameVi,
+      footer: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (!draft.noteOnly) ...[
-            if (draft.choosingUnit) ...[
-              SegmentBar<LiftUnit>(
-                key: const ValueKey('lift-unit-bar'),
-                items: LiftUnit.values,
-                selected: unit,
-                style: SegmentStyle.buttons,
-                label: Fmt.liftUnitFull,
-                keyOf: (u) => ValueKey('lift-unit-${u.wire}'),
-                onSelected: _draft.chooseUnit,
-              ),
-              if (unitError) ...[
-                const SizedBox(height: 6),
-                _ErrorText(Fmt.liftError(LiftInputError.unitMissing, null)),
-              ],
-              const SizedBox(height: TokenSpace.s4),
-            ],
-            field(LiftField.start),
-            const SizedBox(height: TokenSpace.s3),
-            field(LiftField.end),
-            if (error != null && !unitError) ...[
-              const SizedBox(height: TokenSpace.s2),
-              _ErrorText(Fmt.liftError(error, unit)),
-            ],
-            if ((warning, unit) case (final w?, final u?)) ...[
-              const SizedBox(height: TokenSpace.s3),
-              _WarningBox(w, u),
-            ],
-            const SizedBox(height: _feelGap),
+          IronlyButton.primary(
+            key: const ValueKey('lift-save'),
+            label: S.save,
+            onPressed: _save,
+          ),
+          if (args.existing != null && !draft.noteOnly) ...[
+            const SizedBox(height: TokenSpace.s1),
+            IronlyButton.danger(
+              key: const ValueKey('lift-delete'),
+              label: S.deleteLift,
+              onPressed: _delete,
+            ),
           ],
-          SegmentBar<Feel>(
-            key: const ValueKey('lift-feel-bar'),
-            items: Feel.values,
-            selected: draft.feel,
-            style: SegmentStyle.accent,
-            label: FeelGlyph.nameOf,
-            keyOf: (f) => ValueKey('lift-feel-${f.wire}'),
-            onSelected: _draft.tapFeel,
-          ),
-          const SizedBox(height: _feelGap),
-          _NoteBox(
-            controller: _note,
-            onChanged: _editNote,
-            previous: args.previousNote,
-          ),
         ],
       ),
+      children: [
+        if (!draft.noteOnly) ...[
+          if (draft.choosingUnit) ...[
+            SegmentBar<LiftUnit>(
+              key: const ValueKey('lift-unit-bar'),
+              items: LiftUnit.values,
+              selected: unit,
+              style: SegmentStyle.buttons,
+              label: Fmt.liftUnitFull,
+              keyOf: (u) => ValueKey('lift-unit-${u.wire}'),
+              onSelected: _chooseUnit,
+            ),
+            if (unitError) ...[
+              const SizedBox(height: 6),
+              _ErrorText(Fmt.liftError(LiftInputError.unitMissing, null)),
+            ],
+            const SizedBox(height: TokenSpace.s4),
+          ],
+          field(LiftField.start),
+          const SizedBox(height: TokenSpace.s3),
+          field(LiftField.end),
+          if (error != null && !unitError) ...[
+            const SizedBox(height: TokenSpace.s2),
+            _ErrorText(Fmt.liftError(error, unit)),
+          ],
+          if ((warning, unit) case (final w?, final u?)) ...[
+            const SizedBox(height: TokenSpace.s3),
+            _WarningBox(w, u),
+          ],
+          const SizedBox(height: _feelGap),
+        ],
+        SegmentBar<Feel>(
+          key: const ValueKey('lift-feel-bar'),
+          items: Feel.values,
+          selected: draft.feel,
+          // Cùng kiểu nút rời như thanh kg | nấc máy (Bạn yêu cầu 06/11/2026).
+          style: SegmentStyle.buttons,
+          label: FeelGlyph.nameOf,
+          keyOf: (f) => ValueKey('lift-feel-${f.wire}'),
+          onSelected: _draft.tapFeel,
+        ),
+        const SizedBox(height: _feelGap),
+        _NoteBox(
+          controller: _note,
+          onChanged: _editNote,
+          previous: args.previousNote,
+        ),
+      ],
     );
   }
 }

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 
 import '../../../app/strings_vi.dart';
 import '../../../core/formatters.dart';
-import '../../../core/widgets/unsaved_changes.dart';
 import '../../../ui/components/components.dart';
 import '../../../ui/theme.dart';
 
@@ -16,7 +15,6 @@ Future<int?> showSetCalorieSheet(
   int? initial,
 }) => showIronlySheet<int>(
   context,
-  enableDrag: false,
   builder: (_) => SetCalorieSheet(sex: sex, initial: initial),
 );
 
@@ -34,7 +32,6 @@ class _SetCalorieSheetState extends State<SetCalorieSheet> {
   late final _controller = TextEditingController(
     text: widget.initial == null ? '' : Fmt.integer(widget.initial!),
   );
-  late final _initialText = _controller.text;
   final _focus = FocusNode();
   String? _error;
 
@@ -80,43 +77,40 @@ class _SetCalorieSheetState extends State<SetCalorieSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return UnsavedChangesGuard(
-      dirty: _controller.text != _initialText,
-      child: IronlySheet(
-        title: S.setCalorieTitle,
-        footer: IronlyButton.primary(
-          key: const ValueKey('calorie-save'),
-          label: S.save,
-          onPressed: _save,
+    return IronlySheet(
+      title: S.setCalorieTitle,
+      footer: IronlyButton.primary(
+        key: const ValueKey('calorie-save'),
+        label: S.save,
+        onPressed: _save,
+      ),
+      children: [
+        BigNumberField(
+          name: 'daily-calorie',
+          controller: _controller,
+          focusNode: _focus,
+          unit: S.unitKcal,
+          active: true,
+          decimal: false,
+          style: IronlyText.numberField,
+          height: 72,
+          semanticsLabel: S.fieldDailyCalorie,
+          background: context.tokens.surfaceRaised,
+          onChanged: (_) => setState(() => _error = null),
         ),
-        children: [
-          BigNumberField(
-            name: 'daily-calorie',
-            controller: _controller,
-            focusNode: _focus,
-            unit: S.unitKcal,
-            active: true,
-            decimal: false,
-            style: IronlyText.numberField,
-            height: 72,
-            semanticsLabel: S.fieldDailyCalorie,
-            background: context.tokens.surfaceRaised,
-            onChanged: (_) => setState(() => _error = null),
-          ),
-          if (_error != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 6, left: 2),
-              child: Semantics(
-                liveRegion: true,
-                child: Text(
-                  _error!,
-                  key: const ValueKey('field-daily-calorie-error'),
-                  style: IronlyText.error,
-                ),
+        if (_error != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6, left: 2),
+            child: Semantics(
+              liveRegion: true,
+              child: Text(
+                _error!,
+                key: const ValueKey('field-daily-calorie-error'),
+                style: IronlyText.error,
               ),
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 }

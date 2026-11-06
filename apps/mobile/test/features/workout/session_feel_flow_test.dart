@@ -252,15 +252,17 @@ void main() {
   });
 
   testWidgets('04 Bản 5 S-64: hai ô trống mà chọn mức → chỉ lưu mức thoải mái '
-      '(không lỗi chọn đơn vị); đổi mức rồi đóng → "Bỏ thay đổi chưa lưu?"', (
-    tester,
-  ) async {
+      '(không lỗi chọn đơn vị); đổi mức rồi đóng → đóng ngay, không hỏi, mức '
+      'không lưu (Bạn yêu cầu 06/11/2026)', (tester) async {
     await pump(tester);
     await tapKey(tester, 'lift-row-${incline.id}');
     await tapKey(tester, 'lift-feel-hard');
     await dismissSheet(tester);
-    expect(find.text(S.discardChanges), findsOneWidget);
-    await tapKey(tester, 'discard-keep');
+    expect(find.text(S.discardChanges), findsNothing);
+    expect(key('lift-save'), findsNothing);
+    expect(await feels.get(mon, incline.id), isNull);
+    await tapKey(tester, 'lift-row-${incline.id}');
+    await tapKey(tester, 'lift-feel-hard');
     expect(selected(tester), Feel.hard);
     await tapKey(tester, 'lift-save');
     expect(key('lift-error'), findsNothing);

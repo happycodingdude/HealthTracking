@@ -72,12 +72,38 @@ class TodayScreen extends ConsumerWidget {
           const MenuCard(),
         ],
         _ => [
-          SessionLogList(date: state.today, tab: AppTab.today),
+          if (_showList(ref, state))
+            SessionLogList(date: state.today, tab: AppTab.today)
+          else
+            // H7 (Bạn chọn B 06/11/2026): ngày tạm dừng không hiện danh sách
+            // bài; "Vẫn tập hôm nay" → hiện lại, tạm dừng giữ nguyên.
+            IronlyButton.secondary(
+              key: const ValueKey('train-anyway'),
+              label: S.trainAnywayToday,
+              onPressed: () =>
+                  ref.read(trainDuringPauseProvider.notifier).show(state.today),
+            ),
           const MenuLine(),
         ],
       },
     );
   }
+}
+
+/// Danh sách bài hôm nay: luôn hiện, trừ buổi Tạm dừng (H7) chưa bấm "Vẫn tập
+/// hôm nay" và chưa có gì trong buổi (mức tạ, ghi chú, mức thoải mái, đổi /
+/// bỏ qua / thêm bài).
+bool _showList(WidgetRef ref, TodayScreenState state) {
+  if (!state.pausedScheduled) return true;
+  if (ref.watch(trainDuringPauseProvider).contains(state.today)) return true;
+  final exercises = ref.watch(sessionExercisesProvider(state.today));
+  return exercises != null &&
+      exercises.all.any(
+        (e) =>
+            SessionExercises.hasRecords(e) ||
+            e.item.skipped ||
+            e.item.role != SessionExerciseRole.original,
+      );
 }
 
 /// Thẻ ngày nghỉ (S-71 rút gọn) mở `ironly://extra-session` → Hôm nay

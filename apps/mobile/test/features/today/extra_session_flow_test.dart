@@ -161,8 +161,8 @@ void main() {
   );
 
   testWidgets(
-    'S-24 Q-2: chọn nhóm cơ rồi chạm vùng mờ → hỏi "Bỏ các thay đổi chưa '
-    'lưu?"',
+    'S-24, Bạn yêu cầu 06/11/2026: chọn nhóm cơ rồi chạm vùng mờ → đóng ngay, '
+    'bỏ thay đổi, không hỏi',
     (tester) async {
       await seedSetUp(db);
       await pump(tester);
@@ -170,9 +170,7 @@ void main() {
       await tapKey(tester, 'muscle-abs');
       await tester.tapAt(const Offset(195, 60));
       await tester.pumpAndSettle();
-      expect(find.text(S.discardChangesTitle), findsOneWidget);
-      await tester.tap(find.text(S.discard));
-      await tester.pumpAndSettle();
+      expect(find.text(S.discardChangesTitle), findsNothing);
       expect(find.text(S.extraNotCounted), findsNothing);
       expect((await day(sat)).extraMuscles, isNull);
     },

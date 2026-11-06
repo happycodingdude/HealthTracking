@@ -6,7 +6,6 @@ import '../../../app/providers.dart';
 import '../../../app/strings_vi.dart';
 import '../../../app/time_ticker.dart';
 import '../../../core/formatters.dart';
-import '../../../core/widgets/unsaved_changes.dart';
 import '../../../ui/components/components.dart';
 import '../../../ui/theme.dart';
 import '../../today/application/mark_session.dart';
@@ -19,8 +18,6 @@ import 'muscle_picker.dart';
 Future<void> showExtraSessionSheet(BuildContext context, LocalDate date) =>
     showIronlySheet<void>(
       context,
-      // Có lựa chọn chưa lưu: tự bắt cử chỉ vuốt để hỏi trước (Q-2).
-      enableDrag: false,
       builder: (_) => ExtraSessionSheet(date: date, host: context),
     );
 
@@ -104,44 +101,41 @@ class _ExtraSessionSheetState extends ConsumerState<ExtraSessionSheet> {
     final dirty = editing
         ? _muscles != null && !_same(_muscles!, saved)
         : muscles.isNotEmpty;
-    return UnsavedChangesGuard(
-      dirty: dirty,
-      child: IronlySheet(
-        key: const ValueKey('extra-sheet'),
-        title: Fmt.weekdayDate(widget.date),
-        footer: IronlyButton.primary(
-          key: const ValueKey('extra-save'),
-          label: S.save,
-          enabled: !editing || dirty,
-          onPressed: () => _save(day),
-        ),
-        children: [
-          MusclePicker(
-            selected: muscles,
-            onChanged: (m) => setState(() {
-              _muscles = m;
-              if (m.isNotEmpty) _showError = false;
-            }),
-          ),
-          if (_showError)
-            Padding(
-              padding: const EdgeInsets.only(top: TokenSpace.s2),
-              child: Semantics(
-                liveRegion: true,
-                child: Text(S.missingActualMuscles, style: IronlyText.error),
-              ),
-            ),
-          if (editing && ExtraSessionRules.canEdit(day, now))
-            Padding(
-              padding: const EdgeInsets.only(top: TokenSpace.s4),
-              child: IronlyButton.danger(
-                key: const ValueKey('extra-delete'),
-                label: S.deleteExtraSession,
-                onPressed: _delete,
-              ),
-            ),
-        ],
+    return IronlySheet(
+      key: const ValueKey('extra-sheet'),
+      title: Fmt.weekdayDate(widget.date),
+      footer: IronlyButton.primary(
+        key: const ValueKey('extra-save'),
+        label: S.save,
+        enabled: !editing || dirty,
+        onPressed: () => _save(day),
       ),
+      children: [
+        MusclePicker(
+          selected: muscles,
+          onChanged: (m) => setState(() {
+            _muscles = m;
+            if (m.isNotEmpty) _showError = false;
+          }),
+        ),
+        if (_showError)
+          Padding(
+            padding: const EdgeInsets.only(top: TokenSpace.s2),
+            child: Semantics(
+              liveRegion: true,
+              child: Text(S.missingActualMuscles, style: IronlyText.error),
+            ),
+          ),
+        if (editing && ExtraSessionRules.canEdit(day, now))
+          Padding(
+            padding: const EdgeInsets.only(top: TokenSpace.s4),
+            child: IronlyButton.danger(
+              key: const ValueKey('extra-delete'),
+              label: S.deleteExtraSession,
+              onPressed: _delete,
+            ),
+          ),
+      ],
     );
   }
 

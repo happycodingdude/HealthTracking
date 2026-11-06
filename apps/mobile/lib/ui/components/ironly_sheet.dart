@@ -4,8 +4,8 @@ import '../keys.dart';
 import '../theme.dart';
 
 /// Mở bảng trượt từ dưới lên (04 Bản 4 §6.1): nền thẻ, bo 22 trên, thanh kéo
-/// 36 × 4, nền sau phủ mờ 55 %. Vuốt xuống hoặc chạm vùng mờ để đóng.
-/// Bảng có ô nhập dùng [enableDrag] = false kèm `UnsavedChangesGuard`.
+/// 36 × 4, nền sau phủ mờ 55 %. Vuốt xuống hoặc chạm vùng mờ để đóng, kể cả
+/// bảng có ô nhập đang sửa dở: bỏ thay đổi, không hỏi (Bạn yêu cầu 06/11/2026).
 Future<T?> showIronlySheet<T>(
   BuildContext context, {
   required WidgetBuilder builder,

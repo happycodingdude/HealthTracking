@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import '../../app/strings_vi.dart';
 import '../../ui/components/components.dart';
 
-/// Hỏi trước khi bỏ thay đổi chưa lưu (04 §6.13.1, S-22, Q-2). true = bỏ.
-/// Bảng ghi tạ dùng câu riêng (04 Bản 3 UA3-03): [title], [keepLabel].
+/// Hỏi trước khi bỏ thay đổi chưa lưu ở màn toàn trang (04 §6.13.1, S-22,
+/// Q-2). true = bỏ. Bảng trượt không hỏi: chạm ngoài / vuốt xuống là bỏ
+/// (Bạn yêu cầu 06/11/2026).
 /// Bản 4: hộp `IronlyDialog` (04 Bản 4 §6.1 hộp thoại), câu chữ giữ nguyên.
 Future<bool> confirmDiscardChanges(
   BuildContext context, {
@@ -25,50 +26,3 @@ Future<bool> confirmDiscardChanges(
       ),
     ) ??
     false;
-
-/// Bọc nội dung bảng trượt có ô nhập. Vuốt xuống hoặc chạm vùng mờ khi
-/// [dirty] → hỏi [confirmDiscardChanges] trước khi đóng.
-///
-/// Bảng trượt mở bằng `showIronlySheet(..., enableDrag: false)`: thao tác vuốt
-/// mặc định của Flutter đóng bảng ngay, không qua [PopScope].
-class UnsavedChangesGuard extends StatelessWidget {
-  const UnsavedChangesGuard({
-    super.key,
-    required this.dirty,
-    required this.child,
-    this.title = S.discardChangesTitle,
-    this.keepLabel = S.keepEditing,
-  });
-
-  final bool dirty;
-  final Widget child;
-  final String title;
-  final String keepLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    return PopScope<Object?>(
-      canPop: !dirty,
-      onPopInvokedWithResult: (didPop, _) async {
-        if (didPop) return;
-        final navigator = Navigator.of(context);
-        if (await confirmDiscardChanges(
-          context,
-          title: title,
-          keepLabel: keepLabel,
-        )) {
-          navigator.pop();
-        }
-      },
-      child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onVerticalDragEnd: (details) {
-          if ((details.primaryVelocity ?? 0) > 200) {
-            Navigator.of(context).maybePop();
-          }
-        },
-        child: child,
-      ),
-    );
-  }
-}

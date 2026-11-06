@@ -358,8 +358,8 @@ void main() {
   );
 
   testWidgets(
-    'Q-2: "Đặt mức khác" có thay đổi chưa lưu → chạm vùng mờ hỏi "Bỏ các thay '
-    'đổi chưa lưu?"',
+    'Bạn yêu cầu 06/11/2026: "Đặt mức khác" có thay đổi chưa lưu → chạm vùng '
+    'mờ / vuốt xuống đóng ngay, bỏ thay đổi, không hỏi',
     (tester) async {
       await pump(tester);
       await tapText(tester, S.iUnderstand);
@@ -374,18 +374,23 @@ void main() {
 
       await tester.tapAt(const Offset(195, 60));
       await tester.pumpAndSettle();
-      expect(find.text(S.discardChangesTitle), findsOneWidget);
-      await tapText(tester, S.keepEditing);
-      expect(find.text(S.setCalorieTitle), findsOneWidget);
+      expect(find.text(S.discardChangesTitle), findsNothing);
+      expect(find.text(S.setCalorieTitle), findsNothing);
+      expect((await profile())!.calorieKcal, isNull);
 
+      await tapText(tester, S.setOtherLevel);
+      await tester.enterText(
+        find.byKey(const ValueKey('field-daily-calorie')),
+        '1900',
+      );
+      await tester.pumpAndSettle();
       await tester.fling(
         find.text(S.setCalorieTitle),
         const Offset(0, 400),
         1000,
       );
       await tester.pumpAndSettle();
-      expect(find.text(S.discardChangesTitle), findsOneWidget);
-      await tapText(tester, S.discard);
+      expect(find.text(S.discardChangesTitle), findsNothing);
       expect(find.text(S.setCalorieTitle), findsNothing);
       expect((await profile())!.calorieKcal, isNull);
     },

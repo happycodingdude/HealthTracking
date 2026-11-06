@@ -27,8 +27,8 @@ enum ExerciseAction {
 
 /// S-74 — Thao tác với bài (04 Bản 5 S-74, UA5-01): mở từ ··· của một bài
 /// trong buổi hôm nay. Đầu bảng ảnh vùng cơ tròn 44 + tên bài + "Nhóm · Vùng";
-/// các dòng Xem bài · Đổi bài · [Chọn lại bài gốc] · Bỏ qua hôm nay · Xóa bài
-/// thêm. Buổi "Đã tập": chỉ Xem bài sáng (BR5-13).
+/// các dòng Xem bài · Đổi bài · [Chọn lại bài gốc] · Bỏ qua hôm nay · [Xóa bài
+/// thêm — chỉ bài thêm]. Buổi "Đã tập": chỉ Xem bài sáng (BR5-13).
 Future<void> openExerciseActions(
   BuildContext context, {
   required LocalDate date,
@@ -211,16 +211,15 @@ class ExerciseActionsSheet extends ConsumerWidget {
               )
             : null,
       ),
-      // Luôn hiện; mờ với bài gốc / bài thay (04 Bản 5 S-74).
-      _ActionRow(
-        key: const ValueKey('action-remove-extra'),
-        icon: Icons.delete_outline,
-        label: S.actionRemoveExtra,
-        danger: true,
-        onTap: editable && isExtra
-            ? () => pick(ExerciseAction.removeExtra)
-            : null,
-      ),
+      // Chỉ bài thêm (Bạn yêu cầu 06/11/2026: bài trong lịch không hiện).
+      if (isExtra)
+        _ActionRow(
+          key: const ValueKey('action-remove-extra'),
+          icon: Icons.delete_outline,
+          label: S.actionRemoveExtra,
+          danger: true,
+          onTap: editable ? () => pick(ExerciseAction.removeExtra) : null,
+        ),
     ];
     return IronlySheet(
       key: const ValueKey('exercise-actions'),

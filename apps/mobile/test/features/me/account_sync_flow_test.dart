@@ -114,8 +114,8 @@ void main() {
   );
 
   testWidgets(
-    'Q-2: sửa tên chưa lưu → chạm vùng mờ hỏi "Bỏ các thay đổi chưa lưu?"; '
-    'chưa sửa gì thì đóng ngay',
+    'Bạn yêu cầu 06/11/2026: sửa tên chưa lưu → chạm vùng mờ đóng ngay, bỏ '
+    'thay đổi, không hỏi; chưa sửa gì cũng đóng ngay',
     (tester) async {
       await pump(tester);
       await openAccount(tester);
@@ -135,9 +135,7 @@ void main() {
       await tester.pump();
       await tester.tapAt(const Offset(195, 60));
       await tester.pumpAndSettle();
-      expect(find.text(S.discardChangesTitle), findsOneWidget);
-      await tester.tap(find.text(S.discard));
-      await tester.pumpAndSettle();
+      expect(find.text(S.discardChangesTitle), findsNothing);
       expect(find.widgetWithText(FilledButton, S.save), findsNothing);
       expect(await db.select(db.outbox).get(), isEmpty);
       expect(find.text('Minh'), findsOneWidget);

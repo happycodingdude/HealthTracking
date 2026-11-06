@@ -6,7 +6,6 @@ import '../../../app/providers.dart';
 import '../../../app/strings_vi.dart';
 import '../../../app/time_ticker.dart';
 import '../../../core/formatters.dart';
-import '../../../core/widgets/unsaved_changes.dart';
 import '../../../ui/components/components.dart';
 import '../../../ui/theme.dart';
 import '../../workout/presentation/session_screen.dart';
@@ -23,8 +22,6 @@ import 'weekly_template_editor.dart';
 Future<void> showDaySheet(BuildContext context, LocalDate date) =>
     showIronlySheet<void>(
       context,
-      // Đang đổi giờ, nhóm cơ: tự bắt cử chỉ vuốt để hỏi trước (Q-2).
-      enableDrag: false,
       builder: (_) => DaySheet(date: date, host: context),
     );
 
@@ -53,7 +50,6 @@ class _DaySheetState extends ConsumerState<DaySheet> {
   _Mode _mode = _Mode.actions;
   LocalTime _time = LocalTime(18, 0);
   List<MuscleGroup> _muscles = const [];
-  bool _changed = false;
   bool _showError = false;
 
   LocalDate get _date => widget.date;
@@ -64,7 +60,6 @@ class _DaySheetState extends ConsumerState<DaySheet> {
     final t = template?.day(_date.weekday);
     setState(() {
       _mode = mode;
-      _changed = false;
       _showError = false;
       _time = day.time ?? t?.time ?? LocalTime(18, 0);
       _muscles = mode == _Mode.schedule ? const [] : day.muscles;
@@ -142,36 +137,33 @@ class _DaySheetState extends ConsumerState<DaySheet> {
       paused: ref.watch(pausedProvider(_date)),
     );
 
-    return UnsavedChangesGuard(
-      dirty: _mode != _Mode.actions && _changed,
-      child: IronlySheet(
-        key: const ValueKey('day-sheet'),
-        title: _label,
-        titleTrailing: glyph == null
-            ? null
-            : StatusGlyph(
-                glyph.$1,
-                key: const ValueKey('day-status'),
-                label: glyph.$2,
-              ),
-        children: [
-          if (day != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: TokenSpace.s4),
-              child: Text(
-                _summary(day),
-                key: const ValueKey('day-summary'),
-                style: IronlyText.caption,
-              ),
+    return IronlySheet(
+      key: const ValueKey('day-sheet'),
+      title: _label,
+      titleTrailing: glyph == null
+          ? null
+          : StatusGlyph(
+              glyph.$1,
+              key: const ValueKey('day-status'),
+              label: glyph.$2,
             ),
-          ...switch (_mode) {
-            _Mode.actions => _actions(context, situation, day, now),
-            _Mode.time => _timeEditor(context, day!, now),
-            _Mode.muscles => _musclesEditor(context, day!),
-            _Mode.schedule => _scheduleEditor(context, day!, now),
-          },
-        ],
-      ),
+      children: [
+        if (day != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: TokenSpace.s4),
+            child: Text(
+              _summary(day),
+              key: const ValueKey('day-summary'),
+              style: IronlyText.caption,
+            ),
+          ),
+        ...switch (_mode) {
+          _Mode.actions => _actions(context, situation, day, now),
+          _Mode.time => _timeEditor(context, day!, now),
+          _Mode.muscles => _musclesEditor(context, day!),
+          _Mode.schedule => _scheduleEditor(context, day!, now),
+        },
+      ],
     );
   }
 
@@ -305,19 +297,13 @@ class _DaySheetState extends ConsumerState<DaySheet> {
     child: Text(text, style: IronlyText.caption),
   );
 
-  Widget _wheel() => TimeWheel(
-    initial: _time,
-    onChanged: (t) => setState(() {
-      _time = t;
-      _changed = true;
-    }),
-  );
+  Widget _wheel() =>
+      TimeWheel(initial: _time, onChanged: (t) => setState(() => _time = t));
 
   Widget _picker() => MusclePicker(
     selected: _muscles,
     onChanged: (m) => setState(() {
       _muscles = m;
-      _changed = true;
       if (m.isNotEmpty) _showError = false;
     }),
   );
